@@ -263,7 +263,9 @@ $queryTabla="SELECT invoice_name as 'Nombre facturacion', nit Nit, invoice_addre
 							echo '<br/><br/>';
 							echo fncDesignComboMultiple($queryDepartamentos,'multiple','','','','','');
 							echo '<br/><br/>';
-							echo fncGetTable($MyOps,$queryTabla,'tabla','tabla2', 'table-hover', 'panel-primary','Clientes');
+							$arreglo = fncObtenerArreglo($MyOps, $queryTabla);
+							if($arreglo != 0)
+								echo fncGetTable($arreglo,'tabla','tabla2', 'table-hover', 'panel-primary','Clientes');
 							echo '<br/><br/>';
 							echo fncGetCapital('JC Sal');
 					?>

@@ -173,58 +173,56 @@ function fncGetCapital($string)
 	return $capital;
 }
 
-function fncGetTable($MyOps,$query,$name,$id,$class,$classPanel,$tituloPanel)	
+function fncGetTable($resultado,$name,$id,$class,$classPanel,$tituloPanel)	
 {
-$encabezado='';
-$cuerpo='';
 
-	$resultado = $MyOps->list_orders($query);
-	$campos ="<tr>";
-	if($resultado)
-	{
-		while ($valor = mysql_fetch_assoc($resultado)) 
-		{
-			foreach ($valor as $llave2 => $valor2) {
-				$array_encabezado[$llave2] = $llave2;
-				$campos .= '<td>'.fncGetCapital($valor[$llave2]).'</td>';
-			}
-			$campos .="</tr><tr>";
-		}
-	}
-	$campos .="</tr>";
-	
-	foreach ($array_encabezado as $llave => $valor) {
-		$encabezado .= '<th>'.$array_encabezado[$llave].'</th>';
-	}
 echo '	<div class="panel '.$classPanel.'">
 			<div class="panel-heading">
 				'.$tituloPanel.'
 			</div>
 			
 			<table class="table '.$class.'" id="'.$id.'" name="'.$name.'">
-			<tr align="center">
-				'.$encabezado.'
-			</tr>
-				'.$campos.'
+				'.fncCreaMatrizTabla($resultado).'
 			</table>
 		</div>';
 }
 
-function fncCreaMatriz($MyOps, $query)
+function fncObtenerArreglo($MyOps, $query)
+{
+	$resultado = $MyOps->list_orders($query);
+	if($resultado)
 	{
-	$count=0;
-	$array="";
-	$res = $MyOps->list_orders($query);
-	if ($res)
-		{
-		while ($row = mysql_fetch_assoc($res)) 
-			{
-			$count++;
-			$array[$row['id']]=$row['name'];
-			}
-		}
-	return $array;
+		return $resultado;
 	}
+	else
+	{
+		return 0;
+	}
+}
+
+function fncCreaMatrizTabla($resultado)
+{
+	$encabezado='<tr align="center">';
+	$conteo=0;
+	$array='';
+	$campos ="<tr>";
+	while ($valor = mysql_fetch_assoc($resultado)) 
+	{
+		foreach ($valor as $llave2 => $valor2) {
+			$array_encabezado[$llave2] = $llave2;
+			$campos .= '<td>'.fncGetCapital($valor[$llave2]).'</td>';
+		}
+		$campos .="</tr><tr>";
+	}
+	$campos .="</tr>";
+	foreach ($array_encabezado as $llave => $valor) {
+		$encabezado .= '<th>'.$array_encabezado[$llave].'</th>';
+	}
+	$encabezado.= "</tr>";
+	
+	$array=$encabezado.$campos;
+	return $array;
+}
 
 function fncGetInput($name, $id, $tipo, $onclick, $onchange, $titulo, $texto)
 {
