@@ -23,7 +23,7 @@ class cclase_cuenta_list extends cclase_cuenta {
 	var $PageID = 'list';
 
 	// Project ID
-	var $ProjectID = "{5B8C292A-87A7-44A6-9434-2D0CECD099FC}";
+	var $ProjectID = "{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}";
 
 	// Table name
 	var $TableName = 'clase_cuenta';
@@ -297,6 +297,9 @@ class cclase_cuenta_list extends cclase_cuenta {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
+
+		// Create form object
+		$objForm = new cFormObj();
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
 
 		// Get grid add count
@@ -459,6 +462,55 @@ class cclase_cuenta_list extends cclase_cuenta {
 			if ($this->Export == "")
 				$this->SetupBreadcrumb();
 
+			// Check QueryString parameters
+			if (@$_GET["a"] <> "") {
+				$this->CurrentAction = $_GET["a"];
+
+				// Clear inline mode
+				if ($this->CurrentAction == "cancel")
+					$this->ClearInlineMode();
+
+				// Switch to grid edit mode
+				if ($this->CurrentAction == "gridedit")
+					$this->GridEditMode();
+
+				// Switch to grid add mode
+				if ($this->CurrentAction == "gridadd")
+					$this->GridAddMode();
+			} else {
+				if (@$_POST["a_list"] <> "") {
+					$this->CurrentAction = $_POST["a_list"]; // Get action
+
+					// Grid Update
+					if (($this->CurrentAction == "gridupdate" || $this->CurrentAction == "gridoverwrite") && @$_SESSION[EW_SESSION_INLINE_MODE] == "gridedit") {
+						if ($this->ValidateGridForm()) {
+							$bGridUpdate = $this->GridUpdate();
+						} else {
+							$bGridUpdate = FALSE;
+							$this->setFailureMessage($gsFormError);
+						}
+						if (!$bGridUpdate) {
+							$this->EventCancelled = TRUE;
+							$this->CurrentAction = "gridedit"; // Stay in Grid Edit mode
+						}
+					}
+
+					// Grid Insert
+					if ($this->CurrentAction == "gridinsert" && @$_SESSION[EW_SESSION_INLINE_MODE] == "gridadd") {
+						if ($this->ValidateGridForm()) {
+							$bGridInsert = $this->GridInsert();
+						} else {
+							$bGridInsert = FALSE;
+							$this->setFailureMessage($gsFormError);
+						}
+						if (!$bGridInsert) {
+							$this->EventCancelled = TRUE;
+							$this->CurrentAction = "gridadd"; // Stay in Grid Add mode
+						}
+					}
+				}
+			}
+
 			// Hide list options
 			if ($this->Export <> "") {
 				$this->ListOptions->HideAllOptions(array("sequence"));
@@ -478,6 +530,14 @@ class cclase_cuenta_list extends cclase_cuenta {
 			if ($this->Export <> "") {
 				foreach ($this->OtherOptions as &$option)
 					$option->HideAllOptions();
+			}
+
+			// Show grid delete link for grid add / grid edit
+			if ($this->AllowAddDeleteRow) {
+				if ($this->CurrentAction == "gridadd" || $this->CurrentAction == "gridedit") {
+					$item = $this->ListOptions->GetItem("griddelete");
+					if ($item) $item->Visible = TRUE;
+				}
 			}
 
 			// Get default search criteria
@@ -558,6 +618,124 @@ class cclase_cuenta_list extends cclase_cuenta {
 		$this->SetupSearchOptions();
 	}
 
+	//  Exit inline mode
+	function ClearInlineMode() {
+		$this->LastAction = $this->CurrentAction; // Save last action
+		$this->CurrentAction = ""; // Clear action
+		$_SESSION[EW_SESSION_INLINE_MODE] = ""; // Clear inline mode
+	}
+
+	// Switch to Grid Add mode
+	function GridAddMode() {
+		$_SESSION[EW_SESSION_INLINE_MODE] = "gridadd"; // Enabled grid add
+	}
+
+	// Switch to Grid Edit mode
+	function GridEditMode() {
+		$_SESSION[EW_SESSION_INLINE_MODE] = "gridedit"; // Enable grid edit
+	}
+
+	// Perform update to grid
+	function GridUpdate() {
+		global $conn, $Language, $objForm, $gsFormError;
+		$bGridUpdate = TRUE;
+
+		// Get old recordset
+		$this->CurrentFilter = $this->BuildKeyFilter();
+		if ($this->CurrentFilter == "")
+			$this->CurrentFilter = "0=1";
+		$sSql = $this->SQL();
+		if ($rs = $conn->Execute($sSql)) {
+			$rsold = $rs->GetRows();
+			$rs->Close();
+		}
+
+		// Call Grid Updating event
+		if (!$this->Grid_Updating($rsold)) {
+			if ($this->getFailureMessage() == "")
+				$this->setFailureMessage($Language->Phrase("GridEditCancelled")); // Set grid edit cancelled message
+			return FALSE;
+		}
+
+		// Begin transaction
+		$conn->BeginTrans();
+		$sKey = "";
+
+		// Update row index and get row key
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+
+		// Update all rows based on key
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+			$objForm->Index = $rowindex;
+			$rowkey = strval($objForm->GetValue($this->FormKeyName));
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+
+			// Load all values and keys
+			if ($rowaction <> "insertdelete") { // Skip insert then deleted rows
+				$this->LoadFormValues(); // Get form values
+				if ($rowaction == "" || $rowaction == "edit" || $rowaction == "delete") {
+					$bGridUpdate = $this->SetupKeyValues($rowkey); // Set up key values
+				} else {
+					$bGridUpdate = TRUE;
+				}
+
+				// Skip empty row
+				if ($rowaction == "insert" && $this->EmptyRow()) {
+
+					// No action required
+				// Validate form and insert/update/delete record
+
+				} elseif ($bGridUpdate) {
+					if ($rowaction == "delete") {
+						$this->CurrentFilter = $this->KeyFilter();
+						$bGridUpdate = $this->DeleteRows(); // Delete this row
+					} else if (!$this->ValidateForm()) {
+						$bGridUpdate = FALSE; // Form error, reset action
+						$this->setFailureMessage($gsFormError);
+					} else {
+						if ($rowaction == "insert") {
+							$bGridUpdate = $this->AddRow(); // Insert this row
+						} else {
+							if ($rowkey <> "") {
+								$this->SendEmail = FALSE; // Do not send email on update success
+								$bGridUpdate = $this->EditRow(); // Update this row
+							}
+						} // End update
+					}
+				}
+				if ($bGridUpdate) {
+					if ($sKey <> "") $sKey .= ", ";
+					$sKey .= $rowkey;
+				} else {
+					break;
+				}
+			}
+		}
+		if ($bGridUpdate) {
+			$conn->CommitTrans(); // Commit transaction
+
+			// Get new recordset
+			if ($rs = $conn->Execute($sSql)) {
+				$rsnew = $rs->GetRows();
+				$rs->Close();
+			}
+
+			// Call Grid_Updated event
+			$this->Grid_Updated($rsold, $rsnew);
+			if ($this->getSuccessMessage() == "")
+				$this->setSuccessMessage($Language->Phrase("UpdateSuccess")); // Set up update success message
+			$this->ClearInlineMode(); // Clear inline edit mode
+		} else {
+			$conn->RollbackTrans(); // Rollback transaction
+			if ($this->getFailureMessage() == "")
+				$this->setFailureMessage($Language->Phrase("UpdateFailed")); // Set update failed message
+		}
+		return $bGridUpdate;
+	}
+
 	// Build filter for all keys
 	function BuildKeyFilter() {
 		global $objForm;
@@ -596,9 +774,178 @@ class cclase_cuenta_list extends cclase_cuenta {
 		return TRUE;
 	}
 
+	// Perform Grid Add
+	function GridInsert() {
+		global $conn, $Language, $objForm, $gsFormError;
+		$rowindex = 1;
+		$bGridInsert = FALSE;
+
+		// Call Grid Inserting event
+		if (!$this->Grid_Inserting()) {
+			if ($this->getFailureMessage() == "") {
+				$this->setFailureMessage($Language->Phrase("GridAddCancelled")); // Set grid add cancelled message
+			}
+			return FALSE;
+		}
+
+		// Begin transaction
+		$conn->BeginTrans();
+
+		// Init key filter
+		$sWrkFilter = "";
+		$addcnt = 0;
+		$sKey = "";
+
+		// Get row count
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+
+		// Insert all rows
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+
+			// Load current row values
+			$objForm->Index = $rowindex;
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+			if ($rowaction <> "" && $rowaction <> "insert")
+				continue; // Skip
+			$this->LoadFormValues(); // Get form values
+			if (!$this->EmptyRow()) {
+				$addcnt++;
+				$this->SendEmail = FALSE; // Do not send email on insert success
+
+				// Validate form
+				if (!$this->ValidateForm()) {
+					$bGridInsert = FALSE; // Form error, reset action
+					$this->setFailureMessage($gsFormError);
+				} else {
+					$bGridInsert = $this->AddRow($this->OldRecordset); // Insert this row
+				}
+				if ($bGridInsert) {
+					if ($sKey <> "") $sKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
+					$sKey .= $this->idclase_cuenta->CurrentValue;
+
+					// Add filter for this record
+					$sFilter = $this->KeyFilter();
+					if ($sWrkFilter <> "") $sWrkFilter .= " OR ";
+					$sWrkFilter .= $sFilter;
+				} else {
+					break;
+				}
+			}
+		}
+		if ($addcnt == 0) { // No record inserted
+			$this->setFailureMessage($Language->Phrase("NoAddRecord"));
+			$bGridInsert = FALSE;
+		}
+		if ($bGridInsert) {
+			$conn->CommitTrans(); // Commit transaction
+
+			// Get new recordset
+			$this->CurrentFilter = $sWrkFilter;
+			$sSql = $this->SQL();
+			if ($rs = $conn->Execute($sSql)) {
+				$rsnew = $rs->GetRows();
+				$rs->Close();
+			}
+
+			// Call Grid_Inserted event
+			$this->Grid_Inserted($rsnew);
+			if ($this->getSuccessMessage() == "")
+				$this->setSuccessMessage($Language->Phrase("InsertSuccess")); // Set up insert success message
+			$this->ClearInlineMode(); // Clear grid add mode
+		} else {
+			$conn->RollbackTrans(); // Rollback transaction
+			if ($this->getFailureMessage() == "") {
+				$this->setFailureMessage($Language->Phrase("InsertFailed")); // Set insert failed message
+			}
+		}
+		return $bGridInsert;
+	}
+
+	// Check if empty row
+	function EmptyRow() {
+		global $objForm;
+		if ($objForm->HasValue("x_nomenclatura") && $objForm->HasValue("o_nomenclatura") && $this->nomenclatura->CurrentValue <> $this->nomenclatura->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_nombre") && $objForm->HasValue("o_nombre") && $this->nombre->CurrentValue <> $this->nombre->OldValue)
+			return FALSE;
+		return TRUE;
+	}
+
+	// Validate grid form
+	function ValidateGridForm() {
+		global $objForm;
+
+		// Get row count
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+
+		// Validate all records
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+
+			// Load current row values
+			$objForm->Index = $rowindex;
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+			if ($rowaction <> "delete" && $rowaction <> "insertdelete") {
+				$this->LoadFormValues(); // Get form values
+				if ($rowaction == "insert" && $this->EmptyRow()) {
+
+					// Ignore
+				} else if (!$this->ValidateForm()) {
+					return FALSE;
+				}
+			}
+		}
+		return TRUE;
+	}
+
+	// Get all form values of the grid
+	function GetGridFormValues() {
+		global $objForm;
+
+		// Get row count
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+		$rows = array();
+
+		// Loop through all records
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+
+			// Load current row values
+			$objForm->Index = $rowindex;
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+			if ($rowaction <> "delete" && $rowaction <> "insertdelete") {
+				$this->LoadFormValues(); // Get form values
+				if ($rowaction == "insert" && $this->EmptyRow()) {
+
+					// Ignore
+				} else {
+					$rows[] = $this->GetFieldValues("FormValue"); // Return row as array
+				}
+			}
+		}
+		return $rows; // Return as array of array
+	}
+
+	// Restore form values for current row
+	function RestoreCurrentRowFormValues($idx) {
+		global $objForm;
+
+		// Get row based on current index
+		$objForm->Index = $idx;
+		$this->LoadFormValues(); // Load form values
+	}
+
 	// Return basic search SQL
 	function BasicSearchSQL($arKeywords, $type) {
 		$sWhere = "";
+		$this->BuildBasicSearchSQL($sWhere, $this->nomenclatura, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->nombre, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->definicion, $arKeywords, $type);
 		return $sWhere;
@@ -753,9 +1100,8 @@ class cclase_cuenta_list extends cclase_cuenta {
 		if (@$_GET["order"] <> "") {
 			$this->CurrentOrder = ew_StripSlashes(@$_GET["order"]);
 			$this->CurrentOrderType = @$_GET["ordertype"];
-			$this->UpdateSort($this->nombre); // nombre
 			$this->UpdateSort($this->nomenclatura); // nomenclatura
-			$this->UpdateSort($this->estado); // estado
+			$this->UpdateSort($this->nombre); // nombre
 			$this->setStartRecordNumber(1); // Reset start position
 		}
 	}
@@ -788,9 +1134,8 @@ class cclase_cuenta_list extends cclase_cuenta {
 			if ($this->Command == "resetsort") {
 				$sOrderBy = "";
 				$this->setSessionOrderBy($sOrderBy);
-				$this->nombre->setSort("");
 				$this->nomenclatura->setSort("");
-				$this->estado->setSort("");
+				$this->nombre->setSort("");
 			}
 
 			// Reset start position
@@ -802,6 +1147,14 @@ class cclase_cuenta_list extends cclase_cuenta {
 	// Set up list options
 	function SetupListOptions() {
 		global $Security, $Language;
+
+		// "griddelete"
+		if ($this->AllowAddDeleteRow) {
+			$item = &$this->ListOptions->Add("griddelete");
+			$item->CssStyle = "white-space: nowrap;";
+			$item->OnLeft = FALSE;
+			$item->Visible = FALSE; // Default hidden
+		}
 
 		// Add group option item
 		$item = &$this->ListOptions->Add($this->ListOptions->GroupOptionName);
@@ -866,6 +1219,38 @@ class cclase_cuenta_list extends cclase_cuenta {
 	function RenderListOptions() {
 		global $Security, $Language, $objForm;
 		$this->ListOptions->LoadDefault();
+
+		// Set up row action and key
+		if (is_numeric($this->RowIndex) && $this->CurrentMode <> "view") {
+			$objForm->Index = $this->RowIndex;
+			$ActionName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormActionName);
+			$OldKeyName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormOldKeyName);
+			$KeyName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormKeyName);
+			$BlankRowName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormBlankRowName);
+			if ($this->RowAction <> "")
+				$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $ActionName . "\" id=\"" . $ActionName . "\" value=\"" . $this->RowAction . "\">";
+			if ($this->RowAction == "delete") {
+				$rowkey = $objForm->GetValue($this->FormKeyName);
+				$this->SetupKeyValues($rowkey);
+			}
+			if ($this->RowAction == "insert" && $this->CurrentAction == "F" && $this->EmptyRow())
+				$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $BlankRowName . "\" id=\"" . $BlankRowName . "\" value=\"1\">";
+		}
+
+		// "delete"
+		if ($this->AllowAddDeleteRow) {
+			if ($this->CurrentAction == "gridadd" || $this->CurrentAction == "gridedit") {
+				$option = &$this->ListOptions;
+				$option->UseButtonGroup = TRUE; // Use button group for grid delete button
+				$option->UseImageAndText = TRUE; // Use image and text for grid delete button
+				$oListOpt = &$option->Items["griddelete"];
+				if (is_numeric($this->RowIndex) && ($this->RowAction == "" || $this->RowAction == "edit")) { // Do not allow delete existing record
+					$oListOpt->Body = "&nbsp;";
+				} else {
+					$oListOpt->Body = "<a class=\"ewGridLink ewGridDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" href=\"javascript:void(0);\" onclick=\"ew_DeleteGridRow(this, " . $this->RowIndex . ");\">" . $Language->Phrase("DeleteLink") . "</a>";
+				}
+			}
+		}
 
 		// "view"
 		$oListOpt = &$this->ListOptions->Items["view"];
@@ -936,6 +1321,9 @@ class cclase_cuenta_list extends cclase_cuenta {
 		// "checkbox"
 		$oListOpt = &$this->ListOptions->Items["checkbox"];
 		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->idclase_cuenta->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event, this);'>";
+		if ($this->CurrentAction == "gridedit" && is_numeric($this->RowIndex)) {
+			$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $KeyName . "\" id=\"" . $KeyName . "\" value=\"" . $this->idclase_cuenta->CurrentValue . "\">";
+		}
 		$this->RenderListOptionsExt();
 
 		// Call ListOptions_Rendered event
@@ -946,6 +1334,45 @@ class cclase_cuenta_list extends cclase_cuenta {
 	function SetupOtherOptions() {
 		global $Language, $Security;
 		$options = &$this->OtherOptions;
+		$option = $options["addedit"];
+
+		// Add
+		$item = &$option->Add("add");
+		$item->Body = "<a class=\"ewAddEdit ewAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddLink")) . "\" href=\"" . ew_HtmlEncode($this->AddUrl) . "\">" . $Language->Phrase("AddLink") . "</a>";
+		$item->Visible = ($this->AddUrl <> "");
+		$item = &$option->Add("gridadd");
+		$item->Body = "<a class=\"ewAddEdit ewGridAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("GridAddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridAddLink")) . "\" href=\"" . ew_HtmlEncode($this->GridAddUrl) . "\">" . $Language->Phrase("GridAddLink") . "</a>";
+		$item->Visible = ($this->GridAddUrl <> "");
+		$option = $options["detail"];
+		$DetailTableLink = "";
+		$item = &$option->Add("detailadd_grupo_cuenta");
+		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($this->GetAddUrl() . "?" . EW_TABLE_SHOW_DETAIL . "=grupo_cuenta") . "\">" . $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["grupo_cuenta"]->TableCaption() . "</a>";
+		$item->Visible = ($GLOBALS["grupo_cuenta"]->DetailAdd);
+		if ($item->Visible) {
+			if ($DetailTableLink <> "") $DetailTableLink .= ",";
+			$DetailTableLink .= "grupo_cuenta";
+		}
+
+		// Add multiple details
+		if ($this->ShowMultipleDetails) {
+			$item = &$option->Add("detailsadd");
+			$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($this->GetAddUrl() . "?" . EW_TABLE_SHOW_DETAIL . "=" . $DetailTableLink) . "\">" . $Language->Phrase("AddMasterDetailLink") . "</a>";
+			$item->Visible = ($DetailTableLink <> "");
+
+			// Hide single master/detail items
+			$ar = explode(",", $DetailTableLink);
+			$cnt = count($ar);
+			for ($i = 0; $i < $cnt; $i++) {
+				if ($item = &$option->GetItem("detailadd_" . $ar[$i]))
+					$item->Visible = FALSE;
+			}
+		}
+
+		// Add grid edit
+		$option = $options["addedit"];
+		$item = &$option->Add("gridedit");
+		$item->Body = "<a class=\"ewAddEdit ewGridEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("GridEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GridEditUrl) . "\">" . $Language->Phrase("GridEditLink") . "</a>";
+		$item->Visible = ($this->GridEditUrl <> "");
 		$option = $options["action"];
 
 		// Set up options default
@@ -967,6 +1394,7 @@ class cclase_cuenta_list extends cclase_cuenta {
 	function RenderOtherOptions() {
 		global $Language, $Security;
 		$options = &$this->OtherOptions;
+		if ($this->CurrentAction <> "gridadd" && $this->CurrentAction <> "gridedit") { // Not grid add/edit mode
 			$option = &$options["action"];
 			foreach ($this->CustomActions as $action => $name) {
 
@@ -986,6 +1414,54 @@ class cclase_cuenta_list extends cclase_cuenta {
 				$item = &$option->GetItem("multiupdate");
 				if ($item) $item->Visible = FALSE;
 			}
+		} else { // Grid add/edit mode
+
+			// Hide all options first
+			foreach ($options as &$option)
+				$option->HideAllOptions();
+			if ($this->CurrentAction == "gridadd") {
+				if ($this->AllowAddDeleteRow) {
+
+					// Add add blank row
+					$option = &$options["addedit"];
+					$option->UseDropDownButton = FALSE;
+					$option->UseImageAndText = TRUE;
+					$item = &$option->Add("addblankrow");
+					$item->Body = "<a class=\"ewAddEdit ewAddBlankRow\" title=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" href=\"javascript:void(0);\" onclick=\"ew_AddGridRow(this);\">" . $Language->Phrase("AddBlankRow") . "</a>";
+					$item->Visible = TRUE;
+				}
+				$option = &$options["action"];
+				$option->UseDropDownButton = FALSE;
+				$option->UseImageAndText = TRUE;
+
+				// Add grid insert
+				$item = &$option->Add("gridinsert");
+				$item->Body = "<a class=\"ewAction ewGridInsert\" title=\"" . ew_HtmlTitle($Language->Phrase("GridInsertLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridInsertLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit();\">" . $Language->Phrase("GridInsertLink") . "</a>";
+
+				// Add grid cancel
+				$item = &$option->Add("gridcancel");
+				$item->Body = "<a class=\"ewAction ewGridCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" href=\"" . $this->PageUrl() . "a=cancel\">" . $Language->Phrase("GridCancelLink") . "</a>";
+			}
+			if ($this->CurrentAction == "gridedit") {
+				if ($this->AllowAddDeleteRow) {
+
+					// Add add blank row
+					$option = &$options["addedit"];
+					$option->UseDropDownButton = FALSE;
+					$option->UseImageAndText = TRUE;
+					$item = &$option->Add("addblankrow");
+					$item->Body = "<a class=\"ewAddEdit ewAddBlankRow\" title=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" href=\"javascript:void(0);\" onclick=\"ew_AddGridRow(this);\">" . $Language->Phrase("AddBlankRow") . "</a>";
+					$item->Visible = TRUE;
+				}
+				$option = &$options["action"];
+				$option->UseDropDownButton = FALSE;
+				$option->UseImageAndText = TRUE;
+					$item = &$option->Add("gridsave");
+					$item->Body = "<a class=\"ewAction ewGridSave\" title=\"" . ew_HtmlTitle($Language->Phrase("GridSaveLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridSaveLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit();\">" . $Language->Phrase("GridSaveLink") . "</a>";
+					$item = &$option->Add("gridcancel");
+					$item->Body = "<a class=\"ewAction ewGridCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" href=\"" . $this->PageUrl() . "a=cancel\">" . $Language->Phrase("GridCancelLink") . "</a>";
+			}
+		}
 	}
 
 	// Process custom action
@@ -1110,11 +1586,45 @@ class cclase_cuenta_list extends cclase_cuenta {
 		}
 	}
 
+	// Load default values
+	function LoadDefaultValues() {
+		$this->nomenclatura->CurrentValue = NULL;
+		$this->nomenclatura->OldValue = $this->nomenclatura->CurrentValue;
+		$this->nombre->CurrentValue = NULL;
+		$this->nombre->OldValue = $this->nombre->CurrentValue;
+	}
+
 	// Load basic search values
 	function LoadBasicSearchValues() {
 		$this->BasicSearch->Keyword = @$_GET[EW_TABLE_BASIC_SEARCH];
 		if ($this->BasicSearch->Keyword <> "") $this->Command = "search";
 		$this->BasicSearch->Type = @$_GET[EW_TABLE_BASIC_SEARCH_TYPE];
+	}
+
+	// Load form values
+	function LoadFormValues() {
+
+		// Load from form
+		global $objForm;
+		if (!$this->nomenclatura->FldIsDetailKey) {
+			$this->nomenclatura->setFormValue($objForm->GetValue("x_nomenclatura"));
+		}
+		$this->nomenclatura->setOldValue($objForm->GetValue("o_nomenclatura"));
+		if (!$this->nombre->FldIsDetailKey) {
+			$this->nombre->setFormValue($objForm->GetValue("x_nombre"));
+		}
+		$this->nombre->setOldValue($objForm->GetValue("o_nombre"));
+		if (!$this->idclase_cuenta->FldIsDetailKey && $this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
+			$this->idclase_cuenta->setFormValue($objForm->GetValue("x_idclase_cuenta"));
+	}
+
+	// Restore form values
+	function RestoreFormValues() {
+		global $objForm;
+		if ($this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
+			$this->idclase_cuenta->CurrentValue = $this->idclase_cuenta->FormValue;
+		$this->nomenclatura->CurrentValue = $this->nomenclatura->FormValue;
+		$this->nombre->CurrentValue = $this->nombre->FormValue;
 	}
 
 	// Load recordset
@@ -1164,10 +1674,10 @@ class cclase_cuenta_list extends cclase_cuenta {
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
 		$this->idclase_cuenta->setDbValue($rs->fields('idclase_cuenta'));
-		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->nomenclatura->setDbValue($rs->fields('nomenclatura'));
-		$this->definicion->setDbValue($rs->fields('definicion'));
+		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->estado->setDbValue($rs->fields('estado'));
+		$this->definicion->setDbValue($rs->fields('definicion'));
 	}
 
 	// Load DbValue from recordset
@@ -1175,10 +1685,10 @@ class cclase_cuenta_list extends cclase_cuenta {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
 		$this->idclase_cuenta->DbValue = $row['idclase_cuenta'];
-		$this->nombre->DbValue = $row['nombre'];
 		$this->nomenclatura->DbValue = $row['nomenclatura'];
-		$this->definicion->DbValue = $row['definicion'];
+		$this->nombre->DbValue = $row['nombre'];
 		$this->estado->DbValue = $row['estado'];
+		$this->definicion->DbValue = $row['definicion'];
 	}
 
 	// Load old record
@@ -1221,10 +1731,10 @@ class cclase_cuenta_list extends cclase_cuenta {
 
 		// Common render codes for all row types
 		// idclase_cuenta
-		// nombre
 		// nomenclatura
-		// definicion
+		// nombre
 		// estado
+		// definicion
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -1232,17 +1742,13 @@ class cclase_cuenta_list extends cclase_cuenta {
 			$this->idclase_cuenta->ViewValue = $this->idclase_cuenta->CurrentValue;
 			$this->idclase_cuenta->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
-
 			// nomenclatura
 			$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
 			$this->nomenclatura->ViewCustomAttributes = "";
 
-			// definicion
-			$this->definicion->ViewValue = $this->definicion->CurrentValue;
-			$this->definicion->ViewCustomAttributes = "";
+			// nombre
+			$this->nombre->ViewValue = $this->nombre->CurrentValue;
+			$this->nombre->ViewCustomAttributes = "";
 
 			// estado
 			if (strval($this->estado->CurrentValue) <> "") {
@@ -1261,25 +1767,279 @@ class cclase_cuenta_list extends cclase_cuenta {
 			}
 			$this->estado->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->LinkCustomAttributes = "";
-			$this->nombre->HrefValue = "";
-			$this->nombre->TooltipValue = "";
+			// definicion
+			$this->definicion->ViewValue = $this->definicion->CurrentValue;
+			$this->definicion->ViewCustomAttributes = "";
 
 			// nomenclatura
 			$this->nomenclatura->LinkCustomAttributes = "";
 			$this->nomenclatura->HrefValue = "";
 			$this->nomenclatura->TooltipValue = "";
 
-			// estado
-			$this->estado->LinkCustomAttributes = "";
-			$this->estado->HrefValue = "";
-			$this->estado->TooltipValue = "";
+			// nombre
+			$this->nombre->LinkCustomAttributes = "";
+			$this->nombre->HrefValue = "";
+			$this->nombre->TooltipValue = "";
+		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
+
+			// nomenclatura
+			$this->nomenclatura->EditAttrs["class"] = "form-control";
+			$this->nomenclatura->EditCustomAttributes = "";
+			$this->nomenclatura->EditValue = ew_HtmlEncode($this->nomenclatura->CurrentValue);
+			$this->nomenclatura->PlaceHolder = ew_RemoveHtml($this->nomenclatura->FldCaption());
+
+			// nombre
+			$this->nombre->EditAttrs["class"] = "form-control";
+			$this->nombre->EditCustomAttributes = "";
+			$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
+			$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
+
+			// Edit refer script
+			// nomenclatura
+
+			$this->nomenclatura->HrefValue = "";
+
+			// nombre
+			$this->nombre->HrefValue = "";
+		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
+
+			// nomenclatura
+			$this->nomenclatura->EditAttrs["class"] = "form-control";
+			$this->nomenclatura->EditCustomAttributes = "";
+			$this->nomenclatura->EditValue = ew_HtmlEncode($this->nomenclatura->CurrentValue);
+			$this->nomenclatura->PlaceHolder = ew_RemoveHtml($this->nomenclatura->FldCaption());
+
+			// nombre
+			$this->nombre->EditAttrs["class"] = "form-control";
+			$this->nombre->EditCustomAttributes = "";
+			$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
+			$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
+
+			// Edit refer script
+			// nomenclatura
+
+			$this->nomenclatura->HrefValue = "";
+
+			// nombre
+			$this->nombre->HrefValue = "";
+		}
+		if ($this->RowType == EW_ROWTYPE_ADD ||
+			$this->RowType == EW_ROWTYPE_EDIT ||
+			$this->RowType == EW_ROWTYPE_SEARCH) { // Add / Edit / Search row
+			$this->SetupFieldTitles();
 		}
 
 		// Call Row Rendered event
 		if ($this->RowType <> EW_ROWTYPE_AGGREGATEINIT)
 			$this->Row_Rendered();
+	}
+
+	// Validate form
+	function ValidateForm() {
+		global $Language, $gsFormError;
+
+		// Initialize form error message
+		$gsFormError = "";
+
+		// Check if validation required
+		if (!EW_SERVER_VALIDATE)
+			return ($gsFormError == "");
+
+		// Return validate result
+		$ValidateForm = ($gsFormError == "");
+
+		// Call Form_CustomValidate event
+		$sFormCustomError = "";
+		$ValidateForm = $ValidateForm && $this->Form_CustomValidate($sFormCustomError);
+		if ($sFormCustomError <> "") {
+			ew_AddMessage($gsFormError, $sFormCustomError);
+		}
+		return $ValidateForm;
+	}
+
+	//
+	// Delete records based on current filter
+	//
+	function DeleteRows() {
+		global $conn, $Language, $Security;
+		$DeleteRows = TRUE;
+		$sSql = $this->SQL();
+		$conn->raiseErrorFn = 'ew_ErrorFn';
+		$rs = $conn->Execute($sSql);
+		$conn->raiseErrorFn = '';
+		if ($rs === FALSE) {
+			return FALSE;
+		} elseif ($rs->EOF) {
+			$this->setFailureMessage($Language->Phrase("NoRecord")); // No record found
+			$rs->Close();
+			return FALSE;
+
+		//} else {
+		//	$this->LoadRowValues($rs); // Load row values
+
+		}
+		$rows = ($rs) ? $rs->GetRows() : array();
+
+		// Clone old rows
+		$rsold = $rows;
+		if ($rs)
+			$rs->Close();
+
+		// Call row deleting event
+		if ($DeleteRows) {
+			foreach ($rsold as $row) {
+				$DeleteRows = $this->Row_Deleting($row);
+				if (!$DeleteRows) break;
+			}
+		}
+		if ($DeleteRows) {
+			$sKey = "";
+			foreach ($rsold as $row) {
+				$sThisKey = "";
+				if ($sThisKey <> "") $sThisKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
+				$sThisKey .= $row['idclase_cuenta'];
+				$conn->raiseErrorFn = 'ew_ErrorFn';
+				$DeleteRows = $this->Delete($row); // Delete
+				$conn->raiseErrorFn = '';
+				if ($DeleteRows === FALSE)
+					break;
+				if ($sKey <> "") $sKey .= ", ";
+				$sKey .= $sThisKey;
+			}
+		} else {
+
+			// Set up error message
+			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
+
+				// Use the message, do nothing
+			} elseif ($this->CancelMessage <> "") {
+				$this->setFailureMessage($this->CancelMessage);
+				$this->CancelMessage = "";
+			} else {
+				$this->setFailureMessage($Language->Phrase("DeleteCancelled"));
+			}
+		}
+		if ($DeleteRows) {
+		} else {
+		}
+
+		// Call Row Deleted event
+		if ($DeleteRows) {
+			foreach ($rsold as $row) {
+				$this->Row_Deleted($row);
+			}
+		}
+		return $DeleteRows;
+	}
+
+	// Update record based on key values
+	function EditRow() {
+		global $conn, $Security, $Language;
+		$sFilter = $this->KeyFilter();
+		$this->CurrentFilter = $sFilter;
+		$sSql = $this->SQL();
+		$conn->raiseErrorFn = 'ew_ErrorFn';
+		$rs = $conn->Execute($sSql);
+		$conn->raiseErrorFn = '';
+		if ($rs === FALSE)
+			return FALSE;
+		if ($rs->EOF) {
+			$EditRow = FALSE; // Update Failed
+		} else {
+
+			// Save old values
+			$rsold = &$rs->fields;
+			$this->LoadDbValues($rsold);
+			$rsnew = array();
+
+			// nomenclatura
+			$this->nomenclatura->SetDbValueDef($rsnew, $this->nomenclatura->CurrentValue, NULL, $this->nomenclatura->ReadOnly);
+
+			// nombre
+			$this->nombre->SetDbValueDef($rsnew, $this->nombre->CurrentValue, NULL, $this->nombre->ReadOnly);
+
+			// Call Row Updating event
+			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
+			if ($bUpdateRow) {
+				$conn->raiseErrorFn = 'ew_ErrorFn';
+				if (count($rsnew) > 0)
+					$EditRow = $this->Update($rsnew, "", $rsold);
+				else
+					$EditRow = TRUE; // No field to update
+				$conn->raiseErrorFn = '';
+				if ($EditRow) {
+				}
+			} else {
+				if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
+
+					// Use the message, do nothing
+				} elseif ($this->CancelMessage <> "") {
+					$this->setFailureMessage($this->CancelMessage);
+					$this->CancelMessage = "";
+				} else {
+					$this->setFailureMessage($Language->Phrase("UpdateCancelled"));
+				}
+				$EditRow = FALSE;
+			}
+		}
+
+		// Call Row_Updated event
+		if ($EditRow)
+			$this->Row_Updated($rsold, $rsnew);
+		$rs->Close();
+		return $EditRow;
+	}
+
+	// Add record
+	function AddRow($rsold = NULL) {
+		global $conn, $Language, $Security;
+
+		// Load db values from rsold
+		if ($rsold) {
+			$this->LoadDbValues($rsold);
+		}
+		$rsnew = array();
+
+		// nomenclatura
+		$this->nomenclatura->SetDbValueDef($rsnew, $this->nomenclatura->CurrentValue, NULL, FALSE);
+
+		// nombre
+		$this->nombre->SetDbValueDef($rsnew, $this->nombre->CurrentValue, NULL, FALSE);
+
+		// Call Row Inserting event
+		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
+		$bInsertRow = $this->Row_Inserting($rs, $rsnew);
+		if ($bInsertRow) {
+			$conn->raiseErrorFn = 'ew_ErrorFn';
+			$AddRow = $this->Insert($rsnew);
+			$conn->raiseErrorFn = '';
+			if ($AddRow) {
+			}
+		} else {
+			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
+
+				// Use the message, do nothing
+			} elseif ($this->CancelMessage <> "") {
+				$this->setFailureMessage($this->CancelMessage);
+				$this->CancelMessage = "";
+			} else {
+				$this->setFailureMessage($Language->Phrase("InsertCancelled"));
+			}
+			$AddRow = FALSE;
+		}
+
+		// Get insert id if necessary
+		if ($AddRow) {
+			$this->idclase_cuenta->setDbValue($conn->Insert_ID());
+			$rsnew['idclase_cuenta'] = $this->idclase_cuenta->DbValue;
+		}
+		if ($AddRow) {
+
+			// Call Row Inserted event
+			$rs = ($rsold == NULL) ? NULL : $rsold->fields;
+			$this->Row_Inserted($rs, $rsnew);
+		}
+		return $AddRow;
 	}
 
 	// Set up Breadcrumb
@@ -1441,6 +2201,49 @@ var EW_PAGE_ID = clase_cuenta_list.PageID; // For backward compatibility
 var fclase_cuentalist = new ew_Form("fclase_cuentalist");
 fclase_cuentalist.FormKeyCountName = '<?php echo $clase_cuenta_list->FormKeyCountName ?>';
 
+// Validate form
+fclase_cuentalist.Validate = function() {
+	if (!this.ValidateRequired)
+		return true; // Ignore validation
+	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
+	this.PostAutoSuggest();
+	if ($fobj.find("#a_confirm").val() == "F")
+		return true;
+	var elm, felm, uelm, addcnt = 0;
+	var $k = $fobj.find("#" + this.FormKeyCountName); // Get key_count
+	var rowcnt = ($k[0]) ? parseInt($k.val(), 10) : 1;
+	var startcnt = (rowcnt == 0) ? 0 : 1; // Check rowcnt == 0 => Inline-Add
+	var gridinsert = $fobj.find("#a_list").val() == "gridinsert";
+	for (var i = startcnt; i <= rowcnt; i++) {
+		var infix = ($k[0]) ? String(i) : "";
+		$fobj.data("rowindex", infix);
+		var checkrow = (gridinsert) ? !this.EmptyRow(infix) : true;
+		if (checkrow) {
+			addcnt++;
+
+			// Set up row object
+			ew_ElementsToRow(fobj);
+
+			// Fire Form_CustomValidate event
+			if (!this.Form_CustomValidate(fobj))
+				return false;
+		} // End Grid Add checking
+	}
+	if (gridinsert && addcnt == 0) { // No row added
+		alert(ewLanguage.Phrase("NoAddRecord"));
+		return false;
+	}
+	return true;
+}
+
+// Check empty row
+fclase_cuentalist.EmptyRow = function(infix) {
+	var fobj = this.Form;
+	if (ew_ValueChanged(fobj, infix, "nomenclatura", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "nombre", false)) return false;
+	return true;
+}
+
 // Form_CustomValidate event
 fclase_cuentalist.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
@@ -1477,6 +2280,13 @@ var fclase_cuentalistsrch = new ew_Form("fclase_cuentalistsrch");
 <div class="clearfix"></div>
 </div>
 <?php
+if ($clase_cuenta->CurrentAction == "gridadd") {
+	$clase_cuenta->CurrentFilter = "0=1";
+	$clase_cuenta_list->StartRec = 1;
+	$clase_cuenta_list->DisplayRecs = $clase_cuenta->GridAddRowCount;
+	$clase_cuenta_list->TotalRecs = $clase_cuenta_list->DisplayRecs;
+	$clase_cuenta_list->StopRec = $clase_cuenta_list->DisplayRecs;
+} else {
 	$bSelectLimit = EW_SELECT_LIMIT;
 	if ($bSelectLimit) {
 		$clase_cuenta_list->TotalRecs = $clase_cuenta->SelectRecordCount();
@@ -1499,6 +2309,7 @@ var fclase_cuentalistsrch = new ew_Form("fclase_cuentalistsrch");
 		else
 			$clase_cuenta_list->setWarningMessage($Language->Phrase("NoRecord"));
 	}
+}
 $clase_cuenta_list->RenderOtherOptions();
 ?>
 <?php if ($clase_cuenta->Export == "" && $clase_cuenta->CurrentAction == "") { ?>
@@ -1553,30 +2364,21 @@ $clase_cuenta_list->RenderListOptions();
 // Render list options (header, left)
 $clase_cuenta_list->ListOptions->Render("header", "left");
 ?>
+<?php if ($clase_cuenta->nomenclatura->Visible) { // nomenclatura ?>
+	<?php if ($clase_cuenta->SortUrl($clase_cuenta->nomenclatura) == "") { ?>
+		<th data-name="nomenclatura"><div id="elh_clase_cuenta_nomenclatura" class="clase_cuenta_nomenclatura"><div class="ewTableHeaderCaption"><?php echo $clase_cuenta->nomenclatura->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="nomenclatura"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $clase_cuenta->SortUrl($clase_cuenta->nomenclatura) ?>',1);"><div id="elh_clase_cuenta_nomenclatura" class="clase_cuenta_nomenclatura">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $clase_cuenta->nomenclatura->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($clase_cuenta->nomenclatura->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($clase_cuenta->nomenclatura->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
 <?php if ($clase_cuenta->nombre->Visible) { // nombre ?>
 	<?php if ($clase_cuenta->SortUrl($clase_cuenta->nombre) == "") { ?>
 		<th data-name="nombre"><div id="elh_clase_cuenta_nombre" class="clase_cuenta_nombre"><div class="ewTableHeaderCaption"><?php echo $clase_cuenta->nombre->FldCaption() ?></div></div></th>
 	<?php } else { ?>
 		<th data-name="nombre"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $clase_cuenta->SortUrl($clase_cuenta->nombre) ?>',1);"><div id="elh_clase_cuenta_nombre" class="clase_cuenta_nombre">
 			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $clase_cuenta->nombre->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($clase_cuenta->nombre->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($clase_cuenta->nombre->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($clase_cuenta->nomenclatura->Visible) { // nomenclatura ?>
-	<?php if ($clase_cuenta->SortUrl($clase_cuenta->nomenclatura) == "") { ?>
-		<th data-name="nomenclatura"><div id="elh_clase_cuenta_nomenclatura" class="clase_cuenta_nomenclatura"><div class="ewTableHeaderCaption"><?php echo $clase_cuenta->nomenclatura->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="nomenclatura"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $clase_cuenta->SortUrl($clase_cuenta->nomenclatura) ?>',1);"><div id="elh_clase_cuenta_nomenclatura" class="clase_cuenta_nomenclatura">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $clase_cuenta->nomenclatura->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($clase_cuenta->nomenclatura->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($clase_cuenta->nomenclatura->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($clase_cuenta->estado->Visible) { // estado ?>
-	<?php if ($clase_cuenta->SortUrl($clase_cuenta->estado) == "") { ?>
-		<th data-name="estado"><div id="elh_clase_cuenta_estado" class="clase_cuenta_estado"><div class="ewTableHeaderCaption"><?php echo $clase_cuenta->estado->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="estado"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $clase_cuenta->SortUrl($clase_cuenta->estado) ?>',1);"><div id="elh_clase_cuenta_estado" class="clase_cuenta_estado">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $clase_cuenta->estado->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($clase_cuenta->estado->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($clase_cuenta->estado->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -1599,6 +2401,15 @@ if ($clase_cuenta->ExportAll && $clase_cuenta->Export <> "") {
 	else
 		$clase_cuenta_list->StopRec = $clase_cuenta_list->TotalRecs;
 }
+
+// Restore number of post back records
+if ($objForm) {
+	$objForm->Index = -1;
+	if ($objForm->HasValue($clase_cuenta_list->FormKeyCountName) && ($clase_cuenta->CurrentAction == "gridadd" || $clase_cuenta->CurrentAction == "gridedit" || $clase_cuenta->CurrentAction == "F")) {
+		$clase_cuenta_list->KeyCount = $objForm->GetValue($clase_cuenta_list->FormKeyCountName);
+		$clase_cuenta_list->StopRec = $clase_cuenta_list->StartRec + $clase_cuenta_list->KeyCount - 1;
+	}
+}
 $clase_cuenta_list->RecCnt = $clase_cuenta_list->StartRec - 1;
 if ($clase_cuenta_list->Recordset && !$clase_cuenta_list->Recordset->EOF) {
 	$clase_cuenta_list->Recordset->MoveFirst();
@@ -1613,10 +2424,24 @@ if ($clase_cuenta_list->Recordset && !$clase_cuenta_list->Recordset->EOF) {
 $clase_cuenta->RowType = EW_ROWTYPE_AGGREGATEINIT;
 $clase_cuenta->ResetAttrs();
 $clase_cuenta_list->RenderRow();
+if ($clase_cuenta->CurrentAction == "gridadd")
+	$clase_cuenta_list->RowIndex = 0;
+if ($clase_cuenta->CurrentAction == "gridedit")
+	$clase_cuenta_list->RowIndex = 0;
 while ($clase_cuenta_list->RecCnt < $clase_cuenta_list->StopRec) {
 	$clase_cuenta_list->RecCnt++;
 	if (intval($clase_cuenta_list->RecCnt) >= intval($clase_cuenta_list->StartRec)) {
 		$clase_cuenta_list->RowCnt++;
+		if ($clase_cuenta->CurrentAction == "gridadd" || $clase_cuenta->CurrentAction == "gridedit" || $clase_cuenta->CurrentAction == "F") {
+			$clase_cuenta_list->RowIndex++;
+			$objForm->Index = $clase_cuenta_list->RowIndex;
+			if ($objForm->HasValue($clase_cuenta_list->FormActionName))
+				$clase_cuenta_list->RowAction = strval($objForm->GetValue($clase_cuenta_list->FormActionName));
+			elseif ($clase_cuenta->CurrentAction == "gridadd")
+				$clase_cuenta_list->RowAction = "insert";
+			else
+				$clase_cuenta_list->RowAction = "";
+		}
 
 		// Set up key count
 		$clase_cuenta_list->KeyCount = $clase_cuenta_list->RowIndex;
@@ -1625,10 +2450,28 @@ while ($clase_cuenta_list->RecCnt < $clase_cuenta_list->StopRec) {
 		$clase_cuenta->ResetAttrs();
 		$clase_cuenta->CssClass = "";
 		if ($clase_cuenta->CurrentAction == "gridadd") {
+			$clase_cuenta_list->LoadDefaultValues(); // Load default values
 		} else {
 			$clase_cuenta_list->LoadRowValues($clase_cuenta_list->Recordset); // Load row values
 		}
 		$clase_cuenta->RowType = EW_ROWTYPE_VIEW; // Render view
+		if ($clase_cuenta->CurrentAction == "gridadd") // Grid add
+			$clase_cuenta->RowType = EW_ROWTYPE_ADD; // Render add
+		if ($clase_cuenta->CurrentAction == "gridadd" && $clase_cuenta->EventCancelled && !$objForm->HasValue("k_blankrow")) // Insert failed
+			$clase_cuenta_list->RestoreCurrentRowFormValues($clase_cuenta_list->RowIndex); // Restore form values
+		if ($clase_cuenta->CurrentAction == "gridedit") { // Grid edit
+			if ($clase_cuenta->EventCancelled) {
+				$clase_cuenta_list->RestoreCurrentRowFormValues($clase_cuenta_list->RowIndex); // Restore form values
+			}
+			if ($clase_cuenta_list->RowAction == "insert")
+				$clase_cuenta->RowType = EW_ROWTYPE_ADD; // Render add
+			else
+				$clase_cuenta->RowType = EW_ROWTYPE_EDIT; // Render edit
+		}
+		if ($clase_cuenta->CurrentAction == "gridedit" && ($clase_cuenta->RowType == EW_ROWTYPE_EDIT || $clase_cuenta->RowType == EW_ROWTYPE_ADD) && $clase_cuenta->EventCancelled) // Update failed
+			$clase_cuenta_list->RestoreCurrentRowFormValues($clase_cuenta_list->RowIndex); // Restore form values
+		if ($clase_cuenta->RowType == EW_ROWTYPE_EDIT) // Edit row
+			$clase_cuenta_list->EditRowCnt++;
 
 		// Set up row id / data-rowindex
 		$clase_cuenta->RowAttrs = array_merge($clase_cuenta->RowAttrs, array('data-rowindex'=>$clase_cuenta_list->RowCnt, 'id'=>'r' . $clase_cuenta_list->RowCnt . '_clase_cuenta', 'data-rowtype'=>$clase_cuenta->RowType));
@@ -1638,6 +2481,9 @@ while ($clase_cuenta_list->RecCnt < $clase_cuenta_list->StopRec) {
 
 		// Render list options
 		$clase_cuenta_list->RenderListOptions();
+
+		// Skip delete row / empty row for confirm page
+		if ($clase_cuenta_list->RowAction <> "delete" && $clase_cuenta_list->RowAction <> "insertdelete" && !($clase_cuenta_list->RowAction == "insert" && $clase_cuenta->CurrentAction == "F" && $clase_cuenta_list->EmptyRow())) {
 ?>
 	<tr<?php echo $clase_cuenta->RowAttributes() ?>>
 <?php
@@ -1645,22 +2491,49 @@ while ($clase_cuenta_list->RecCnt < $clase_cuenta_list->StopRec) {
 // Render list options (body, left)
 $clase_cuenta_list->ListOptions->Render("body", "left", $clase_cuenta_list->RowCnt);
 ?>
-	<?php if ($clase_cuenta->nombre->Visible) { // nombre ?>
-		<td data-name="nombre"<?php echo $clase_cuenta->nombre->CellAttributes() ?>>
-<span<?php echo $clase_cuenta->nombre->ViewAttributes() ?>>
-<?php echo $clase_cuenta->nombre->ListViewValue() ?></span>
-<a id="<?php echo $clase_cuenta_list->PageObjName . "_row_" . $clase_cuenta_list->RowCnt ?>"></a></td>
-	<?php } ?>
 	<?php if ($clase_cuenta->nomenclatura->Visible) { // nomenclatura ?>
 		<td data-name="nomenclatura"<?php echo $clase_cuenta->nomenclatura->CellAttributes() ?>>
+<?php if ($clase_cuenta->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $clase_cuenta_list->RowCnt ?>_clase_cuenta_nomenclatura" class="form-group clase_cuenta_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x<?php echo $clase_cuenta_list->RowIndex ?>_nomenclatura" id="x<?php echo $clase_cuenta_list->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($clase_cuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $clase_cuenta->nomenclatura->EditValue ?>"<?php echo $clase_cuenta->nomenclatura->EditAttributes() ?>>
+</span>
+<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $clase_cuenta_list->RowIndex ?>_nomenclatura" id="o<?php echo $clase_cuenta_list->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($clase_cuenta->nomenclatura->OldValue) ?>">
+<?php } ?>
+<?php if ($clase_cuenta->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $clase_cuenta_list->RowCnt ?>_clase_cuenta_nomenclatura" class="form-group clase_cuenta_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x<?php echo $clase_cuenta_list->RowIndex ?>_nomenclatura" id="x<?php echo $clase_cuenta_list->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($clase_cuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $clase_cuenta->nomenclatura->EditValue ?>"<?php echo $clase_cuenta->nomenclatura->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($clase_cuenta->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span<?php echo $clase_cuenta->nomenclatura->ViewAttributes() ?>>
 <?php echo $clase_cuenta->nomenclatura->ListViewValue() ?></span>
-</td>
+<?php } ?>
+<a id="<?php echo $clase_cuenta_list->PageObjName . "_row_" . $clase_cuenta_list->RowCnt ?>"></a></td>
 	<?php } ?>
-	<?php if ($clase_cuenta->estado->Visible) { // estado ?>
-		<td data-name="estado"<?php echo $clase_cuenta->estado->CellAttributes() ?>>
-<span<?php echo $clase_cuenta->estado->ViewAttributes() ?>>
-<?php echo $clase_cuenta->estado->ListViewValue() ?></span>
+<?php if ($clase_cuenta->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<input type="hidden" data-field="x_idclase_cuenta" name="x<?php echo $clase_cuenta_list->RowIndex ?>_idclase_cuenta" id="x<?php echo $clase_cuenta_list->RowIndex ?>_idclase_cuenta" value="<?php echo ew_HtmlEncode($clase_cuenta->idclase_cuenta->CurrentValue) ?>">
+<input type="hidden" data-field="x_idclase_cuenta" name="o<?php echo $clase_cuenta_list->RowIndex ?>_idclase_cuenta" id="o<?php echo $clase_cuenta_list->RowIndex ?>_idclase_cuenta" value="<?php echo ew_HtmlEncode($clase_cuenta->idclase_cuenta->OldValue) ?>">
+<?php } ?>
+<?php if ($clase_cuenta->RowType == EW_ROWTYPE_EDIT || $clase_cuenta->CurrentMode == "edit") { ?>
+<input type="hidden" data-field="x_idclase_cuenta" name="x<?php echo $clase_cuenta_list->RowIndex ?>_idclase_cuenta" id="x<?php echo $clase_cuenta_list->RowIndex ?>_idclase_cuenta" value="<?php echo ew_HtmlEncode($clase_cuenta->idclase_cuenta->CurrentValue) ?>">
+<?php } ?>
+	<?php if ($clase_cuenta->nombre->Visible) { // nombre ?>
+		<td data-name="nombre"<?php echo $clase_cuenta->nombre->CellAttributes() ?>>
+<?php if ($clase_cuenta->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $clase_cuenta_list->RowCnt ?>_clase_cuenta_nombre" class="form-group clase_cuenta_nombre">
+<input type="text" data-field="x_nombre" name="x<?php echo $clase_cuenta_list->RowIndex ?>_nombre" id="x<?php echo $clase_cuenta_list->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($clase_cuenta->nombre->PlaceHolder) ?>" value="<?php echo $clase_cuenta->nombre->EditValue ?>"<?php echo $clase_cuenta->nombre->EditAttributes() ?>>
+</span>
+<input type="hidden" data-field="x_nombre" name="o<?php echo $clase_cuenta_list->RowIndex ?>_nombre" id="o<?php echo $clase_cuenta_list->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($clase_cuenta->nombre->OldValue) ?>">
+<?php } ?>
+<?php if ($clase_cuenta->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $clase_cuenta_list->RowCnt ?>_clase_cuenta_nombre" class="form-group clase_cuenta_nombre">
+<input type="text" data-field="x_nombre" name="x<?php echo $clase_cuenta_list->RowIndex ?>_nombre" id="x<?php echo $clase_cuenta_list->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($clase_cuenta->nombre->PlaceHolder) ?>" value="<?php echo $clase_cuenta->nombre->EditValue ?>"<?php echo $clase_cuenta->nombre->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($clase_cuenta->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span<?php echo $clase_cuenta->nombre->ViewAttributes() ?>>
+<?php echo $clase_cuenta->nombre->ListViewValue() ?></span>
+<?php } ?>
 </td>
 	<?php } ?>
 <?php
@@ -1669,14 +2542,82 @@ $clase_cuenta_list->ListOptions->Render("body", "left", $clase_cuenta_list->RowC
 $clase_cuenta_list->ListOptions->Render("body", "right", $clase_cuenta_list->RowCnt);
 ?>
 	</tr>
+<?php if ($clase_cuenta->RowType == EW_ROWTYPE_ADD || $clase_cuenta->RowType == EW_ROWTYPE_EDIT) { ?>
+<script type="text/javascript">
+fclase_cuentalist.UpdateOpts(<?php echo $clase_cuenta_list->RowIndex ?>);
+</script>
+<?php } ?>
 <?php
 	}
+	} // End delete row checking
 	if ($clase_cuenta->CurrentAction <> "gridadd")
-		$clase_cuenta_list->Recordset->MoveNext();
+		if (!$clase_cuenta_list->Recordset->EOF) $clase_cuenta_list->Recordset->MoveNext();
+}
+?>
+<?php
+	if ($clase_cuenta->CurrentAction == "gridadd" || $clase_cuenta->CurrentAction == "gridedit") {
+		$clase_cuenta_list->RowIndex = '$rowindex$';
+		$clase_cuenta_list->LoadDefaultValues();
+
+		// Set row properties
+		$clase_cuenta->ResetAttrs();
+		$clase_cuenta->RowAttrs = array_merge($clase_cuenta->RowAttrs, array('data-rowindex'=>$clase_cuenta_list->RowIndex, 'id'=>'r0_clase_cuenta', 'data-rowtype'=>EW_ROWTYPE_ADD));
+		ew_AppendClass($clase_cuenta->RowAttrs["class"], "ewTemplate");
+		$clase_cuenta->RowType = EW_ROWTYPE_ADD;
+
+		// Render row
+		$clase_cuenta_list->RenderRow();
+
+		// Render list options
+		$clase_cuenta_list->RenderListOptions();
+		$clase_cuenta_list->StartRowCnt = 0;
+?>
+	<tr<?php echo $clase_cuenta->RowAttributes() ?>>
+<?php
+
+// Render list options (body, left)
+$clase_cuenta_list->ListOptions->Render("body", "left", $clase_cuenta_list->RowIndex);
+?>
+	<?php if ($clase_cuenta->nomenclatura->Visible) { // nomenclatura ?>
+		<td>
+<span id="el$rowindex$_clase_cuenta_nomenclatura" class="form-group clase_cuenta_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x<?php echo $clase_cuenta_list->RowIndex ?>_nomenclatura" id="x<?php echo $clase_cuenta_list->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($clase_cuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $clase_cuenta->nomenclatura->EditValue ?>"<?php echo $clase_cuenta->nomenclatura->EditAttributes() ?>>
+</span>
+<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $clase_cuenta_list->RowIndex ?>_nomenclatura" id="o<?php echo $clase_cuenta_list->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($clase_cuenta->nomenclatura->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($clase_cuenta->nombre->Visible) { // nombre ?>
+		<td>
+<span id="el$rowindex$_clase_cuenta_nombre" class="form-group clase_cuenta_nombre">
+<input type="text" data-field="x_nombre" name="x<?php echo $clase_cuenta_list->RowIndex ?>_nombre" id="x<?php echo $clase_cuenta_list->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($clase_cuenta->nombre->PlaceHolder) ?>" value="<?php echo $clase_cuenta->nombre->EditValue ?>"<?php echo $clase_cuenta->nombre->EditAttributes() ?>>
+</span>
+<input type="hidden" data-field="x_nombre" name="o<?php echo $clase_cuenta_list->RowIndex ?>_nombre" id="o<?php echo $clase_cuenta_list->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($clase_cuenta->nombre->OldValue) ?>">
+</td>
+	<?php } ?>
+<?php
+
+// Render list options (body, right)
+$clase_cuenta_list->ListOptions->Render("body", "right", $clase_cuenta_list->RowCnt);
+?>
+<script type="text/javascript">
+fclase_cuentalist.UpdateOpts(<?php echo $clase_cuenta_list->RowIndex ?>);
+</script>
+	</tr>
+<?php
 }
 ?>
 </tbody>
 </table>
+<?php } ?>
+<?php if ($clase_cuenta->CurrentAction == "gridadd") { ?>
+<input type="hidden" name="a_list" id="a_list" value="gridinsert">
+<input type="hidden" name="<?php echo $clase_cuenta_list->FormKeyCountName ?>" id="<?php echo $clase_cuenta_list->FormKeyCountName ?>" value="<?php echo $clase_cuenta_list->KeyCount ?>">
+<?php echo $clase_cuenta_list->MultiSelectKey ?>
+<?php } ?>
+<?php if ($clase_cuenta->CurrentAction == "gridedit") { ?>
+<input type="hidden" name="a_list" id="a_list" value="gridupdate">
+<input type="hidden" name="<?php echo $clase_cuenta_list->FormKeyCountName ?>" id="<?php echo $clase_cuenta_list->FormKeyCountName ?>" value="<?php echo $clase_cuenta_list->KeyCount ?>">
+<?php echo $clase_cuenta_list->MultiSelectKey ?>
 <?php } ?>
 <?php if ($clase_cuenta->CurrentAction == "") { ?>
 <input type="hidden" name="a_list" id="a_list" value="">

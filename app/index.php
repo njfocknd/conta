@@ -21,7 +21,7 @@ class cdefault {
 	var $PageID = 'default';
 
 	// Project ID
-	var $ProjectID = "{5B8C292A-87A7-44A6-9434-2D0CECD099FC}";
+	var $ProjectID = "{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}";
 
 	// Page object name
 	var $PageObjName = 'default';

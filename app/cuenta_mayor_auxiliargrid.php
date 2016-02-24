@@ -46,18 +46,15 @@ fcuenta_mayor_auxiliargrid.Validate = function() {
 		var checkrow = (gridinsert) ? !this.EmptyRow(infix) : true;
 		if (checkrow) {
 			addcnt++;
-			elm = this.GetElements("x" + infix + "_idcuenta_mayor_principal");
-			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $cuenta_mayor_auxiliar->idcuenta_mayor_principal->FldCaption(), $cuenta_mayor_auxiliar->idcuenta_mayor_principal->ReqErrMsg)) ?>");
 			elm = this.GetElements("x" + infix + "_nomeclatura");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $cuenta_mayor_auxiliar->nomeclatura->FldCaption(), $cuenta_mayor_auxiliar->nomeclatura->ReqErrMsg)) ?>");
 			elm = this.GetElements("x" + infix + "_nombre");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $cuenta_mayor_auxiliar->nombre->FldCaption(), $cuenta_mayor_auxiliar->nombre->ReqErrMsg)) ?>");
-			elm = this.GetElements("x" + infix + "_estado");
+			elm = this.GetElements("x" + infix + "_idcuenta_mayor_principal");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $cuenta_mayor_auxiliar->estado->FldCaption(), $cuenta_mayor_auxiliar->estado->ReqErrMsg)) ?>");
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $cuenta_mayor_auxiliar->idcuenta_mayor_principal->FldCaption(), $cuenta_mayor_auxiliar->idcuenta_mayor_principal->ReqErrMsg)) ?>");
 
 			// Set up row object
 			ew_ElementsToRow(fobj);
@@ -73,10 +70,9 @@ fcuenta_mayor_auxiliargrid.Validate = function() {
 // Check empty row
 fcuenta_mayor_auxiliargrid.EmptyRow = function(infix) {
 	var fobj = this.Form;
-	if (ew_ValueChanged(fobj, infix, "idcuenta_mayor_principal", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "nomeclatura", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "nombre", false)) return false;
-	if (ew_ValueChanged(fobj, infix, "estado", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "idcuenta_mayor_principal", false)) return false;
 	return true;
 }
 
@@ -164,15 +160,6 @@ $cuenta_mayor_auxiliar_grid->RenderListOptions();
 // Render list options (header, left)
 $cuenta_mayor_auxiliar_grid->ListOptions->Render("header", "left");
 ?>
-<?php if ($cuenta_mayor_auxiliar->idcuenta_mayor_principal->Visible) { // idcuenta_mayor_principal ?>
-	<?php if ($cuenta_mayor_auxiliar->SortUrl($cuenta_mayor_auxiliar->idcuenta_mayor_principal) == "") { ?>
-		<th data-name="idcuenta_mayor_principal"><div id="elh_cuenta_mayor_auxiliar_idcuenta_mayor_principal" class="cuenta_mayor_auxiliar_idcuenta_mayor_principal"><div class="ewTableHeaderCaption"><?php echo $cuenta_mayor_auxiliar->idcuenta_mayor_principal->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="idcuenta_mayor_principal"><div><div id="elh_cuenta_mayor_auxiliar_idcuenta_mayor_principal" class="cuenta_mayor_auxiliar_idcuenta_mayor_principal">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $cuenta_mayor_auxiliar->idcuenta_mayor_principal->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($cuenta_mayor_auxiliar->idcuenta_mayor_principal->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($cuenta_mayor_auxiliar->idcuenta_mayor_principal->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
 <?php if ($cuenta_mayor_auxiliar->nomeclatura->Visible) { // nomeclatura ?>
 	<?php if ($cuenta_mayor_auxiliar->SortUrl($cuenta_mayor_auxiliar->nomeclatura) == "") { ?>
 		<th data-name="nomeclatura"><div id="elh_cuenta_mayor_auxiliar_nomeclatura" class="cuenta_mayor_auxiliar_nomeclatura"><div class="ewTableHeaderCaption"><?php echo $cuenta_mayor_auxiliar->nomeclatura->FldCaption() ?></div></div></th>
@@ -191,12 +178,12 @@ $cuenta_mayor_auxiliar_grid->ListOptions->Render("header", "left");
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
-<?php if ($cuenta_mayor_auxiliar->estado->Visible) { // estado ?>
-	<?php if ($cuenta_mayor_auxiliar->SortUrl($cuenta_mayor_auxiliar->estado) == "") { ?>
-		<th data-name="estado"><div id="elh_cuenta_mayor_auxiliar_estado" class="cuenta_mayor_auxiliar_estado"><div class="ewTableHeaderCaption"><?php echo $cuenta_mayor_auxiliar->estado->FldCaption() ?></div></div></th>
+<?php if ($cuenta_mayor_auxiliar->idcuenta_mayor_principal->Visible) { // idcuenta_mayor_principal ?>
+	<?php if ($cuenta_mayor_auxiliar->SortUrl($cuenta_mayor_auxiliar->idcuenta_mayor_principal) == "") { ?>
+		<th data-name="idcuenta_mayor_principal"><div id="elh_cuenta_mayor_auxiliar_idcuenta_mayor_principal" class="cuenta_mayor_auxiliar_idcuenta_mayor_principal"><div class="ewTableHeaderCaption"><?php echo $cuenta_mayor_auxiliar->idcuenta_mayor_principal->FldCaption() ?></div></div></th>
 	<?php } else { ?>
-		<th data-name="estado"><div><div id="elh_cuenta_mayor_auxiliar_estado" class="cuenta_mayor_auxiliar_estado">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $cuenta_mayor_auxiliar->estado->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($cuenta_mayor_auxiliar->estado->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($cuenta_mayor_auxiliar->estado->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+		<th data-name="idcuenta_mayor_principal"><div><div id="elh_cuenta_mayor_auxiliar_idcuenta_mayor_principal" class="cuenta_mayor_auxiliar_idcuenta_mayor_principal">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $cuenta_mayor_auxiliar->idcuenta_mayor_principal->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($cuenta_mayor_auxiliar->idcuenta_mayor_principal->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($cuenta_mayor_auxiliar->idcuenta_mayor_principal->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -309,6 +296,55 @@ while ($cuenta_mayor_auxiliar_grid->RecCnt < $cuenta_mayor_auxiliar_grid->StopRe
 // Render list options (body, left)
 $cuenta_mayor_auxiliar_grid->ListOptions->Render("body", "left", $cuenta_mayor_auxiliar_grid->RowCnt);
 ?>
+	<?php if ($cuenta_mayor_auxiliar->nomeclatura->Visible) { // nomeclatura ?>
+		<td data-name="nomeclatura"<?php echo $cuenta_mayor_auxiliar->nomeclatura->CellAttributes() ?>>
+<?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $cuenta_mayor_auxiliar_grid->RowCnt ?>_cuenta_mayor_auxiliar_nomeclatura" class="form-group cuenta_mayor_auxiliar_nomeclatura">
+<input type="text" data-field="x_nomeclatura" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nomeclatura->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_auxiliar->nomeclatura->EditValue ?>"<?php echo $cuenta_mayor_auxiliar->nomeclatura->EditAttributes() ?>>
+</span>
+<input type="hidden" data-field="x_nomeclatura" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nomeclatura->OldValue) ?>">
+<?php } ?>
+<?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $cuenta_mayor_auxiliar_grid->RowCnt ?>_cuenta_mayor_auxiliar_nomeclatura" class="form-group cuenta_mayor_auxiliar_nomeclatura">
+<input type="text" data-field="x_nomeclatura" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nomeclatura->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_auxiliar->nomeclatura->EditValue ?>"<?php echo $cuenta_mayor_auxiliar->nomeclatura->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span<?php echo $cuenta_mayor_auxiliar->nomeclatura->ViewAttributes() ?>>
+<?php echo $cuenta_mayor_auxiliar->nomeclatura->ListViewValue() ?></span>
+<input type="hidden" data-field="x_nomeclatura" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nomeclatura->FormValue) ?>">
+<input type="hidden" data-field="x_nomeclatura" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nomeclatura->OldValue) ?>">
+<?php } ?>
+<a id="<?php echo $cuenta_mayor_auxiliar_grid->PageObjName . "_row_" . $cuenta_mayor_auxiliar_grid->RowCnt ?>"></a></td>
+	<?php } ?>
+<?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<input type="hidden" data-field="x_idcuenta_mayor_auxiliar" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_auxiliar" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_auxiliar" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->idcuenta_mayor_auxiliar->CurrentValue) ?>">
+<input type="hidden" data-field="x_idcuenta_mayor_auxiliar" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_auxiliar" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_auxiliar" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->idcuenta_mayor_auxiliar->OldValue) ?>">
+<?php } ?>
+<?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_EDIT || $cuenta_mayor_auxiliar->CurrentMode == "edit") { ?>
+<input type="hidden" data-field="x_idcuenta_mayor_auxiliar" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_auxiliar" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_auxiliar" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->idcuenta_mayor_auxiliar->CurrentValue) ?>">
+<?php } ?>
+	<?php if ($cuenta_mayor_auxiliar->nombre->Visible) { // nombre ?>
+		<td data-name="nombre"<?php echo $cuenta_mayor_auxiliar->nombre->CellAttributes() ?>>
+<?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $cuenta_mayor_auxiliar_grid->RowCnt ?>_cuenta_mayor_auxiliar_nombre" class="form-group cuenta_mayor_auxiliar_nombre">
+<input type="text" data-field="x_nombre" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_auxiliar->nombre->EditValue ?>"<?php echo $cuenta_mayor_auxiliar->nombre->EditAttributes() ?>>
+</span>
+<input type="hidden" data-field="x_nombre" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->OldValue) ?>">
+<?php } ?>
+<?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $cuenta_mayor_auxiliar_grid->RowCnt ?>_cuenta_mayor_auxiliar_nombre" class="form-group cuenta_mayor_auxiliar_nombre">
+<input type="text" data-field="x_nombre" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_auxiliar->nombre->EditValue ?>"<?php echo $cuenta_mayor_auxiliar->nombre->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span<?php echo $cuenta_mayor_auxiliar->nombre->ViewAttributes() ?>>
+<?php echo $cuenta_mayor_auxiliar->nombre->ListViewValue() ?></span>
+<input type="hidden" data-field="x_nombre" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->FormValue) ?>">
+<input type="hidden" data-field="x_nombre" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->OldValue) ?>">
+<?php } ?>
+</td>
+	<?php } ?>
 	<?php if ($cuenta_mayor_auxiliar->idcuenta_mayor_principal->Visible) { // idcuenta_mayor_principal ?>
 		<td data-name="idcuenta_mayor_principal"<?php echo $cuenta_mayor_auxiliar->idcuenta_mayor_principal->CellAttributes() ?>>
 <?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_ADD) { // Add record ?>
@@ -342,6 +378,10 @@ if (@$emptywrk) $cuenta_mayor_auxiliar->idcuenta_mayor_principal->OldValue = "";
 <?php
  $sSqlWrk = "SELECT `idcuenta_mayor_principal`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta_mayor_principal`";
  $sWhereWrk = "";
+ $lookuptblfilter = "`estado` = 'Activo'";
+ if (strval($lookuptblfilter) <> "") {
+ 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
+ }
 
  // Call Lookup selecting
  $cuenta_mayor_auxiliar->Lookup_Selecting($cuenta_mayor_auxiliar->idcuenta_mayor_principal, $sWhereWrk);
@@ -383,6 +423,10 @@ if (@$emptywrk) $cuenta_mayor_auxiliar->idcuenta_mayor_principal->OldValue = "";
 <?php
  $sSqlWrk = "SELECT `idcuenta_mayor_principal`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta_mayor_principal`";
  $sWhereWrk = "";
+ $lookuptblfilter = "`estado` = 'Activo'";
+ if (strval($lookuptblfilter) <> "") {
+ 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
+ }
 
  // Call Lookup selecting
  $cuenta_mayor_auxiliar->Lookup_Selecting($cuenta_mayor_auxiliar->idcuenta_mayor_principal, $sWhereWrk);
@@ -397,118 +441,6 @@ if (@$emptywrk) $cuenta_mayor_auxiliar->idcuenta_mayor_principal->OldValue = "";
 <?php echo $cuenta_mayor_auxiliar->idcuenta_mayor_principal->ListViewValue() ?></span>
 <input type="hidden" data-field="x_idcuenta_mayor_principal" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_principal" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_principal" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->idcuenta_mayor_principal->FormValue) ?>">
 <input type="hidden" data-field="x_idcuenta_mayor_principal" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_principal" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_principal" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->idcuenta_mayor_principal->OldValue) ?>">
-<?php } ?>
-<a id="<?php echo $cuenta_mayor_auxiliar_grid->PageObjName . "_row_" . $cuenta_mayor_auxiliar_grid->RowCnt ?>"></a></td>
-	<?php } ?>
-<?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<input type="hidden" data-field="x_idcuenta_mayor_auxiliar" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_auxiliar" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_auxiliar" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->idcuenta_mayor_auxiliar->CurrentValue) ?>">
-<input type="hidden" data-field="x_idcuenta_mayor_auxiliar" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_auxiliar" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_auxiliar" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->idcuenta_mayor_auxiliar->OldValue) ?>">
-<?php } ?>
-<?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_EDIT || $cuenta_mayor_auxiliar->CurrentMode == "edit") { ?>
-<input type="hidden" data-field="x_idcuenta_mayor_auxiliar" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_auxiliar" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_auxiliar" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->idcuenta_mayor_auxiliar->CurrentValue) ?>">
-<?php } ?>
-	<?php if ($cuenta_mayor_auxiliar->nomeclatura->Visible) { // nomeclatura ?>
-		<td data-name="nomeclatura"<?php echo $cuenta_mayor_auxiliar->nomeclatura->CellAttributes() ?>>
-<?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<span id="el<?php echo $cuenta_mayor_auxiliar_grid->RowCnt ?>_cuenta_mayor_auxiliar_nomeclatura" class="form-group cuenta_mayor_auxiliar_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" size="30" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nomeclatura->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_auxiliar->nomeclatura->EditValue ?>"<?php echo $cuenta_mayor_auxiliar->nomeclatura->EditAttributes() ?>>
-</span>
-<input type="hidden" data-field="x_nomeclatura" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nomeclatura->OldValue) ?>">
-<?php } ?>
-<?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
-<span id="el<?php echo $cuenta_mayor_auxiliar_grid->RowCnt ?>_cuenta_mayor_auxiliar_nomeclatura" class="form-group cuenta_mayor_auxiliar_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" size="30" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nomeclatura->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_auxiliar->nomeclatura->EditValue ?>"<?php echo $cuenta_mayor_auxiliar->nomeclatura->EditAttributes() ?>>
-</span>
-<?php } ?>
-<?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_VIEW) { // View record ?>
-<span<?php echo $cuenta_mayor_auxiliar->nomeclatura->ViewAttributes() ?>>
-<?php echo $cuenta_mayor_auxiliar->nomeclatura->ListViewValue() ?></span>
-<input type="hidden" data-field="x_nomeclatura" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nomeclatura->FormValue) ?>">
-<input type="hidden" data-field="x_nomeclatura" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nomeclatura->OldValue) ?>">
-<?php } ?>
-</td>
-	<?php } ?>
-	<?php if ($cuenta_mayor_auxiliar->nombre->Visible) { // nombre ?>
-		<td data-name="nombre"<?php echo $cuenta_mayor_auxiliar->nombre->CellAttributes() ?>>
-<?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<span id="el<?php echo $cuenta_mayor_auxiliar_grid->RowCnt ?>_cuenta_mayor_auxiliar_nombre" class="form-group cuenta_mayor_auxiliar_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_auxiliar->nombre->EditValue ?>"<?php echo $cuenta_mayor_auxiliar->nombre->EditAttributes() ?>>
-</span>
-<input type="hidden" data-field="x_nombre" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->OldValue) ?>">
-<?php } ?>
-<?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
-<span id="el<?php echo $cuenta_mayor_auxiliar_grid->RowCnt ?>_cuenta_mayor_auxiliar_nombre" class="form-group cuenta_mayor_auxiliar_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_auxiliar->nombre->EditValue ?>"<?php echo $cuenta_mayor_auxiliar->nombre->EditAttributes() ?>>
-</span>
-<?php } ?>
-<?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_VIEW) { // View record ?>
-<span<?php echo $cuenta_mayor_auxiliar->nombre->ViewAttributes() ?>>
-<?php echo $cuenta_mayor_auxiliar->nombre->ListViewValue() ?></span>
-<input type="hidden" data-field="x_nombre" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->FormValue) ?>">
-<input type="hidden" data-field="x_nombre" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->OldValue) ?>">
-<?php } ?>
-</td>
-	<?php } ?>
-	<?php if ($cuenta_mayor_auxiliar->estado->Visible) { // estado ?>
-		<td data-name="estado"<?php echo $cuenta_mayor_auxiliar->estado->CellAttributes() ?>>
-<?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<span id="el<?php echo $cuenta_mayor_auxiliar_grid->RowCnt ?>_cuenta_mayor_auxiliar_estado" class="form-group cuenta_mayor_auxiliar_estado">
-<div id="tp_x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" class="<?php echo EW_ITEM_TEMPLATE_CLASSNAME ?>"><input type="radio" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" value="{value}"<?php echo $cuenta_mayor_auxiliar->estado->EditAttributes() ?>></div>
-<div id="dsl_x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" data-repeatcolumn="5" class="ewItemList">
-<?php
-$arwrk = $cuenta_mayor_auxiliar->estado->EditValue;
-if (is_array($arwrk)) {
-	$rowswrk = count($arwrk);
-	$emptywrk = TRUE;
-	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($cuenta_mayor_auxiliar->estado->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " checked=\"checked\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
-
-		// Note: No spacing within the LABEL tag
-?>
-<?php echo ew_RepeatColumnTable($rowswrk, $rowcntwrk, 5, 1) ?>
-<label class="radio-inline"><input type="radio" data-field="x_estado" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado_<?php echo $rowcntwrk ?>" value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?><?php echo $cuenta_mayor_auxiliar->estado->EditAttributes() ?>><?php echo $arwrk[$rowcntwrk][1] ?></label>
-<?php echo ew_RepeatColumnTable($rowswrk, $rowcntwrk, 5, 2) ?>
-<?php
-	}
-}
-if (@$emptywrk) $cuenta_mayor_auxiliar->estado->OldValue = "";
-?>
-</div>
-</span>
-<input type="hidden" data-field="x_estado" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->estado->OldValue) ?>">
-<?php } ?>
-<?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
-<span id="el<?php echo $cuenta_mayor_auxiliar_grid->RowCnt ?>_cuenta_mayor_auxiliar_estado" class="form-group cuenta_mayor_auxiliar_estado">
-<div id="tp_x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" class="<?php echo EW_ITEM_TEMPLATE_CLASSNAME ?>"><input type="radio" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" value="{value}"<?php echo $cuenta_mayor_auxiliar->estado->EditAttributes() ?>></div>
-<div id="dsl_x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" data-repeatcolumn="5" class="ewItemList">
-<?php
-$arwrk = $cuenta_mayor_auxiliar->estado->EditValue;
-if (is_array($arwrk)) {
-	$rowswrk = count($arwrk);
-	$emptywrk = TRUE;
-	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($cuenta_mayor_auxiliar->estado->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " checked=\"checked\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
-
-		// Note: No spacing within the LABEL tag
-?>
-<?php echo ew_RepeatColumnTable($rowswrk, $rowcntwrk, 5, 1) ?>
-<label class="radio-inline"><input type="radio" data-field="x_estado" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado_<?php echo $rowcntwrk ?>" value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?><?php echo $cuenta_mayor_auxiliar->estado->EditAttributes() ?>><?php echo $arwrk[$rowcntwrk][1] ?></label>
-<?php echo ew_RepeatColumnTable($rowswrk, $rowcntwrk, 5, 2) ?>
-<?php
-	}
-}
-if (@$emptywrk) $cuenta_mayor_auxiliar->estado->OldValue = "";
-?>
-</div>
-</span>
-<?php } ?>
-<?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_VIEW) { // View record ?>
-<span<?php echo $cuenta_mayor_auxiliar->estado->ViewAttributes() ?>>
-<?php echo $cuenta_mayor_auxiliar->estado->ListViewValue() ?></span>
-<input type="hidden" data-field="x_estado" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->estado->FormValue) ?>">
-<input type="hidden" data-field="x_estado" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->estado->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -554,6 +486,38 @@ fcuenta_mayor_auxiliargrid.UpdateOpts(<?php echo $cuenta_mayor_auxiliar_grid->Ro
 // Render list options (body, left)
 $cuenta_mayor_auxiliar_grid->ListOptions->Render("body", "left", $cuenta_mayor_auxiliar_grid->RowIndex);
 ?>
+	<?php if ($cuenta_mayor_auxiliar->nomeclatura->Visible) { // nomeclatura ?>
+		<td>
+<?php if ($cuenta_mayor_auxiliar->CurrentAction <> "F") { ?>
+<span id="el$rowindex$_cuenta_mayor_auxiliar_nomeclatura" class="form-group cuenta_mayor_auxiliar_nomeclatura">
+<input type="text" data-field="x_nomeclatura" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nomeclatura->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_auxiliar->nomeclatura->EditValue ?>"<?php echo $cuenta_mayor_auxiliar->nomeclatura->EditAttributes() ?>>
+</span>
+<?php } else { ?>
+<span id="el$rowindex$_cuenta_mayor_auxiliar_nomeclatura" class="form-group cuenta_mayor_auxiliar_nomeclatura">
+<span<?php echo $cuenta_mayor_auxiliar->nomeclatura->ViewAttributes() ?>>
+<p class="form-control-static"><?php echo $cuenta_mayor_auxiliar->nomeclatura->ViewValue ?></p></span>
+</span>
+<input type="hidden" data-field="x_nomeclatura" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nomeclatura->FormValue) ?>">
+<?php } ?>
+<input type="hidden" data-field="x_nomeclatura" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nomeclatura->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($cuenta_mayor_auxiliar->nombre->Visible) { // nombre ?>
+		<td>
+<?php if ($cuenta_mayor_auxiliar->CurrentAction <> "F") { ?>
+<span id="el$rowindex$_cuenta_mayor_auxiliar_nombre" class="form-group cuenta_mayor_auxiliar_nombre">
+<input type="text" data-field="x_nombre" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_auxiliar->nombre->EditValue ?>"<?php echo $cuenta_mayor_auxiliar->nombre->EditAttributes() ?>>
+</span>
+<?php } else { ?>
+<span id="el$rowindex$_cuenta_mayor_auxiliar_nombre" class="form-group cuenta_mayor_auxiliar_nombre">
+<span<?php echo $cuenta_mayor_auxiliar->nombre->ViewAttributes() ?>>
+<p class="form-control-static"><?php echo $cuenta_mayor_auxiliar->nombre->ViewValue ?></p></span>
+</span>
+<input type="hidden" data-field="x_nombre" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->FormValue) ?>">
+<?php } ?>
+<input type="hidden" data-field="x_nombre" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->OldValue) ?>">
+</td>
+	<?php } ?>
 	<?php if ($cuenta_mayor_auxiliar->idcuenta_mayor_principal->Visible) { // idcuenta_mayor_principal ?>
 		<td>
 <?php if ($cuenta_mayor_auxiliar->CurrentAction <> "F") { ?>
@@ -587,6 +551,10 @@ if (@$emptywrk) $cuenta_mayor_auxiliar->idcuenta_mayor_principal->OldValue = "";
 <?php
  $sSqlWrk = "SELECT `idcuenta_mayor_principal`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta_mayor_principal`";
  $sWhereWrk = "";
+ $lookuptblfilter = "`estado` = 'Activo'";
+ if (strval($lookuptblfilter) <> "") {
+ 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
+ }
 
  // Call Lookup selecting
  $cuenta_mayor_auxiliar->Lookup_Selecting($cuenta_mayor_auxiliar->idcuenta_mayor_principal, $sWhereWrk);
@@ -603,75 +571,6 @@ if (@$emptywrk) $cuenta_mayor_auxiliar->idcuenta_mayor_principal->OldValue = "";
 <input type="hidden" data-field="x_idcuenta_mayor_principal" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_principal" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_principal" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->idcuenta_mayor_principal->FormValue) ?>">
 <?php } ?>
 <input type="hidden" data-field="x_idcuenta_mayor_principal" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_principal" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_idcuenta_mayor_principal" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->idcuenta_mayor_principal->OldValue) ?>">
-</td>
-	<?php } ?>
-	<?php if ($cuenta_mayor_auxiliar->nomeclatura->Visible) { // nomeclatura ?>
-		<td>
-<?php if ($cuenta_mayor_auxiliar->CurrentAction <> "F") { ?>
-<span id="el$rowindex$_cuenta_mayor_auxiliar_nomeclatura" class="form-group cuenta_mayor_auxiliar_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" size="30" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nomeclatura->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_auxiliar->nomeclatura->EditValue ?>"<?php echo $cuenta_mayor_auxiliar->nomeclatura->EditAttributes() ?>>
-</span>
-<?php } else { ?>
-<span id="el$rowindex$_cuenta_mayor_auxiliar_nomeclatura" class="form-group cuenta_mayor_auxiliar_nomeclatura">
-<span<?php echo $cuenta_mayor_auxiliar->nomeclatura->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $cuenta_mayor_auxiliar->nomeclatura->ViewValue ?></p></span>
-</span>
-<input type="hidden" data-field="x_nomeclatura" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nomeclatura->FormValue) ?>">
-<?php } ?>
-<input type="hidden" data-field="x_nomeclatura" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nomeclatura->OldValue) ?>">
-</td>
-	<?php } ?>
-	<?php if ($cuenta_mayor_auxiliar->nombre->Visible) { // nombre ?>
-		<td>
-<?php if ($cuenta_mayor_auxiliar->CurrentAction <> "F") { ?>
-<span id="el$rowindex$_cuenta_mayor_auxiliar_nombre" class="form-group cuenta_mayor_auxiliar_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_auxiliar->nombre->EditValue ?>"<?php echo $cuenta_mayor_auxiliar->nombre->EditAttributes() ?>>
-</span>
-<?php } else { ?>
-<span id="el$rowindex$_cuenta_mayor_auxiliar_nombre" class="form-group cuenta_mayor_auxiliar_nombre">
-<span<?php echo $cuenta_mayor_auxiliar->nombre->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $cuenta_mayor_auxiliar->nombre->ViewValue ?></p></span>
-</span>
-<input type="hidden" data-field="x_nombre" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->FormValue) ?>">
-<?php } ?>
-<input type="hidden" data-field="x_nombre" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->OldValue) ?>">
-</td>
-	<?php } ?>
-	<?php if ($cuenta_mayor_auxiliar->estado->Visible) { // estado ?>
-		<td>
-<?php if ($cuenta_mayor_auxiliar->CurrentAction <> "F") { ?>
-<span id="el$rowindex$_cuenta_mayor_auxiliar_estado" class="form-group cuenta_mayor_auxiliar_estado">
-<div id="tp_x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" class="<?php echo EW_ITEM_TEMPLATE_CLASSNAME ?>"><input type="radio" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" value="{value}"<?php echo $cuenta_mayor_auxiliar->estado->EditAttributes() ?>></div>
-<div id="dsl_x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" data-repeatcolumn="5" class="ewItemList">
-<?php
-$arwrk = $cuenta_mayor_auxiliar->estado->EditValue;
-if (is_array($arwrk)) {
-	$rowswrk = count($arwrk);
-	$emptywrk = TRUE;
-	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($cuenta_mayor_auxiliar->estado->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " checked=\"checked\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
-
-		// Note: No spacing within the LABEL tag
-?>
-<?php echo ew_RepeatColumnTable($rowswrk, $rowcntwrk, 5, 1) ?>
-<label class="radio-inline"><input type="radio" data-field="x_estado" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado_<?php echo $rowcntwrk ?>" value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?><?php echo $cuenta_mayor_auxiliar->estado->EditAttributes() ?>><?php echo $arwrk[$rowcntwrk][1] ?></label>
-<?php echo ew_RepeatColumnTable($rowswrk, $rowcntwrk, 5, 2) ?>
-<?php
-	}
-}
-if (@$emptywrk) $cuenta_mayor_auxiliar->estado->OldValue = "";
-?>
-</div>
-</span>
-<?php } else { ?>
-<span id="el$rowindex$_cuenta_mayor_auxiliar_estado" class="form-group cuenta_mayor_auxiliar_estado">
-<span<?php echo $cuenta_mayor_auxiliar->estado->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $cuenta_mayor_auxiliar->estado->ViewValue ?></p></span>
-</span>
-<input type="hidden" data-field="x_estado" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->estado->FormValue) ?>">
-<?php } ?>
-<input type="hidden" data-field="x_estado" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_estado" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->estado->OldValue) ?>">
 </td>
 	<?php } ?>
 <?php

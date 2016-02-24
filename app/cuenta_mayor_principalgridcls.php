@@ -13,7 +13,7 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 	var $PageID = 'grid';
 
 	// Project ID
-	var $ProjectID = "{5B8C292A-87A7-44A6-9434-2D0CECD099FC}";
+	var $ProjectID = "{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}";
 
 	// Table name
 	var $TableName = 'cuenta_mayor_principal';
@@ -698,13 +698,11 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 	// Check if empty row
 	function EmptyRow() {
 		global $objForm;
-		if ($objForm->HasValue("x_idsubgrupo_cuenta") && $objForm->HasValue("o_idsubgrupo_cuenta") && $this->idsubgrupo_cuenta->CurrentValue <> $this->idsubgrupo_cuenta->OldValue)
+		if ($objForm->HasValue("x_nomeclatura") && $objForm->HasValue("o_nomeclatura") && $this->nomeclatura->CurrentValue <> $this->nomeclatura->OldValue)
 			return FALSE;
 		if ($objForm->HasValue("x_nombre") && $objForm->HasValue("o_nombre") && $this->nombre->CurrentValue <> $this->nombre->OldValue)
 			return FALSE;
-		if ($objForm->HasValue("x_nomeclatura") && $objForm->HasValue("o_nomeclatura") && $this->nomeclatura->CurrentValue <> $this->nomeclatura->OldValue)
-			return FALSE;
-		if ($objForm->HasValue("x_estado") && $objForm->HasValue("o_estado") && $this->estado->CurrentValue <> $this->estado->OldValue)
+		if ($objForm->HasValue("x_idsubgrupo_cuenta") && $objForm->HasValue("o_idsubgrupo_cuenta") && $this->idsubgrupo_cuenta->CurrentValue <> $this->idsubgrupo_cuenta->OldValue)
 			return FALSE;
 		return TRUE;
 	}
@@ -990,14 +988,12 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 
 	// Load default values
 	function LoadDefaultValues() {
-		$this->idsubgrupo_cuenta->CurrentValue = NULL;
-		$this->idsubgrupo_cuenta->OldValue = $this->idsubgrupo_cuenta->CurrentValue;
-		$this->nombre->CurrentValue = NULL;
-		$this->nombre->OldValue = $this->nombre->CurrentValue;
 		$this->nomeclatura->CurrentValue = NULL;
 		$this->nomeclatura->OldValue = $this->nomeclatura->CurrentValue;
-		$this->estado->CurrentValue = "Activo";
-		$this->estado->OldValue = $this->estado->CurrentValue;
+		$this->nombre->CurrentValue = NULL;
+		$this->nombre->OldValue = $this->nombre->CurrentValue;
+		$this->idsubgrupo_cuenta->CurrentValue = NULL;
+		$this->idsubgrupo_cuenta->OldValue = $this->idsubgrupo_cuenta->CurrentValue;
 	}
 
 	// Load form values
@@ -1006,22 +1002,18 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 		// Load from form
 		global $objForm;
 		$objForm->FormName = $this->FormName;
-		if (!$this->idsubgrupo_cuenta->FldIsDetailKey) {
-			$this->idsubgrupo_cuenta->setFormValue($objForm->GetValue("x_idsubgrupo_cuenta"));
-		}
-		$this->idsubgrupo_cuenta->setOldValue($objForm->GetValue("o_idsubgrupo_cuenta"));
-		if (!$this->nombre->FldIsDetailKey) {
-			$this->nombre->setFormValue($objForm->GetValue("x_nombre"));
-		}
-		$this->nombre->setOldValue($objForm->GetValue("o_nombre"));
 		if (!$this->nomeclatura->FldIsDetailKey) {
 			$this->nomeclatura->setFormValue($objForm->GetValue("x_nomeclatura"));
 		}
 		$this->nomeclatura->setOldValue($objForm->GetValue("o_nomeclatura"));
-		if (!$this->estado->FldIsDetailKey) {
-			$this->estado->setFormValue($objForm->GetValue("x_estado"));
+		if (!$this->nombre->FldIsDetailKey) {
+			$this->nombre->setFormValue($objForm->GetValue("x_nombre"));
 		}
-		$this->estado->setOldValue($objForm->GetValue("o_estado"));
+		$this->nombre->setOldValue($objForm->GetValue("o_nombre"));
+		if (!$this->idsubgrupo_cuenta->FldIsDetailKey) {
+			$this->idsubgrupo_cuenta->setFormValue($objForm->GetValue("x_idsubgrupo_cuenta"));
+		}
+		$this->idsubgrupo_cuenta->setOldValue($objForm->GetValue("o_idsubgrupo_cuenta"));
 		if (!$this->idcuenta_mayor_principal->FldIsDetailKey && $this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
 			$this->idcuenta_mayor_principal->setFormValue($objForm->GetValue("x_idcuenta_mayor_principal"));
 	}
@@ -1031,10 +1023,9 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 		global $objForm;
 		if ($this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
 			$this->idcuenta_mayor_principal->CurrentValue = $this->idcuenta_mayor_principal->FormValue;
-		$this->idsubgrupo_cuenta->CurrentValue = $this->idsubgrupo_cuenta->FormValue;
-		$this->nombre->CurrentValue = $this->nombre->FormValue;
 		$this->nomeclatura->CurrentValue = $this->nomeclatura->FormValue;
-		$this->estado->CurrentValue = $this->estado->FormValue;
+		$this->nombre->CurrentValue = $this->nombre->FormValue;
+		$this->idsubgrupo_cuenta->CurrentValue = $this->idsubgrupo_cuenta->FormValue;
 	}
 
 	// Load recordset
@@ -1084,9 +1075,9 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
 		$this->idcuenta_mayor_principal->setDbValue($rs->fields('idcuenta_mayor_principal'));
-		$this->idsubgrupo_cuenta->setDbValue($rs->fields('idsubgrupo_cuenta'));
-		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->nomeclatura->setDbValue($rs->fields('nomeclatura'));
+		$this->nombre->setDbValue($rs->fields('nombre'));
+		$this->idsubgrupo_cuenta->setDbValue($rs->fields('idsubgrupo_cuenta'));
 		$this->definicion->setDbValue($rs->fields('definicion'));
 		$this->estado->setDbValue($rs->fields('estado'));
 	}
@@ -1096,9 +1087,9 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
 		$this->idcuenta_mayor_principal->DbValue = $row['idcuenta_mayor_principal'];
-		$this->idsubgrupo_cuenta->DbValue = $row['idsubgrupo_cuenta'];
-		$this->nombre->DbValue = $row['nombre'];
 		$this->nomeclatura->DbValue = $row['nomeclatura'];
+		$this->nombre->DbValue = $row['nombre'];
+		$this->idsubgrupo_cuenta->DbValue = $row['idsubgrupo_cuenta'];
 		$this->definicion->DbValue = $row['definicion'];
 		$this->estado->DbValue = $row['estado'];
 	}
@@ -1143,9 +1134,9 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 
 		// Common render codes for all row types
 		// idcuenta_mayor_principal
-		// idsubgrupo_cuenta
-		// nombre
 		// nomeclatura
+		// nombre
+		// idsubgrupo_cuenta
 		// definicion
 		// estado
 
@@ -1155,11 +1146,23 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 			$this->idcuenta_mayor_principal->ViewValue = $this->idcuenta_mayor_principal->CurrentValue;
 			$this->idcuenta_mayor_principal->ViewCustomAttributes = "";
 
+			// nomeclatura
+			$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
+			$this->nomeclatura->ViewCustomAttributes = "";
+
+			// nombre
+			$this->nombre->ViewValue = $this->nombre->CurrentValue;
+			$this->nombre->ViewCustomAttributes = "";
+
 			// idsubgrupo_cuenta
 			if (strval($this->idsubgrupo_cuenta->CurrentValue) <> "") {
 				$sFilterWrk = "`idsubgrupo_cuenta`" . ew_SearchString("=", $this->idsubgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER);
 			$sSqlWrk = "SELECT `idsubgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `subgrupo_cuenta`";
 			$sWhereWrk = "";
+			$lookuptblfilter = "`estado` = 'Activo'";
+			if (strval($lookuptblfilter) <> "") {
+				ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			}
 			if ($sFilterWrk <> "") {
 				ew_AddFilter($sWhereWrk, $sFilterWrk);
 			}
@@ -1178,14 +1181,6 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 				$this->idsubgrupo_cuenta->ViewValue = NULL;
 			}
 			$this->idsubgrupo_cuenta->ViewCustomAttributes = "";
-
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
-
-			// nomeclatura
-			$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
-			$this->nomeclatura->ViewCustomAttributes = "";
 
 			// definicion
 			$this->definicion->ViewValue = $this->definicion->CurrentValue;
@@ -1208,27 +1203,34 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 			}
 			$this->estado->ViewCustomAttributes = "";
 
-			// idsubgrupo_cuenta
-			$this->idsubgrupo_cuenta->LinkCustomAttributes = "";
-			$this->idsubgrupo_cuenta->HrefValue = "";
-			$this->idsubgrupo_cuenta->TooltipValue = "";
+			// nomeclatura
+			$this->nomeclatura->LinkCustomAttributes = "";
+			$this->nomeclatura->HrefValue = "";
+			$this->nomeclatura->TooltipValue = "";
 
 			// nombre
 			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
 			$this->nombre->TooltipValue = "";
 
-			// nomeclatura
-			$this->nomeclatura->LinkCustomAttributes = "";
-			$this->nomeclatura->HrefValue = "";
-			$this->nomeclatura->TooltipValue = "";
-
-			// estado
-			$this->estado->LinkCustomAttributes = "";
-			$this->estado->HrefValue = "";
-			$this->estado->TooltipValue = "";
+			// idsubgrupo_cuenta
+			$this->idsubgrupo_cuenta->LinkCustomAttributes = "";
+			$this->idsubgrupo_cuenta->HrefValue = "";
+			$this->idsubgrupo_cuenta->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
 
+			// nomeclatura
+			$this->nomeclatura->EditAttrs["class"] = "form-control";
+			$this->nomeclatura->EditCustomAttributes = "";
+			$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
+			$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
+
+			// nombre
+			$this->nombre->EditAttrs["class"] = "form-control";
+			$this->nombre->EditCustomAttributes = "";
+			$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
+			$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
+
 			// idsubgrupo_cuenta
 			$this->idsubgrupo_cuenta->EditAttrs["class"] = "form-control";
 			$this->idsubgrupo_cuenta->EditCustomAttributes = "";
@@ -1239,6 +1241,10 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 				$sFilterWrk = "`idsubgrupo_cuenta`" . ew_SearchString("=", $this->idsubgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER);
 			$sSqlWrk = "SELECT `idsubgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `subgrupo_cuenta`";
 			$sWhereWrk = "";
+			$lookuptblfilter = "`estado` = 'Activo'";
+			if (strval($lookuptblfilter) <> "") {
+				ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			}
 			if ($sFilterWrk <> "") {
 				ew_AddFilter($sWhereWrk, $sFilterWrk);
 			}
@@ -1265,6 +1271,10 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 			}
 			$sSqlWrk = "SELECT `idsubgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `subgrupo_cuenta`";
 			$sWhereWrk = "";
+			$lookuptblfilter = "`estado` = 'Activo'";
+			if (strval($lookuptblfilter) <> "") {
+				ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			}
 			if ($sFilterWrk <> "") {
 				ew_AddFilter($sWhereWrk, $sFilterWrk);
 			}
@@ -1279,42 +1289,30 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 			$this->idsubgrupo_cuenta->EditValue = $arwrk;
 			}
 
-			// nombre
-			$this->nombre->EditAttrs["class"] = "form-control";
-			$this->nombre->EditCustomAttributes = "";
-			$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
-			$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
-
-			// nomeclatura
-			$this->nomeclatura->EditAttrs["class"] = "form-control";
-			$this->nomeclatura->EditCustomAttributes = "";
-			$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
-			$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
-
-			// estado
-			$this->estado->EditAttrs["class"] = "form-control";
-			$this->estado->EditCustomAttributes = "";
-			$arwrk = array();
-			$arwrk[] = array($this->estado->FldTagValue(1), $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->FldTagValue(1));
-			$arwrk[] = array($this->estado->FldTagValue(2), $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->FldTagValue(2));
-			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
-			$this->estado->EditValue = $arwrk;
-
 			// Edit refer script
-			// idsubgrupo_cuenta
+			// nomeclatura
 
-			$this->idsubgrupo_cuenta->HrefValue = "";
+			$this->nomeclatura->HrefValue = "";
 
 			// nombre
 			$this->nombre->HrefValue = "";
 
-			// nomeclatura
-			$this->nomeclatura->HrefValue = "";
-
-			// estado
-			$this->estado->HrefValue = "";
+			// idsubgrupo_cuenta
+			$this->idsubgrupo_cuenta->HrefValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
 
+			// nomeclatura
+			$this->nomeclatura->EditAttrs["class"] = "form-control";
+			$this->nomeclatura->EditCustomAttributes = "";
+			$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
+			$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
+
+			// nombre
+			$this->nombre->EditAttrs["class"] = "form-control";
+			$this->nombre->EditCustomAttributes = "";
+			$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
+			$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
+
 			// idsubgrupo_cuenta
 			$this->idsubgrupo_cuenta->EditAttrs["class"] = "form-control";
 			$this->idsubgrupo_cuenta->EditCustomAttributes = "";
@@ -1325,6 +1323,10 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 				$sFilterWrk = "`idsubgrupo_cuenta`" . ew_SearchString("=", $this->idsubgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER);
 			$sSqlWrk = "SELECT `idsubgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `subgrupo_cuenta`";
 			$sWhereWrk = "";
+			$lookuptblfilter = "`estado` = 'Activo'";
+			if (strval($lookuptblfilter) <> "") {
+				ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			}
 			if ($sFilterWrk <> "") {
 				ew_AddFilter($sWhereWrk, $sFilterWrk);
 			}
@@ -1351,6 +1353,10 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 			}
 			$sSqlWrk = "SELECT `idsubgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `subgrupo_cuenta`";
 			$sWhereWrk = "";
+			$lookuptblfilter = "`estado` = 'Activo'";
+			if (strval($lookuptblfilter) <> "") {
+				ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			}
 			if ($sFilterWrk <> "") {
 				ew_AddFilter($sWhereWrk, $sFilterWrk);
 			}
@@ -1365,40 +1371,16 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 			$this->idsubgrupo_cuenta->EditValue = $arwrk;
 			}
 
-			// nombre
-			$this->nombre->EditAttrs["class"] = "form-control";
-			$this->nombre->EditCustomAttributes = "";
-			$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
-			$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
-
-			// nomeclatura
-			$this->nomeclatura->EditAttrs["class"] = "form-control";
-			$this->nomeclatura->EditCustomAttributes = "";
-			$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
-			$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
-
-			// estado
-			$this->estado->EditAttrs["class"] = "form-control";
-			$this->estado->EditCustomAttributes = "";
-			$arwrk = array();
-			$arwrk[] = array($this->estado->FldTagValue(1), $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->FldTagValue(1));
-			$arwrk[] = array($this->estado->FldTagValue(2), $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->FldTagValue(2));
-			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
-			$this->estado->EditValue = $arwrk;
-
 			// Edit refer script
-			// idsubgrupo_cuenta
+			// nomeclatura
 
-			$this->idsubgrupo_cuenta->HrefValue = "";
+			$this->nomeclatura->HrefValue = "";
 
 			// nombre
 			$this->nombre->HrefValue = "";
 
-			// nomeclatura
-			$this->nomeclatura->HrefValue = "";
-
-			// estado
-			$this->estado->HrefValue = "";
+			// idsubgrupo_cuenta
+			$this->idsubgrupo_cuenta->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
 			$this->RowType == EW_ROWTYPE_EDIT ||
@@ -1418,17 +1400,14 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 		// Check if validation required
 		if (!EW_SERVER_VALIDATE)
 			return ($gsFormError == "");
-		if (!$this->idsubgrupo_cuenta->FldIsDetailKey && !is_null($this->idsubgrupo_cuenta->FormValue) && $this->idsubgrupo_cuenta->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->idsubgrupo_cuenta->FldCaption(), $this->idsubgrupo_cuenta->ReqErrMsg));
+		if (!$this->nomeclatura->FldIsDetailKey && !is_null($this->nomeclatura->FormValue) && $this->nomeclatura->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->nomeclatura->FldCaption(), $this->nomeclatura->ReqErrMsg));
 		}
 		if (!$this->nombre->FldIsDetailKey && !is_null($this->nombre->FormValue) && $this->nombre->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->nombre->FldCaption(), $this->nombre->ReqErrMsg));
 		}
-		if (!$this->nomeclatura->FldIsDetailKey && !is_null($this->nomeclatura->FormValue) && $this->nomeclatura->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->nomeclatura->FldCaption(), $this->nomeclatura->ReqErrMsg));
-		}
-		if (!$this->estado->FldIsDetailKey && !is_null($this->estado->FormValue) && $this->estado->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->estado->FldCaption(), $this->estado->ReqErrMsg));
+		if (!$this->idsubgrupo_cuenta->FldIsDetailKey && !is_null($this->idsubgrupo_cuenta->FormValue) && $this->idsubgrupo_cuenta->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->idsubgrupo_cuenta->FldCaption(), $this->idsubgrupo_cuenta->ReqErrMsg));
 		}
 
 		// Return validate result
@@ -1538,17 +1517,14 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 			$this->LoadDbValues($rsold);
 			$rsnew = array();
 
-			// idsubgrupo_cuenta
-			$this->idsubgrupo_cuenta->SetDbValueDef($rsnew, $this->idsubgrupo_cuenta->CurrentValue, 0, $this->idsubgrupo_cuenta->ReadOnly);
+			// nomeclatura
+			$this->nomeclatura->SetDbValueDef($rsnew, $this->nomeclatura->CurrentValue, "", $this->nomeclatura->ReadOnly);
 
 			// nombre
 			$this->nombre->SetDbValueDef($rsnew, $this->nombre->CurrentValue, "", $this->nombre->ReadOnly);
 
-			// nomeclatura
-			$this->nomeclatura->SetDbValueDef($rsnew, $this->nomeclatura->CurrentValue, "", $this->nomeclatura->ReadOnly);
-
-			// estado
-			$this->estado->SetDbValueDef($rsnew, $this->estado->CurrentValue, "", $this->estado->ReadOnly);
+			// idsubgrupo_cuenta
+			$this->idsubgrupo_cuenta->SetDbValueDef($rsnew, $this->idsubgrupo_cuenta->CurrentValue, 0, $this->idsubgrupo_cuenta->ReadOnly);
 
 			// Call Row Updating event
 			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
@@ -1597,17 +1573,14 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 		}
 		$rsnew = array();
 
-		// idsubgrupo_cuenta
-		$this->idsubgrupo_cuenta->SetDbValueDef($rsnew, $this->idsubgrupo_cuenta->CurrentValue, 0, FALSE);
+		// nomeclatura
+		$this->nomeclatura->SetDbValueDef($rsnew, $this->nomeclatura->CurrentValue, "", FALSE);
 
 		// nombre
 		$this->nombre->SetDbValueDef($rsnew, $this->nombre->CurrentValue, "", FALSE);
 
-		// nomeclatura
-		$this->nomeclatura->SetDbValueDef($rsnew, $this->nomeclatura->CurrentValue, "", FALSE);
-
-		// estado
-		$this->estado->SetDbValueDef($rsnew, $this->estado->CurrentValue, "", strval($this->estado->CurrentValue) == "");
+		// idsubgrupo_cuenta
+		$this->idsubgrupo_cuenta->SetDbValueDef($rsnew, $this->idsubgrupo_cuenta->CurrentValue, 0, FALSE);
 
 		// Call Row Inserting event
 		$rs = ($rsold == NULL) ? NULL : $rsold->fields;

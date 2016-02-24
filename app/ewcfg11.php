@@ -24,13 +24,13 @@ define("EW_DEFAULT_DATE_FORMAT", "dd/mm/yyyy", TRUE); // Default date format
 define("EW_DEFAULT_DATE_FORMAT_ID", "7", TRUE); // Default date format
 define("EW_DATE_SEPARATOR", "/", TRUE); // Date separator
 define("EW_UNFORMAT_YEAR", 50, TRUE); // Unformat year
-define("EW_PROJECT_NAME", "conta", TRUE); // Project name
+define("EW_PROJECT_NAME", "contable", TRUE); // Project name
 define("EW_CONFIG_FILE_FOLDER", EW_PROJECT_NAME . "", TRUE); // Config file name
-define("EW_PROJECT_ID", "{5B8C292A-87A7-44A6-9434-2D0CECD099FC}", TRUE); // Project ID (GUID)
+define("EW_PROJECT_ID", "{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}", TRUE); // Project ID (GUID)
 $EW_RELATED_PROJECT_ID = "";
 $EW_RELATED_LANGUAGE_FOLDER = "";
-define("EW_RANDOM_KEY", '9DTcEj2Q9DmkSw2l', TRUE); // Random key for encryption
-define("EW_PROJECT_STYLESHEET_FILENAME", "phpcss/conta.css", TRUE); // Project stylesheet file name
+define("EW_RANDOM_KEY", 'NaxrDuLqy8sd1oxP', TRUE); // Random key for encryption
+define("EW_PROJECT_STYLESHEET_FILENAME", "phpcss/contable.css", TRUE); // Project stylesheet file name
 define("EW_CHARSET", "utf-8", TRUE); // Project charset
 define("EW_EMAIL_CHARSET", EW_CHARSET, TRUE); // Email charset
 define("EW_EMAIL_KEYWORD_SEPARATOR", "", TRUE); // Email keyword separator
@@ -46,10 +46,10 @@ define("EW_TMP_IMAGE_FONT", "DejaVuSans", TRUE); // Font for temp files
 $EW_FONT_PATH = realpath('./phpfont');
 
 // Database connection info
-define("EW_CONN_HOST", 'nexthordb.cquvmppcukva.us-west-2.rds.amazonaws.com', TRUE);
+define("EW_CONN_HOST", 'localhost', TRUE);
 define("EW_CONN_PORT", 3306, TRUE);
-define("EW_CONN_USER", 'dbadmin', TRUE);
-define("EW_CONN_PASS", '23Nexthor23', TRUE);
+define("EW_CONN_USER", 'root', TRUE);
+define("EW_CONN_PASS", '', TRUE);
 define("EW_CONN_DB", 'contable', TRUE);
 
 // ADODB (Access/SQL Server)
@@ -489,22 +489,23 @@ $Breadcrumb = NULL;
 <?php
 
 // Menu
-define("EW_MENUBAR_ID", "ewHorizMenu", TRUE);
-define("EW_MENUBAR_CLASSNAME", "navbar navbar-inverse", TRUE);
-define("EW_MENUBAR_INNER_CLASSNAME", "", TRUE);
-define("EW_MENU_CLASSNAME", "nav navbar-nav", TRUE);
-define("EW_SUBMENU_CLASSNAME", "dropdown-menu", TRUE);
-define("EW_SUBMENU_DROPDOWN_IMAGE", " <b class=\"caret\"></b>", TRUE);
-define("EW_SUBMENU_DROPDOWN_ICON_CLASSNAME", "", TRUE);
+define("EW_MENUBAR_ID", "RootMenu", TRUE);
+define("EW_MENUBAR_BRAND", "", TRUE);
+define("EW_MENUBAR_BRAND_HYPERLINK", "", TRUE);
+define("EW_MENUBAR_CLASSNAME", "", TRUE);
 
-//define("EW_MENU_DIVIDER_CLASSNAME", "divider-vertical", TRUE);
+//define("EW_MENU_CLASSNAME", "nav nav-list", TRUE);
+define("EW_MENU_CLASSNAME", "dropdown-menu", TRUE);
+define("EW_SUBMENU_CLASSNAME", "dropdown-menu", TRUE);
+define("EW_SUBMENU_DROPDOWN_IMAGE", "", TRUE);
+define("EW_SUBMENU_DROPDOWN_ICON_CLASSNAME", "", TRUE);
 define("EW_MENU_DIVIDER_CLASSNAME", "divider", TRUE);
-define("EW_MENU_ITEM_CLASSNAME", "dropdown", TRUE);
+define("EW_MENU_ITEM_CLASSNAME", "dropdown-submenu", TRUE);
 define("EW_SUBMENU_ITEM_CLASSNAME", "dropdown-submenu", TRUE);
 define("EW_MENU_ACTIVE_ITEM_CLASS", "active", TRUE);
 define("EW_SUBMENU_ACTIVE_ITEM_CLASS", "active", TRUE);
-define("EW_MENU_ROOT_GROUP_TITLE_AS_SUBMENU", TRUE, TRUE);
-define("EW_SHOW_RIGHT_MENU", TRUE, TRUE);
+define("EW_MENU_ROOT_GROUP_TITLE_AS_SUBMENU", FALSE, TRUE);
+define("EW_SHOW_RIGHT_MENU", FALSE, TRUE);
 ?>
 <?php
 define("EW_PDF_STYLESHEET_FILENAME", "", TRUE); // Export PDF CSS styles

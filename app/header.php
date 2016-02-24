@@ -118,14 +118,16 @@ var EW_CSS_FLIP = <?php echo (EW_CSS_FLIP) ? "true" : "false" ?>;
 </nav>
 <?php } ?>
 	<!-- header (end) -->
-	<div id="ewMenuRow"<?php if (ew_IsResponsiveLayout()) { ?> class="hidden-xs"<?php } ?>>
-		<div class="ewMenu">
-<?php include_once $EW_RELATIVE_PATH . "ewmenu.php" ?>
-		</div>
-	</div>
 	<!-- content (begin) -->
 	<div id="ewContentTable" class="ewContentTable">
 		<div id="ewContentRow">
+			<div id="ewMenuColumn" class="<?php echo $gsMenuColumnClass ?>">
+				<!-- left column (begin) -->
+				<div class="ewMenu">
+<?php include_once $EW_RELATIVE_PATH . "ewmenu.php" ?>
+				</div>
+				<!-- left column (end) -->
+			</div>
 			<div id="ewContentColumn" class="ewContentColumn">
 				<!-- right column (begin) -->
 				<h4 class="<?php echo $gsSiteTitleClass ?>"><?php echo $Language->ProjectPhrase("BodyTitle") ?></h4>

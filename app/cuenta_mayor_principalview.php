@@ -24,7 +24,7 @@ class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
 	var $PageID = 'view';
 
 	// Project ID
-	var $ProjectID = "{5B8C292A-87A7-44A6-9434-2D0CECD099FC}";
+	var $ProjectID = "{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}";
 
 	// Table name
 	var $TableName = 'cuenta_mayor_principal';
@@ -599,9 +599,9 @@ class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
 		$this->idcuenta_mayor_principal->setDbValue($rs->fields('idcuenta_mayor_principal'));
-		$this->idsubgrupo_cuenta->setDbValue($rs->fields('idsubgrupo_cuenta'));
-		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->nomeclatura->setDbValue($rs->fields('nomeclatura'));
+		$this->nombre->setDbValue($rs->fields('nombre'));
+		$this->idsubgrupo_cuenta->setDbValue($rs->fields('idsubgrupo_cuenta'));
 		$this->definicion->setDbValue($rs->fields('definicion'));
 		$this->estado->setDbValue($rs->fields('estado'));
 	}
@@ -611,9 +611,9 @@ class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
 		$this->idcuenta_mayor_principal->DbValue = $row['idcuenta_mayor_principal'];
-		$this->idsubgrupo_cuenta->DbValue = $row['idsubgrupo_cuenta'];
-		$this->nombre->DbValue = $row['nombre'];
 		$this->nomeclatura->DbValue = $row['nomeclatura'];
+		$this->nombre->DbValue = $row['nombre'];
+		$this->idsubgrupo_cuenta->DbValue = $row['idsubgrupo_cuenta'];
 		$this->definicion->DbValue = $row['definicion'];
 		$this->estado->DbValue = $row['estado'];
 	}
@@ -636,9 +636,9 @@ class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
 
 		// Common render codes for all row types
 		// idcuenta_mayor_principal
-		// idsubgrupo_cuenta
-		// nombre
 		// nomeclatura
+		// nombre
+		// idsubgrupo_cuenta
 		// definicion
 		// estado
 
@@ -648,11 +648,23 @@ class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
 			$this->idcuenta_mayor_principal->ViewValue = $this->idcuenta_mayor_principal->CurrentValue;
 			$this->idcuenta_mayor_principal->ViewCustomAttributes = "";
 
+			// nomeclatura
+			$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
+			$this->nomeclatura->ViewCustomAttributes = "";
+
+			// nombre
+			$this->nombre->ViewValue = $this->nombre->CurrentValue;
+			$this->nombre->ViewCustomAttributes = "";
+
 			// idsubgrupo_cuenta
 			if (strval($this->idsubgrupo_cuenta->CurrentValue) <> "") {
 				$sFilterWrk = "`idsubgrupo_cuenta`" . ew_SearchString("=", $this->idsubgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER);
 			$sSqlWrk = "SELECT `idsubgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `subgrupo_cuenta`";
 			$sWhereWrk = "";
+			$lookuptblfilter = "`estado` = 'Activo'";
+			if (strval($lookuptblfilter) <> "") {
+				ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			}
 			if ($sFilterWrk <> "") {
 				ew_AddFilter($sWhereWrk, $sFilterWrk);
 			}
@@ -671,14 +683,6 @@ class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
 				$this->idsubgrupo_cuenta->ViewValue = NULL;
 			}
 			$this->idsubgrupo_cuenta->ViewCustomAttributes = "";
-
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
-
-			// nomeclatura
-			$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
-			$this->nomeclatura->ViewCustomAttributes = "";
 
 			// definicion
 			$this->definicion->ViewValue = $this->definicion->CurrentValue;
@@ -706,20 +710,20 @@ class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
 			$this->idcuenta_mayor_principal->HrefValue = "";
 			$this->idcuenta_mayor_principal->TooltipValue = "";
 
-			// idsubgrupo_cuenta
-			$this->idsubgrupo_cuenta->LinkCustomAttributes = "";
-			$this->idsubgrupo_cuenta->HrefValue = "";
-			$this->idsubgrupo_cuenta->TooltipValue = "";
+			// nomeclatura
+			$this->nomeclatura->LinkCustomAttributes = "";
+			$this->nomeclatura->HrefValue = "";
+			$this->nomeclatura->TooltipValue = "";
 
 			// nombre
 			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
 			$this->nombre->TooltipValue = "";
 
-			// nomeclatura
-			$this->nomeclatura->LinkCustomAttributes = "";
-			$this->nomeclatura->HrefValue = "";
-			$this->nomeclatura->TooltipValue = "";
+			// idsubgrupo_cuenta
+			$this->idsubgrupo_cuenta->LinkCustomAttributes = "";
+			$this->idsubgrupo_cuenta->HrefValue = "";
+			$this->idsubgrupo_cuenta->TooltipValue = "";
 
 			// definicion
 			$this->definicion->LinkCustomAttributes = "";
@@ -989,13 +993,13 @@ $cuenta_mayor_principal_view->ShowMessage();
 </td>
 	</tr>
 <?php } ?>
-<?php if ($cuenta_mayor_principal->idsubgrupo_cuenta->Visible) { // idsubgrupo_cuenta ?>
-	<tr id="r_idsubgrupo_cuenta">
-		<td><span id="elh_cuenta_mayor_principal_idsubgrupo_cuenta"><?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->FldCaption() ?></span></td>
-		<td<?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->CellAttributes() ?>>
-<span id="el_cuenta_mayor_principal_idsubgrupo_cuenta" class="form-group">
-<span<?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->ViewAttributes() ?>>
-<?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->ViewValue ?></span>
+<?php if ($cuenta_mayor_principal->nomeclatura->Visible) { // nomeclatura ?>
+	<tr id="r_nomeclatura">
+		<td><span id="elh_cuenta_mayor_principal_nomeclatura"><?php echo $cuenta_mayor_principal->nomeclatura->FldCaption() ?></span></td>
+		<td<?php echo $cuenta_mayor_principal->nomeclatura->CellAttributes() ?>>
+<span id="el_cuenta_mayor_principal_nomeclatura" class="form-group">
+<span<?php echo $cuenta_mayor_principal->nomeclatura->ViewAttributes() ?>>
+<?php echo $cuenta_mayor_principal->nomeclatura->ViewValue ?></span>
 </span>
 </td>
 	</tr>
@@ -1011,13 +1015,13 @@ $cuenta_mayor_principal_view->ShowMessage();
 </td>
 	</tr>
 <?php } ?>
-<?php if ($cuenta_mayor_principal->nomeclatura->Visible) { // nomeclatura ?>
-	<tr id="r_nomeclatura">
-		<td><span id="elh_cuenta_mayor_principal_nomeclatura"><?php echo $cuenta_mayor_principal->nomeclatura->FldCaption() ?></span></td>
-		<td<?php echo $cuenta_mayor_principal->nomeclatura->CellAttributes() ?>>
-<span id="el_cuenta_mayor_principal_nomeclatura" class="form-group">
-<span<?php echo $cuenta_mayor_principal->nomeclatura->ViewAttributes() ?>>
-<?php echo $cuenta_mayor_principal->nomeclatura->ViewValue ?></span>
+<?php if ($cuenta_mayor_principal->idsubgrupo_cuenta->Visible) { // idsubgrupo_cuenta ?>
+	<tr id="r_idsubgrupo_cuenta">
+		<td><span id="elh_cuenta_mayor_principal_idsubgrupo_cuenta"><?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->FldCaption() ?></span></td>
+		<td<?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->CellAttributes() ?>>
+<span id="el_cuenta_mayor_principal_idsubgrupo_cuenta" class="form-group">
+<span<?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->ViewAttributes() ?>>
+<?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->ViewValue ?></span>
 </span>
 </td>
 	</tr>

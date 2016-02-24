@@ -23,7 +23,7 @@ class cclase_cuenta_edit extends cclase_cuenta {
 	var $PageID = 'edit';
 
 	// Project ID
-	var $ProjectID = "{5B8C292A-87A7-44A6-9434-2D0CECD099FC}";
+	var $ProjectID = "{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}";
 
 	// Table name
 	var $TableName = 'clase_cuenta';
@@ -432,11 +432,17 @@ class cclase_cuenta_edit extends cclase_cuenta {
 
 		// Load from form
 		global $objForm;
+		if (!$this->nomenclatura->FldIsDetailKey) {
+			$this->nomenclatura->setFormValue($objForm->GetValue("x_nomenclatura"));
+		}
 		if (!$this->nombre->FldIsDetailKey) {
 			$this->nombre->setFormValue($objForm->GetValue("x_nombre"));
 		}
 		if (!$this->estado->FldIsDetailKey) {
 			$this->estado->setFormValue($objForm->GetValue("x_estado"));
+		}
+		if (!$this->definicion->FldIsDetailKey) {
+			$this->definicion->setFormValue($objForm->GetValue("x_definicion"));
 		}
 		if (!$this->idclase_cuenta->FldIsDetailKey)
 			$this->idclase_cuenta->setFormValue($objForm->GetValue("x_idclase_cuenta"));
@@ -447,8 +453,10 @@ class cclase_cuenta_edit extends cclase_cuenta {
 		global $objForm;
 		$this->LoadRow();
 		$this->idclase_cuenta->CurrentValue = $this->idclase_cuenta->FormValue;
+		$this->nomenclatura->CurrentValue = $this->nomenclatura->FormValue;
 		$this->nombre->CurrentValue = $this->nombre->FormValue;
 		$this->estado->CurrentValue = $this->estado->FormValue;
+		$this->definicion->CurrentValue = $this->definicion->FormValue;
 	}
 
 	// Load row based on key values
@@ -481,10 +489,10 @@ class cclase_cuenta_edit extends cclase_cuenta {
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
 		$this->idclase_cuenta->setDbValue($rs->fields('idclase_cuenta'));
-		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->nomenclatura->setDbValue($rs->fields('nomenclatura'));
-		$this->definicion->setDbValue($rs->fields('definicion'));
+		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->estado->setDbValue($rs->fields('estado'));
+		$this->definicion->setDbValue($rs->fields('definicion'));
 	}
 
 	// Load DbValue from recordset
@@ -492,10 +500,10 @@ class cclase_cuenta_edit extends cclase_cuenta {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
 		$this->idclase_cuenta->DbValue = $row['idclase_cuenta'];
-		$this->nombre->DbValue = $row['nombre'];
 		$this->nomenclatura->DbValue = $row['nomenclatura'];
-		$this->definicion->DbValue = $row['definicion'];
+		$this->nombre->DbValue = $row['nombre'];
 		$this->estado->DbValue = $row['estado'];
+		$this->definicion->DbValue = $row['definicion'];
 	}
 
 	// Render row values based on field settings
@@ -510,10 +518,10 @@ class cclase_cuenta_edit extends cclase_cuenta {
 
 		// Common render codes for all row types
 		// idclase_cuenta
-		// nombre
 		// nomenclatura
-		// definicion
+		// nombre
 		// estado
+		// definicion
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -521,17 +529,13 @@ class cclase_cuenta_edit extends cclase_cuenta {
 			$this->idclase_cuenta->ViewValue = $this->idclase_cuenta->CurrentValue;
 			$this->idclase_cuenta->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
-
 			// nomenclatura
 			$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
 			$this->nomenclatura->ViewCustomAttributes = "";
 
-			// definicion
-			$this->definicion->ViewValue = $this->definicion->CurrentValue;
-			$this->definicion->ViewCustomAttributes = "";
+			// nombre
+			$this->nombre->ViewValue = $this->nombre->CurrentValue;
+			$this->nombre->ViewCustomAttributes = "";
 
 			// estado
 			if (strval($this->estado->CurrentValue) <> "") {
@@ -550,6 +554,15 @@ class cclase_cuenta_edit extends cclase_cuenta {
 			}
 			$this->estado->ViewCustomAttributes = "";
 
+			// definicion
+			$this->definicion->ViewValue = $this->definicion->CurrentValue;
+			$this->definicion->ViewCustomAttributes = "";
+
+			// nomenclatura
+			$this->nomenclatura->LinkCustomAttributes = "";
+			$this->nomenclatura->HrefValue = "";
+			$this->nomenclatura->TooltipValue = "";
+
 			// nombre
 			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
@@ -559,7 +572,18 @@ class cclase_cuenta_edit extends cclase_cuenta {
 			$this->estado->LinkCustomAttributes = "";
 			$this->estado->HrefValue = "";
 			$this->estado->TooltipValue = "";
+
+			// definicion
+			$this->definicion->LinkCustomAttributes = "";
+			$this->definicion->HrefValue = "";
+			$this->definicion->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
+
+			// nomenclatura
+			$this->nomenclatura->EditAttrs["class"] = "form-control";
+			$this->nomenclatura->EditCustomAttributes = "";
+			$this->nomenclatura->EditValue = ew_HtmlEncode($this->nomenclatura->CurrentValue);
+			$this->nomenclatura->PlaceHolder = ew_RemoveHtml($this->nomenclatura->FldCaption());
 
 			// nombre
 			$this->nombre->EditAttrs["class"] = "form-control";
@@ -576,13 +600,25 @@ class cclase_cuenta_edit extends cclase_cuenta {
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
 			$this->estado->EditValue = $arwrk;
 
-			// Edit refer script
-			// nombre
+			// definicion
+			$this->definicion->EditAttrs["class"] = "form-control";
+			$this->definicion->EditCustomAttributes = "";
+			$this->definicion->EditValue = ew_HtmlEncode($this->definicion->CurrentValue);
+			$this->definicion->PlaceHolder = ew_RemoveHtml($this->definicion->FldCaption());
 
+			// Edit refer script
+			// nomenclatura
+
+			$this->nomenclatura->HrefValue = "";
+
+			// nombre
 			$this->nombre->HrefValue = "";
 
 			// estado
 			$this->estado->HrefValue = "";
+
+			// definicion
+			$this->definicion->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
 			$this->RowType == EW_ROWTYPE_EDIT ||
@@ -652,11 +688,17 @@ class cclase_cuenta_edit extends cclase_cuenta {
 			$this->LoadDbValues($rsold);
 			$rsnew = array();
 
+			// nomenclatura
+			$this->nomenclatura->SetDbValueDef($rsnew, $this->nomenclatura->CurrentValue, NULL, $this->nomenclatura->ReadOnly);
+
 			// nombre
 			$this->nombre->SetDbValueDef($rsnew, $this->nombre->CurrentValue, NULL, $this->nombre->ReadOnly);
 
 			// estado
 			$this->estado->SetDbValueDef($rsnew, $this->estado->CurrentValue, "", $this->estado->ReadOnly);
+
+			// definicion
+			$this->definicion->SetDbValueDef($rsnew, $this->definicion->CurrentValue, NULL, $this->definicion->ReadOnly);
 
 			// Call Row Updating event
 			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
@@ -922,6 +964,16 @@ $clase_cuenta_edit->ShowMessage();
 <input type="hidden" name="t" value="clase_cuenta">
 <input type="hidden" name="a_edit" id="a_edit" value="U">
 <div>
+<?php if ($clase_cuenta->nomenclatura->Visible) { // nomenclatura ?>
+	<div id="r_nomenclatura" class="form-group">
+		<label id="elh_clase_cuenta_nomenclatura" for="x_nomenclatura" class="col-sm-2 control-label ewLabel"><?php echo $clase_cuenta->nomenclatura->FldCaption() ?></label>
+		<div class="col-sm-10"><div<?php echo $clase_cuenta->nomenclatura->CellAttributes() ?>>
+<span id="el_clase_cuenta_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x_nomenclatura" id="x_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($clase_cuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $clase_cuenta->nomenclatura->EditValue ?>"<?php echo $clase_cuenta->nomenclatura->EditAttributes() ?>>
+</span>
+<?php echo $clase_cuenta->nomenclatura->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
 <?php if ($clase_cuenta->nombre->Visible) { // nombre ?>
 	<div id="r_nombre" class="form-group">
 		<label id="elh_clase_cuenta_nombre" for="x_nombre" class="col-sm-2 control-label ewLabel"><?php echo $clase_cuenta->nombre->FldCaption() ?></label>
@@ -957,6 +1009,16 @@ if (is_array($clase_cuenta->estado->EditValue)) {
 </select>
 </span>
 <?php echo $clase_cuenta->estado->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
+<?php if ($clase_cuenta->definicion->Visible) { // definicion ?>
+	<div id="r_definicion" class="form-group">
+		<label id="elh_clase_cuenta_definicion" for="x_definicion" class="col-sm-2 control-label ewLabel"><?php echo $clase_cuenta->definicion->FldCaption() ?></label>
+		<div class="col-sm-10"><div<?php echo $clase_cuenta->definicion->CellAttributes() ?>>
+<span id="el_clase_cuenta_definicion">
+<input type="text" data-field="x_definicion" name="x_definicion" id="x_definicion" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($clase_cuenta->definicion->PlaceHolder) ?>" value="<?php echo $clase_cuenta->definicion->EditValue ?>"<?php echo $clase_cuenta->definicion->EditAttributes() ?>>
+</span>
+<?php echo $clase_cuenta->definicion->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
 </div>

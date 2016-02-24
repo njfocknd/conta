@@ -8,9 +8,9 @@ $cuenta_mayor_principal = NULL;
 //
 class ccuenta_mayor_principal extends cTable {
 	var $idcuenta_mayor_principal;
-	var $idsubgrupo_cuenta;
-	var $nombre;
 	var $nomeclatura;
+	var $nombre;
+	var $idsubgrupo_cuenta;
 	var $definicion;
 	var $estado;
 
@@ -43,18 +43,18 @@ class ccuenta_mayor_principal extends cTable {
 		$this->idcuenta_mayor_principal->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idcuenta_mayor_principal'] = &$this->idcuenta_mayor_principal;
 
-		// idsubgrupo_cuenta
-		$this->idsubgrupo_cuenta = new cField('cuenta_mayor_principal', 'cuenta_mayor_principal', 'x_idsubgrupo_cuenta', 'idsubgrupo_cuenta', '`idsubgrupo_cuenta`', '`idsubgrupo_cuenta`', 3, -1, FALSE, '`idsubgrupo_cuenta`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
-		$this->idsubgrupo_cuenta->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['idsubgrupo_cuenta'] = &$this->idsubgrupo_cuenta;
+		// nomeclatura
+		$this->nomeclatura = new cField('cuenta_mayor_principal', 'cuenta_mayor_principal', 'x_nomeclatura', 'nomeclatura', '`nomeclatura`', '`nomeclatura`', 200, -1, FALSE, '`nomeclatura`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->fields['nomeclatura'] = &$this->nomeclatura;
 
 		// nombre
 		$this->nombre = new cField('cuenta_mayor_principal', 'cuenta_mayor_principal', 'x_nombre', 'nombre', '`nombre`', '`nombre`', 200, -1, FALSE, '`nombre`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
 		$this->fields['nombre'] = &$this->nombre;
 
-		// nomeclatura
-		$this->nomeclatura = new cField('cuenta_mayor_principal', 'cuenta_mayor_principal', 'x_nomeclatura', 'nomeclatura', '`nomeclatura`', '`nomeclatura`', 200, -1, FALSE, '`nomeclatura`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
-		$this->fields['nomeclatura'] = &$this->nomeclatura;
+		// idsubgrupo_cuenta
+		$this->idsubgrupo_cuenta = new cField('cuenta_mayor_principal', 'cuenta_mayor_principal', 'x_idsubgrupo_cuenta', 'idsubgrupo_cuenta', '`idsubgrupo_cuenta`', '`idsubgrupo_cuenta`', 3, -1, FALSE, '`idsubgrupo_cuenta`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->idsubgrupo_cuenta->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
+		$this->fields['idsubgrupo_cuenta'] = &$this->idsubgrupo_cuenta;
 
 		// definicion
 		$this->definicion = new cField('cuenta_mayor_principal', 'cuenta_mayor_principal', 'x_definicion', 'definicion', '`definicion`', '`definicion`', 200, -1, FALSE, '`definicion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
@@ -184,7 +184,7 @@ class ccuenta_mayor_principal extends cTable {
 
 	function getSqlWhere() { // Where
 		$sWhere = ($this->_SqlWhere <> "") ? $this->_SqlWhere : "";
-		$this->TableFilter = "";
+		$this->TableFilter = "`estado` = 'Activo'";
 		ew_AddFilter($sWhere, $this->TableFilter);
 		return $sWhere;
 	}
@@ -615,9 +615,9 @@ class ccuenta_mayor_principal extends cTable {
 	// Load row values from recordset
 	function LoadListRowValues(&$rs) {
 		$this->idcuenta_mayor_principal->setDbValue($rs->fields('idcuenta_mayor_principal'));
-		$this->idsubgrupo_cuenta->setDbValue($rs->fields('idsubgrupo_cuenta'));
-		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->nomeclatura->setDbValue($rs->fields('nomeclatura'));
+		$this->nombre->setDbValue($rs->fields('nombre'));
+		$this->idsubgrupo_cuenta->setDbValue($rs->fields('idsubgrupo_cuenta'));
 		$this->definicion->setDbValue($rs->fields('definicion'));
 		$this->estado->setDbValue($rs->fields('estado'));
 	}
@@ -631,9 +631,9 @@ class ccuenta_mayor_principal extends cTable {
 
    // Common render codes
 		// idcuenta_mayor_principal
-		// idsubgrupo_cuenta
-		// nombre
 		// nomeclatura
+		// nombre
+		// idsubgrupo_cuenta
 		// definicion
 		// estado
 		// idcuenta_mayor_principal
@@ -641,11 +641,23 @@ class ccuenta_mayor_principal extends cTable {
 		$this->idcuenta_mayor_principal->ViewValue = $this->idcuenta_mayor_principal->CurrentValue;
 		$this->idcuenta_mayor_principal->ViewCustomAttributes = "";
 
+		// nomeclatura
+		$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
+		$this->nomeclatura->ViewCustomAttributes = "";
+
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
+
 		// idsubgrupo_cuenta
 		if (strval($this->idsubgrupo_cuenta->CurrentValue) <> "") {
 			$sFilterWrk = "`idsubgrupo_cuenta`" . ew_SearchString("=", $this->idsubgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER);
 		$sSqlWrk = "SELECT `idsubgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `subgrupo_cuenta`";
 		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		if (strval($lookuptblfilter) <> "") {
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		}
 		if ($sFilterWrk <> "") {
 			ew_AddFilter($sWhereWrk, $sFilterWrk);
 		}
@@ -664,14 +676,6 @@ class ccuenta_mayor_principal extends cTable {
 			$this->idsubgrupo_cuenta->ViewValue = NULL;
 		}
 		$this->idsubgrupo_cuenta->ViewCustomAttributes = "";
-
-		// nombre
-		$this->nombre->ViewValue = $this->nombre->CurrentValue;
-		$this->nombre->ViewCustomAttributes = "";
-
-		// nomeclatura
-		$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
-		$this->nomeclatura->ViewCustomAttributes = "";
 
 		// definicion
 		$this->definicion->ViewValue = $this->definicion->CurrentValue;
@@ -699,20 +703,20 @@ class ccuenta_mayor_principal extends cTable {
 		$this->idcuenta_mayor_principal->HrefValue = "";
 		$this->idcuenta_mayor_principal->TooltipValue = "";
 
-		// idsubgrupo_cuenta
-		$this->idsubgrupo_cuenta->LinkCustomAttributes = "";
-		$this->idsubgrupo_cuenta->HrefValue = "";
-		$this->idsubgrupo_cuenta->TooltipValue = "";
+		// nomeclatura
+		$this->nomeclatura->LinkCustomAttributes = "";
+		$this->nomeclatura->HrefValue = "";
+		$this->nomeclatura->TooltipValue = "";
 
 		// nombre
 		$this->nombre->LinkCustomAttributes = "";
 		$this->nombre->HrefValue = "";
 		$this->nombre->TooltipValue = "";
 
-		// nomeclatura
-		$this->nomeclatura->LinkCustomAttributes = "";
-		$this->nomeclatura->HrefValue = "";
-		$this->nomeclatura->TooltipValue = "";
+		// idsubgrupo_cuenta
+		$this->idsubgrupo_cuenta->LinkCustomAttributes = "";
+		$this->idsubgrupo_cuenta->HrefValue = "";
+		$this->idsubgrupo_cuenta->TooltipValue = "";
 
 		// definicion
 		$this->definicion->LinkCustomAttributes = "";
@@ -741,6 +745,18 @@ class ccuenta_mayor_principal extends cTable {
 		$this->idcuenta_mayor_principal->EditValue = $this->idcuenta_mayor_principal->CurrentValue;
 		$this->idcuenta_mayor_principal->ViewCustomAttributes = "";
 
+		// nomeclatura
+		$this->nomeclatura->EditAttrs["class"] = "form-control";
+		$this->nomeclatura->EditCustomAttributes = "";
+		$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
+		$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
+
+		// nombre
+		$this->nombre->EditAttrs["class"] = "form-control";
+		$this->nombre->EditCustomAttributes = "";
+		$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
+		$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
+
 		// idsubgrupo_cuenta
 		$this->idsubgrupo_cuenta->EditAttrs["class"] = "form-control";
 		$this->idsubgrupo_cuenta->EditCustomAttributes = "";
@@ -750,6 +766,10 @@ class ccuenta_mayor_principal extends cTable {
 			$sFilterWrk = "`idsubgrupo_cuenta`" . ew_SearchString("=", $this->idsubgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER);
 		$sSqlWrk = "SELECT `idsubgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `subgrupo_cuenta`";
 		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		if (strval($lookuptblfilter) <> "") {
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		}
 		if ($sFilterWrk <> "") {
 			ew_AddFilter($sWhereWrk, $sFilterWrk);
 		}
@@ -770,18 +790,6 @@ class ccuenta_mayor_principal extends cTable {
 		$this->idsubgrupo_cuenta->ViewCustomAttributes = "";
 		} else {
 		}
-
-		// nombre
-		$this->nombre->EditAttrs["class"] = "form-control";
-		$this->nombre->EditCustomAttributes = "";
-		$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
-		$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
-
-		// nomeclatura
-		$this->nomeclatura->EditAttrs["class"] = "form-control";
-		$this->nomeclatura->EditCustomAttributes = "";
-		$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
-		$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
 
 		// definicion
 		$this->definicion->EditAttrs["class"] = "form-control";
@@ -823,16 +831,16 @@ class ccuenta_mayor_principal extends cTable {
 				$Doc->BeginExportRow();
 				if ($ExportPageType == "view") {
 					if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportCaption($this->idcuenta_mayor_principal);
-					if ($this->idsubgrupo_cuenta->Exportable) $Doc->ExportCaption($this->idsubgrupo_cuenta);
-					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
 					if ($this->nomeclatura->Exportable) $Doc->ExportCaption($this->nomeclatura);
+					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
+					if ($this->idsubgrupo_cuenta->Exportable) $Doc->ExportCaption($this->idsubgrupo_cuenta);
 					if ($this->definicion->Exportable) $Doc->ExportCaption($this->definicion);
 					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
 				} else {
 					if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportCaption($this->idcuenta_mayor_principal);
-					if ($this->idsubgrupo_cuenta->Exportable) $Doc->ExportCaption($this->idsubgrupo_cuenta);
-					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
 					if ($this->nomeclatura->Exportable) $Doc->ExportCaption($this->nomeclatura);
+					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
+					if ($this->idsubgrupo_cuenta->Exportable) $Doc->ExportCaption($this->idsubgrupo_cuenta);
 					if ($this->definicion->Exportable) $Doc->ExportCaption($this->definicion);
 					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
 				}
@@ -867,16 +875,16 @@ class ccuenta_mayor_principal extends cTable {
 					$Doc->BeginExportRow($RowCnt); // Allow CSS styles if enabled
 					if ($ExportPageType == "view") {
 						if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportField($this->idcuenta_mayor_principal);
-						if ($this->idsubgrupo_cuenta->Exportable) $Doc->ExportField($this->idsubgrupo_cuenta);
-						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
 						if ($this->nomeclatura->Exportable) $Doc->ExportField($this->nomeclatura);
+						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
+						if ($this->idsubgrupo_cuenta->Exportable) $Doc->ExportField($this->idsubgrupo_cuenta);
 						if ($this->definicion->Exportable) $Doc->ExportField($this->definicion);
 						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
 					} else {
 						if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportField($this->idcuenta_mayor_principal);
-						if ($this->idsubgrupo_cuenta->Exportable) $Doc->ExportField($this->idsubgrupo_cuenta);
-						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
 						if ($this->nomeclatura->Exportable) $Doc->ExportField($this->nomeclatura);
+						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
+						if ($this->idsubgrupo_cuenta->Exportable) $Doc->ExportField($this->idsubgrupo_cuenta);
 						if ($this->definicion->Exportable) $Doc->ExportField($this->definicion);
 						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
 					}

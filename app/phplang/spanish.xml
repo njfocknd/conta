@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" standalone="yes"?>
-<ew-language date="2016/1/7" version="11.0.0" id="es" name="Spanish" desc="Spanish" author="Eddy Velasquez">
+<ew-language date="2016/2/23" version="11.0.0" id="es" name="Spanish" desc="Spanish" author="Eddy Velasquez">
 	<locale>
 		<phrase id="locale" value=""/><!-- *** system locale for this language -->
 		<phrase id="use_system_locale" value="0"/><!-- *** change to "0" to disable system locale and use the following settings *** -->
@@ -414,21 +414,29 @@
 		<phrase id="or" value="o"/>
 	</global>
 	<project><phrase id="footertext" value="&amp;copy;2014 e.World Technology Ltd. All rights reserved."/>
+<menu id="2"><phrase id="menutext" value="Cuenta"/>
+</menu>
+<menu id="7"><phrase id="menutext" value="Partida"/>
+</menu>
+<menu id="11"><phrase id="menutext" value="Catálogo"/>
+</menu>
 <menu id="1"><phrase id="menutext" value="Clase de Cuenta"/>
 </menu>
 <menu id="5"><phrase id="menutext" value="Grupo de Cuenta"/>
 </menu>
-<menu id="8"><phrase id="menutext" value="SubGrupo de Cuenta"/>
+<menu id="10"><phrase id="menutext" value="SubGrupo de Cuenta"/>
 </menu>
-<menu id="4"><phrase id="menutext" value="Cuenta de Mayor Principal"/>
+<menu id="3"><phrase id="menutext" value="Cuenta Mayor Auxiliar"/>
 </menu>
-<menu id="2"><phrase id="menutext" value="cuenta"/>
+<menu id="4"><phrase id="menutext" value="Cuenta Mayor Principal"/>
 </menu>
-<menu id="3"><phrase id="menutext" value="cuenta mayor auxiliar"/>
+<menu id="9"><phrase id="menutext" value="SubCuenta"/>
 </menu>
-<menu id="6"><phrase id="menutext" value="partida"/>
+<menu id="6"><phrase id="menutext" value="País"/>
 </menu>
-<menu id="7"><phrase id="menutext" value="subcuenta"/>
+<menu id="12"><phrase id="menutext" value="CRM"/>
+</menu>
+<menu id="8"><phrase id="menutext" value="Persona"/>
 </menu>
 <table id="clase_cuenta"><phrase id="tblcaption" value="Clase de Cuenta"/>
 <field id="idclase_cuenta"><phrase id="fldcaption" value="idclase cuenta"/>
@@ -466,7 +474,7 @@
 <phrase id="fldtagcaption2" value="Inactivo"/>
 </field>
 </table>
-<table id="cuenta_mayor_auxiliar"><phrase id="tblcaption" value="Cuenta de Mayor Auxiliar"/>
+<table id="cuenta_mayor_auxiliar"><phrase id="tblcaption" value="Cuenta Mayor Auxiliar"/>
 <field id="idcuenta_mayor_auxiliar"><phrase id="fldcaption" value="idcuenta mayor auxiliar"/>
 </field>
 <field id="idcuenta_mayor_principal"><phrase id="fldcaption" value="Cuenta Mayor Principal"/>
@@ -484,7 +492,7 @@
 <phrase id="fldtagcaption2" value="Inactivo"/>
 </field>
 </table>
-<table id="cuenta_mayor_principal"><phrase id="tblcaption" value="Cuenta de Mayor Principal"/>
+<table id="cuenta_mayor_principal"><phrase id="tblcaption" value="Cuenta Mayor Principal"/>
 <field id="idcuenta_mayor_principal"><phrase id="fldcaption" value="idcuenta mayor principal"/>
 </field>
 <field id="idsubgrupo_cuenta"><phrase id="fldcaption" value="SubGrupo de Cuenta"/>
@@ -502,7 +510,7 @@
 <phrase id="fldtagcaption2" value="Inactivo"/>
 </field>
 </table>
-<table id="grupo_cuenta"><phrase id="tblcaption" value="Grupo de Cuenta"/>
+<table id="grupo_cuenta"><phrase id="tblcaption" value="grupo cuenta"/>
 <field id="idgrupo_cuenta"><phrase id="fldcaption" value="idgrupo cuenta"/>
 </field>
 <field id="idclase_cuenta"><phrase id="fldcaption" value="Clase de Cuenta"/>
@@ -518,6 +526,20 @@
 <phrase id="fldtagcaption1" value="Activo"/>
 <phrase id="fldtagvalue2" value="Inactivo"/>
 <phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+</table>
+<table id="pais"><phrase id="tblcaption" value="País"/>
+<field id="idpais"><phrase id="fldcaption" value="idpais"/>
+</field>
+<field id="nombre"><phrase id="fldcaption" value="Nombre"/>
+</field>
+<field id="estado"><phrase id="fldcaption" value="Estado"/>
+<phrase id="fldtagvalue1" value="Activo"/>
+<phrase id="fldtagcaption1" value="Activo"/>
+<phrase id="fldtagvalue2" value="Inactivo"/>
+<phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+<field id="fecha_insercion"><phrase id="fldcaption" value="Fecha de Ingreso"/>
 </field>
 </table>
 <table id="partida"><phrase id="tblcaption" value="partida"/>
@@ -540,18 +562,56 @@
 <field id="descripcion"><phrase id="fldcaption" value="descripcion"/>
 </field>
 </table>
-<table id="subcuenta"><phrase id="tblcaption" value="subcuenta"/>
+<table id="persona"><phrase id="tblcaption" value="Persona"/>
+<field id="idpersona"><phrase id="fldcaption" value="idpersona"/>
+</field>
+<field id="tipo_persona"><phrase id="fldcaption" value="Tipo de Persona"/>
+<phrase id="fldtagvalue1" value="Individual"/>
+<phrase id="fldtagcaption1" value="Individual"/>
+<phrase id="fldtagvalue2" value="Juridica"/>
+<phrase id="fldtagcaption2" value="Juridica"/>
+</field>
+<field id="nombre"><phrase id="fldcaption" value="Nombre"/>
+</field>
+<field id="apellido"><phrase id="fldcaption" value="Apellido"/>
+</field>
+<field id="direccion"><phrase id="fldcaption" value="Dirección"/>
+</field>
+<field id="cui"><phrase id="fldcaption" value="CUI"/>
+</field>
+<field id="idpais"><phrase id="fldcaption" value="País"/>
+</field>
+<field id="fecha_nacimiento"><phrase id="fldcaption" value="Fecha de Nacimiento"/>
+</field>
+<field id="_email"><phrase id="fldcaption" value="Correo Electrónico"/>
+</field>
+<field id="sexo"><phrase id="fldcaption" value="Sexo"/>
+<phrase id="fldtagvalue1" value="Masculino"/>
+<phrase id="fldtagcaption1" value="Masculino"/>
+<phrase id="fldtagvalue2" value="Femenino"/>
+<phrase id="fldtagcaption2" value="Femenino"/>
+</field>
+<field id="fecha_insercion"><phrase id="fldcaption" value="Fecha de Ingreso"/>
+</field>
+<field id="estado"><phrase id="fldcaption" value="Estado"/>
+<phrase id="fldtagvalue1" value="Activo"/>
+<phrase id="fldtagcaption1" value="Activo"/>
+<phrase id="fldtagvalue2" value="Inactivo"/>
+<phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+</table>
+<table id="subcuenta"><phrase id="tblcaption" value="SubCuenta"/>
 <field id="idsubcuenta"><phrase id="fldcaption" value="idsubcuenta"/>
 </field>
-<field id="idcuenta_mayor_auxiliar"><phrase id="fldcaption" value="idcuenta mayor auxiliar"/>
+<field id="idcuenta_mayor_auxiliar"><phrase id="fldcaption" value="Cuenta Mayor Auxiliar"/>
 </field>
-<field id="nombre"><phrase id="fldcaption" value="nombre"/>
+<field id="nombre"><phrase id="fldcaption" value="Nombre"/>
 </field>
-<field id="nomeclatura"><phrase id="fldcaption" value="nomeclatura"/>
+<field id="nomeclatura"><phrase id="fldcaption" value="Nomenclatura"/>
 </field>
-<field id="definicion"><phrase id="fldcaption" value="definicion"/>
+<field id="definicion"><phrase id="fldcaption" value="Definición"/>
 </field>
-<field id="estado"><phrase id="fldcaption" value="estado"/>
+<field id="estado"><phrase id="fldcaption" value="Estado"/>
 <phrase id="fldtagvalue1" value="Activo"/>
 <phrase id="fldtagcaption1" value="Activo"/>
 <phrase id="fldtagvalue2" value="Inactivo"/>

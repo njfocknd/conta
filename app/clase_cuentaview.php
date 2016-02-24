@@ -23,7 +23,7 @@ class cclase_cuenta_view extends cclase_cuenta {
 	var $PageID = 'view';
 
 	// Project ID
-	var $ProjectID = "{5B8C292A-87A7-44A6-9434-2D0CECD099FC}";
+	var $ProjectID = "{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}";
 
 	// Table name
 	var $TableName = 'clase_cuenta';
@@ -426,6 +426,11 @@ class cclase_cuenta_view extends cclase_cuenta {
 		$options = &$this->OtherOptions;
 		$option = &$options["action"];
 
+		// Add
+		$item = &$option->Add("add");
+		$item->Body = "<a class=\"ewAction ewAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageAddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageAddLink")) . "\" href=\"" . ew_HtmlEncode($this->AddUrl) . "\">" . $Language->Phrase("ViewPageAddLink") . "</a>";
+		$item->Visible = ($this->AddUrl <> "");
+
 		// Edit
 		$item = &$option->Add("edit");
 		$item->Body = "<a class=\"ewAction ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("ViewPageEditLink") . "</a>";
@@ -587,10 +592,10 @@ class cclase_cuenta_view extends cclase_cuenta {
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
 		$this->idclase_cuenta->setDbValue($rs->fields('idclase_cuenta'));
-		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->nomenclatura->setDbValue($rs->fields('nomenclatura'));
-		$this->definicion->setDbValue($rs->fields('definicion'));
+		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->estado->setDbValue($rs->fields('estado'));
+		$this->definicion->setDbValue($rs->fields('definicion'));
 	}
 
 	// Load DbValue from recordset
@@ -598,10 +603,10 @@ class cclase_cuenta_view extends cclase_cuenta {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
 		$this->idclase_cuenta->DbValue = $row['idclase_cuenta'];
-		$this->nombre->DbValue = $row['nombre'];
 		$this->nomenclatura->DbValue = $row['nomenclatura'];
-		$this->definicion->DbValue = $row['definicion'];
+		$this->nombre->DbValue = $row['nombre'];
 		$this->estado->DbValue = $row['estado'];
+		$this->definicion->DbValue = $row['definicion'];
 	}
 
 	// Render row values based on field settings
@@ -622,10 +627,10 @@ class cclase_cuenta_view extends cclase_cuenta {
 
 		// Common render codes for all row types
 		// idclase_cuenta
-		// nombre
 		// nomenclatura
-		// definicion
+		// nombre
 		// estado
+		// definicion
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -633,17 +638,13 @@ class cclase_cuenta_view extends cclase_cuenta {
 			$this->idclase_cuenta->ViewValue = $this->idclase_cuenta->CurrentValue;
 			$this->idclase_cuenta->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
-
 			// nomenclatura
 			$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
 			$this->nomenclatura->ViewCustomAttributes = "";
 
-			// definicion
-			$this->definicion->ViewValue = $this->definicion->CurrentValue;
-			$this->definicion->ViewCustomAttributes = "";
+			// nombre
+			$this->nombre->ViewValue = $this->nombre->CurrentValue;
+			$this->nombre->ViewCustomAttributes = "";
 
 			// estado
 			if (strval($this->estado->CurrentValue) <> "") {
@@ -662,30 +663,34 @@ class cclase_cuenta_view extends cclase_cuenta {
 			}
 			$this->estado->ViewCustomAttributes = "";
 
+			// definicion
+			$this->definicion->ViewValue = $this->definicion->CurrentValue;
+			$this->definicion->ViewCustomAttributes = "";
+
 			// idclase_cuenta
 			$this->idclase_cuenta->LinkCustomAttributes = "";
 			$this->idclase_cuenta->HrefValue = "";
 			$this->idclase_cuenta->TooltipValue = "";
-
-			// nombre
-			$this->nombre->LinkCustomAttributes = "";
-			$this->nombre->HrefValue = "";
-			$this->nombre->TooltipValue = "";
 
 			// nomenclatura
 			$this->nomenclatura->LinkCustomAttributes = "";
 			$this->nomenclatura->HrefValue = "";
 			$this->nomenclatura->TooltipValue = "";
 
-			// definicion
-			$this->definicion->LinkCustomAttributes = "";
-			$this->definicion->HrefValue = "";
-			$this->definicion->TooltipValue = "";
+			// nombre
+			$this->nombre->LinkCustomAttributes = "";
+			$this->nombre->HrefValue = "";
+			$this->nombre->TooltipValue = "";
 
 			// estado
 			$this->estado->LinkCustomAttributes = "";
 			$this->estado->HrefValue = "";
 			$this->estado->TooltipValue = "";
+
+			// definicion
+			$this->definicion->LinkCustomAttributes = "";
+			$this->definicion->HrefValue = "";
+			$this->definicion->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -901,17 +906,6 @@ $clase_cuenta_view->ShowMessage();
 </td>
 	</tr>
 <?php } ?>
-<?php if ($clase_cuenta->nombre->Visible) { // nombre ?>
-	<tr id="r_nombre">
-		<td><span id="elh_clase_cuenta_nombre"><?php echo $clase_cuenta->nombre->FldCaption() ?></span></td>
-		<td<?php echo $clase_cuenta->nombre->CellAttributes() ?>>
-<span id="el_clase_cuenta_nombre" class="form-group">
-<span<?php echo $clase_cuenta->nombre->ViewAttributes() ?>>
-<?php echo $clase_cuenta->nombre->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
 <?php if ($clase_cuenta->nomenclatura->Visible) { // nomenclatura ?>
 	<tr id="r_nomenclatura">
 		<td><span id="elh_clase_cuenta_nomenclatura"><?php echo $clase_cuenta->nomenclatura->FldCaption() ?></span></td>
@@ -923,13 +917,13 @@ $clase_cuenta_view->ShowMessage();
 </td>
 	</tr>
 <?php } ?>
-<?php if ($clase_cuenta->definicion->Visible) { // definicion ?>
-	<tr id="r_definicion">
-		<td><span id="elh_clase_cuenta_definicion"><?php echo $clase_cuenta->definicion->FldCaption() ?></span></td>
-		<td<?php echo $clase_cuenta->definicion->CellAttributes() ?>>
-<span id="el_clase_cuenta_definicion" class="form-group">
-<span<?php echo $clase_cuenta->definicion->ViewAttributes() ?>>
-<?php echo $clase_cuenta->definicion->ViewValue ?></span>
+<?php if ($clase_cuenta->nombre->Visible) { // nombre ?>
+	<tr id="r_nombre">
+		<td><span id="elh_clase_cuenta_nombre"><?php echo $clase_cuenta->nombre->FldCaption() ?></span></td>
+		<td<?php echo $clase_cuenta->nombre->CellAttributes() ?>>
+<span id="el_clase_cuenta_nombre" class="form-group">
+<span<?php echo $clase_cuenta->nombre->ViewAttributes() ?>>
+<?php echo $clase_cuenta->nombre->ViewValue ?></span>
 </span>
 </td>
 	</tr>
@@ -941,6 +935,17 @@ $clase_cuenta_view->ShowMessage();
 <span id="el_clase_cuenta_estado" class="form-group">
 <span<?php echo $clase_cuenta->estado->ViewAttributes() ?>>
 <?php echo $clase_cuenta->estado->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($clase_cuenta->definicion->Visible) { // definicion ?>
+	<tr id="r_definicion">
+		<td><span id="elh_clase_cuenta_definicion"><?php echo $clase_cuenta->definicion->FldCaption() ?></span></td>
+		<td<?php echo $clase_cuenta->definicion->CellAttributes() ?>>
+<span id="el_clase_cuenta_definicion" class="form-group">
+<span<?php echo $clase_cuenta->definicion->ViewAttributes() ?>>
+<?php echo $clase_cuenta->definicion->ViewValue ?></span>
 </span>
 </td>
 	</tr>

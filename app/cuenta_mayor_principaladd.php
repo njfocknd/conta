@@ -24,7 +24,7 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 	var $PageID = 'add';
 
 	// Project ID
-	var $ProjectID = "{5B8C292A-87A7-44A6-9434-2D0CECD099FC}";
+	var $ProjectID = "{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}";
 
 	// Table name
 	var $TableName = 'cuenta_mayor_principal';
@@ -419,12 +419,12 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 
 	// Load default values
 	function LoadDefaultValues() {
-		$this->idsubgrupo_cuenta->CurrentValue = NULL;
-		$this->idsubgrupo_cuenta->OldValue = $this->idsubgrupo_cuenta->CurrentValue;
-		$this->nombre->CurrentValue = NULL;
-		$this->nombre->OldValue = $this->nombre->CurrentValue;
 		$this->nomeclatura->CurrentValue = NULL;
 		$this->nomeclatura->OldValue = $this->nomeclatura->CurrentValue;
+		$this->nombre->CurrentValue = NULL;
+		$this->nombre->OldValue = $this->nombre->CurrentValue;
+		$this->idsubgrupo_cuenta->CurrentValue = NULL;
+		$this->idsubgrupo_cuenta->OldValue = $this->idsubgrupo_cuenta->CurrentValue;
 		$this->definicion->CurrentValue = NULL;
 		$this->definicion->OldValue = $this->definicion->CurrentValue;
 	}
@@ -434,14 +434,14 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 
 		// Load from form
 		global $objForm;
-		if (!$this->idsubgrupo_cuenta->FldIsDetailKey) {
-			$this->idsubgrupo_cuenta->setFormValue($objForm->GetValue("x_idsubgrupo_cuenta"));
+		if (!$this->nomeclatura->FldIsDetailKey) {
+			$this->nomeclatura->setFormValue($objForm->GetValue("x_nomeclatura"));
 		}
 		if (!$this->nombre->FldIsDetailKey) {
 			$this->nombre->setFormValue($objForm->GetValue("x_nombre"));
 		}
-		if (!$this->nomeclatura->FldIsDetailKey) {
-			$this->nomeclatura->setFormValue($objForm->GetValue("x_nomeclatura"));
+		if (!$this->idsubgrupo_cuenta->FldIsDetailKey) {
+			$this->idsubgrupo_cuenta->setFormValue($objForm->GetValue("x_idsubgrupo_cuenta"));
 		}
 		if (!$this->definicion->FldIsDetailKey) {
 			$this->definicion->setFormValue($objForm->GetValue("x_definicion"));
@@ -452,9 +452,9 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 	function RestoreFormValues() {
 		global $objForm;
 		$this->LoadOldRecord();
-		$this->idsubgrupo_cuenta->CurrentValue = $this->idsubgrupo_cuenta->FormValue;
-		$this->nombre->CurrentValue = $this->nombre->FormValue;
 		$this->nomeclatura->CurrentValue = $this->nomeclatura->FormValue;
+		$this->nombre->CurrentValue = $this->nombre->FormValue;
+		$this->idsubgrupo_cuenta->CurrentValue = $this->idsubgrupo_cuenta->FormValue;
 		$this->definicion->CurrentValue = $this->definicion->FormValue;
 	}
 
@@ -488,9 +488,9 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
 		$this->idcuenta_mayor_principal->setDbValue($rs->fields('idcuenta_mayor_principal'));
-		$this->idsubgrupo_cuenta->setDbValue($rs->fields('idsubgrupo_cuenta'));
-		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->nomeclatura->setDbValue($rs->fields('nomeclatura'));
+		$this->nombre->setDbValue($rs->fields('nombre'));
+		$this->idsubgrupo_cuenta->setDbValue($rs->fields('idsubgrupo_cuenta'));
 		$this->definicion->setDbValue($rs->fields('definicion'));
 		$this->estado->setDbValue($rs->fields('estado'));
 	}
@@ -500,9 +500,9 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
 		$this->idcuenta_mayor_principal->DbValue = $row['idcuenta_mayor_principal'];
-		$this->idsubgrupo_cuenta->DbValue = $row['idsubgrupo_cuenta'];
-		$this->nombre->DbValue = $row['nombre'];
 		$this->nomeclatura->DbValue = $row['nomeclatura'];
+		$this->nombre->DbValue = $row['nombre'];
+		$this->idsubgrupo_cuenta->DbValue = $row['idsubgrupo_cuenta'];
 		$this->definicion->DbValue = $row['definicion'];
 		$this->estado->DbValue = $row['estado'];
 	}
@@ -541,9 +541,9 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 
 		// Common render codes for all row types
 		// idcuenta_mayor_principal
-		// idsubgrupo_cuenta
-		// nombre
 		// nomeclatura
+		// nombre
+		// idsubgrupo_cuenta
 		// definicion
 		// estado
 
@@ -553,11 +553,23 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 			$this->idcuenta_mayor_principal->ViewValue = $this->idcuenta_mayor_principal->CurrentValue;
 			$this->idcuenta_mayor_principal->ViewCustomAttributes = "";
 
+			// nomeclatura
+			$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
+			$this->nomeclatura->ViewCustomAttributes = "";
+
+			// nombre
+			$this->nombre->ViewValue = $this->nombre->CurrentValue;
+			$this->nombre->ViewCustomAttributes = "";
+
 			// idsubgrupo_cuenta
 			if (strval($this->idsubgrupo_cuenta->CurrentValue) <> "") {
 				$sFilterWrk = "`idsubgrupo_cuenta`" . ew_SearchString("=", $this->idsubgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER);
 			$sSqlWrk = "SELECT `idsubgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `subgrupo_cuenta`";
 			$sWhereWrk = "";
+			$lookuptblfilter = "`estado` = 'Activo'";
+			if (strval($lookuptblfilter) <> "") {
+				ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			}
 			if ($sFilterWrk <> "") {
 				ew_AddFilter($sWhereWrk, $sFilterWrk);
 			}
@@ -576,14 +588,6 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 				$this->idsubgrupo_cuenta->ViewValue = NULL;
 			}
 			$this->idsubgrupo_cuenta->ViewCustomAttributes = "";
-
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
-
-			// nomeclatura
-			$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
-			$this->nomeclatura->ViewCustomAttributes = "";
 
 			// definicion
 			$this->definicion->ViewValue = $this->definicion->CurrentValue;
@@ -606,26 +610,38 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 			}
 			$this->estado->ViewCustomAttributes = "";
 
-			// idsubgrupo_cuenta
-			$this->idsubgrupo_cuenta->LinkCustomAttributes = "";
-			$this->idsubgrupo_cuenta->HrefValue = "";
-			$this->idsubgrupo_cuenta->TooltipValue = "";
+			// nomeclatura
+			$this->nomeclatura->LinkCustomAttributes = "";
+			$this->nomeclatura->HrefValue = "";
+			$this->nomeclatura->TooltipValue = "";
 
 			// nombre
 			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
 			$this->nombre->TooltipValue = "";
 
-			// nomeclatura
-			$this->nomeclatura->LinkCustomAttributes = "";
-			$this->nomeclatura->HrefValue = "";
-			$this->nomeclatura->TooltipValue = "";
+			// idsubgrupo_cuenta
+			$this->idsubgrupo_cuenta->LinkCustomAttributes = "";
+			$this->idsubgrupo_cuenta->HrefValue = "";
+			$this->idsubgrupo_cuenta->TooltipValue = "";
 
 			// definicion
 			$this->definicion->LinkCustomAttributes = "";
 			$this->definicion->HrefValue = "";
 			$this->definicion->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
+
+			// nomeclatura
+			$this->nomeclatura->EditAttrs["class"] = "form-control";
+			$this->nomeclatura->EditCustomAttributes = "";
+			$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
+			$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
+
+			// nombre
+			$this->nombre->EditAttrs["class"] = "form-control";
+			$this->nombre->EditCustomAttributes = "";
+			$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
+			$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
 
 			// idsubgrupo_cuenta
 			$this->idsubgrupo_cuenta->EditAttrs["class"] = "form-control";
@@ -636,6 +652,10 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 				$sFilterWrk = "`idsubgrupo_cuenta`" . ew_SearchString("=", $this->idsubgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER);
 			$sSqlWrk = "SELECT `idsubgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `subgrupo_cuenta`";
 			$sWhereWrk = "";
+			$lookuptblfilter = "`estado` = 'Activo'";
+			if (strval($lookuptblfilter) <> "") {
+				ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			}
 			if ($sFilterWrk <> "") {
 				ew_AddFilter($sWhereWrk, $sFilterWrk);
 			}
@@ -662,6 +682,10 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 			}
 			$sSqlWrk = "SELECT `idsubgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `subgrupo_cuenta`";
 			$sWhereWrk = "";
+			$lookuptblfilter = "`estado` = 'Activo'";
+			if (strval($lookuptblfilter) <> "") {
+				ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			}
 			if ($sFilterWrk <> "") {
 				ew_AddFilter($sWhereWrk, $sFilterWrk);
 			}
@@ -676,18 +700,6 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 			$this->idsubgrupo_cuenta->EditValue = $arwrk;
 			}
 
-			// nombre
-			$this->nombre->EditAttrs["class"] = "form-control";
-			$this->nombre->EditCustomAttributes = "";
-			$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
-			$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
-
-			// nomeclatura
-			$this->nomeclatura->EditAttrs["class"] = "form-control";
-			$this->nomeclatura->EditCustomAttributes = "";
-			$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
-			$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
-
 			// definicion
 			$this->definicion->EditAttrs["class"] = "form-control";
 			$this->definicion->EditCustomAttributes = "";
@@ -695,15 +707,15 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 			$this->definicion->PlaceHolder = ew_RemoveHtml($this->definicion->FldCaption());
 
 			// Edit refer script
-			// idsubgrupo_cuenta
+			// nomeclatura
 
-			$this->idsubgrupo_cuenta->HrefValue = "";
+			$this->nomeclatura->HrefValue = "";
 
 			// nombre
 			$this->nombre->HrefValue = "";
 
-			// nomeclatura
-			$this->nomeclatura->HrefValue = "";
+			// idsubgrupo_cuenta
+			$this->idsubgrupo_cuenta->HrefValue = "";
 
 			// definicion
 			$this->definicion->HrefValue = "";
@@ -729,14 +741,14 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 		// Check if validation required
 		if (!EW_SERVER_VALIDATE)
 			return ($gsFormError == "");
-		if (!$this->idsubgrupo_cuenta->FldIsDetailKey && !is_null($this->idsubgrupo_cuenta->FormValue) && $this->idsubgrupo_cuenta->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->idsubgrupo_cuenta->FldCaption(), $this->idsubgrupo_cuenta->ReqErrMsg));
+		if (!$this->nomeclatura->FldIsDetailKey && !is_null($this->nomeclatura->FormValue) && $this->nomeclatura->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->nomeclatura->FldCaption(), $this->nomeclatura->ReqErrMsg));
 		}
 		if (!$this->nombre->FldIsDetailKey && !is_null($this->nombre->FormValue) && $this->nombre->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->nombre->FldCaption(), $this->nombre->ReqErrMsg));
 		}
-		if (!$this->nomeclatura->FldIsDetailKey && !is_null($this->nomeclatura->FormValue) && $this->nomeclatura->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->nomeclatura->FldCaption(), $this->nomeclatura->ReqErrMsg));
+		if (!$this->idsubgrupo_cuenta->FldIsDetailKey && !is_null($this->idsubgrupo_cuenta->FormValue) && $this->idsubgrupo_cuenta->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->idsubgrupo_cuenta->FldCaption(), $this->idsubgrupo_cuenta->ReqErrMsg));
 		}
 		if (!$this->definicion->FldIsDetailKey && !is_null($this->definicion->FormValue) && $this->definicion->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->definicion->FldCaption(), $this->definicion->ReqErrMsg));
@@ -775,14 +787,14 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 		}
 		$rsnew = array();
 
-		// idsubgrupo_cuenta
-		$this->idsubgrupo_cuenta->SetDbValueDef($rsnew, $this->idsubgrupo_cuenta->CurrentValue, 0, FALSE);
+		// nomeclatura
+		$this->nomeclatura->SetDbValueDef($rsnew, $this->nomeclatura->CurrentValue, "", FALSE);
 
 		// nombre
 		$this->nombre->SetDbValueDef($rsnew, $this->nombre->CurrentValue, "", FALSE);
 
-		// nomeclatura
-		$this->nomeclatura->SetDbValueDef($rsnew, $this->nomeclatura->CurrentValue, "", FALSE);
+		// idsubgrupo_cuenta
+		$this->idsubgrupo_cuenta->SetDbValueDef($rsnew, $this->idsubgrupo_cuenta->CurrentValue, 0, FALSE);
 
 		// definicion
 		$this->definicion->SetDbValueDef($rsnew, $this->definicion->CurrentValue, "", FALSE);
@@ -1041,15 +1053,15 @@ fcuenta_mayor_principaladd.Validate = function() {
 	for (var i = startcnt; i <= rowcnt; i++) {
 		var infix = ($k[0]) ? String(i) : "";
 		$fobj.data("rowindex", infix);
-			elm = this.GetElements("x" + infix + "_idsubgrupo_cuenta");
-			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $cuenta_mayor_principal->idsubgrupo_cuenta->FldCaption(), $cuenta_mayor_principal->idsubgrupo_cuenta->ReqErrMsg)) ?>");
-			elm = this.GetElements("x" + infix + "_nombre");
-			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $cuenta_mayor_principal->nombre->FldCaption(), $cuenta_mayor_principal->nombre->ReqErrMsg)) ?>");
 			elm = this.GetElements("x" + infix + "_nomeclatura");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $cuenta_mayor_principal->nomeclatura->FldCaption(), $cuenta_mayor_principal->nomeclatura->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_nombre");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $cuenta_mayor_principal->nombre->FldCaption(), $cuenta_mayor_principal->nombre->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_idsubgrupo_cuenta");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $cuenta_mayor_principal->idsubgrupo_cuenta->FldCaption(), $cuenta_mayor_principal->idsubgrupo_cuenta->ReqErrMsg)) ?>");
 			elm = this.GetElements("x" + infix + "_definicion");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $cuenta_mayor_principal->definicion->FldCaption(), $cuenta_mayor_principal->definicion->ReqErrMsg)) ?>");
@@ -1113,6 +1125,26 @@ $cuenta_mayor_principal_add->ShowMessage();
 <input type="hidden" name="t" value="cuenta_mayor_principal">
 <input type="hidden" name="a_add" id="a_add" value="A">
 <div>
+<?php if ($cuenta_mayor_principal->nomeclatura->Visible) { // nomeclatura ?>
+	<div id="r_nomeclatura" class="form-group">
+		<label id="elh_cuenta_mayor_principal_nomeclatura" for="x_nomeclatura" class="col-sm-2 control-label ewLabel"><?php echo $cuenta_mayor_principal->nomeclatura->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $cuenta_mayor_principal->nomeclatura->CellAttributes() ?>>
+<span id="el_cuenta_mayor_principal_nomeclatura">
+<input type="text" data-field="x_nomeclatura" name="x_nomeclatura" id="x_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nomeclatura->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_principal->nomeclatura->EditValue ?>"<?php echo $cuenta_mayor_principal->nomeclatura->EditAttributes() ?>>
+</span>
+<?php echo $cuenta_mayor_principal->nomeclatura->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
+<?php if ($cuenta_mayor_principal->nombre->Visible) { // nombre ?>
+	<div id="r_nombre" class="form-group">
+		<label id="elh_cuenta_mayor_principal_nombre" for="x_nombre" class="col-sm-2 control-label ewLabel"><?php echo $cuenta_mayor_principal->nombre->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $cuenta_mayor_principal->nombre->CellAttributes() ?>>
+<span id="el_cuenta_mayor_principal_nombre">
+<input type="text" data-field="x_nombre" name="x_nombre" id="x_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nombre->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_principal->nombre->EditValue ?>"<?php echo $cuenta_mayor_principal->nombre->EditAttributes() ?>>
+</span>
+<?php echo $cuenta_mayor_principal->nombre->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
 <?php if ($cuenta_mayor_principal->idsubgrupo_cuenta->Visible) { // idsubgrupo_cuenta ?>
 	<div id="r_idsubgrupo_cuenta" class="form-group">
 		<label id="elh_cuenta_mayor_principal_idsubgrupo_cuenta" for="x_idsubgrupo_cuenta" class="col-sm-2 control-label ewLabel"><?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
@@ -1146,6 +1178,10 @@ if (is_array($cuenta_mayor_principal->idsubgrupo_cuenta->EditValue)) {
 <?php
 $sSqlWrk = "SELECT `idsubgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `subgrupo_cuenta`";
 $sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+if (strval($lookuptblfilter) <> "") {
+	ew_AddFilter($sWhereWrk, $lookuptblfilter);
+}
 
 // Call Lookup selecting
 $cuenta_mayor_principal->Lookup_Selecting($cuenta_mayor_principal->idsubgrupo_cuenta, $sWhereWrk);
@@ -1155,26 +1191,6 @@ if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 </span>
 <?php } ?>
 <?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->CustomMsg ?></div></div>
-	</div>
-<?php } ?>
-<?php if ($cuenta_mayor_principal->nombre->Visible) { // nombre ?>
-	<div id="r_nombre" class="form-group">
-		<label id="elh_cuenta_mayor_principal_nombre" for="x_nombre" class="col-sm-2 control-label ewLabel"><?php echo $cuenta_mayor_principal->nombre->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
-		<div class="col-sm-10"><div<?php echo $cuenta_mayor_principal->nombre->CellAttributes() ?>>
-<span id="el_cuenta_mayor_principal_nombre">
-<input type="text" data-field="x_nombre" name="x_nombre" id="x_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nombre->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_principal->nombre->EditValue ?>"<?php echo $cuenta_mayor_principal->nombre->EditAttributes() ?>>
-</span>
-<?php echo $cuenta_mayor_principal->nombre->CustomMsg ?></div></div>
-	</div>
-<?php } ?>
-<?php if ($cuenta_mayor_principal->nomeclatura->Visible) { // nomeclatura ?>
-	<div id="r_nomeclatura" class="form-group">
-		<label id="elh_cuenta_mayor_principal_nomeclatura" for="x_nomeclatura" class="col-sm-2 control-label ewLabel"><?php echo $cuenta_mayor_principal->nomeclatura->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
-		<div class="col-sm-10"><div<?php echo $cuenta_mayor_principal->nomeclatura->CellAttributes() ?>>
-<span id="el_cuenta_mayor_principal_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x_nomeclatura" id="x_nomeclatura" size="30" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nomeclatura->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_principal->nomeclatura->EditValue ?>"<?php echo $cuenta_mayor_principal->nomeclatura->EditAttributes() ?>>
-</span>
-<?php echo $cuenta_mayor_principal->nomeclatura->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
 <?php if ($cuenta_mayor_principal->definicion->Visible) { // definicion ?>

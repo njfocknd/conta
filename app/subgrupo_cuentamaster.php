@@ -1,22 +1,21 @@
 <?php
 
-// idgrupo_cuenta
-// nombre
 // nomeclatura
-// estado
+// nombre
+// idgrupo_cuenta
 
 ?>
 <?php if ($subgrupo_cuenta->Visible) { ?>
 <!-- <h4 class="ewMasterCaption"><?php echo $subgrupo_cuenta->TableCaption() ?></h4> -->
 <table id="tbl_subgrupo_cuentamaster" class="table table-bordered table-striped ewViewTable">
 	<tbody>
-<?php if ($subgrupo_cuenta->idgrupo_cuenta->Visible) { // idgrupo_cuenta ?>
-		<tr id="r_idgrupo_cuenta">
-			<td><?php echo $subgrupo_cuenta->idgrupo_cuenta->FldCaption() ?></td>
-			<td<?php echo $subgrupo_cuenta->idgrupo_cuenta->CellAttributes() ?>>
-<span id="el_subgrupo_cuenta_idgrupo_cuenta" class="form-group">
-<span<?php echo $subgrupo_cuenta->idgrupo_cuenta->ViewAttributes() ?>>
-<?php echo $subgrupo_cuenta->idgrupo_cuenta->ListViewValue() ?></span>
+<?php if ($subgrupo_cuenta->nomeclatura->Visible) { // nomeclatura ?>
+		<tr id="r_nomeclatura">
+			<td><?php echo $subgrupo_cuenta->nomeclatura->FldCaption() ?></td>
+			<td<?php echo $subgrupo_cuenta->nomeclatura->CellAttributes() ?>>
+<span id="el_subgrupo_cuenta_nomeclatura" class="form-group">
+<span<?php echo $subgrupo_cuenta->nomeclatura->ViewAttributes() ?>>
+<?php echo $subgrupo_cuenta->nomeclatura->ListViewValue() ?></span>
 </span>
 </td>
 		</tr>
@@ -32,24 +31,13 @@
 </td>
 		</tr>
 <?php } ?>
-<?php if ($subgrupo_cuenta->nomeclatura->Visible) { // nomeclatura ?>
-		<tr id="r_nomeclatura">
-			<td><?php echo $subgrupo_cuenta->nomeclatura->FldCaption() ?></td>
-			<td<?php echo $subgrupo_cuenta->nomeclatura->CellAttributes() ?>>
-<span id="el_subgrupo_cuenta_nomeclatura" class="form-group">
-<span<?php echo $subgrupo_cuenta->nomeclatura->ViewAttributes() ?>>
-<?php echo $subgrupo_cuenta->nomeclatura->ListViewValue() ?></span>
-</span>
-</td>
-		</tr>
-<?php } ?>
-<?php if ($subgrupo_cuenta->estado->Visible) { // estado ?>
-		<tr id="r_estado">
-			<td><?php echo $subgrupo_cuenta->estado->FldCaption() ?></td>
-			<td<?php echo $subgrupo_cuenta->estado->CellAttributes() ?>>
-<span id="el_subgrupo_cuenta_estado" class="form-group">
-<span<?php echo $subgrupo_cuenta->estado->ViewAttributes() ?>>
-<?php echo $subgrupo_cuenta->estado->ListViewValue() ?></span>
+<?php if ($subgrupo_cuenta->idgrupo_cuenta->Visible) { // idgrupo_cuenta ?>
+		<tr id="r_idgrupo_cuenta">
+			<td><?php echo $subgrupo_cuenta->idgrupo_cuenta->FldCaption() ?></td>
+			<td<?php echo $subgrupo_cuenta->idgrupo_cuenta->CellAttributes() ?>>
+<span id="el_subgrupo_cuenta_idgrupo_cuenta" class="form-group">
+<span<?php echo $subgrupo_cuenta->idgrupo_cuenta->ViewAttributes() ?>>
+<?php echo $subgrupo_cuenta->idgrupo_cuenta->ListViewValue() ?></span>
 </span>
 </td>
 		</tr>

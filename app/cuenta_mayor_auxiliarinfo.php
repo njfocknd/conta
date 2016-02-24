@@ -8,9 +8,9 @@ $cuenta_mayor_auxiliar = NULL;
 //
 class ccuenta_mayor_auxiliar extends cTable {
 	var $idcuenta_mayor_auxiliar;
-	var $idcuenta_mayor_principal;
 	var $nomeclatura;
 	var $nombre;
+	var $idcuenta_mayor_principal;
 	var $definicion;
 	var $estado;
 
@@ -43,11 +43,6 @@ class ccuenta_mayor_auxiliar extends cTable {
 		$this->idcuenta_mayor_auxiliar->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idcuenta_mayor_auxiliar'] = &$this->idcuenta_mayor_auxiliar;
 
-		// idcuenta_mayor_principal
-		$this->idcuenta_mayor_principal = new cField('cuenta_mayor_auxiliar', 'cuenta_mayor_auxiliar', 'x_idcuenta_mayor_principal', 'idcuenta_mayor_principal', '`idcuenta_mayor_principal`', '`idcuenta_mayor_principal`', 3, -1, FALSE, '`idcuenta_mayor_principal`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
-		$this->idcuenta_mayor_principal->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['idcuenta_mayor_principal'] = &$this->idcuenta_mayor_principal;
-
 		// nomeclatura
 		$this->nomeclatura = new cField('cuenta_mayor_auxiliar', 'cuenta_mayor_auxiliar', 'x_nomeclatura', 'nomeclatura', '`nomeclatura`', '`nomeclatura`', 200, -1, FALSE, '`nomeclatura`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
 		$this->fields['nomeclatura'] = &$this->nomeclatura;
@@ -55,6 +50,11 @@ class ccuenta_mayor_auxiliar extends cTable {
 		// nombre
 		$this->nombre = new cField('cuenta_mayor_auxiliar', 'cuenta_mayor_auxiliar', 'x_nombre', 'nombre', '`nombre`', '`nombre`', 200, -1, FALSE, '`nombre`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
 		$this->fields['nombre'] = &$this->nombre;
+
+		// idcuenta_mayor_principal
+		$this->idcuenta_mayor_principal = new cField('cuenta_mayor_auxiliar', 'cuenta_mayor_auxiliar', 'x_idcuenta_mayor_principal', 'idcuenta_mayor_principal', '`idcuenta_mayor_principal`', '`idcuenta_mayor_principal`', 3, -1, FALSE, '`idcuenta_mayor_principal`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->idcuenta_mayor_principal->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
+		$this->fields['idcuenta_mayor_principal'] = &$this->idcuenta_mayor_principal;
 
 		// definicion
 		$this->definicion = new cField('cuenta_mayor_auxiliar', 'cuenta_mayor_auxiliar', 'x_definicion', 'definicion', '`definicion`', '`definicion`', 200, -1, FALSE, '`definicion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
@@ -129,6 +129,30 @@ class ccuenta_mayor_auxiliar extends cTable {
 		return "`idcuenta_mayor_principal`=@idcuenta_mayor_principal@";
 	}
 
+	// Current detail table name
+	function getCurrentDetailTable() {
+		return @$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_DETAIL_TABLE];
+	}
+
+	function setCurrentDetailTable($v) {
+		$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_DETAIL_TABLE] = $v;
+	}
+
+	// Get detail url
+	function GetDetailUrl() {
+
+		// Detail url
+		$sDetailUrl = "";
+		if ($this->getCurrentDetailTable() == "subcuenta") {
+			$sDetailUrl = $GLOBALS["subcuenta"]->GetListUrl() . "?showmaster=" . $this->TableVar;
+			$sDetailUrl .= "&fk_idcuenta_mayor_auxiliar=" . urlencode($this->idcuenta_mayor_auxiliar->CurrentValue);
+		}
+		if ($sDetailUrl == "") {
+			$sDetailUrl = "cuenta_mayor_auxiliarlist.php";
+		}
+		return $sDetailUrl;
+	}
+
 	// Table level SQL
 	var $_SqlFrom = "";
 
@@ -160,7 +184,7 @@ class ccuenta_mayor_auxiliar extends cTable {
 
 	function getSqlWhere() { // Where
 		$sWhere = ($this->_SqlWhere <> "") ? $this->_SqlWhere : "";
-		$this->TableFilter = "";
+		$this->TableFilter = "`estado` = 'Activo'";
 		ew_AddFilter($sWhere, $this->TableFilter);
 		return $sWhere;
 	}
@@ -482,7 +506,10 @@ class ccuenta_mayor_auxiliar extends cTable {
 
 	// Edit URL
 	function GetEditUrl($parm = "") {
-		return $this->KeyUrl("cuenta_mayor_auxiliaredit.php", $this->UrlParm($parm));
+		if ($parm <> "")
+			return $this->KeyUrl("cuenta_mayor_auxiliaredit.php", $this->UrlParm($parm));
+		else
+			return $this->KeyUrl("cuenta_mayor_auxiliaredit.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
 	}
 
 	// Inline edit URL
@@ -492,7 +519,10 @@ class ccuenta_mayor_auxiliar extends cTable {
 
 	// Copy URL
 	function GetCopyUrl($parm = "") {
-		return $this->KeyUrl("cuenta_mayor_auxiliaradd.php", $this->UrlParm($parm));
+		if ($parm <> "")
+			return $this->KeyUrl("cuenta_mayor_auxiliaradd.php", $this->UrlParm($parm));
+		else
+			return $this->KeyUrl("cuenta_mayor_auxiliaradd.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
 	}
 
 	// Inline copy URL
@@ -585,9 +615,9 @@ class ccuenta_mayor_auxiliar extends cTable {
 	// Load row values from recordset
 	function LoadListRowValues(&$rs) {
 		$this->idcuenta_mayor_auxiliar->setDbValue($rs->fields('idcuenta_mayor_auxiliar'));
-		$this->idcuenta_mayor_principal->setDbValue($rs->fields('idcuenta_mayor_principal'));
 		$this->nomeclatura->setDbValue($rs->fields('nomeclatura'));
 		$this->nombre->setDbValue($rs->fields('nombre'));
+		$this->idcuenta_mayor_principal->setDbValue($rs->fields('idcuenta_mayor_principal'));
 		$this->definicion->setDbValue($rs->fields('definicion'));
 		$this->estado->setDbValue($rs->fields('estado'));
 	}
@@ -601,9 +631,9 @@ class ccuenta_mayor_auxiliar extends cTable {
 
    // Common render codes
 		// idcuenta_mayor_auxiliar
-		// idcuenta_mayor_principal
 		// nomeclatura
 		// nombre
+		// idcuenta_mayor_principal
 		// definicion
 		// estado
 		// idcuenta_mayor_auxiliar
@@ -611,11 +641,23 @@ class ccuenta_mayor_auxiliar extends cTable {
 		$this->idcuenta_mayor_auxiliar->ViewValue = $this->idcuenta_mayor_auxiliar->CurrentValue;
 		$this->idcuenta_mayor_auxiliar->ViewCustomAttributes = "";
 
+		// nomeclatura
+		$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
+		$this->nomeclatura->ViewCustomAttributes = "";
+
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
+
 		// idcuenta_mayor_principal
 		if (strval($this->idcuenta_mayor_principal->CurrentValue) <> "") {
 			$sFilterWrk = "`idcuenta_mayor_principal`" . ew_SearchString("=", $this->idcuenta_mayor_principal->CurrentValue, EW_DATATYPE_NUMBER);
 		$sSqlWrk = "SELECT `idcuenta_mayor_principal`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta_mayor_principal`";
 		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		if (strval($lookuptblfilter) <> "") {
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		}
 		if ($sFilterWrk <> "") {
 			ew_AddFilter($sWhereWrk, $sFilterWrk);
 		}
@@ -634,14 +676,6 @@ class ccuenta_mayor_auxiliar extends cTable {
 			$this->idcuenta_mayor_principal->ViewValue = NULL;
 		}
 		$this->idcuenta_mayor_principal->ViewCustomAttributes = "";
-
-		// nomeclatura
-		$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
-		$this->nomeclatura->ViewCustomAttributes = "";
-
-		// nombre
-		$this->nombre->ViewValue = $this->nombre->CurrentValue;
-		$this->nombre->ViewCustomAttributes = "";
 
 		// definicion
 		$this->definicion->ViewValue = $this->definicion->CurrentValue;
@@ -669,11 +703,6 @@ class ccuenta_mayor_auxiliar extends cTable {
 		$this->idcuenta_mayor_auxiliar->HrefValue = "";
 		$this->idcuenta_mayor_auxiliar->TooltipValue = "";
 
-		// idcuenta_mayor_principal
-		$this->idcuenta_mayor_principal->LinkCustomAttributes = "";
-		$this->idcuenta_mayor_principal->HrefValue = "";
-		$this->idcuenta_mayor_principal->TooltipValue = "";
-
 		// nomeclatura
 		$this->nomeclatura->LinkCustomAttributes = "";
 		$this->nomeclatura->HrefValue = "";
@@ -683,6 +712,11 @@ class ccuenta_mayor_auxiliar extends cTable {
 		$this->nombre->LinkCustomAttributes = "";
 		$this->nombre->HrefValue = "";
 		$this->nombre->TooltipValue = "";
+
+		// idcuenta_mayor_principal
+		$this->idcuenta_mayor_principal->LinkCustomAttributes = "";
+		$this->idcuenta_mayor_principal->HrefValue = "";
+		$this->idcuenta_mayor_principal->TooltipValue = "";
 
 		// definicion
 		$this->definicion->LinkCustomAttributes = "";
@@ -711,6 +745,18 @@ class ccuenta_mayor_auxiliar extends cTable {
 		$this->idcuenta_mayor_auxiliar->EditValue = $this->idcuenta_mayor_auxiliar->CurrentValue;
 		$this->idcuenta_mayor_auxiliar->ViewCustomAttributes = "";
 
+		// nomeclatura
+		$this->nomeclatura->EditAttrs["class"] = "form-control";
+		$this->nomeclatura->EditCustomAttributes = "";
+		$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
+		$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
+
+		// nombre
+		$this->nombre->EditAttrs["class"] = "form-control";
+		$this->nombre->EditCustomAttributes = "";
+		$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
+		$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
+
 		// idcuenta_mayor_principal
 		$this->idcuenta_mayor_principal->EditAttrs["class"] = "form-control";
 		$this->idcuenta_mayor_principal->EditCustomAttributes = "";
@@ -720,6 +766,10 @@ class ccuenta_mayor_auxiliar extends cTable {
 			$sFilterWrk = "`idcuenta_mayor_principal`" . ew_SearchString("=", $this->idcuenta_mayor_principal->CurrentValue, EW_DATATYPE_NUMBER);
 		$sSqlWrk = "SELECT `idcuenta_mayor_principal`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta_mayor_principal`";
 		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		if (strval($lookuptblfilter) <> "") {
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		}
 		if ($sFilterWrk <> "") {
 			ew_AddFilter($sWhereWrk, $sFilterWrk);
 		}
@@ -741,18 +791,6 @@ class ccuenta_mayor_auxiliar extends cTable {
 		} else {
 		}
 
-		// nomeclatura
-		$this->nomeclatura->EditAttrs["class"] = "form-control";
-		$this->nomeclatura->EditCustomAttributes = "";
-		$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
-		$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
-
-		// nombre
-		$this->nombre->EditAttrs["class"] = "form-control";
-		$this->nombre->EditCustomAttributes = "";
-		$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
-		$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
-
 		// definicion
 		$this->definicion->EditAttrs["class"] = "form-control";
 		$this->definicion->EditCustomAttributes = "";
@@ -760,10 +798,12 @@ class ccuenta_mayor_auxiliar extends cTable {
 		$this->definicion->PlaceHolder = ew_RemoveHtml($this->definicion->FldCaption());
 
 		// estado
+		$this->estado->EditAttrs["class"] = "form-control";
 		$this->estado->EditCustomAttributes = "";
 		$arwrk = array();
 		$arwrk[] = array($this->estado->FldTagValue(1), $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->FldTagValue(1));
 		$arwrk[] = array($this->estado->FldTagValue(2), $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->FldTagValue(2));
+		array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
 		$this->estado->EditValue = $arwrk;
 
 		// Call Row Rendered event
@@ -791,16 +831,16 @@ class ccuenta_mayor_auxiliar extends cTable {
 				$Doc->BeginExportRow();
 				if ($ExportPageType == "view") {
 					if ($this->idcuenta_mayor_auxiliar->Exportable) $Doc->ExportCaption($this->idcuenta_mayor_auxiliar);
-					if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportCaption($this->idcuenta_mayor_principal);
 					if ($this->nomeclatura->Exportable) $Doc->ExportCaption($this->nomeclatura);
 					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
+					if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportCaption($this->idcuenta_mayor_principal);
 					if ($this->definicion->Exportable) $Doc->ExportCaption($this->definicion);
 					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
 				} else {
 					if ($this->idcuenta_mayor_auxiliar->Exportable) $Doc->ExportCaption($this->idcuenta_mayor_auxiliar);
-					if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportCaption($this->idcuenta_mayor_principal);
 					if ($this->nomeclatura->Exportable) $Doc->ExportCaption($this->nomeclatura);
 					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
+					if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportCaption($this->idcuenta_mayor_principal);
 					if ($this->definicion->Exportable) $Doc->ExportCaption($this->definicion);
 					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
 				}
@@ -835,16 +875,16 @@ class ccuenta_mayor_auxiliar extends cTable {
 					$Doc->BeginExportRow($RowCnt); // Allow CSS styles if enabled
 					if ($ExportPageType == "view") {
 						if ($this->idcuenta_mayor_auxiliar->Exportable) $Doc->ExportField($this->idcuenta_mayor_auxiliar);
-						if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportField($this->idcuenta_mayor_principal);
 						if ($this->nomeclatura->Exportable) $Doc->ExportField($this->nomeclatura);
 						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
+						if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportField($this->idcuenta_mayor_principal);
 						if ($this->definicion->Exportable) $Doc->ExportField($this->definicion);
 						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
 					} else {
 						if ($this->idcuenta_mayor_auxiliar->Exportable) $Doc->ExportField($this->idcuenta_mayor_auxiliar);
-						if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportField($this->idcuenta_mayor_principal);
 						if ($this->nomeclatura->Exportable) $Doc->ExportField($this->nomeclatura);
 						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
+						if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportField($this->idcuenta_mayor_principal);
 						if ($this->definicion->Exportable) $Doc->ExportField($this->definicion);
 						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
 					}

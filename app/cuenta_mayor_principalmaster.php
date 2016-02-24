@@ -1,22 +1,21 @@
 <?php
 
-// idsubgrupo_cuenta
-// nombre
 // nomeclatura
-// estado
+// nombre
+// idsubgrupo_cuenta
 
 ?>
 <?php if ($cuenta_mayor_principal->Visible) { ?>
 <!-- <h4 class="ewMasterCaption"><?php echo $cuenta_mayor_principal->TableCaption() ?></h4> -->
 <table id="tbl_cuenta_mayor_principalmaster" class="table table-bordered table-striped ewViewTable">
 	<tbody>
-<?php if ($cuenta_mayor_principal->idsubgrupo_cuenta->Visible) { // idsubgrupo_cuenta ?>
-		<tr id="r_idsubgrupo_cuenta">
-			<td><?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->FldCaption() ?></td>
-			<td<?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->CellAttributes() ?>>
-<span id="el_cuenta_mayor_principal_idsubgrupo_cuenta" class="form-group">
-<span<?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->ViewAttributes() ?>>
-<?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->ListViewValue() ?></span>
+<?php if ($cuenta_mayor_principal->nomeclatura->Visible) { // nomeclatura ?>
+		<tr id="r_nomeclatura">
+			<td><?php echo $cuenta_mayor_principal->nomeclatura->FldCaption() ?></td>
+			<td<?php echo $cuenta_mayor_principal->nomeclatura->CellAttributes() ?>>
+<span id="el_cuenta_mayor_principal_nomeclatura" class="form-group">
+<span<?php echo $cuenta_mayor_principal->nomeclatura->ViewAttributes() ?>>
+<?php echo $cuenta_mayor_principal->nomeclatura->ListViewValue() ?></span>
 </span>
 </td>
 		</tr>
@@ -32,24 +31,13 @@
 </td>
 		</tr>
 <?php } ?>
-<?php if ($cuenta_mayor_principal->nomeclatura->Visible) { // nomeclatura ?>
-		<tr id="r_nomeclatura">
-			<td><?php echo $cuenta_mayor_principal->nomeclatura->FldCaption() ?></td>
-			<td<?php echo $cuenta_mayor_principal->nomeclatura->CellAttributes() ?>>
-<span id="el_cuenta_mayor_principal_nomeclatura" class="form-group">
-<span<?php echo $cuenta_mayor_principal->nomeclatura->ViewAttributes() ?>>
-<?php echo $cuenta_mayor_principal->nomeclatura->ListViewValue() ?></span>
-</span>
-</td>
-		</tr>
-<?php } ?>
-<?php if ($cuenta_mayor_principal->estado->Visible) { // estado ?>
-		<tr id="r_estado">
-			<td><?php echo $cuenta_mayor_principal->estado->FldCaption() ?></td>
-			<td<?php echo $cuenta_mayor_principal->estado->CellAttributes() ?>>
-<span id="el_cuenta_mayor_principal_estado" class="form-group">
-<span<?php echo $cuenta_mayor_principal->estado->ViewAttributes() ?>>
-<?php echo $cuenta_mayor_principal->estado->ListViewValue() ?></span>
+<?php if ($cuenta_mayor_principal->idsubgrupo_cuenta->Visible) { // idsubgrupo_cuenta ?>
+		<tr id="r_idsubgrupo_cuenta">
+			<td><?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->FldCaption() ?></td>
+			<td<?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->CellAttributes() ?>>
+<span id="el_cuenta_mayor_principal_idsubgrupo_cuenta" class="form-group">
+<span<?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->ViewAttributes() ?>>
+<?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->ListViewValue() ?></span>
 </span>
 </td>
 		</tr>

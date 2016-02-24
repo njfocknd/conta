@@ -24,7 +24,7 @@ class cgrupo_cuenta_view extends cgrupo_cuenta {
 	var $PageID = 'view';
 
 	// Project ID
-	var $ProjectID = "{5B8C292A-87A7-44A6-9434-2D0CECD099FC}";
+	var $ProjectID = "{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}";
 
 	// Table name
 	var $TableName = 'grupo_cuenta';
@@ -443,12 +443,22 @@ class cgrupo_cuenta_view extends cgrupo_cuenta {
 		$item->Body = "<a class=\"ewAction ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("ViewPageEditLink") . "</a>";
 		$item->Visible = ($this->EditUrl <> "");
 
+		// Copy
+		$item = &$option->Add("copy");
+		$item->Body = "<a class=\"ewAction ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("ViewPageCopyLink") . "</a>";
+		$item->Visible = ($this->CopyUrl <> "");
+
 		// Show detail edit/copy
 		if ($this->getCurrentDetailTable() <> "") {
 
 			// Detail Edit
 			$item = &$option->Add("detailedit");
 			$item->Body = "<a class=\"ewAction ewDetailEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=" . $this->getCurrentDetailTable())) . "\">" . $Language->Phrase("MasterDetailEditLink") . "</a>";
+			$item->Visible = (TRUE);
+
+			// Detail Copy
+			$item = &$option->Add("detailcopy");
+			$item->Body = "<a class=\"ewAction ewDetailCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailCopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->GetCopyUrl(EW_TABLE_SHOW_DETAIL . "=" . $this->getCurrentDetailTable())) . "\">" . $Language->Phrase("MasterDetailCopyLink") . "</a>";
 			$item->Visible = (TRUE);
 		}
 		$option = &$options["detail"];
@@ -471,6 +481,11 @@ class cgrupo_cuenta_view extends cgrupo_cuenta {
 			$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=subgrupo_cuenta")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
 			if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
 			$DetailEditTblVar .= "subgrupo_cuenta";
+		}
+		if ($GLOBALS["subgrupo_cuenta_grid"] && $GLOBALS["subgrupo_cuenta_grid"]->DetailAdd) {
+			$links .= "<li><a class=\"ewRowLink ewDetailCopy\" data-action=\"add\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->GetCopyUrl(EW_TABLE_SHOW_DETAIL . "=subgrupo_cuenta")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailCopyLink")) . "</a></li>";
+			if ($DetailCopyTblVar <> "") $DetailCopyTblVar .= ",";
+			$DetailCopyTblVar .= "subgrupo_cuenta";
 		}
 		if ($links <> "") {
 			$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
@@ -599,9 +614,9 @@ class cgrupo_cuenta_view extends cgrupo_cuenta {
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
 		$this->idgrupo_cuenta->setDbValue($rs->fields('idgrupo_cuenta'));
-		$this->idclase_cuenta->setDbValue($rs->fields('idclase_cuenta'));
 		$this->nomeclatura->setDbValue($rs->fields('nomeclatura'));
 		$this->nombre->setDbValue($rs->fields('nombre'));
+		$this->idclase_cuenta->setDbValue($rs->fields('idclase_cuenta'));
 		$this->definicion->setDbValue($rs->fields('definicion'));
 		$this->estado->setDbValue($rs->fields('estado'));
 	}
@@ -611,9 +626,9 @@ class cgrupo_cuenta_view extends cgrupo_cuenta {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
 		$this->idgrupo_cuenta->DbValue = $row['idgrupo_cuenta'];
-		$this->idclase_cuenta->DbValue = $row['idclase_cuenta'];
 		$this->nomeclatura->DbValue = $row['nomeclatura'];
 		$this->nombre->DbValue = $row['nombre'];
+		$this->idclase_cuenta->DbValue = $row['idclase_cuenta'];
 		$this->definicion->DbValue = $row['definicion'];
 		$this->estado->DbValue = $row['estado'];
 	}
@@ -636,9 +651,9 @@ class cgrupo_cuenta_view extends cgrupo_cuenta {
 
 		// Common render codes for all row types
 		// idgrupo_cuenta
-		// idclase_cuenta
 		// nomeclatura
 		// nombre
+		// idclase_cuenta
 		// definicion
 		// estado
 
@@ -647,6 +662,14 @@ class cgrupo_cuenta_view extends cgrupo_cuenta {
 			// idgrupo_cuenta
 			$this->idgrupo_cuenta->ViewValue = $this->idgrupo_cuenta->CurrentValue;
 			$this->idgrupo_cuenta->ViewCustomAttributes = "";
+
+			// nomeclatura
+			$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
+			$this->nomeclatura->ViewCustomAttributes = "";
+
+			// nombre
+			$this->nombre->ViewValue = $this->nombre->CurrentValue;
+			$this->nombre->ViewCustomAttributes = "";
 
 			// idclase_cuenta
 			if (strval($this->idclase_cuenta->CurrentValue) <> "") {
@@ -676,14 +699,6 @@ class cgrupo_cuenta_view extends cgrupo_cuenta {
 			}
 			$this->idclase_cuenta->ViewCustomAttributes = "";
 
-			// nomeclatura
-			$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
-			$this->nomeclatura->ViewCustomAttributes = "";
-
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
-
 			// definicion
 			$this->definicion->ViewValue = $this->definicion->CurrentValue;
 			$this->definicion->ViewCustomAttributes = "";
@@ -710,11 +725,6 @@ class cgrupo_cuenta_view extends cgrupo_cuenta {
 			$this->idgrupo_cuenta->HrefValue = "";
 			$this->idgrupo_cuenta->TooltipValue = "";
 
-			// idclase_cuenta
-			$this->idclase_cuenta->LinkCustomAttributes = "";
-			$this->idclase_cuenta->HrefValue = "";
-			$this->idclase_cuenta->TooltipValue = "";
-
 			// nomeclatura
 			$this->nomeclatura->LinkCustomAttributes = "";
 			$this->nomeclatura->HrefValue = "";
@@ -724,6 +734,11 @@ class cgrupo_cuenta_view extends cgrupo_cuenta {
 			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
 			$this->nombre->TooltipValue = "";
+
+			// idclase_cuenta
+			$this->idclase_cuenta->LinkCustomAttributes = "";
+			$this->idclase_cuenta->HrefValue = "";
+			$this->idclase_cuenta->TooltipValue = "";
 
 			// definicion
 			$this->definicion->LinkCustomAttributes = "";
@@ -993,17 +1008,6 @@ $grupo_cuenta_view->ShowMessage();
 </td>
 	</tr>
 <?php } ?>
-<?php if ($grupo_cuenta->idclase_cuenta->Visible) { // idclase_cuenta ?>
-	<tr id="r_idclase_cuenta">
-		<td><span id="elh_grupo_cuenta_idclase_cuenta"><?php echo $grupo_cuenta->idclase_cuenta->FldCaption() ?></span></td>
-		<td<?php echo $grupo_cuenta->idclase_cuenta->CellAttributes() ?>>
-<span id="el_grupo_cuenta_idclase_cuenta" class="form-group">
-<span<?php echo $grupo_cuenta->idclase_cuenta->ViewAttributes() ?>>
-<?php echo $grupo_cuenta->idclase_cuenta->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
 <?php if ($grupo_cuenta->nomeclatura->Visible) { // nomeclatura ?>
 	<tr id="r_nomeclatura">
 		<td><span id="elh_grupo_cuenta_nomeclatura"><?php echo $grupo_cuenta->nomeclatura->FldCaption() ?></span></td>
@@ -1022,6 +1026,17 @@ $grupo_cuenta_view->ShowMessage();
 <span id="el_grupo_cuenta_nombre" class="form-group">
 <span<?php echo $grupo_cuenta->nombre->ViewAttributes() ?>>
 <?php echo $grupo_cuenta->nombre->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($grupo_cuenta->idclase_cuenta->Visible) { // idclase_cuenta ?>
+	<tr id="r_idclase_cuenta">
+		<td><span id="elh_grupo_cuenta_idclase_cuenta"><?php echo $grupo_cuenta->idclase_cuenta->FldCaption() ?></span></td>
+		<td<?php echo $grupo_cuenta->idclase_cuenta->CellAttributes() ?>>
+<span id="el_grupo_cuenta_idclase_cuenta" class="form-group">
+<span<?php echo $grupo_cuenta->idclase_cuenta->ViewAttributes() ?>>
+<?php echo $grupo_cuenta->idclase_cuenta->ViewValue ?></span>
 </span>
 </td>
 	</tr>

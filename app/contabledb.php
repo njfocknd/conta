@@ -14,10 +14,10 @@ class ccontable_db {
 	var $Language;
 
 	// Database connection info
-	var $Host = 'nexthordb.cquvmppcukva.us-west-2.rds.amazonaws.com';
+	var $Host = 'localhost';
 	var $Port = 3306;
-	var $Username = 'dbadmin';
-	var $Password = '23Nexthor23';
+	var $Username = 'root';
+	var $Password = '';
 	var $DbName = 'contable';
 
 	// ADODB (Access/SQL Server)

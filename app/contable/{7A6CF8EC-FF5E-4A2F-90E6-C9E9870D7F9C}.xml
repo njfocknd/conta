@@ -1,0 +1,14 @@
+﻿<?xml version="1.0"?>
+<configuration date="2016/02/23" author="e.World Technology Ltd.">
+<project id="{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}" file="E:\Nexthor\Enterprise\conta\pmp\contable.pmp" name="contable" product="PHPMaker" version="11.0" datetime="2016/02/23 18:20:59" languagefolder="phplang" userlevel="">
+<table id="clase_cuenta" name="clase_cuenta" caption="Clase de Cuenta" userlevel="" priv="1"/>
+<table id="cuenta" name="cuenta" caption="cuenta" userlevel="" priv="1"/>
+<table id="cuenta_mayor_auxiliar" name="cuenta_mayor_auxiliar" caption="Cuenta Mayor Auxiliar" userlevel="" priv="1"/>
+<table id="cuenta_mayor_principal" name="cuenta_mayor_principal" caption="Cuenta Mayor Principal" userlevel="" priv="1"/>
+<table id="grupo_cuenta" name="grupo_cuenta" caption="grupo cuenta" userlevel="" priv="1"/>
+<table id="pais" name="pais" caption="País" userlevel="" priv="1"/>
+<table id="partida" name="partida" caption="partida" userlevel="" priv="1"/>
+<table id="persona" name="persona" caption="Persona" userlevel="" priv="1"/>
+<table id="subcuenta" name="subcuenta" caption="SubCuenta" userlevel="" priv="1"/>
+<table id="subgrupo_cuenta" name="subgrupo_cuenta" caption="SubGrupo de Cuenta" userlevel="" priv="1"/>
+</project></configuration>

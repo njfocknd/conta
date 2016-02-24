@@ -8,9 +8,9 @@ $grupo_cuenta = NULL;
 //
 class cgrupo_cuenta extends cTable {
 	var $idgrupo_cuenta;
-	var $idclase_cuenta;
 	var $nomeclatura;
 	var $nombre;
+	var $idclase_cuenta;
 	var $definicion;
 	var $estado;
 
@@ -43,11 +43,6 @@ class cgrupo_cuenta extends cTable {
 		$this->idgrupo_cuenta->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idgrupo_cuenta'] = &$this->idgrupo_cuenta;
 
-		// idclase_cuenta
-		$this->idclase_cuenta = new cField('grupo_cuenta', 'grupo_cuenta', 'x_idclase_cuenta', 'idclase_cuenta', '`idclase_cuenta`', '`idclase_cuenta`', 3, -1, FALSE, '`idclase_cuenta`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
-		$this->idclase_cuenta->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['idclase_cuenta'] = &$this->idclase_cuenta;
-
 		// nomeclatura
 		$this->nomeclatura = new cField('grupo_cuenta', 'grupo_cuenta', 'x_nomeclatura', 'nomeclatura', '`nomeclatura`', '`nomeclatura`', 200, -1, FALSE, '`nomeclatura`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
 		$this->fields['nomeclatura'] = &$this->nomeclatura;
@@ -55,6 +50,11 @@ class cgrupo_cuenta extends cTable {
 		// nombre
 		$this->nombre = new cField('grupo_cuenta', 'grupo_cuenta', 'x_nombre', 'nombre', '`nombre`', '`nombre`', 200, -1, FALSE, '`nombre`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
 		$this->fields['nombre'] = &$this->nombre;
+
+		// idclase_cuenta
+		$this->idclase_cuenta = new cField('grupo_cuenta', 'grupo_cuenta', 'x_idclase_cuenta', 'idclase_cuenta', '`idclase_cuenta`', '`idclase_cuenta`', 3, -1, FALSE, '`idclase_cuenta`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->idclase_cuenta->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
+		$this->fields['idclase_cuenta'] = &$this->idclase_cuenta;
 
 		// definicion
 		$this->definicion = new cField('grupo_cuenta', 'grupo_cuenta', 'x_definicion', 'definicion', '`definicion`', '`definicion`', 200, -1, FALSE, '`definicion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
@@ -184,7 +184,7 @@ class cgrupo_cuenta extends cTable {
 
 	function getSqlWhere() { // Where
 		$sWhere = ($this->_SqlWhere <> "") ? $this->_SqlWhere : "";
-		$this->TableFilter = "";
+		$this->TableFilter = "`estado` = 'Activo'";
 		ew_AddFilter($sWhere, $this->TableFilter);
 		return $sWhere;
 	}
@@ -615,9 +615,9 @@ class cgrupo_cuenta extends cTable {
 	// Load row values from recordset
 	function LoadListRowValues(&$rs) {
 		$this->idgrupo_cuenta->setDbValue($rs->fields('idgrupo_cuenta'));
-		$this->idclase_cuenta->setDbValue($rs->fields('idclase_cuenta'));
 		$this->nomeclatura->setDbValue($rs->fields('nomeclatura'));
 		$this->nombre->setDbValue($rs->fields('nombre'));
+		$this->idclase_cuenta->setDbValue($rs->fields('idclase_cuenta'));
 		$this->definicion->setDbValue($rs->fields('definicion'));
 		$this->estado->setDbValue($rs->fields('estado'));
 	}
@@ -631,15 +631,23 @@ class cgrupo_cuenta extends cTable {
 
    // Common render codes
 		// idgrupo_cuenta
-		// idclase_cuenta
 		// nomeclatura
 		// nombre
+		// idclase_cuenta
 		// definicion
 		// estado
 		// idgrupo_cuenta
 
 		$this->idgrupo_cuenta->ViewValue = $this->idgrupo_cuenta->CurrentValue;
 		$this->idgrupo_cuenta->ViewCustomAttributes = "";
+
+		// nomeclatura
+		$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
+		$this->nomeclatura->ViewCustomAttributes = "";
+
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
 
 		// idclase_cuenta
 		if (strval($this->idclase_cuenta->CurrentValue) <> "") {
@@ -669,14 +677,6 @@ class cgrupo_cuenta extends cTable {
 		}
 		$this->idclase_cuenta->ViewCustomAttributes = "";
 
-		// nomeclatura
-		$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
-		$this->nomeclatura->ViewCustomAttributes = "";
-
-		// nombre
-		$this->nombre->ViewValue = $this->nombre->CurrentValue;
-		$this->nombre->ViewCustomAttributes = "";
-
 		// definicion
 		$this->definicion->ViewValue = $this->definicion->CurrentValue;
 		$this->definicion->ViewCustomAttributes = "";
@@ -703,11 +703,6 @@ class cgrupo_cuenta extends cTable {
 		$this->idgrupo_cuenta->HrefValue = "";
 		$this->idgrupo_cuenta->TooltipValue = "";
 
-		// idclase_cuenta
-		$this->idclase_cuenta->LinkCustomAttributes = "";
-		$this->idclase_cuenta->HrefValue = "";
-		$this->idclase_cuenta->TooltipValue = "";
-
 		// nomeclatura
 		$this->nomeclatura->LinkCustomAttributes = "";
 		$this->nomeclatura->HrefValue = "";
@@ -717,6 +712,11 @@ class cgrupo_cuenta extends cTable {
 		$this->nombre->LinkCustomAttributes = "";
 		$this->nombre->HrefValue = "";
 		$this->nombre->TooltipValue = "";
+
+		// idclase_cuenta
+		$this->idclase_cuenta->LinkCustomAttributes = "";
+		$this->idclase_cuenta->HrefValue = "";
+		$this->idclase_cuenta->TooltipValue = "";
 
 		// definicion
 		$this->definicion->LinkCustomAttributes = "";
@@ -744,6 +744,18 @@ class cgrupo_cuenta extends cTable {
 		$this->idgrupo_cuenta->EditCustomAttributes = "";
 		$this->idgrupo_cuenta->EditValue = $this->idgrupo_cuenta->CurrentValue;
 		$this->idgrupo_cuenta->ViewCustomAttributes = "";
+
+		// nomeclatura
+		$this->nomeclatura->EditAttrs["class"] = "form-control";
+		$this->nomeclatura->EditCustomAttributes = "";
+		$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
+		$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
+
+		// nombre
+		$this->nombre->EditAttrs["class"] = "form-control";
+		$this->nombre->EditCustomAttributes = "";
+		$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
+		$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
 
 		// idclase_cuenta
 		$this->idclase_cuenta->EditAttrs["class"] = "form-control";
@@ -778,18 +790,6 @@ class cgrupo_cuenta extends cTable {
 		$this->idclase_cuenta->ViewCustomAttributes = "";
 		} else {
 		}
-
-		// nomeclatura
-		$this->nomeclatura->EditAttrs["class"] = "form-control";
-		$this->nomeclatura->EditCustomAttributes = "";
-		$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
-		$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
-
-		// nombre
-		$this->nombre->EditAttrs["class"] = "form-control";
-		$this->nombre->EditCustomAttributes = "";
-		$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
-		$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
 
 		// definicion
 		$this->definicion->EditAttrs["class"] = "form-control";
@@ -831,16 +831,16 @@ class cgrupo_cuenta extends cTable {
 				$Doc->BeginExportRow();
 				if ($ExportPageType == "view") {
 					if ($this->idgrupo_cuenta->Exportable) $Doc->ExportCaption($this->idgrupo_cuenta);
-					if ($this->idclase_cuenta->Exportable) $Doc->ExportCaption($this->idclase_cuenta);
 					if ($this->nomeclatura->Exportable) $Doc->ExportCaption($this->nomeclatura);
 					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
+					if ($this->idclase_cuenta->Exportable) $Doc->ExportCaption($this->idclase_cuenta);
 					if ($this->definicion->Exportable) $Doc->ExportCaption($this->definicion);
 					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
 				} else {
 					if ($this->idgrupo_cuenta->Exportable) $Doc->ExportCaption($this->idgrupo_cuenta);
-					if ($this->idclase_cuenta->Exportable) $Doc->ExportCaption($this->idclase_cuenta);
 					if ($this->nomeclatura->Exportable) $Doc->ExportCaption($this->nomeclatura);
 					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
+					if ($this->idclase_cuenta->Exportable) $Doc->ExportCaption($this->idclase_cuenta);
 					if ($this->definicion->Exportable) $Doc->ExportCaption($this->definicion);
 					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
 				}
@@ -875,16 +875,16 @@ class cgrupo_cuenta extends cTable {
 					$Doc->BeginExportRow($RowCnt); // Allow CSS styles if enabled
 					if ($ExportPageType == "view") {
 						if ($this->idgrupo_cuenta->Exportable) $Doc->ExportField($this->idgrupo_cuenta);
-						if ($this->idclase_cuenta->Exportable) $Doc->ExportField($this->idclase_cuenta);
 						if ($this->nomeclatura->Exportable) $Doc->ExportField($this->nomeclatura);
 						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
+						if ($this->idclase_cuenta->Exportable) $Doc->ExportField($this->idclase_cuenta);
 						if ($this->definicion->Exportable) $Doc->ExportField($this->definicion);
 						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
 					} else {
 						if ($this->idgrupo_cuenta->Exportable) $Doc->ExportField($this->idgrupo_cuenta);
-						if ($this->idclase_cuenta->Exportable) $Doc->ExportField($this->idclase_cuenta);
 						if ($this->nomeclatura->Exportable) $Doc->ExportField($this->nomeclatura);
 						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
+						if ($this->idclase_cuenta->Exportable) $Doc->ExportField($this->idclase_cuenta);
 						if ($this->definicion->Exportable) $Doc->ExportField($this->definicion);
 						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
 					}
