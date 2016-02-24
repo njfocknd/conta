@@ -192,7 +192,11 @@ function fncObtenerArreglo($MyOps, $query)
 	$resultado = $MyOps->list_orders($query);
 	if($resultado)
 	{
-		return $resultado;
+		while ($valor = mysql_fetch_assoc($resultado)) 
+		{
+			$respuesta[] = $valor;
+		}
+		return $respuesta;
 	}
 	else
 	{
@@ -206,7 +210,7 @@ function fncCreaMatrizTabla($resultado)
 	$conteo=0;
 	$array='';
 	$campos ="<tr>";
-	while ($valor = mysql_fetch_assoc($resultado)) 
+	foreach ($resultado as $llave => $valor) 
 	{
 		foreach ($valor as $llave2 => $valor2) {
 			$array_encabezado[$llave2] = $llave2;
