@@ -328,13 +328,13 @@ $cuenta_mayor_auxiliar_grid->ListOptions->Render("body", "left", $cuenta_mayor_a
 		<td data-name="nombre"<?php echo $cuenta_mayor_auxiliar->nombre->CellAttributes() ?>>
 <?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $cuenta_mayor_auxiliar_grid->RowCnt ?>_cuenta_mayor_auxiliar_nombre" class="form-group cuenta_mayor_auxiliar_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_auxiliar->nombre->EditValue ?>"<?php echo $cuenta_mayor_auxiliar->nombre->EditAttributes() ?>>
+<input type="text" data-field="x_nombre" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" size="30" maxlength="64" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_auxiliar->nombre->EditValue ?>"<?php echo $cuenta_mayor_auxiliar->nombre->EditAttributes() ?>>
 </span>
 <input type="hidden" data-field="x_nombre" name="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="o<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->OldValue) ?>">
 <?php } ?>
 <?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $cuenta_mayor_auxiliar_grid->RowCnt ?>_cuenta_mayor_auxiliar_nombre" class="form-group cuenta_mayor_auxiliar_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_auxiliar->nombre->EditValue ?>"<?php echo $cuenta_mayor_auxiliar->nombre->EditAttributes() ?>>
+<input type="text" data-field="x_nombre" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" size="30" maxlength="64" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_auxiliar->nombre->EditValue ?>"<?php echo $cuenta_mayor_auxiliar->nombre->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($cuenta_mayor_auxiliar->RowType == EW_ROWTYPE_VIEW) { // View record ?>
@@ -506,7 +506,7 @@ $cuenta_mayor_auxiliar_grid->ListOptions->Render("body", "left", $cuenta_mayor_a
 		<td>
 <?php if ($cuenta_mayor_auxiliar->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_cuenta_mayor_auxiliar_nombre" class="form-group cuenta_mayor_auxiliar_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_auxiliar->nombre->EditValue ?>"<?php echo $cuenta_mayor_auxiliar->nombre->EditAttributes() ?>>
+<input type="text" data-field="x_nombre" name="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" id="x<?php echo $cuenta_mayor_auxiliar_grid->RowIndex ?>_nombre" size="30" maxlength="64" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_auxiliar->nombre->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_auxiliar->nombre->EditValue ?>"<?php echo $cuenta_mayor_auxiliar->nombre->EditAttributes() ?>>
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_cuenta_mayor_auxiliar_nombre" class="form-group cuenta_mayor_auxiliar_nombre">
