@@ -46,9 +46,9 @@ fsubcuentagrid.Validate = function() {
 		var checkrow = (gridinsert) ? !this.EmptyRow(infix) : true;
 		if (checkrow) {
 			addcnt++;
-			elm = this.GetElements("x" + infix + "_nomeclatura");
+			elm = this.GetElements("x" + infix + "_nomenclatura");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $subcuenta->nomeclatura->FldCaption(), $subcuenta->nomeclatura->ReqErrMsg)) ?>");
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $subcuenta->nomenclatura->FldCaption(), $subcuenta->nomenclatura->ReqErrMsg)) ?>");
 			elm = this.GetElements("x" + infix + "_nombre");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $subcuenta->nombre->FldCaption(), $subcuenta->nombre->ReqErrMsg)) ?>");
@@ -73,7 +73,7 @@ fsubcuentagrid.Validate = function() {
 // Check empty row
 fsubcuentagrid.EmptyRow = function(infix) {
 	var fobj = this.Form;
-	if (ew_ValueChanged(fobj, infix, "nomeclatura", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "nomenclatura", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "nombre", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "idcuenta_mayor_auxiliar", false)) return false;
 	return true;
@@ -162,12 +162,12 @@ $subcuenta_grid->RenderListOptions();
 // Render list options (header, left)
 $subcuenta_grid->ListOptions->Render("header", "left");
 ?>
-<?php if ($subcuenta->nomeclatura->Visible) { // nomeclatura ?>
-	<?php if ($subcuenta->SortUrl($subcuenta->nomeclatura) == "") { ?>
-		<th data-name="nomeclatura"><div id="elh_subcuenta_nomeclatura" class="subcuenta_nomeclatura"><div class="ewTableHeaderCaption"><?php echo $subcuenta->nomeclatura->FldCaption() ?></div></div></th>
+<?php if ($subcuenta->nomenclatura->Visible) { // nomenclatura ?>
+	<?php if ($subcuenta->SortUrl($subcuenta->nomenclatura) == "") { ?>
+		<th data-name="nomenclatura"><div id="elh_subcuenta_nomenclatura" class="subcuenta_nomenclatura"><div class="ewTableHeaderCaption"><?php echo $subcuenta->nomenclatura->FldCaption() ?></div></div></th>
 	<?php } else { ?>
-		<th data-name="nomeclatura"><div><div id="elh_subcuenta_nomeclatura" class="subcuenta_nomeclatura">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $subcuenta->nomeclatura->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($subcuenta->nomeclatura->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($subcuenta->nomeclatura->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+		<th data-name="nomenclatura"><div><div id="elh_subcuenta_nomenclatura" class="subcuenta_nomenclatura">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $subcuenta->nomenclatura->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($subcuenta->nomenclatura->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($subcuenta->nomenclatura->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -298,24 +298,24 @@ while ($subcuenta_grid->RecCnt < $subcuenta_grid->StopRec) {
 // Render list options (body, left)
 $subcuenta_grid->ListOptions->Render("body", "left", $subcuenta_grid->RowCnt);
 ?>
-	<?php if ($subcuenta->nomeclatura->Visible) { // nomeclatura ?>
-		<td data-name="nomeclatura"<?php echo $subcuenta->nomeclatura->CellAttributes() ?>>
+	<?php if ($subcuenta->nomenclatura->Visible) { // nomenclatura ?>
+		<td data-name="nomenclatura"<?php echo $subcuenta->nomenclatura->CellAttributes() ?>>
 <?php if ($subcuenta->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<span id="el<?php echo $subcuenta_grid->RowCnt ?>_subcuenta_nomeclatura" class="form-group subcuenta_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x<?php echo $subcuenta_grid->RowIndex ?>_nomeclatura" id="x<?php echo $subcuenta_grid->RowIndex ?>_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subcuenta->nomeclatura->PlaceHolder) ?>" value="<?php echo $subcuenta->nomeclatura->EditValue ?>"<?php echo $subcuenta->nomeclatura->EditAttributes() ?>>
+<span id="el<?php echo $subcuenta_grid->RowCnt ?>_subcuenta_nomenclatura" class="form-group subcuenta_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x<?php echo $subcuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $subcuenta_grid->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subcuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $subcuenta->nomenclatura->EditValue ?>"<?php echo $subcuenta->nomenclatura->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_nomeclatura" name="o<?php echo $subcuenta_grid->RowIndex ?>_nomeclatura" id="o<?php echo $subcuenta_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($subcuenta->nomeclatura->OldValue) ?>">
+<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $subcuenta_grid->RowIndex ?>_nomenclatura" id="o<?php echo $subcuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($subcuenta->nomenclatura->OldValue) ?>">
 <?php } ?>
 <?php if ($subcuenta->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
-<span id="el<?php echo $subcuenta_grid->RowCnt ?>_subcuenta_nomeclatura" class="form-group subcuenta_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x<?php echo $subcuenta_grid->RowIndex ?>_nomeclatura" id="x<?php echo $subcuenta_grid->RowIndex ?>_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subcuenta->nomeclatura->PlaceHolder) ?>" value="<?php echo $subcuenta->nomeclatura->EditValue ?>"<?php echo $subcuenta->nomeclatura->EditAttributes() ?>>
+<span id="el<?php echo $subcuenta_grid->RowCnt ?>_subcuenta_nomenclatura" class="form-group subcuenta_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x<?php echo $subcuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $subcuenta_grid->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subcuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $subcuenta->nomenclatura->EditValue ?>"<?php echo $subcuenta->nomenclatura->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($subcuenta->RowType == EW_ROWTYPE_VIEW) { // View record ?>
-<span<?php echo $subcuenta->nomeclatura->ViewAttributes() ?>>
-<?php echo $subcuenta->nomeclatura->ListViewValue() ?></span>
-<input type="hidden" data-field="x_nomeclatura" name="x<?php echo $subcuenta_grid->RowIndex ?>_nomeclatura" id="x<?php echo $subcuenta_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($subcuenta->nomeclatura->FormValue) ?>">
-<input type="hidden" data-field="x_nomeclatura" name="o<?php echo $subcuenta_grid->RowIndex ?>_nomeclatura" id="o<?php echo $subcuenta_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($subcuenta->nomeclatura->OldValue) ?>">
+<span<?php echo $subcuenta->nomenclatura->ViewAttributes() ?>>
+<?php echo $subcuenta->nomenclatura->ListViewValue() ?></span>
+<input type="hidden" data-field="x_nomenclatura" name="x<?php echo $subcuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $subcuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($subcuenta->nomenclatura->FormValue) ?>">
+<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $subcuenta_grid->RowIndex ?>_nomenclatura" id="o<?php echo $subcuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($subcuenta->nomenclatura->OldValue) ?>">
 <?php } ?>
 <a id="<?php echo $subcuenta_grid->PageObjName . "_row_" . $subcuenta_grid->RowCnt ?>"></a></td>
 	<?php } ?>
@@ -426,20 +426,20 @@ fsubcuentagrid.UpdateOpts(<?php echo $subcuenta_grid->RowIndex ?>);
 // Render list options (body, left)
 $subcuenta_grid->ListOptions->Render("body", "left", $subcuenta_grid->RowIndex);
 ?>
-	<?php if ($subcuenta->nomeclatura->Visible) { // nomeclatura ?>
+	<?php if ($subcuenta->nomenclatura->Visible) { // nomenclatura ?>
 		<td>
 <?php if ($subcuenta->CurrentAction <> "F") { ?>
-<span id="el$rowindex$_subcuenta_nomeclatura" class="form-group subcuenta_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x<?php echo $subcuenta_grid->RowIndex ?>_nomeclatura" id="x<?php echo $subcuenta_grid->RowIndex ?>_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subcuenta->nomeclatura->PlaceHolder) ?>" value="<?php echo $subcuenta->nomeclatura->EditValue ?>"<?php echo $subcuenta->nomeclatura->EditAttributes() ?>>
+<span id="el$rowindex$_subcuenta_nomenclatura" class="form-group subcuenta_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x<?php echo $subcuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $subcuenta_grid->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subcuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $subcuenta->nomenclatura->EditValue ?>"<?php echo $subcuenta->nomenclatura->EditAttributes() ?>>
 </span>
 <?php } else { ?>
-<span id="el$rowindex$_subcuenta_nomeclatura" class="form-group subcuenta_nomeclatura">
-<span<?php echo $subcuenta->nomeclatura->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $subcuenta->nomeclatura->ViewValue ?></p></span>
+<span id="el$rowindex$_subcuenta_nomenclatura" class="form-group subcuenta_nomenclatura">
+<span<?php echo $subcuenta->nomenclatura->ViewAttributes() ?>>
+<p class="form-control-static"><?php echo $subcuenta->nomenclatura->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_nomeclatura" name="x<?php echo $subcuenta_grid->RowIndex ?>_nomeclatura" id="x<?php echo $subcuenta_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($subcuenta->nomeclatura->FormValue) ?>">
+<input type="hidden" data-field="x_nomenclatura" name="x<?php echo $subcuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $subcuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($subcuenta->nomenclatura->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_nomeclatura" name="o<?php echo $subcuenta_grid->RowIndex ?>_nomeclatura" id="o<?php echo $subcuenta_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($subcuenta->nomeclatura->OldValue) ?>">
+<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $subcuenta_grid->RowIndex ?>_nomenclatura" id="o<?php echo $subcuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($subcuenta->nomenclatura->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($subcuenta->nombre->Visible) { // nombre ?>

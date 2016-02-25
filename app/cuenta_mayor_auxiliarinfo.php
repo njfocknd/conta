@@ -8,7 +8,7 @@ $cuenta_mayor_auxiliar = NULL;
 //
 class ccuenta_mayor_auxiliar extends cTable {
 	var $idcuenta_mayor_auxiliar;
-	var $nomeclatura;
+	var $nomenclatura;
 	var $nombre;
 	var $idcuenta_mayor_principal;
 	var $definicion;
@@ -43,9 +43,9 @@ class ccuenta_mayor_auxiliar extends cTable {
 		$this->idcuenta_mayor_auxiliar->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idcuenta_mayor_auxiliar'] = &$this->idcuenta_mayor_auxiliar;
 
-		// nomeclatura
-		$this->nomeclatura = new cField('cuenta_mayor_auxiliar', 'cuenta_mayor_auxiliar', 'x_nomeclatura', 'nomeclatura', '`nomeclatura`', '`nomeclatura`', 200, -1, FALSE, '`nomeclatura`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
-		$this->fields['nomeclatura'] = &$this->nomeclatura;
+		// nomenclatura
+		$this->nomenclatura = new cField('cuenta_mayor_auxiliar', 'cuenta_mayor_auxiliar', 'x_nomenclatura', 'nomenclatura', '`nomenclatura`', '`nomenclatura`', 200, -1, FALSE, '`nomenclatura`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->fields['nomenclatura'] = &$this->nomenclatura;
 
 		// nombre
 		$this->nombre = new cField('cuenta_mayor_auxiliar', 'cuenta_mayor_auxiliar', 'x_nombre', 'nombre', '`nombre`', '`nombre`', 200, -1, FALSE, '`nombre`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
@@ -615,7 +615,7 @@ class ccuenta_mayor_auxiliar extends cTable {
 	// Load row values from recordset
 	function LoadListRowValues(&$rs) {
 		$this->idcuenta_mayor_auxiliar->setDbValue($rs->fields('idcuenta_mayor_auxiliar'));
-		$this->nomeclatura->setDbValue($rs->fields('nomeclatura'));
+		$this->nomenclatura->setDbValue($rs->fields('nomenclatura'));
 		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->idcuenta_mayor_principal->setDbValue($rs->fields('idcuenta_mayor_principal'));
 		$this->definicion->setDbValue($rs->fields('definicion'));
@@ -631,7 +631,7 @@ class ccuenta_mayor_auxiliar extends cTable {
 
    // Common render codes
 		// idcuenta_mayor_auxiliar
-		// nomeclatura
+		// nomenclatura
 		// nombre
 		// idcuenta_mayor_principal
 		// definicion
@@ -641,9 +641,9 @@ class ccuenta_mayor_auxiliar extends cTable {
 		$this->idcuenta_mayor_auxiliar->ViewValue = $this->idcuenta_mayor_auxiliar->CurrentValue;
 		$this->idcuenta_mayor_auxiliar->ViewCustomAttributes = "";
 
-		// nomeclatura
-		$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
-		$this->nomeclatura->ViewCustomAttributes = "";
+		// nomenclatura
+		$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
+		$this->nomenclatura->ViewCustomAttributes = "";
 
 		// nombre
 		$this->nombre->ViewValue = $this->nombre->CurrentValue;
@@ -703,10 +703,10 @@ class ccuenta_mayor_auxiliar extends cTable {
 		$this->idcuenta_mayor_auxiliar->HrefValue = "";
 		$this->idcuenta_mayor_auxiliar->TooltipValue = "";
 
-		// nomeclatura
-		$this->nomeclatura->LinkCustomAttributes = "";
-		$this->nomeclatura->HrefValue = "";
-		$this->nomeclatura->TooltipValue = "";
+		// nomenclatura
+		$this->nomenclatura->LinkCustomAttributes = "";
+		$this->nomenclatura->HrefValue = "";
+		$this->nomenclatura->TooltipValue = "";
 
 		// nombre
 		$this->nombre->LinkCustomAttributes = "";
@@ -745,11 +745,11 @@ class ccuenta_mayor_auxiliar extends cTable {
 		$this->idcuenta_mayor_auxiliar->EditValue = $this->idcuenta_mayor_auxiliar->CurrentValue;
 		$this->idcuenta_mayor_auxiliar->ViewCustomAttributes = "";
 
-		// nomeclatura
-		$this->nomeclatura->EditAttrs["class"] = "form-control";
-		$this->nomeclatura->EditCustomAttributes = "";
-		$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
-		$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
+		// nomenclatura
+		$this->nomenclatura->EditAttrs["class"] = "form-control";
+		$this->nomenclatura->EditCustomAttributes = "";
+		$this->nomenclatura->EditValue = ew_HtmlEncode($this->nomenclatura->CurrentValue);
+		$this->nomenclatura->PlaceHolder = ew_RemoveHtml($this->nomenclatura->FldCaption());
 
 		// nombre
 		$this->nombre->EditAttrs["class"] = "form-control";
@@ -831,14 +831,14 @@ class ccuenta_mayor_auxiliar extends cTable {
 				$Doc->BeginExportRow();
 				if ($ExportPageType == "view") {
 					if ($this->idcuenta_mayor_auxiliar->Exportable) $Doc->ExportCaption($this->idcuenta_mayor_auxiliar);
-					if ($this->nomeclatura->Exportable) $Doc->ExportCaption($this->nomeclatura);
+					if ($this->nomenclatura->Exportable) $Doc->ExportCaption($this->nomenclatura);
 					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
 					if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportCaption($this->idcuenta_mayor_principal);
 					if ($this->definicion->Exportable) $Doc->ExportCaption($this->definicion);
 					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
 				} else {
 					if ($this->idcuenta_mayor_auxiliar->Exportable) $Doc->ExportCaption($this->idcuenta_mayor_auxiliar);
-					if ($this->nomeclatura->Exportable) $Doc->ExportCaption($this->nomeclatura);
+					if ($this->nomenclatura->Exportable) $Doc->ExportCaption($this->nomenclatura);
 					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
 					if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportCaption($this->idcuenta_mayor_principal);
 					if ($this->definicion->Exportable) $Doc->ExportCaption($this->definicion);
@@ -875,14 +875,14 @@ class ccuenta_mayor_auxiliar extends cTable {
 					$Doc->BeginExportRow($RowCnt); // Allow CSS styles if enabled
 					if ($ExportPageType == "view") {
 						if ($this->idcuenta_mayor_auxiliar->Exportable) $Doc->ExportField($this->idcuenta_mayor_auxiliar);
-						if ($this->nomeclatura->Exportable) $Doc->ExportField($this->nomeclatura);
+						if ($this->nomenclatura->Exportable) $Doc->ExportField($this->nomenclatura);
 						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
 						if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportField($this->idcuenta_mayor_principal);
 						if ($this->definicion->Exportable) $Doc->ExportField($this->definicion);
 						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
 					} else {
 						if ($this->idcuenta_mayor_auxiliar->Exportable) $Doc->ExportField($this->idcuenta_mayor_auxiliar);
-						if ($this->nomeclatura->Exportable) $Doc->ExportField($this->nomeclatura);
+						if ($this->nomenclatura->Exportable) $Doc->ExportField($this->nomenclatura);
 						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
 						if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportField($this->idcuenta_mayor_principal);
 						if ($this->definicion->Exportable) $Doc->ExportField($this->definicion);

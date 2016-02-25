@@ -885,7 +885,7 @@ class csubcuenta_list extends csubcuenta {
 	// Check if empty row
 	function EmptyRow() {
 		global $objForm;
-		if ($objForm->HasValue("x_nomeclatura") && $objForm->HasValue("o_nomeclatura") && $this->nomeclatura->CurrentValue <> $this->nomeclatura->OldValue)
+		if ($objForm->HasValue("x_nomenclatura") && $objForm->HasValue("o_nomenclatura") && $this->nomenclatura->CurrentValue <> $this->nomenclatura->OldValue)
 			return FALSE;
 		if ($objForm->HasValue("x_nombre") && $objForm->HasValue("o_nombre") && $this->nombre->CurrentValue <> $this->nombre->OldValue)
 			return FALSE;
@@ -965,7 +965,7 @@ class csubcuenta_list extends csubcuenta {
 	// Return basic search SQL
 	function BasicSearchSQL($arKeywords, $type) {
 		$sWhere = "";
-		$this->BuildBasicSearchSQL($sWhere, $this->nomeclatura, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->nomenclatura, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->nombre, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->definicion, $arKeywords, $type);
 		return $sWhere;
@@ -1120,7 +1120,7 @@ class csubcuenta_list extends csubcuenta {
 		if (@$_GET["order"] <> "") {
 			$this->CurrentOrder = ew_StripSlashes(@$_GET["order"]);
 			$this->CurrentOrderType = @$_GET["ordertype"];
-			$this->UpdateSort($this->nomeclatura); // nomeclatura
+			$this->UpdateSort($this->nomenclatura); // nomenclatura
 			$this->UpdateSort($this->nombre); // nombre
 			$this->UpdateSort($this->idcuenta_mayor_auxiliar); // idcuenta_mayor_auxiliar
 			$this->setStartRecordNumber(1); // Reset start position
@@ -1163,7 +1163,7 @@ class csubcuenta_list extends csubcuenta {
 			if ($this->Command == "resetsort") {
 				$sOrderBy = "";
 				$this->setSessionOrderBy($sOrderBy);
-				$this->nomeclatura->setSort("");
+				$this->nomenclatura->setSort("");
 				$this->nombre->setSort("");
 				$this->idcuenta_mayor_auxiliar->setSort("");
 			}
@@ -1526,8 +1526,8 @@ class csubcuenta_list extends csubcuenta {
 
 	// Load default values
 	function LoadDefaultValues() {
-		$this->nomeclatura->CurrentValue = NULL;
-		$this->nomeclatura->OldValue = $this->nomeclatura->CurrentValue;
+		$this->nomenclatura->CurrentValue = NULL;
+		$this->nomenclatura->OldValue = $this->nomenclatura->CurrentValue;
 		$this->nombre->CurrentValue = NULL;
 		$this->nombre->OldValue = $this->nombre->CurrentValue;
 		$this->idcuenta_mayor_auxiliar->CurrentValue = NULL;
@@ -1546,10 +1546,10 @@ class csubcuenta_list extends csubcuenta {
 
 		// Load from form
 		global $objForm;
-		if (!$this->nomeclatura->FldIsDetailKey) {
-			$this->nomeclatura->setFormValue($objForm->GetValue("x_nomeclatura"));
+		if (!$this->nomenclatura->FldIsDetailKey) {
+			$this->nomenclatura->setFormValue($objForm->GetValue("x_nomenclatura"));
 		}
-		$this->nomeclatura->setOldValue($objForm->GetValue("o_nomeclatura"));
+		$this->nomenclatura->setOldValue($objForm->GetValue("o_nomenclatura"));
 		if (!$this->nombre->FldIsDetailKey) {
 			$this->nombre->setFormValue($objForm->GetValue("x_nombre"));
 		}
@@ -1567,7 +1567,7 @@ class csubcuenta_list extends csubcuenta {
 		global $objForm;
 		if ($this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
 			$this->idsubcuenta->CurrentValue = $this->idsubcuenta->FormValue;
-		$this->nomeclatura->CurrentValue = $this->nomeclatura->FormValue;
+		$this->nomenclatura->CurrentValue = $this->nomenclatura->FormValue;
 		$this->nombre->CurrentValue = $this->nombre->FormValue;
 		$this->idcuenta_mayor_auxiliar->CurrentValue = $this->idcuenta_mayor_auxiliar->FormValue;
 	}
@@ -1619,7 +1619,7 @@ class csubcuenta_list extends csubcuenta {
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
 		$this->idsubcuenta->setDbValue($rs->fields('idsubcuenta'));
-		$this->nomeclatura->setDbValue($rs->fields('nomeclatura'));
+		$this->nomenclatura->setDbValue($rs->fields('nomenclatura'));
 		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->idcuenta_mayor_auxiliar->setDbValue($rs->fields('idcuenta_mayor_auxiliar'));
 		$this->definicion->setDbValue($rs->fields('definicion'));
@@ -1631,7 +1631,7 @@ class csubcuenta_list extends csubcuenta {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
 		$this->idsubcuenta->DbValue = $row['idsubcuenta'];
-		$this->nomeclatura->DbValue = $row['nomeclatura'];
+		$this->nomenclatura->DbValue = $row['nomenclatura'];
 		$this->nombre->DbValue = $row['nombre'];
 		$this->idcuenta_mayor_auxiliar->DbValue = $row['idcuenta_mayor_auxiliar'];
 		$this->definicion->DbValue = $row['definicion'];
@@ -1678,7 +1678,7 @@ class csubcuenta_list extends csubcuenta {
 
 		// Common render codes for all row types
 		// idsubcuenta
-		// nomeclatura
+		// nomenclatura
 		// nombre
 		// idcuenta_mayor_auxiliar
 		// definicion
@@ -1690,9 +1690,9 @@ class csubcuenta_list extends csubcuenta {
 			$this->idsubcuenta->ViewValue = $this->idsubcuenta->CurrentValue;
 			$this->idsubcuenta->ViewCustomAttributes = "";
 
-			// nomeclatura
-			$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
-			$this->nomeclatura->ViewCustomAttributes = "";
+			// nomenclatura
+			$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
+			$this->nomenclatura->ViewCustomAttributes = "";
 
 			// nombre
 			$this->nombre->ViewValue = $this->nombre->CurrentValue;
@@ -1723,10 +1723,10 @@ class csubcuenta_list extends csubcuenta {
 			}
 			$this->estado->ViewCustomAttributes = "";
 
-			// nomeclatura
-			$this->nomeclatura->LinkCustomAttributes = "";
-			$this->nomeclatura->HrefValue = "";
-			$this->nomeclatura->TooltipValue = "";
+			// nomenclatura
+			$this->nomenclatura->LinkCustomAttributes = "";
+			$this->nomenclatura->HrefValue = "";
+			$this->nomenclatura->TooltipValue = "";
 
 			// nombre
 			$this->nombre->LinkCustomAttributes = "";
@@ -1739,11 +1739,11 @@ class csubcuenta_list extends csubcuenta {
 			$this->idcuenta_mayor_auxiliar->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
 
-			// nomeclatura
-			$this->nomeclatura->EditAttrs["class"] = "form-control";
-			$this->nomeclatura->EditCustomAttributes = "";
-			$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
-			$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
+			// nomenclatura
+			$this->nomenclatura->EditAttrs["class"] = "form-control";
+			$this->nomenclatura->EditCustomAttributes = "";
+			$this->nomenclatura->EditValue = ew_HtmlEncode($this->nomenclatura->CurrentValue);
+			$this->nomenclatura->PlaceHolder = ew_RemoveHtml($this->nomenclatura->FldCaption());
 
 			// nombre
 			$this->nombre->EditAttrs["class"] = "form-control";
@@ -1765,9 +1765,9 @@ class csubcuenta_list extends csubcuenta {
 			}
 
 			// Edit refer script
-			// nomeclatura
+			// nomenclatura
 
-			$this->nomeclatura->HrefValue = "";
+			$this->nomenclatura->HrefValue = "";
 
 			// nombre
 			$this->nombre->HrefValue = "";
@@ -1776,11 +1776,11 @@ class csubcuenta_list extends csubcuenta {
 			$this->idcuenta_mayor_auxiliar->HrefValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
 
-			// nomeclatura
-			$this->nomeclatura->EditAttrs["class"] = "form-control";
-			$this->nomeclatura->EditCustomAttributes = "";
-			$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
-			$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
+			// nomenclatura
+			$this->nomenclatura->EditAttrs["class"] = "form-control";
+			$this->nomenclatura->EditCustomAttributes = "";
+			$this->nomenclatura->EditValue = ew_HtmlEncode($this->nomenclatura->CurrentValue);
+			$this->nomenclatura->PlaceHolder = ew_RemoveHtml($this->nomenclatura->FldCaption());
 
 			// nombre
 			$this->nombre->EditAttrs["class"] = "form-control";
@@ -1802,9 +1802,9 @@ class csubcuenta_list extends csubcuenta {
 			}
 
 			// Edit refer script
-			// nomeclatura
+			// nomenclatura
 
-			$this->nomeclatura->HrefValue = "";
+			$this->nomenclatura->HrefValue = "";
 
 			// nombre
 			$this->nombre->HrefValue = "";
@@ -1833,8 +1833,8 @@ class csubcuenta_list extends csubcuenta {
 		// Check if validation required
 		if (!EW_SERVER_VALIDATE)
 			return ($gsFormError == "");
-		if (!$this->nomeclatura->FldIsDetailKey && !is_null($this->nomeclatura->FormValue) && $this->nomeclatura->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->nomeclatura->FldCaption(), $this->nomeclatura->ReqErrMsg));
+		if (!$this->nomenclatura->FldIsDetailKey && !is_null($this->nomenclatura->FormValue) && $this->nomenclatura->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->nomenclatura->FldCaption(), $this->nomenclatura->ReqErrMsg));
 		}
 		if (!$this->nombre->FldIsDetailKey && !is_null($this->nombre->FormValue) && $this->nombre->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->nombre->FldCaption(), $this->nombre->ReqErrMsg));
@@ -1953,8 +1953,8 @@ class csubcuenta_list extends csubcuenta {
 			$this->LoadDbValues($rsold);
 			$rsnew = array();
 
-			// nomeclatura
-			$this->nomeclatura->SetDbValueDef($rsnew, $this->nomeclatura->CurrentValue, "", $this->nomeclatura->ReadOnly);
+			// nomenclatura
+			$this->nomenclatura->SetDbValueDef($rsnew, $this->nomenclatura->CurrentValue, "", $this->nomenclatura->ReadOnly);
 
 			// nombre
 			$this->nombre->SetDbValueDef($rsnew, $this->nombre->CurrentValue, "", $this->nombre->ReadOnly);
@@ -2004,8 +2004,8 @@ class csubcuenta_list extends csubcuenta {
 		}
 		$rsnew = array();
 
-		// nomeclatura
-		$this->nomeclatura->SetDbValueDef($rsnew, $this->nomeclatura->CurrentValue, "", FALSE);
+		// nomenclatura
+		$this->nomenclatura->SetDbValueDef($rsnew, $this->nomenclatura->CurrentValue, "", FALSE);
 
 		// nombre
 		$this->nombre->SetDbValueDef($rsnew, $this->nombre->CurrentValue, "", FALSE);
@@ -2269,9 +2269,9 @@ fsubcuentalist.Validate = function() {
 		var checkrow = (gridinsert) ? !this.EmptyRow(infix) : true;
 		if (checkrow) {
 			addcnt++;
-			elm = this.GetElements("x" + infix + "_nomeclatura");
+			elm = this.GetElements("x" + infix + "_nomenclatura");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $subcuenta->nomeclatura->FldCaption(), $subcuenta->nomeclatura->ReqErrMsg)) ?>");
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $subcuenta->nomenclatura->FldCaption(), $subcuenta->nomenclatura->ReqErrMsg)) ?>");
 			elm = this.GetElements("x" + infix + "_nombre");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $subcuenta->nombre->FldCaption(), $subcuenta->nombre->ReqErrMsg)) ?>");
@@ -2300,7 +2300,7 @@ fsubcuentalist.Validate = function() {
 // Check empty row
 fsubcuentalist.EmptyRow = function(infix) {
 	var fobj = this.Form;
-	if (ew_ValueChanged(fobj, infix, "nomeclatura", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "nomenclatura", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "nombre", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "idcuenta_mayor_auxiliar", false)) return false;
 	return true;
@@ -2442,12 +2442,12 @@ $subcuenta_list->RenderListOptions();
 // Render list options (header, left)
 $subcuenta_list->ListOptions->Render("header", "left");
 ?>
-<?php if ($subcuenta->nomeclatura->Visible) { // nomeclatura ?>
-	<?php if ($subcuenta->SortUrl($subcuenta->nomeclatura) == "") { ?>
-		<th data-name="nomeclatura"><div id="elh_subcuenta_nomeclatura" class="subcuenta_nomeclatura"><div class="ewTableHeaderCaption"><?php echo $subcuenta->nomeclatura->FldCaption() ?></div></div></th>
+<?php if ($subcuenta->nomenclatura->Visible) { // nomenclatura ?>
+	<?php if ($subcuenta->SortUrl($subcuenta->nomenclatura) == "") { ?>
+		<th data-name="nomenclatura"><div id="elh_subcuenta_nomenclatura" class="subcuenta_nomenclatura"><div class="ewTableHeaderCaption"><?php echo $subcuenta->nomenclatura->FldCaption() ?></div></div></th>
 	<?php } else { ?>
-		<th data-name="nomeclatura"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $subcuenta->SortUrl($subcuenta->nomeclatura) ?>',1);"><div id="elh_subcuenta_nomeclatura" class="subcuenta_nomeclatura">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $subcuenta->nomeclatura->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($subcuenta->nomeclatura->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($subcuenta->nomeclatura->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+		<th data-name="nomenclatura"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $subcuenta->SortUrl($subcuenta->nomenclatura) ?>',1);"><div id="elh_subcuenta_nomenclatura" class="subcuenta_nomenclatura">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $subcuenta->nomenclatura->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($subcuenta->nomenclatura->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($subcuenta->nomenclatura->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -2578,22 +2578,22 @@ while ($subcuenta_list->RecCnt < $subcuenta_list->StopRec) {
 // Render list options (body, left)
 $subcuenta_list->ListOptions->Render("body", "left", $subcuenta_list->RowCnt);
 ?>
-	<?php if ($subcuenta->nomeclatura->Visible) { // nomeclatura ?>
-		<td data-name="nomeclatura"<?php echo $subcuenta->nomeclatura->CellAttributes() ?>>
+	<?php if ($subcuenta->nomenclatura->Visible) { // nomenclatura ?>
+		<td data-name="nomenclatura"<?php echo $subcuenta->nomenclatura->CellAttributes() ?>>
 <?php if ($subcuenta->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<span id="el<?php echo $subcuenta_list->RowCnt ?>_subcuenta_nomeclatura" class="form-group subcuenta_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x<?php echo $subcuenta_list->RowIndex ?>_nomeclatura" id="x<?php echo $subcuenta_list->RowIndex ?>_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subcuenta->nomeclatura->PlaceHolder) ?>" value="<?php echo $subcuenta->nomeclatura->EditValue ?>"<?php echo $subcuenta->nomeclatura->EditAttributes() ?>>
+<span id="el<?php echo $subcuenta_list->RowCnt ?>_subcuenta_nomenclatura" class="form-group subcuenta_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x<?php echo $subcuenta_list->RowIndex ?>_nomenclatura" id="x<?php echo $subcuenta_list->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subcuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $subcuenta->nomenclatura->EditValue ?>"<?php echo $subcuenta->nomenclatura->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_nomeclatura" name="o<?php echo $subcuenta_list->RowIndex ?>_nomeclatura" id="o<?php echo $subcuenta_list->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($subcuenta->nomeclatura->OldValue) ?>">
+<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $subcuenta_list->RowIndex ?>_nomenclatura" id="o<?php echo $subcuenta_list->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($subcuenta->nomenclatura->OldValue) ?>">
 <?php } ?>
 <?php if ($subcuenta->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
-<span id="el<?php echo $subcuenta_list->RowCnt ?>_subcuenta_nomeclatura" class="form-group subcuenta_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x<?php echo $subcuenta_list->RowIndex ?>_nomeclatura" id="x<?php echo $subcuenta_list->RowIndex ?>_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subcuenta->nomeclatura->PlaceHolder) ?>" value="<?php echo $subcuenta->nomeclatura->EditValue ?>"<?php echo $subcuenta->nomeclatura->EditAttributes() ?>>
+<span id="el<?php echo $subcuenta_list->RowCnt ?>_subcuenta_nomenclatura" class="form-group subcuenta_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x<?php echo $subcuenta_list->RowIndex ?>_nomenclatura" id="x<?php echo $subcuenta_list->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subcuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $subcuenta->nomenclatura->EditValue ?>"<?php echo $subcuenta->nomenclatura->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($subcuenta->RowType == EW_ROWTYPE_VIEW) { // View record ?>
-<span<?php echo $subcuenta->nomeclatura->ViewAttributes() ?>>
-<?php echo $subcuenta->nomeclatura->ListViewValue() ?></span>
+<span<?php echo $subcuenta->nomenclatura->ViewAttributes() ?>>
+<?php echo $subcuenta->nomenclatura->ListViewValue() ?></span>
 <?php } ?>
 <a id="<?php echo $subcuenta_list->PageObjName . "_row_" . $subcuenta_list->RowCnt ?>"></a></td>
 	<?php } ?>
@@ -2700,12 +2700,12 @@ fsubcuentalist.UpdateOpts(<?php echo $subcuenta_list->RowIndex ?>);
 // Render list options (body, left)
 $subcuenta_list->ListOptions->Render("body", "left", $subcuenta_list->RowIndex);
 ?>
-	<?php if ($subcuenta->nomeclatura->Visible) { // nomeclatura ?>
+	<?php if ($subcuenta->nomenclatura->Visible) { // nomenclatura ?>
 		<td>
-<span id="el$rowindex$_subcuenta_nomeclatura" class="form-group subcuenta_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x<?php echo $subcuenta_list->RowIndex ?>_nomeclatura" id="x<?php echo $subcuenta_list->RowIndex ?>_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subcuenta->nomeclatura->PlaceHolder) ?>" value="<?php echo $subcuenta->nomeclatura->EditValue ?>"<?php echo $subcuenta->nomeclatura->EditAttributes() ?>>
+<span id="el$rowindex$_subcuenta_nomenclatura" class="form-group subcuenta_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x<?php echo $subcuenta_list->RowIndex ?>_nomenclatura" id="x<?php echo $subcuenta_list->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subcuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $subcuenta->nomenclatura->EditValue ?>"<?php echo $subcuenta->nomenclatura->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_nomeclatura" name="o<?php echo $subcuenta_list->RowIndex ?>_nomeclatura" id="o<?php echo $subcuenta_list->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($subcuenta->nomeclatura->OldValue) ?>">
+<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $subcuenta_list->RowIndex ?>_nomenclatura" id="o<?php echo $subcuenta_list->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($subcuenta->nomenclatura->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($subcuenta->nombre->Visible) { // nombre ?>

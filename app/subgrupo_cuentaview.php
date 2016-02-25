@@ -614,7 +614,7 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
 		$this->idsubgrupo_cuenta->setDbValue($rs->fields('idsubgrupo_cuenta'));
-		$this->nomeclatura->setDbValue($rs->fields('nomeclatura'));
+		$this->nomenclatura->setDbValue($rs->fields('nomenclatura'));
 		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->idgrupo_cuenta->setDbValue($rs->fields('idgrupo_cuenta'));
 		$this->definicion->setDbValue($rs->fields('definicion'));
@@ -626,7 +626,7 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
 		$this->idsubgrupo_cuenta->DbValue = $row['idsubgrupo_cuenta'];
-		$this->nomeclatura->DbValue = $row['nomeclatura'];
+		$this->nomenclatura->DbValue = $row['nomenclatura'];
 		$this->nombre->DbValue = $row['nombre'];
 		$this->idgrupo_cuenta->DbValue = $row['idgrupo_cuenta'];
 		$this->definicion->DbValue = $row['definicion'];
@@ -651,7 +651,7 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 
 		// Common render codes for all row types
 		// idsubgrupo_cuenta
-		// nomeclatura
+		// nomenclatura
 		// nombre
 		// idgrupo_cuenta
 		// definicion
@@ -663,9 +663,9 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 			$this->idsubgrupo_cuenta->ViewValue = $this->idsubgrupo_cuenta->CurrentValue;
 			$this->idsubgrupo_cuenta->ViewCustomAttributes = "";
 
-			// nomeclatura
-			$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
-			$this->nomeclatura->ViewCustomAttributes = "";
+			// nomenclatura
+			$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
+			$this->nomenclatura->ViewCustomAttributes = "";
 
 			// nombre
 			$this->nombre->ViewValue = $this->nombre->CurrentValue;
@@ -725,10 +725,10 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 			$this->idsubgrupo_cuenta->HrefValue = "";
 			$this->idsubgrupo_cuenta->TooltipValue = "";
 
-			// nomeclatura
-			$this->nomeclatura->LinkCustomAttributes = "";
-			$this->nomeclatura->HrefValue = "";
-			$this->nomeclatura->TooltipValue = "";
+			// nomenclatura
+			$this->nomenclatura->LinkCustomAttributes = "";
+			$this->nomenclatura->HrefValue = "";
+			$this->nomenclatura->TooltipValue = "";
 
 			// nombre
 			$this->nombre->LinkCustomAttributes = "";
@@ -1008,13 +1008,13 @@ $subgrupo_cuenta_view->ShowMessage();
 </td>
 	</tr>
 <?php } ?>
-<?php if ($subgrupo_cuenta->nomeclatura->Visible) { // nomeclatura ?>
-	<tr id="r_nomeclatura">
-		<td><span id="elh_subgrupo_cuenta_nomeclatura"><?php echo $subgrupo_cuenta->nomeclatura->FldCaption() ?></span></td>
-		<td<?php echo $subgrupo_cuenta->nomeclatura->CellAttributes() ?>>
-<span id="el_subgrupo_cuenta_nomeclatura" class="form-group">
-<span<?php echo $subgrupo_cuenta->nomeclatura->ViewAttributes() ?>>
-<?php echo $subgrupo_cuenta->nomeclatura->ViewValue ?></span>
+<?php if ($subgrupo_cuenta->nomenclatura->Visible) { // nomenclatura ?>
+	<tr id="r_nomenclatura">
+		<td><span id="elh_subgrupo_cuenta_nomenclatura"><?php echo $subgrupo_cuenta->nomenclatura->FldCaption() ?></span></td>
+		<td<?php echo $subgrupo_cuenta->nomenclatura->CellAttributes() ?>>
+<span id="el_subgrupo_cuenta_nomenclatura" class="form-group">
+<span<?php echo $subgrupo_cuenta->nomenclatura->ViewAttributes() ?>>
+<?php echo $subgrupo_cuenta->nomenclatura->ViewValue ?></span>
 </span>
 </td>
 	</tr>

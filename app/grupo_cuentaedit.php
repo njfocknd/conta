@@ -439,8 +439,8 @@ class cgrupo_cuenta_edit extends cgrupo_cuenta {
 
 		// Load from form
 		global $objForm;
-		if (!$this->nomeclatura->FldIsDetailKey) {
-			$this->nomeclatura->setFormValue($objForm->GetValue("x_nomeclatura"));
+		if (!$this->nomenclatura->FldIsDetailKey) {
+			$this->nomenclatura->setFormValue($objForm->GetValue("x_nomenclatura"));
 		}
 		if (!$this->nombre->FldIsDetailKey) {
 			$this->nombre->setFormValue($objForm->GetValue("x_nombre"));
@@ -463,7 +463,7 @@ class cgrupo_cuenta_edit extends cgrupo_cuenta {
 		global $objForm;
 		$this->LoadRow();
 		$this->idgrupo_cuenta->CurrentValue = $this->idgrupo_cuenta->FormValue;
-		$this->nomeclatura->CurrentValue = $this->nomeclatura->FormValue;
+		$this->nomenclatura->CurrentValue = $this->nomenclatura->FormValue;
 		$this->nombre->CurrentValue = $this->nombre->FormValue;
 		$this->idclase_cuenta->CurrentValue = $this->idclase_cuenta->FormValue;
 		$this->definicion->CurrentValue = $this->definicion->FormValue;
@@ -500,7 +500,7 @@ class cgrupo_cuenta_edit extends cgrupo_cuenta {
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
 		$this->idgrupo_cuenta->setDbValue($rs->fields('idgrupo_cuenta'));
-		$this->nomeclatura->setDbValue($rs->fields('nomeclatura'));
+		$this->nomenclatura->setDbValue($rs->fields('nomenclatura'));
 		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->idclase_cuenta->setDbValue($rs->fields('idclase_cuenta'));
 		$this->definicion->setDbValue($rs->fields('definicion'));
@@ -512,7 +512,7 @@ class cgrupo_cuenta_edit extends cgrupo_cuenta {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
 		$this->idgrupo_cuenta->DbValue = $row['idgrupo_cuenta'];
-		$this->nomeclatura->DbValue = $row['nomeclatura'];
+		$this->nomenclatura->DbValue = $row['nomenclatura'];
 		$this->nombre->DbValue = $row['nombre'];
 		$this->idclase_cuenta->DbValue = $row['idclase_cuenta'];
 		$this->definicion->DbValue = $row['definicion'];
@@ -531,7 +531,7 @@ class cgrupo_cuenta_edit extends cgrupo_cuenta {
 
 		// Common render codes for all row types
 		// idgrupo_cuenta
-		// nomeclatura
+		// nomenclatura
 		// nombre
 		// idclase_cuenta
 		// definicion
@@ -543,9 +543,9 @@ class cgrupo_cuenta_edit extends cgrupo_cuenta {
 			$this->idgrupo_cuenta->ViewValue = $this->idgrupo_cuenta->CurrentValue;
 			$this->idgrupo_cuenta->ViewCustomAttributes = "";
 
-			// nomeclatura
-			$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
-			$this->nomeclatura->ViewCustomAttributes = "";
+			// nomenclatura
+			$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
+			$this->nomenclatura->ViewCustomAttributes = "";
 
 			// nombre
 			$this->nombre->ViewValue = $this->nombre->CurrentValue;
@@ -600,10 +600,10 @@ class cgrupo_cuenta_edit extends cgrupo_cuenta {
 			}
 			$this->estado->ViewCustomAttributes = "";
 
-			// nomeclatura
-			$this->nomeclatura->LinkCustomAttributes = "";
-			$this->nomeclatura->HrefValue = "";
-			$this->nomeclatura->TooltipValue = "";
+			// nomenclatura
+			$this->nomenclatura->LinkCustomAttributes = "";
+			$this->nomenclatura->HrefValue = "";
+			$this->nomenclatura->TooltipValue = "";
 
 			// nombre
 			$this->nombre->LinkCustomAttributes = "";
@@ -626,11 +626,11 @@ class cgrupo_cuenta_edit extends cgrupo_cuenta {
 			$this->estado->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
 
-			// nomeclatura
-			$this->nomeclatura->EditAttrs["class"] = "form-control";
-			$this->nomeclatura->EditCustomAttributes = "";
-			$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
-			$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
+			// nomenclatura
+			$this->nomenclatura->EditAttrs["class"] = "form-control";
+			$this->nomenclatura->EditCustomAttributes = "";
+			$this->nomenclatura->EditValue = ew_HtmlEncode($this->nomenclatura->CurrentValue);
+			$this->nomenclatura->PlaceHolder = ew_RemoveHtml($this->nomenclatura->FldCaption());
 
 			// nombre
 			$this->nombre->EditAttrs["class"] = "form-control";
@@ -711,9 +711,9 @@ class cgrupo_cuenta_edit extends cgrupo_cuenta {
 			$this->estado->EditValue = $arwrk;
 
 			// Edit refer script
-			// nomeclatura
+			// nomenclatura
 
-			$this->nomeclatura->HrefValue = "";
+			$this->nomenclatura->HrefValue = "";
 
 			// nombre
 			$this->nombre->HrefValue = "";
@@ -748,8 +748,8 @@ class cgrupo_cuenta_edit extends cgrupo_cuenta {
 		// Check if validation required
 		if (!EW_SERVER_VALIDATE)
 			return ($gsFormError == "");
-		if (!$this->nomeclatura->FldIsDetailKey && !is_null($this->nomeclatura->FormValue) && $this->nomeclatura->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->nomeclatura->FldCaption(), $this->nomeclatura->ReqErrMsg));
+		if (!$this->nomenclatura->FldIsDetailKey && !is_null($this->nomenclatura->FormValue) && $this->nomenclatura->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->nomenclatura->FldCaption(), $this->nomenclatura->ReqErrMsg));
 		}
 		if (!$this->nombre->FldIsDetailKey && !is_null($this->nombre->FormValue) && $this->nombre->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->nombre->FldCaption(), $this->nombre->ReqErrMsg));
@@ -807,8 +807,8 @@ class cgrupo_cuenta_edit extends cgrupo_cuenta {
 			$this->LoadDbValues($rsold);
 			$rsnew = array();
 
-			// nomeclatura
-			$this->nomeclatura->SetDbValueDef($rsnew, $this->nomeclatura->CurrentValue, "", $this->nomeclatura->ReadOnly);
+			// nomenclatura
+			$this->nomenclatura->SetDbValueDef($rsnew, $this->nomenclatura->CurrentValue, "", $this->nomenclatura->ReadOnly);
 
 			// nombre
 			$this->nombre->SetDbValueDef($rsnew, $this->nombre->CurrentValue, "", $this->nombre->ReadOnly);
@@ -1067,9 +1067,9 @@ fgrupo_cuentaedit.Validate = function() {
 	for (var i = startcnt; i <= rowcnt; i++) {
 		var infix = ($k[0]) ? String(i) : "";
 		$fobj.data("rowindex", infix);
-			elm = this.GetElements("x" + infix + "_nomeclatura");
+			elm = this.GetElements("x" + infix + "_nomenclatura");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $grupo_cuenta->nomeclatura->FldCaption(), $grupo_cuenta->nomeclatura->ReqErrMsg)) ?>");
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $grupo_cuenta->nomenclatura->FldCaption(), $grupo_cuenta->nomenclatura->ReqErrMsg)) ?>");
 			elm = this.GetElements("x" + infix + "_nombre");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $grupo_cuenta->nombre->FldCaption(), $grupo_cuenta->nombre->ReqErrMsg)) ?>");
@@ -1142,14 +1142,14 @@ $grupo_cuenta_edit->ShowMessage();
 <input type="hidden" name="t" value="grupo_cuenta">
 <input type="hidden" name="a_edit" id="a_edit" value="U">
 <div>
-<?php if ($grupo_cuenta->nomeclatura->Visible) { // nomeclatura ?>
-	<div id="r_nomeclatura" class="form-group">
-		<label id="elh_grupo_cuenta_nomeclatura" for="x_nomeclatura" class="col-sm-2 control-label ewLabel"><?php echo $grupo_cuenta->nomeclatura->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
-		<div class="col-sm-10"><div<?php echo $grupo_cuenta->nomeclatura->CellAttributes() ?>>
-<span id="el_grupo_cuenta_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x_nomeclatura" id="x_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nomeclatura->PlaceHolder) ?>" value="<?php echo $grupo_cuenta->nomeclatura->EditValue ?>"<?php echo $grupo_cuenta->nomeclatura->EditAttributes() ?>>
+<?php if ($grupo_cuenta->nomenclatura->Visible) { // nomenclatura ?>
+	<div id="r_nomenclatura" class="form-group">
+		<label id="elh_grupo_cuenta_nomenclatura" for="x_nomenclatura" class="col-sm-2 control-label ewLabel"><?php echo $grupo_cuenta->nomenclatura->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $grupo_cuenta->nomenclatura->CellAttributes() ?>>
+<span id="el_grupo_cuenta_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x_nomenclatura" id="x_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $grupo_cuenta->nomenclatura->EditValue ?>"<?php echo $grupo_cuenta->nomenclatura->EditAttributes() ?>>
 </span>
-<?php echo $grupo_cuenta->nomeclatura->CustomMsg ?></div></div>
+<?php echo $grupo_cuenta->nomenclatura->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
 <?php if ($grupo_cuenta->nombre->Visible) { // nombre ?>

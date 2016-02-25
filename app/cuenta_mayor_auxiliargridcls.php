@@ -698,7 +698,7 @@ class ccuenta_mayor_auxiliar_grid extends ccuenta_mayor_auxiliar {
 	// Check if empty row
 	function EmptyRow() {
 		global $objForm;
-		if ($objForm->HasValue("x_nomeclatura") && $objForm->HasValue("o_nomeclatura") && $this->nomeclatura->CurrentValue <> $this->nomeclatura->OldValue)
+		if ($objForm->HasValue("x_nomenclatura") && $objForm->HasValue("o_nomenclatura") && $this->nomenclatura->CurrentValue <> $this->nomenclatura->OldValue)
 			return FALSE;
 		if ($objForm->HasValue("x_nombre") && $objForm->HasValue("o_nombre") && $this->nombre->CurrentValue <> $this->nombre->OldValue)
 			return FALSE;
@@ -988,8 +988,8 @@ class ccuenta_mayor_auxiliar_grid extends ccuenta_mayor_auxiliar {
 
 	// Load default values
 	function LoadDefaultValues() {
-		$this->nomeclatura->CurrentValue = NULL;
-		$this->nomeclatura->OldValue = $this->nomeclatura->CurrentValue;
+		$this->nomenclatura->CurrentValue = NULL;
+		$this->nomenclatura->OldValue = $this->nomenclatura->CurrentValue;
 		$this->nombre->CurrentValue = NULL;
 		$this->nombre->OldValue = $this->nombre->CurrentValue;
 		$this->idcuenta_mayor_principal->CurrentValue = NULL;
@@ -1002,10 +1002,10 @@ class ccuenta_mayor_auxiliar_grid extends ccuenta_mayor_auxiliar {
 		// Load from form
 		global $objForm;
 		$objForm->FormName = $this->FormName;
-		if (!$this->nomeclatura->FldIsDetailKey) {
-			$this->nomeclatura->setFormValue($objForm->GetValue("x_nomeclatura"));
+		if (!$this->nomenclatura->FldIsDetailKey) {
+			$this->nomenclatura->setFormValue($objForm->GetValue("x_nomenclatura"));
 		}
-		$this->nomeclatura->setOldValue($objForm->GetValue("o_nomeclatura"));
+		$this->nomenclatura->setOldValue($objForm->GetValue("o_nomenclatura"));
 		if (!$this->nombre->FldIsDetailKey) {
 			$this->nombre->setFormValue($objForm->GetValue("x_nombre"));
 		}
@@ -1023,7 +1023,7 @@ class ccuenta_mayor_auxiliar_grid extends ccuenta_mayor_auxiliar {
 		global $objForm;
 		if ($this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
 			$this->idcuenta_mayor_auxiliar->CurrentValue = $this->idcuenta_mayor_auxiliar->FormValue;
-		$this->nomeclatura->CurrentValue = $this->nomeclatura->FormValue;
+		$this->nomenclatura->CurrentValue = $this->nomenclatura->FormValue;
 		$this->nombre->CurrentValue = $this->nombre->FormValue;
 		$this->idcuenta_mayor_principal->CurrentValue = $this->idcuenta_mayor_principal->FormValue;
 	}
@@ -1075,7 +1075,7 @@ class ccuenta_mayor_auxiliar_grid extends ccuenta_mayor_auxiliar {
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
 		$this->idcuenta_mayor_auxiliar->setDbValue($rs->fields('idcuenta_mayor_auxiliar'));
-		$this->nomeclatura->setDbValue($rs->fields('nomeclatura'));
+		$this->nomenclatura->setDbValue($rs->fields('nomenclatura'));
 		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->idcuenta_mayor_principal->setDbValue($rs->fields('idcuenta_mayor_principal'));
 		$this->definicion->setDbValue($rs->fields('definicion'));
@@ -1087,7 +1087,7 @@ class ccuenta_mayor_auxiliar_grid extends ccuenta_mayor_auxiliar {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
 		$this->idcuenta_mayor_auxiliar->DbValue = $row['idcuenta_mayor_auxiliar'];
-		$this->nomeclatura->DbValue = $row['nomeclatura'];
+		$this->nomenclatura->DbValue = $row['nomenclatura'];
 		$this->nombre->DbValue = $row['nombre'];
 		$this->idcuenta_mayor_principal->DbValue = $row['idcuenta_mayor_principal'];
 		$this->definicion->DbValue = $row['definicion'];
@@ -1134,7 +1134,7 @@ class ccuenta_mayor_auxiliar_grid extends ccuenta_mayor_auxiliar {
 
 		// Common render codes for all row types
 		// idcuenta_mayor_auxiliar
-		// nomeclatura
+		// nomenclatura
 		// nombre
 		// idcuenta_mayor_principal
 		// definicion
@@ -1146,9 +1146,9 @@ class ccuenta_mayor_auxiliar_grid extends ccuenta_mayor_auxiliar {
 			$this->idcuenta_mayor_auxiliar->ViewValue = $this->idcuenta_mayor_auxiliar->CurrentValue;
 			$this->idcuenta_mayor_auxiliar->ViewCustomAttributes = "";
 
-			// nomeclatura
-			$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
-			$this->nomeclatura->ViewCustomAttributes = "";
+			// nomenclatura
+			$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
+			$this->nomenclatura->ViewCustomAttributes = "";
 
 			// nombre
 			$this->nombre->ViewValue = $this->nombre->CurrentValue;
@@ -1203,10 +1203,10 @@ class ccuenta_mayor_auxiliar_grid extends ccuenta_mayor_auxiliar {
 			}
 			$this->estado->ViewCustomAttributes = "";
 
-			// nomeclatura
-			$this->nomeclatura->LinkCustomAttributes = "";
-			$this->nomeclatura->HrefValue = "";
-			$this->nomeclatura->TooltipValue = "";
+			// nomenclatura
+			$this->nomenclatura->LinkCustomAttributes = "";
+			$this->nomenclatura->HrefValue = "";
+			$this->nomenclatura->TooltipValue = "";
 
 			// nombre
 			$this->nombre->LinkCustomAttributes = "";
@@ -1219,11 +1219,11 @@ class ccuenta_mayor_auxiliar_grid extends ccuenta_mayor_auxiliar {
 			$this->idcuenta_mayor_principal->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
 
-			// nomeclatura
-			$this->nomeclatura->EditAttrs["class"] = "form-control";
-			$this->nomeclatura->EditCustomAttributes = "";
-			$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
-			$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
+			// nomenclatura
+			$this->nomenclatura->EditAttrs["class"] = "form-control";
+			$this->nomenclatura->EditCustomAttributes = "";
+			$this->nomenclatura->EditValue = ew_HtmlEncode($this->nomenclatura->CurrentValue);
+			$this->nomenclatura->PlaceHolder = ew_RemoveHtml($this->nomenclatura->FldCaption());
 
 			// nombre
 			$this->nombre->EditAttrs["class"] = "form-control";
@@ -1290,9 +1290,9 @@ class ccuenta_mayor_auxiliar_grid extends ccuenta_mayor_auxiliar {
 			}
 
 			// Edit refer script
-			// nomeclatura
+			// nomenclatura
 
-			$this->nomeclatura->HrefValue = "";
+			$this->nomenclatura->HrefValue = "";
 
 			// nombre
 			$this->nombre->HrefValue = "";
@@ -1301,11 +1301,11 @@ class ccuenta_mayor_auxiliar_grid extends ccuenta_mayor_auxiliar {
 			$this->idcuenta_mayor_principal->HrefValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
 
-			// nomeclatura
-			$this->nomeclatura->EditAttrs["class"] = "form-control";
-			$this->nomeclatura->EditCustomAttributes = "";
-			$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
-			$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
+			// nomenclatura
+			$this->nomenclatura->EditAttrs["class"] = "form-control";
+			$this->nomenclatura->EditCustomAttributes = "";
+			$this->nomenclatura->EditValue = ew_HtmlEncode($this->nomenclatura->CurrentValue);
+			$this->nomenclatura->PlaceHolder = ew_RemoveHtml($this->nomenclatura->FldCaption());
 
 			// nombre
 			$this->nombre->EditAttrs["class"] = "form-control";
@@ -1372,9 +1372,9 @@ class ccuenta_mayor_auxiliar_grid extends ccuenta_mayor_auxiliar {
 			}
 
 			// Edit refer script
-			// nomeclatura
+			// nomenclatura
 
-			$this->nomeclatura->HrefValue = "";
+			$this->nomenclatura->HrefValue = "";
 
 			// nombre
 			$this->nombre->HrefValue = "";
@@ -1400,8 +1400,8 @@ class ccuenta_mayor_auxiliar_grid extends ccuenta_mayor_auxiliar {
 		// Check if validation required
 		if (!EW_SERVER_VALIDATE)
 			return ($gsFormError == "");
-		if (!$this->nomeclatura->FldIsDetailKey && !is_null($this->nomeclatura->FormValue) && $this->nomeclatura->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->nomeclatura->FldCaption(), $this->nomeclatura->ReqErrMsg));
+		if (!$this->nomenclatura->FldIsDetailKey && !is_null($this->nomenclatura->FormValue) && $this->nomenclatura->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->nomenclatura->FldCaption(), $this->nomenclatura->ReqErrMsg));
 		}
 		if (!$this->nombre->FldIsDetailKey && !is_null($this->nombre->FormValue) && $this->nombre->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->nombre->FldCaption(), $this->nombre->ReqErrMsg));
@@ -1517,8 +1517,8 @@ class ccuenta_mayor_auxiliar_grid extends ccuenta_mayor_auxiliar {
 			$this->LoadDbValues($rsold);
 			$rsnew = array();
 
-			// nomeclatura
-			$this->nomeclatura->SetDbValueDef($rsnew, $this->nomeclatura->CurrentValue, "", $this->nomeclatura->ReadOnly);
+			// nomenclatura
+			$this->nomenclatura->SetDbValueDef($rsnew, $this->nomenclatura->CurrentValue, "", $this->nomenclatura->ReadOnly);
 
 			// nombre
 			$this->nombre->SetDbValueDef($rsnew, $this->nombre->CurrentValue, "", $this->nombre->ReadOnly);
@@ -1573,8 +1573,8 @@ class ccuenta_mayor_auxiliar_grid extends ccuenta_mayor_auxiliar {
 		}
 		$rsnew = array();
 
-		// nomeclatura
-		$this->nomeclatura->SetDbValueDef($rsnew, $this->nomeclatura->CurrentValue, "", FALSE);
+		// nomenclatura
+		$this->nomenclatura->SetDbValueDef($rsnew, $this->nomenclatura->CurrentValue, "", FALSE);
 
 		// nombre
 		$this->nombre->SetDbValueDef($rsnew, $this->nombre->CurrentValue, "", FALSE);

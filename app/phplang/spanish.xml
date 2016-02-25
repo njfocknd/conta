@@ -441,6 +441,8 @@
 <table id="clase_cuenta"><phrase id="tblcaption" value="Clase de Cuenta"/>
 <field id="idclase_cuenta"><phrase id="fldcaption" value="idclase cuenta"/>
 </field>
+<field id="nomenclatura"><phrase id="fldcaption" value="Nomenclatura"/>
+</field>
 <field id="nombre"><phrase id="fldcaption" value="Nombre"/>
 </field>
 <field id="estado"><phrase id="fldcaption" value="Estado"/>
@@ -448,8 +450,6 @@
 <phrase id="fldtagcaption1" value="Activo"/>
 <phrase id="fldtagvalue2" value="Inactivo"/>
 <phrase id="fldtagcaption2" value="Inactivo"/>
-</field>
-<field id="nomenclatura"><phrase id="fldcaption" value="Nomenclatura"/>
 </field>
 <field id="definicion"><phrase id="fldcaption" value="Definición"/>
 </field>
@@ -477,11 +477,9 @@
 <table id="cuenta_mayor_auxiliar"><phrase id="tblcaption" value="Cuenta Mayor Auxiliar"/>
 <field id="idcuenta_mayor_auxiliar"><phrase id="fldcaption" value="idcuenta mayor auxiliar"/>
 </field>
-<field id="idcuenta_mayor_principal"><phrase id="fldcaption" value="Cuenta Mayor Principal"/>
-</field>
 <field id="nombre"><phrase id="fldcaption" value="Nombre"/>
 </field>
-<field id="nomeclatura"><phrase id="fldcaption" value="Nomenclatura"/>
+<field id="idcuenta_mayor_principal"><phrase id="fldcaption" value="Cuenta Mayor Principal"/>
 </field>
 <field id="definicion"><phrase id="fldcaption" value="Definición"/>
 </field>
@@ -490,16 +488,16 @@
 <phrase id="fldtagcaption1" value="Activo"/>
 <phrase id="fldtagvalue2" value="Inactivo"/>
 <phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+<field id="nomenclatura"><phrase id="fldcaption" value="Nomenclatura"/>
 </field>
 </table>
 <table id="cuenta_mayor_principal"><phrase id="tblcaption" value="Cuenta Mayor Principal"/>
 <field id="idcuenta_mayor_principal"><phrase id="fldcaption" value="idcuenta mayor principal"/>
 </field>
-<field id="idsubgrupo_cuenta"><phrase id="fldcaption" value="SubGrupo de Cuenta"/>
-</field>
 <field id="nombre"><phrase id="fldcaption" value="Nombre"/>
 </field>
-<field id="nomeclatura"><phrase id="fldcaption" value="Nomenclatura"/>
+<field id="idsubgrupo_cuenta"><phrase id="fldcaption" value="SubGrupo de Cuenta"/>
 </field>
 <field id="definicion"><phrase id="fldcaption" value="Definición"/>
 </field>
@@ -508,16 +506,16 @@
 <phrase id="fldtagcaption1" value="Activo"/>
 <phrase id="fldtagvalue2" value="Inactivo"/>
 <phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+<field id="nomenclatura"><phrase id="fldcaption" value="Nomenclatura"/>
 </field>
 </table>
 <table id="grupo_cuenta"><phrase id="tblcaption" value="grupo cuenta"/>
 <field id="idgrupo_cuenta"><phrase id="fldcaption" value="idgrupo cuenta"/>
 </field>
-<field id="idclase_cuenta"><phrase id="fldcaption" value="Clase de Cuenta"/>
-</field>
 <field id="nombre"><phrase id="fldcaption" value="Nombre"/>
 </field>
-<field id="nomeclatura"><phrase id="fldcaption" value="Nomenclatura"/>
+<field id="idclase_cuenta"><phrase id="fldcaption" value="Clase de Cuenta"/>
 </field>
 <field id="definicion"><phrase id="fldcaption" value="Definición"/>
 </field>
@@ -526,6 +524,8 @@
 <phrase id="fldtagcaption1" value="Activo"/>
 <phrase id="fldtagvalue2" value="Inactivo"/>
 <phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+<field id="nomenclatura"><phrase id="fldcaption" value="Nomenclatura"/>
 </field>
 </table>
 <table id="pais"><phrase id="tblcaption" value="País"/>
@@ -603,11 +603,9 @@
 <table id="subcuenta"><phrase id="tblcaption" value="SubCuenta"/>
 <field id="idsubcuenta"><phrase id="fldcaption" value="idsubcuenta"/>
 </field>
-<field id="idcuenta_mayor_auxiliar"><phrase id="fldcaption" value="Cuenta Mayor Auxiliar"/>
-</field>
 <field id="nombre"><phrase id="fldcaption" value="Nombre"/>
 </field>
-<field id="nomeclatura"><phrase id="fldcaption" value="Nomenclatura"/>
+<field id="idcuenta_mayor_auxiliar"><phrase id="fldcaption" value="Cuenta Mayor Auxiliar"/>
 </field>
 <field id="definicion"><phrase id="fldcaption" value="Definición"/>
 </field>
@@ -616,16 +614,16 @@
 <phrase id="fldtagcaption1" value="Activo"/>
 <phrase id="fldtagvalue2" value="Inactivo"/>
 <phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+<field id="nomenclatura"><phrase id="fldcaption" value="Nomenclatura"/>
 </field>
 </table>
 <table id="subgrupo_cuenta"><phrase id="tblcaption" value="SubGrupo de Cuenta"/>
 <field id="idsubgrupo_cuenta"><phrase id="fldcaption" value="idsubgrupo cuenta"/>
 </field>
-<field id="idgrupo_cuenta"><phrase id="fldcaption" value="Grupo de Cuenta"/>
-</field>
 <field id="nombre"><phrase id="fldcaption" value="Nombre"/>
 </field>
-<field id="nomeclatura"><phrase id="fldcaption" value="Nomenclatura"/>
+<field id="idgrupo_cuenta"><phrase id="fldcaption" value="Grupo de Cuenta"/>
 </field>
 <field id="definicion"><phrase id="fldcaption" value="Definición"/>
 </field>
@@ -634,6 +632,8 @@
 <phrase id="fldtagcaption1" value="Activo"/>
 <phrase id="fldtagvalue2" value="Inactivo"/>
 <phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+<field id="nomenclatura"><phrase id="fldcaption" value="Nomenclatura"/>
 </field>
 </table>
 </project>

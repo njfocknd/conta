@@ -894,7 +894,7 @@ class cgrupo_cuenta_list extends cgrupo_cuenta {
 	// Check if empty row
 	function EmptyRow() {
 		global $objForm;
-		if ($objForm->HasValue("x_nomeclatura") && $objForm->HasValue("o_nomeclatura") && $this->nomeclatura->CurrentValue <> $this->nomeclatura->OldValue)
+		if ($objForm->HasValue("x_nomenclatura") && $objForm->HasValue("o_nomenclatura") && $this->nomenclatura->CurrentValue <> $this->nomenclatura->OldValue)
 			return FALSE;
 		if ($objForm->HasValue("x_nombre") && $objForm->HasValue("o_nombre") && $this->nombre->CurrentValue <> $this->nombre->OldValue)
 			return FALSE;
@@ -974,7 +974,7 @@ class cgrupo_cuenta_list extends cgrupo_cuenta {
 	// Return basic search SQL
 	function BasicSearchSQL($arKeywords, $type) {
 		$sWhere = "";
-		$this->BuildBasicSearchSQL($sWhere, $this->nomeclatura, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->nomenclatura, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->nombre, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->definicion, $arKeywords, $type);
 		return $sWhere;
@@ -1129,7 +1129,7 @@ class cgrupo_cuenta_list extends cgrupo_cuenta {
 		if (@$_GET["order"] <> "") {
 			$this->CurrentOrder = ew_StripSlashes(@$_GET["order"]);
 			$this->CurrentOrderType = @$_GET["ordertype"];
-			$this->UpdateSort($this->nomeclatura); // nomeclatura
+			$this->UpdateSort($this->nomenclatura); // nomenclatura
 			$this->UpdateSort($this->nombre); // nombre
 			$this->UpdateSort($this->idclase_cuenta); // idclase_cuenta
 			$this->setStartRecordNumber(1); // Reset start position
@@ -1172,7 +1172,7 @@ class cgrupo_cuenta_list extends cgrupo_cuenta {
 			if ($this->Command == "resetsort") {
 				$sOrderBy = "";
 				$this->setSessionOrderBy($sOrderBy);
-				$this->nomeclatura->setSort("");
+				$this->nomenclatura->setSort("");
 				$this->nombre->setSort("");
 				$this->idclase_cuenta->setSort("");
 			}
@@ -1646,8 +1646,8 @@ class cgrupo_cuenta_list extends cgrupo_cuenta {
 
 	// Load default values
 	function LoadDefaultValues() {
-		$this->nomeclatura->CurrentValue = NULL;
-		$this->nomeclatura->OldValue = $this->nomeclatura->CurrentValue;
+		$this->nomenclatura->CurrentValue = NULL;
+		$this->nomenclatura->OldValue = $this->nomenclatura->CurrentValue;
 		$this->nombre->CurrentValue = NULL;
 		$this->nombre->OldValue = $this->nombre->CurrentValue;
 		$this->idclase_cuenta->CurrentValue = NULL;
@@ -1666,10 +1666,10 @@ class cgrupo_cuenta_list extends cgrupo_cuenta {
 
 		// Load from form
 		global $objForm;
-		if (!$this->nomeclatura->FldIsDetailKey) {
-			$this->nomeclatura->setFormValue($objForm->GetValue("x_nomeclatura"));
+		if (!$this->nomenclatura->FldIsDetailKey) {
+			$this->nomenclatura->setFormValue($objForm->GetValue("x_nomenclatura"));
 		}
-		$this->nomeclatura->setOldValue($objForm->GetValue("o_nomeclatura"));
+		$this->nomenclatura->setOldValue($objForm->GetValue("o_nomenclatura"));
 		if (!$this->nombre->FldIsDetailKey) {
 			$this->nombre->setFormValue($objForm->GetValue("x_nombre"));
 		}
@@ -1687,7 +1687,7 @@ class cgrupo_cuenta_list extends cgrupo_cuenta {
 		global $objForm;
 		if ($this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
 			$this->idgrupo_cuenta->CurrentValue = $this->idgrupo_cuenta->FormValue;
-		$this->nomeclatura->CurrentValue = $this->nomeclatura->FormValue;
+		$this->nomenclatura->CurrentValue = $this->nomenclatura->FormValue;
 		$this->nombre->CurrentValue = $this->nombre->FormValue;
 		$this->idclase_cuenta->CurrentValue = $this->idclase_cuenta->FormValue;
 	}
@@ -1739,7 +1739,7 @@ class cgrupo_cuenta_list extends cgrupo_cuenta {
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
 		$this->idgrupo_cuenta->setDbValue($rs->fields('idgrupo_cuenta'));
-		$this->nomeclatura->setDbValue($rs->fields('nomeclatura'));
+		$this->nomenclatura->setDbValue($rs->fields('nomenclatura'));
 		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->idclase_cuenta->setDbValue($rs->fields('idclase_cuenta'));
 		$this->definicion->setDbValue($rs->fields('definicion'));
@@ -1751,7 +1751,7 @@ class cgrupo_cuenta_list extends cgrupo_cuenta {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
 		$this->idgrupo_cuenta->DbValue = $row['idgrupo_cuenta'];
-		$this->nomeclatura->DbValue = $row['nomeclatura'];
+		$this->nomenclatura->DbValue = $row['nomenclatura'];
 		$this->nombre->DbValue = $row['nombre'];
 		$this->idclase_cuenta->DbValue = $row['idclase_cuenta'];
 		$this->definicion->DbValue = $row['definicion'];
@@ -1798,7 +1798,7 @@ class cgrupo_cuenta_list extends cgrupo_cuenta {
 
 		// Common render codes for all row types
 		// idgrupo_cuenta
-		// nomeclatura
+		// nomenclatura
 		// nombre
 		// idclase_cuenta
 		// definicion
@@ -1810,9 +1810,9 @@ class cgrupo_cuenta_list extends cgrupo_cuenta {
 			$this->idgrupo_cuenta->ViewValue = $this->idgrupo_cuenta->CurrentValue;
 			$this->idgrupo_cuenta->ViewCustomAttributes = "";
 
-			// nomeclatura
-			$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
-			$this->nomeclatura->ViewCustomAttributes = "";
+			// nomenclatura
+			$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
+			$this->nomenclatura->ViewCustomAttributes = "";
 
 			// nombre
 			$this->nombre->ViewValue = $this->nombre->CurrentValue;
@@ -1867,10 +1867,10 @@ class cgrupo_cuenta_list extends cgrupo_cuenta {
 			}
 			$this->estado->ViewCustomAttributes = "";
 
-			// nomeclatura
-			$this->nomeclatura->LinkCustomAttributes = "";
-			$this->nomeclatura->HrefValue = "";
-			$this->nomeclatura->TooltipValue = "";
+			// nomenclatura
+			$this->nomenclatura->LinkCustomAttributes = "";
+			$this->nomenclatura->HrefValue = "";
+			$this->nomenclatura->TooltipValue = "";
 
 			// nombre
 			$this->nombre->LinkCustomAttributes = "";
@@ -1883,11 +1883,11 @@ class cgrupo_cuenta_list extends cgrupo_cuenta {
 			$this->idclase_cuenta->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
 
-			// nomeclatura
-			$this->nomeclatura->EditAttrs["class"] = "form-control";
-			$this->nomeclatura->EditCustomAttributes = "";
-			$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
-			$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
+			// nomenclatura
+			$this->nomenclatura->EditAttrs["class"] = "form-control";
+			$this->nomenclatura->EditCustomAttributes = "";
+			$this->nomenclatura->EditValue = ew_HtmlEncode($this->nomenclatura->CurrentValue);
+			$this->nomenclatura->PlaceHolder = ew_RemoveHtml($this->nomenclatura->FldCaption());
 
 			// nombre
 			$this->nombre->EditAttrs["class"] = "form-control";
@@ -1954,9 +1954,9 @@ class cgrupo_cuenta_list extends cgrupo_cuenta {
 			}
 
 			// Edit refer script
-			// nomeclatura
+			// nomenclatura
 
-			$this->nomeclatura->HrefValue = "";
+			$this->nomenclatura->HrefValue = "";
 
 			// nombre
 			$this->nombre->HrefValue = "";
@@ -1965,11 +1965,11 @@ class cgrupo_cuenta_list extends cgrupo_cuenta {
 			$this->idclase_cuenta->HrefValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
 
-			// nomeclatura
-			$this->nomeclatura->EditAttrs["class"] = "form-control";
-			$this->nomeclatura->EditCustomAttributes = "";
-			$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
-			$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
+			// nomenclatura
+			$this->nomenclatura->EditAttrs["class"] = "form-control";
+			$this->nomenclatura->EditCustomAttributes = "";
+			$this->nomenclatura->EditValue = ew_HtmlEncode($this->nomenclatura->CurrentValue);
+			$this->nomenclatura->PlaceHolder = ew_RemoveHtml($this->nomenclatura->FldCaption());
 
 			// nombre
 			$this->nombre->EditAttrs["class"] = "form-control";
@@ -2036,9 +2036,9 @@ class cgrupo_cuenta_list extends cgrupo_cuenta {
 			}
 
 			// Edit refer script
-			// nomeclatura
+			// nomenclatura
 
-			$this->nomeclatura->HrefValue = "";
+			$this->nomenclatura->HrefValue = "";
 
 			// nombre
 			$this->nombre->HrefValue = "";
@@ -2067,8 +2067,8 @@ class cgrupo_cuenta_list extends cgrupo_cuenta {
 		// Check if validation required
 		if (!EW_SERVER_VALIDATE)
 			return ($gsFormError == "");
-		if (!$this->nomeclatura->FldIsDetailKey && !is_null($this->nomeclatura->FormValue) && $this->nomeclatura->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->nomeclatura->FldCaption(), $this->nomeclatura->ReqErrMsg));
+		if (!$this->nomenclatura->FldIsDetailKey && !is_null($this->nomenclatura->FormValue) && $this->nomenclatura->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->nomenclatura->FldCaption(), $this->nomenclatura->ReqErrMsg));
 		}
 		if (!$this->nombre->FldIsDetailKey && !is_null($this->nombre->FormValue) && $this->nombre->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->nombre->FldCaption(), $this->nombre->ReqErrMsg));
@@ -2184,8 +2184,8 @@ class cgrupo_cuenta_list extends cgrupo_cuenta {
 			$this->LoadDbValues($rsold);
 			$rsnew = array();
 
-			// nomeclatura
-			$this->nomeclatura->SetDbValueDef($rsnew, $this->nomeclatura->CurrentValue, "", $this->nomeclatura->ReadOnly);
+			// nomenclatura
+			$this->nomenclatura->SetDbValueDef($rsnew, $this->nomenclatura->CurrentValue, "", $this->nomenclatura->ReadOnly);
 
 			// nombre
 			$this->nombre->SetDbValueDef($rsnew, $this->nombre->CurrentValue, "", $this->nombre->ReadOnly);
@@ -2235,8 +2235,8 @@ class cgrupo_cuenta_list extends cgrupo_cuenta {
 		}
 		$rsnew = array();
 
-		// nomeclatura
-		$this->nomeclatura->SetDbValueDef($rsnew, $this->nomeclatura->CurrentValue, "", FALSE);
+		// nomenclatura
+		$this->nomenclatura->SetDbValueDef($rsnew, $this->nomenclatura->CurrentValue, "", FALSE);
 
 		// nombre
 		$this->nombre->SetDbValueDef($rsnew, $this->nombre->CurrentValue, "", FALSE);
@@ -2500,9 +2500,9 @@ fgrupo_cuentalist.Validate = function() {
 		var checkrow = (gridinsert) ? !this.EmptyRow(infix) : true;
 		if (checkrow) {
 			addcnt++;
-			elm = this.GetElements("x" + infix + "_nomeclatura");
+			elm = this.GetElements("x" + infix + "_nomenclatura");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $grupo_cuenta->nomeclatura->FldCaption(), $grupo_cuenta->nomeclatura->ReqErrMsg)) ?>");
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $grupo_cuenta->nomenclatura->FldCaption(), $grupo_cuenta->nomenclatura->ReqErrMsg)) ?>");
 			elm = this.GetElements("x" + infix + "_nombre");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $grupo_cuenta->nombre->FldCaption(), $grupo_cuenta->nombre->ReqErrMsg)) ?>");
@@ -2528,7 +2528,7 @@ fgrupo_cuentalist.Validate = function() {
 // Check empty row
 fgrupo_cuentalist.EmptyRow = function(infix) {
 	var fobj = this.Form;
-	if (ew_ValueChanged(fobj, infix, "nomeclatura", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "nomenclatura", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "nombre", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "idclase_cuenta", false)) return false;
 	return true;
@@ -2671,12 +2671,12 @@ $grupo_cuenta_list->RenderListOptions();
 // Render list options (header, left)
 $grupo_cuenta_list->ListOptions->Render("header", "left");
 ?>
-<?php if ($grupo_cuenta->nomeclatura->Visible) { // nomeclatura ?>
-	<?php if ($grupo_cuenta->SortUrl($grupo_cuenta->nomeclatura) == "") { ?>
-		<th data-name="nomeclatura"><div id="elh_grupo_cuenta_nomeclatura" class="grupo_cuenta_nomeclatura"><div class="ewTableHeaderCaption"><?php echo $grupo_cuenta->nomeclatura->FldCaption() ?></div></div></th>
+<?php if ($grupo_cuenta->nomenclatura->Visible) { // nomenclatura ?>
+	<?php if ($grupo_cuenta->SortUrl($grupo_cuenta->nomenclatura) == "") { ?>
+		<th data-name="nomenclatura"><div id="elh_grupo_cuenta_nomenclatura" class="grupo_cuenta_nomenclatura"><div class="ewTableHeaderCaption"><?php echo $grupo_cuenta->nomenclatura->FldCaption() ?></div></div></th>
 	<?php } else { ?>
-		<th data-name="nomeclatura"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $grupo_cuenta->SortUrl($grupo_cuenta->nomeclatura) ?>',1);"><div id="elh_grupo_cuenta_nomeclatura" class="grupo_cuenta_nomeclatura">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $grupo_cuenta->nomeclatura->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($grupo_cuenta->nomeclatura->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($grupo_cuenta->nomeclatura->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+		<th data-name="nomenclatura"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $grupo_cuenta->SortUrl($grupo_cuenta->nomenclatura) ?>',1);"><div id="elh_grupo_cuenta_nomenclatura" class="grupo_cuenta_nomenclatura">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $grupo_cuenta->nomenclatura->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($grupo_cuenta->nomenclatura->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($grupo_cuenta->nomenclatura->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -2807,22 +2807,22 @@ while ($grupo_cuenta_list->RecCnt < $grupo_cuenta_list->StopRec) {
 // Render list options (body, left)
 $grupo_cuenta_list->ListOptions->Render("body", "left", $grupo_cuenta_list->RowCnt);
 ?>
-	<?php if ($grupo_cuenta->nomeclatura->Visible) { // nomeclatura ?>
-		<td data-name="nomeclatura"<?php echo $grupo_cuenta->nomeclatura->CellAttributes() ?>>
+	<?php if ($grupo_cuenta->nomenclatura->Visible) { // nomenclatura ?>
+		<td data-name="nomenclatura"<?php echo $grupo_cuenta->nomenclatura->CellAttributes() ?>>
 <?php if ($grupo_cuenta->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<span id="el<?php echo $grupo_cuenta_list->RowCnt ?>_grupo_cuenta_nomeclatura" class="form-group grupo_cuenta_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x<?php echo $grupo_cuenta_list->RowIndex ?>_nomeclatura" id="x<?php echo $grupo_cuenta_list->RowIndex ?>_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nomeclatura->PlaceHolder) ?>" value="<?php echo $grupo_cuenta->nomeclatura->EditValue ?>"<?php echo $grupo_cuenta->nomeclatura->EditAttributes() ?>>
+<span id="el<?php echo $grupo_cuenta_list->RowCnt ?>_grupo_cuenta_nomenclatura" class="form-group grupo_cuenta_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x<?php echo $grupo_cuenta_list->RowIndex ?>_nomenclatura" id="x<?php echo $grupo_cuenta_list->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $grupo_cuenta->nomenclatura->EditValue ?>"<?php echo $grupo_cuenta->nomenclatura->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_nomeclatura" name="o<?php echo $grupo_cuenta_list->RowIndex ?>_nomeclatura" id="o<?php echo $grupo_cuenta_list->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($grupo_cuenta->nomeclatura->OldValue) ?>">
+<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $grupo_cuenta_list->RowIndex ?>_nomenclatura" id="o<?php echo $grupo_cuenta_list->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->OldValue) ?>">
 <?php } ?>
 <?php if ($grupo_cuenta->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
-<span id="el<?php echo $grupo_cuenta_list->RowCnt ?>_grupo_cuenta_nomeclatura" class="form-group grupo_cuenta_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x<?php echo $grupo_cuenta_list->RowIndex ?>_nomeclatura" id="x<?php echo $grupo_cuenta_list->RowIndex ?>_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nomeclatura->PlaceHolder) ?>" value="<?php echo $grupo_cuenta->nomeclatura->EditValue ?>"<?php echo $grupo_cuenta->nomeclatura->EditAttributes() ?>>
+<span id="el<?php echo $grupo_cuenta_list->RowCnt ?>_grupo_cuenta_nomenclatura" class="form-group grupo_cuenta_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x<?php echo $grupo_cuenta_list->RowIndex ?>_nomenclatura" id="x<?php echo $grupo_cuenta_list->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $grupo_cuenta->nomenclatura->EditValue ?>"<?php echo $grupo_cuenta->nomenclatura->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($grupo_cuenta->RowType == EW_ROWTYPE_VIEW) { // View record ?>
-<span<?php echo $grupo_cuenta->nomeclatura->ViewAttributes() ?>>
-<?php echo $grupo_cuenta->nomeclatura->ListViewValue() ?></span>
+<span<?php echo $grupo_cuenta->nomenclatura->ViewAttributes() ?>>
+<?php echo $grupo_cuenta->nomenclatura->ListViewValue() ?></span>
 <?php } ?>
 <a id="<?php echo $grupo_cuenta_list->PageObjName . "_row_" . $grupo_cuenta_list->RowCnt ?>"></a></td>
 	<?php } ?>
@@ -2991,12 +2991,12 @@ fgrupo_cuentalist.UpdateOpts(<?php echo $grupo_cuenta_list->RowIndex ?>);
 // Render list options (body, left)
 $grupo_cuenta_list->ListOptions->Render("body", "left", $grupo_cuenta_list->RowIndex);
 ?>
-	<?php if ($grupo_cuenta->nomeclatura->Visible) { // nomeclatura ?>
+	<?php if ($grupo_cuenta->nomenclatura->Visible) { // nomenclatura ?>
 		<td>
-<span id="el$rowindex$_grupo_cuenta_nomeclatura" class="form-group grupo_cuenta_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x<?php echo $grupo_cuenta_list->RowIndex ?>_nomeclatura" id="x<?php echo $grupo_cuenta_list->RowIndex ?>_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nomeclatura->PlaceHolder) ?>" value="<?php echo $grupo_cuenta->nomeclatura->EditValue ?>"<?php echo $grupo_cuenta->nomeclatura->EditAttributes() ?>>
+<span id="el$rowindex$_grupo_cuenta_nomenclatura" class="form-group grupo_cuenta_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x<?php echo $grupo_cuenta_list->RowIndex ?>_nomenclatura" id="x<?php echo $grupo_cuenta_list->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $grupo_cuenta->nomenclatura->EditValue ?>"<?php echo $grupo_cuenta->nomenclatura->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_nomeclatura" name="o<?php echo $grupo_cuenta_list->RowIndex ?>_nomeclatura" id="o<?php echo $grupo_cuenta_list->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($grupo_cuenta->nomeclatura->OldValue) ?>">
+<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $grupo_cuenta_list->RowIndex ?>_nomenclatura" id="o<?php echo $grupo_cuenta_list->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($grupo_cuenta->nombre->Visible) { // nombre ?>

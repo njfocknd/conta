@@ -1,6 +1,6 @@
 <?php
 
-// nomeclatura
+// nomenclatura
 // nombre
 // idcuenta_mayor_principal
 
@@ -9,13 +9,13 @@
 <!-- <h4 class="ewMasterCaption"><?php echo $cuenta_mayor_auxiliar->TableCaption() ?></h4> -->
 <table id="tbl_cuenta_mayor_auxiliarmaster" class="table table-bordered table-striped ewViewTable">
 	<tbody>
-<?php if ($cuenta_mayor_auxiliar->nomeclatura->Visible) { // nomeclatura ?>
-		<tr id="r_nomeclatura">
-			<td><?php echo $cuenta_mayor_auxiliar->nomeclatura->FldCaption() ?></td>
-			<td<?php echo $cuenta_mayor_auxiliar->nomeclatura->CellAttributes() ?>>
-<span id="el_cuenta_mayor_auxiliar_nomeclatura" class="form-group">
-<span<?php echo $cuenta_mayor_auxiliar->nomeclatura->ViewAttributes() ?>>
-<?php echo $cuenta_mayor_auxiliar->nomeclatura->ListViewValue() ?></span>
+<?php if ($cuenta_mayor_auxiliar->nomenclatura->Visible) { // nomenclatura ?>
+		<tr id="r_nomenclatura">
+			<td><?php echo $cuenta_mayor_auxiliar->nomenclatura->FldCaption() ?></td>
+			<td<?php echo $cuenta_mayor_auxiliar->nomenclatura->CellAttributes() ?>>
+<span id="el_cuenta_mayor_auxiliar_nomenclatura" class="form-group">
+<span<?php echo $cuenta_mayor_auxiliar->nomenclatura->ViewAttributes() ?>>
+<?php echo $cuenta_mayor_auxiliar->nomenclatura->ListViewValue() ?></span>
 </span>
 </td>
 		</tr>

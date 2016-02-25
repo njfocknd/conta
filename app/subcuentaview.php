@@ -508,7 +508,7 @@ class csubcuenta_view extends csubcuenta {
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
 		$this->idsubcuenta->setDbValue($rs->fields('idsubcuenta'));
-		$this->nomeclatura->setDbValue($rs->fields('nomeclatura'));
+		$this->nomenclatura->setDbValue($rs->fields('nomenclatura'));
 		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->idcuenta_mayor_auxiliar->setDbValue($rs->fields('idcuenta_mayor_auxiliar'));
 		$this->definicion->setDbValue($rs->fields('definicion'));
@@ -520,7 +520,7 @@ class csubcuenta_view extends csubcuenta {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
 		$this->idsubcuenta->DbValue = $row['idsubcuenta'];
-		$this->nomeclatura->DbValue = $row['nomeclatura'];
+		$this->nomenclatura->DbValue = $row['nomenclatura'];
 		$this->nombre->DbValue = $row['nombre'];
 		$this->idcuenta_mayor_auxiliar->DbValue = $row['idcuenta_mayor_auxiliar'];
 		$this->definicion->DbValue = $row['definicion'];
@@ -545,7 +545,7 @@ class csubcuenta_view extends csubcuenta {
 
 		// Common render codes for all row types
 		// idsubcuenta
-		// nomeclatura
+		// nomenclatura
 		// nombre
 		// idcuenta_mayor_auxiliar
 		// definicion
@@ -557,9 +557,9 @@ class csubcuenta_view extends csubcuenta {
 			$this->idsubcuenta->ViewValue = $this->idsubcuenta->CurrentValue;
 			$this->idsubcuenta->ViewCustomAttributes = "";
 
-			// nomeclatura
-			$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
-			$this->nomeclatura->ViewCustomAttributes = "";
+			// nomenclatura
+			$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
+			$this->nomenclatura->ViewCustomAttributes = "";
 
 			// nombre
 			$this->nombre->ViewValue = $this->nombre->CurrentValue;
@@ -595,10 +595,10 @@ class csubcuenta_view extends csubcuenta {
 			$this->idsubcuenta->HrefValue = "";
 			$this->idsubcuenta->TooltipValue = "";
 
-			// nomeclatura
-			$this->nomeclatura->LinkCustomAttributes = "";
-			$this->nomeclatura->HrefValue = "";
-			$this->nomeclatura->TooltipValue = "";
+			// nomenclatura
+			$this->nomenclatura->LinkCustomAttributes = "";
+			$this->nomenclatura->HrefValue = "";
+			$this->nomenclatura->TooltipValue = "";
 
 			// nombre
 			$this->nombre->LinkCustomAttributes = "";
@@ -848,13 +848,13 @@ $subcuenta_view->ShowMessage();
 </td>
 	</tr>
 <?php } ?>
-<?php if ($subcuenta->nomeclatura->Visible) { // nomeclatura ?>
-	<tr id="r_nomeclatura">
-		<td><span id="elh_subcuenta_nomeclatura"><?php echo $subcuenta->nomeclatura->FldCaption() ?></span></td>
-		<td<?php echo $subcuenta->nomeclatura->CellAttributes() ?>>
-<span id="el_subcuenta_nomeclatura" class="form-group">
-<span<?php echo $subcuenta->nomeclatura->ViewAttributes() ?>>
-<?php echo $subcuenta->nomeclatura->ViewValue ?></span>
+<?php if ($subcuenta->nomenclatura->Visible) { // nomenclatura ?>
+	<tr id="r_nomenclatura">
+		<td><span id="elh_subcuenta_nomenclatura"><?php echo $subcuenta->nomenclatura->FldCaption() ?></span></td>
+		<td<?php echo $subcuenta->nomenclatura->CellAttributes() ?>>
+<span id="el_subcuenta_nomenclatura" class="form-group">
+<span<?php echo $subcuenta->nomenclatura->ViewAttributes() ?>>
+<?php echo $subcuenta->nomenclatura->ViewValue ?></span>
 </span>
 </td>
 	</tr>

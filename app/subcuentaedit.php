@@ -421,8 +421,8 @@ class csubcuenta_edit extends csubcuenta {
 		global $objForm;
 		if (!$this->idsubcuenta->FldIsDetailKey)
 			$this->idsubcuenta->setFormValue($objForm->GetValue("x_idsubcuenta"));
-		if (!$this->nomeclatura->FldIsDetailKey) {
-			$this->nomeclatura->setFormValue($objForm->GetValue("x_nomeclatura"));
+		if (!$this->nomenclatura->FldIsDetailKey) {
+			$this->nomenclatura->setFormValue($objForm->GetValue("x_nomenclatura"));
 		}
 		if (!$this->nombre->FldIsDetailKey) {
 			$this->nombre->setFormValue($objForm->GetValue("x_nombre"));
@@ -443,7 +443,7 @@ class csubcuenta_edit extends csubcuenta {
 		global $objForm;
 		$this->LoadRow();
 		$this->idsubcuenta->CurrentValue = $this->idsubcuenta->FormValue;
-		$this->nomeclatura->CurrentValue = $this->nomeclatura->FormValue;
+		$this->nomenclatura->CurrentValue = $this->nomenclatura->FormValue;
 		$this->nombre->CurrentValue = $this->nombre->FormValue;
 		$this->idcuenta_mayor_auxiliar->CurrentValue = $this->idcuenta_mayor_auxiliar->FormValue;
 		$this->definicion->CurrentValue = $this->definicion->FormValue;
@@ -480,7 +480,7 @@ class csubcuenta_edit extends csubcuenta {
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
 		$this->idsubcuenta->setDbValue($rs->fields('idsubcuenta'));
-		$this->nomeclatura->setDbValue($rs->fields('nomeclatura'));
+		$this->nomenclatura->setDbValue($rs->fields('nomenclatura'));
 		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->idcuenta_mayor_auxiliar->setDbValue($rs->fields('idcuenta_mayor_auxiliar'));
 		$this->definicion->setDbValue($rs->fields('definicion'));
@@ -492,7 +492,7 @@ class csubcuenta_edit extends csubcuenta {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
 		$this->idsubcuenta->DbValue = $row['idsubcuenta'];
-		$this->nomeclatura->DbValue = $row['nomeclatura'];
+		$this->nomenclatura->DbValue = $row['nomenclatura'];
 		$this->nombre->DbValue = $row['nombre'];
 		$this->idcuenta_mayor_auxiliar->DbValue = $row['idcuenta_mayor_auxiliar'];
 		$this->definicion->DbValue = $row['definicion'];
@@ -511,7 +511,7 @@ class csubcuenta_edit extends csubcuenta {
 
 		// Common render codes for all row types
 		// idsubcuenta
-		// nomeclatura
+		// nomenclatura
 		// nombre
 		// idcuenta_mayor_auxiliar
 		// definicion
@@ -523,9 +523,9 @@ class csubcuenta_edit extends csubcuenta {
 			$this->idsubcuenta->ViewValue = $this->idsubcuenta->CurrentValue;
 			$this->idsubcuenta->ViewCustomAttributes = "";
 
-			// nomeclatura
-			$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
-			$this->nomeclatura->ViewCustomAttributes = "";
+			// nomenclatura
+			$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
+			$this->nomenclatura->ViewCustomAttributes = "";
 
 			// nombre
 			$this->nombre->ViewValue = $this->nombre->CurrentValue;
@@ -561,10 +561,10 @@ class csubcuenta_edit extends csubcuenta {
 			$this->idsubcuenta->HrefValue = "";
 			$this->idsubcuenta->TooltipValue = "";
 
-			// nomeclatura
-			$this->nomeclatura->LinkCustomAttributes = "";
-			$this->nomeclatura->HrefValue = "";
-			$this->nomeclatura->TooltipValue = "";
+			// nomenclatura
+			$this->nomenclatura->LinkCustomAttributes = "";
+			$this->nomenclatura->HrefValue = "";
+			$this->nomenclatura->TooltipValue = "";
 
 			// nombre
 			$this->nombre->LinkCustomAttributes = "";
@@ -593,11 +593,11 @@ class csubcuenta_edit extends csubcuenta {
 			$this->idsubcuenta->EditValue = $this->idsubcuenta->CurrentValue;
 			$this->idsubcuenta->ViewCustomAttributes = "";
 
-			// nomeclatura
-			$this->nomeclatura->EditAttrs["class"] = "form-control";
-			$this->nomeclatura->EditCustomAttributes = "";
-			$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
-			$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
+			// nomenclatura
+			$this->nomenclatura->EditAttrs["class"] = "form-control";
+			$this->nomenclatura->EditCustomAttributes = "";
+			$this->nomenclatura->EditValue = ew_HtmlEncode($this->nomenclatura->CurrentValue);
+			$this->nomenclatura->PlaceHolder = ew_RemoveHtml($this->nomenclatura->FldCaption());
 
 			// nombre
 			$this->nombre->EditAttrs["class"] = "form-control";
@@ -635,8 +635,8 @@ class csubcuenta_edit extends csubcuenta {
 
 			$this->idsubcuenta->HrefValue = "";
 
-			// nomeclatura
-			$this->nomeclatura->HrefValue = "";
+			// nomenclatura
+			$this->nomenclatura->HrefValue = "";
 
 			// nombre
 			$this->nombre->HrefValue = "";
@@ -671,8 +671,8 @@ class csubcuenta_edit extends csubcuenta {
 		// Check if validation required
 		if (!EW_SERVER_VALIDATE)
 			return ($gsFormError == "");
-		if (!$this->nomeclatura->FldIsDetailKey && !is_null($this->nomeclatura->FormValue) && $this->nomeclatura->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->nomeclatura->FldCaption(), $this->nomeclatura->ReqErrMsg));
+		if (!$this->nomenclatura->FldIsDetailKey && !is_null($this->nomenclatura->FormValue) && $this->nomenclatura->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->nomenclatura->FldCaption(), $this->nomenclatura->ReqErrMsg));
 		}
 		if (!$this->nombre->FldIsDetailKey && !is_null($this->nombre->FormValue) && $this->nombre->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->nombre->FldCaption(), $this->nombre->ReqErrMsg));
@@ -722,8 +722,8 @@ class csubcuenta_edit extends csubcuenta {
 			$this->LoadDbValues($rsold);
 			$rsnew = array();
 
-			// nomeclatura
-			$this->nomeclatura->SetDbValueDef($rsnew, $this->nomeclatura->CurrentValue, "", $this->nomeclatura->ReadOnly);
+			// nomenclatura
+			$this->nomenclatura->SetDbValueDef($rsnew, $this->nomenclatura->CurrentValue, "", $this->nomenclatura->ReadOnly);
 
 			// nombre
 			$this->nombre->SetDbValueDef($rsnew, $this->nombre->CurrentValue, "", $this->nombre->ReadOnly);
@@ -934,9 +934,9 @@ fsubcuentaedit.Validate = function() {
 	for (var i = startcnt; i <= rowcnt; i++) {
 		var infix = ($k[0]) ? String(i) : "";
 		$fobj.data("rowindex", infix);
-			elm = this.GetElements("x" + infix + "_nomeclatura");
+			elm = this.GetElements("x" + infix + "_nomenclatura");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $subcuenta->nomeclatura->FldCaption(), $subcuenta->nomeclatura->ReqErrMsg)) ?>");
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $subcuenta->nomenclatura->FldCaption(), $subcuenta->nomenclatura->ReqErrMsg)) ?>");
 			elm = this.GetElements("x" + infix + "_nombre");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $subcuenta->nombre->FldCaption(), $subcuenta->nombre->ReqErrMsg)) ?>");
@@ -1023,14 +1023,14 @@ $subcuenta_edit->ShowMessage();
 <?php echo $subcuenta->idsubcuenta->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
-<?php if ($subcuenta->nomeclatura->Visible) { // nomeclatura ?>
-	<div id="r_nomeclatura" class="form-group">
-		<label id="elh_subcuenta_nomeclatura" for="x_nomeclatura" class="col-sm-2 control-label ewLabel"><?php echo $subcuenta->nomeclatura->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
-		<div class="col-sm-10"><div<?php echo $subcuenta->nomeclatura->CellAttributes() ?>>
-<span id="el_subcuenta_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x_nomeclatura" id="x_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subcuenta->nomeclatura->PlaceHolder) ?>" value="<?php echo $subcuenta->nomeclatura->EditValue ?>"<?php echo $subcuenta->nomeclatura->EditAttributes() ?>>
+<?php if ($subcuenta->nomenclatura->Visible) { // nomenclatura ?>
+	<div id="r_nomenclatura" class="form-group">
+		<label id="elh_subcuenta_nomenclatura" for="x_nomenclatura" class="col-sm-2 control-label ewLabel"><?php echo $subcuenta->nomenclatura->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $subcuenta->nomenclatura->CellAttributes() ?>>
+<span id="el_subcuenta_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x_nomenclatura" id="x_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subcuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $subcuenta->nomenclatura->EditValue ?>"<?php echo $subcuenta->nomenclatura->EditAttributes() ?>>
 </span>
-<?php echo $subcuenta->nomeclatura->CustomMsg ?></div></div>
+<?php echo $subcuenta->nomenclatura->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
 <?php if ($subcuenta->nombre->Visible) { // nombre ?>

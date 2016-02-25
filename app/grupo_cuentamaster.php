@@ -1,6 +1,6 @@
 <?php
 
-// nomeclatura
+// nomenclatura
 // nombre
 // idclase_cuenta
 
@@ -9,13 +9,13 @@
 <!-- <h4 class="ewMasterCaption"><?php echo $grupo_cuenta->TableCaption() ?></h4> -->
 <table id="tbl_grupo_cuentamaster" class="table table-bordered table-striped ewViewTable">
 	<tbody>
-<?php if ($grupo_cuenta->nomeclatura->Visible) { // nomeclatura ?>
-		<tr id="r_nomeclatura">
-			<td><?php echo $grupo_cuenta->nomeclatura->FldCaption() ?></td>
-			<td<?php echo $grupo_cuenta->nomeclatura->CellAttributes() ?>>
-<span id="el_grupo_cuenta_nomeclatura" class="form-group">
-<span<?php echo $grupo_cuenta->nomeclatura->ViewAttributes() ?>>
-<?php echo $grupo_cuenta->nomeclatura->ListViewValue() ?></span>
+<?php if ($grupo_cuenta->nomenclatura->Visible) { // nomenclatura ?>
+		<tr id="r_nomenclatura">
+			<td><?php echo $grupo_cuenta->nomenclatura->FldCaption() ?></td>
+			<td<?php echo $grupo_cuenta->nomenclatura->CellAttributes() ?>>
+<span id="el_grupo_cuenta_nomenclatura" class="form-group">
+<span<?php echo $grupo_cuenta->nomenclatura->ViewAttributes() ?>>
+<?php echo $grupo_cuenta->nomenclatura->ListViewValue() ?></span>
 </span>
 </td>
 		</tr>

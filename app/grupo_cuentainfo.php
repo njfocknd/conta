@@ -8,7 +8,7 @@ $grupo_cuenta = NULL;
 //
 class cgrupo_cuenta extends cTable {
 	var $idgrupo_cuenta;
-	var $nomeclatura;
+	var $nomenclatura;
 	var $nombre;
 	var $idclase_cuenta;
 	var $definicion;
@@ -43,9 +43,9 @@ class cgrupo_cuenta extends cTable {
 		$this->idgrupo_cuenta->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idgrupo_cuenta'] = &$this->idgrupo_cuenta;
 
-		// nomeclatura
-		$this->nomeclatura = new cField('grupo_cuenta', 'grupo_cuenta', 'x_nomeclatura', 'nomeclatura', '`nomeclatura`', '`nomeclatura`', 200, -1, FALSE, '`nomeclatura`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
-		$this->fields['nomeclatura'] = &$this->nomeclatura;
+		// nomenclatura
+		$this->nomenclatura = new cField('grupo_cuenta', 'grupo_cuenta', 'x_nomenclatura', 'nomenclatura', '`nomenclatura`', '`nomenclatura`', 200, -1, FALSE, '`nomenclatura`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->fields['nomenclatura'] = &$this->nomenclatura;
 
 		// nombre
 		$this->nombre = new cField('grupo_cuenta', 'grupo_cuenta', 'x_nombre', 'nombre', '`nombre`', '`nombre`', 200, -1, FALSE, '`nombre`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
@@ -615,7 +615,7 @@ class cgrupo_cuenta extends cTable {
 	// Load row values from recordset
 	function LoadListRowValues(&$rs) {
 		$this->idgrupo_cuenta->setDbValue($rs->fields('idgrupo_cuenta'));
-		$this->nomeclatura->setDbValue($rs->fields('nomeclatura'));
+		$this->nomenclatura->setDbValue($rs->fields('nomenclatura'));
 		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->idclase_cuenta->setDbValue($rs->fields('idclase_cuenta'));
 		$this->definicion->setDbValue($rs->fields('definicion'));
@@ -631,7 +631,7 @@ class cgrupo_cuenta extends cTable {
 
    // Common render codes
 		// idgrupo_cuenta
-		// nomeclatura
+		// nomenclatura
 		// nombre
 		// idclase_cuenta
 		// definicion
@@ -641,9 +641,9 @@ class cgrupo_cuenta extends cTable {
 		$this->idgrupo_cuenta->ViewValue = $this->idgrupo_cuenta->CurrentValue;
 		$this->idgrupo_cuenta->ViewCustomAttributes = "";
 
-		// nomeclatura
-		$this->nomeclatura->ViewValue = $this->nomeclatura->CurrentValue;
-		$this->nomeclatura->ViewCustomAttributes = "";
+		// nomenclatura
+		$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
+		$this->nomenclatura->ViewCustomAttributes = "";
 
 		// nombre
 		$this->nombre->ViewValue = $this->nombre->CurrentValue;
@@ -703,10 +703,10 @@ class cgrupo_cuenta extends cTable {
 		$this->idgrupo_cuenta->HrefValue = "";
 		$this->idgrupo_cuenta->TooltipValue = "";
 
-		// nomeclatura
-		$this->nomeclatura->LinkCustomAttributes = "";
-		$this->nomeclatura->HrefValue = "";
-		$this->nomeclatura->TooltipValue = "";
+		// nomenclatura
+		$this->nomenclatura->LinkCustomAttributes = "";
+		$this->nomenclatura->HrefValue = "";
+		$this->nomenclatura->TooltipValue = "";
 
 		// nombre
 		$this->nombre->LinkCustomAttributes = "";
@@ -745,11 +745,11 @@ class cgrupo_cuenta extends cTable {
 		$this->idgrupo_cuenta->EditValue = $this->idgrupo_cuenta->CurrentValue;
 		$this->idgrupo_cuenta->ViewCustomAttributes = "";
 
-		// nomeclatura
-		$this->nomeclatura->EditAttrs["class"] = "form-control";
-		$this->nomeclatura->EditCustomAttributes = "";
-		$this->nomeclatura->EditValue = ew_HtmlEncode($this->nomeclatura->CurrentValue);
-		$this->nomeclatura->PlaceHolder = ew_RemoveHtml($this->nomeclatura->FldCaption());
+		// nomenclatura
+		$this->nomenclatura->EditAttrs["class"] = "form-control";
+		$this->nomenclatura->EditCustomAttributes = "";
+		$this->nomenclatura->EditValue = ew_HtmlEncode($this->nomenclatura->CurrentValue);
+		$this->nomenclatura->PlaceHolder = ew_RemoveHtml($this->nomenclatura->FldCaption());
 
 		// nombre
 		$this->nombre->EditAttrs["class"] = "form-control";
@@ -831,14 +831,14 @@ class cgrupo_cuenta extends cTable {
 				$Doc->BeginExportRow();
 				if ($ExportPageType == "view") {
 					if ($this->idgrupo_cuenta->Exportable) $Doc->ExportCaption($this->idgrupo_cuenta);
-					if ($this->nomeclatura->Exportable) $Doc->ExportCaption($this->nomeclatura);
+					if ($this->nomenclatura->Exportable) $Doc->ExportCaption($this->nomenclatura);
 					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
 					if ($this->idclase_cuenta->Exportable) $Doc->ExportCaption($this->idclase_cuenta);
 					if ($this->definicion->Exportable) $Doc->ExportCaption($this->definicion);
 					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
 				} else {
 					if ($this->idgrupo_cuenta->Exportable) $Doc->ExportCaption($this->idgrupo_cuenta);
-					if ($this->nomeclatura->Exportable) $Doc->ExportCaption($this->nomeclatura);
+					if ($this->nomenclatura->Exportable) $Doc->ExportCaption($this->nomenclatura);
 					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
 					if ($this->idclase_cuenta->Exportable) $Doc->ExportCaption($this->idclase_cuenta);
 					if ($this->definicion->Exportable) $Doc->ExportCaption($this->definicion);
@@ -875,14 +875,14 @@ class cgrupo_cuenta extends cTable {
 					$Doc->BeginExportRow($RowCnt); // Allow CSS styles if enabled
 					if ($ExportPageType == "view") {
 						if ($this->idgrupo_cuenta->Exportable) $Doc->ExportField($this->idgrupo_cuenta);
-						if ($this->nomeclatura->Exportable) $Doc->ExportField($this->nomeclatura);
+						if ($this->nomenclatura->Exportable) $Doc->ExportField($this->nomenclatura);
 						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
 						if ($this->idclase_cuenta->Exportable) $Doc->ExportField($this->idclase_cuenta);
 						if ($this->definicion->Exportable) $Doc->ExportField($this->definicion);
 						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
 					} else {
 						if ($this->idgrupo_cuenta->Exportable) $Doc->ExportField($this->idgrupo_cuenta);
-						if ($this->nomeclatura->Exportable) $Doc->ExportField($this->nomeclatura);
+						if ($this->nomenclatura->Exportable) $Doc->ExportField($this->nomenclatura);
 						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
 						if ($this->idclase_cuenta->Exportable) $Doc->ExportField($this->idclase_cuenta);
 						if ($this->definicion->Exportable) $Doc->ExportField($this->definicion);

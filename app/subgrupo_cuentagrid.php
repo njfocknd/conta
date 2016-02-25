@@ -46,9 +46,9 @@ fsubgrupo_cuentagrid.Validate = function() {
 		var checkrow = (gridinsert) ? !this.EmptyRow(infix) : true;
 		if (checkrow) {
 			addcnt++;
-			elm = this.GetElements("x" + infix + "_nomeclatura");
+			elm = this.GetElements("x" + infix + "_nomenclatura");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $subgrupo_cuenta->nomeclatura->FldCaption(), $subgrupo_cuenta->nomeclatura->ReqErrMsg)) ?>");
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $subgrupo_cuenta->nomenclatura->FldCaption(), $subgrupo_cuenta->nomenclatura->ReqErrMsg)) ?>");
 			elm = this.GetElements("x" + infix + "_nombre");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $subgrupo_cuenta->nombre->FldCaption(), $subgrupo_cuenta->nombre->ReqErrMsg)) ?>");
@@ -70,7 +70,7 @@ fsubgrupo_cuentagrid.Validate = function() {
 // Check empty row
 fsubgrupo_cuentagrid.EmptyRow = function(infix) {
 	var fobj = this.Form;
-	if (ew_ValueChanged(fobj, infix, "nomeclatura", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "nomenclatura", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "nombre", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "idgrupo_cuenta", false)) return false;
 	return true;
@@ -160,12 +160,12 @@ $subgrupo_cuenta_grid->RenderListOptions();
 // Render list options (header, left)
 $subgrupo_cuenta_grid->ListOptions->Render("header", "left");
 ?>
-<?php if ($subgrupo_cuenta->nomeclatura->Visible) { // nomeclatura ?>
-	<?php if ($subgrupo_cuenta->SortUrl($subgrupo_cuenta->nomeclatura) == "") { ?>
-		<th data-name="nomeclatura"><div id="elh_subgrupo_cuenta_nomeclatura" class="subgrupo_cuenta_nomeclatura"><div class="ewTableHeaderCaption"><?php echo $subgrupo_cuenta->nomeclatura->FldCaption() ?></div></div></th>
+<?php if ($subgrupo_cuenta->nomenclatura->Visible) { // nomenclatura ?>
+	<?php if ($subgrupo_cuenta->SortUrl($subgrupo_cuenta->nomenclatura) == "") { ?>
+		<th data-name="nomenclatura"><div id="elh_subgrupo_cuenta_nomenclatura" class="subgrupo_cuenta_nomenclatura"><div class="ewTableHeaderCaption"><?php echo $subgrupo_cuenta->nomenclatura->FldCaption() ?></div></div></th>
 	<?php } else { ?>
-		<th data-name="nomeclatura"><div><div id="elh_subgrupo_cuenta_nomeclatura" class="subgrupo_cuenta_nomeclatura">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $subgrupo_cuenta->nomeclatura->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($subgrupo_cuenta->nomeclatura->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($subgrupo_cuenta->nomeclatura->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+		<th data-name="nomenclatura"><div><div id="elh_subgrupo_cuenta_nomenclatura" class="subgrupo_cuenta_nomenclatura">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $subgrupo_cuenta->nomenclatura->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($subgrupo_cuenta->nomenclatura->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($subgrupo_cuenta->nomenclatura->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -296,24 +296,24 @@ while ($subgrupo_cuenta_grid->RecCnt < $subgrupo_cuenta_grid->StopRec) {
 // Render list options (body, left)
 $subgrupo_cuenta_grid->ListOptions->Render("body", "left", $subgrupo_cuenta_grid->RowCnt);
 ?>
-	<?php if ($subgrupo_cuenta->nomeclatura->Visible) { // nomeclatura ?>
-		<td data-name="nomeclatura"<?php echo $subgrupo_cuenta->nomeclatura->CellAttributes() ?>>
+	<?php if ($subgrupo_cuenta->nomenclatura->Visible) { // nomenclatura ?>
+		<td data-name="nomenclatura"<?php echo $subgrupo_cuenta->nomenclatura->CellAttributes() ?>>
 <?php if ($subgrupo_cuenta->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<span id="el<?php echo $subgrupo_cuenta_grid->RowCnt ?>_subgrupo_cuenta_nomeclatura" class="form-group subgrupo_cuenta_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomeclatura" id="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomeclatura->PlaceHolder) ?>" value="<?php echo $subgrupo_cuenta->nomeclatura->EditValue ?>"<?php echo $subgrupo_cuenta->nomeclatura->EditAttributes() ?>>
+<span id="el<?php echo $subgrupo_cuenta_grid->RowCnt ?>_subgrupo_cuenta_nomenclatura" class="form-group subgrupo_cuenta_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $subgrupo_cuenta->nomenclatura->EditValue ?>"<?php echo $subgrupo_cuenta->nomenclatura->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_nomeclatura" name="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomeclatura" id="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomeclatura->OldValue) ?>">
+<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomenclatura" id="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomenclatura->OldValue) ?>">
 <?php } ?>
 <?php if ($subgrupo_cuenta->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
-<span id="el<?php echo $subgrupo_cuenta_grid->RowCnt ?>_subgrupo_cuenta_nomeclatura" class="form-group subgrupo_cuenta_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomeclatura" id="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomeclatura->PlaceHolder) ?>" value="<?php echo $subgrupo_cuenta->nomeclatura->EditValue ?>"<?php echo $subgrupo_cuenta->nomeclatura->EditAttributes() ?>>
+<span id="el<?php echo $subgrupo_cuenta_grid->RowCnt ?>_subgrupo_cuenta_nomenclatura" class="form-group subgrupo_cuenta_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $subgrupo_cuenta->nomenclatura->EditValue ?>"<?php echo $subgrupo_cuenta->nomenclatura->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($subgrupo_cuenta->RowType == EW_ROWTYPE_VIEW) { // View record ?>
-<span<?php echo $subgrupo_cuenta->nomeclatura->ViewAttributes() ?>>
-<?php echo $subgrupo_cuenta->nomeclatura->ListViewValue() ?></span>
-<input type="hidden" data-field="x_nomeclatura" name="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomeclatura" id="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomeclatura->FormValue) ?>">
-<input type="hidden" data-field="x_nomeclatura" name="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomeclatura" id="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomeclatura->OldValue) ?>">
+<span<?php echo $subgrupo_cuenta->nomenclatura->ViewAttributes() ?>>
+<?php echo $subgrupo_cuenta->nomenclatura->ListViewValue() ?></span>
+<input type="hidden" data-field="x_nomenclatura" name="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomenclatura->FormValue) ?>">
+<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomenclatura" id="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomenclatura->OldValue) ?>">
 <?php } ?>
 <a id="<?php echo $subgrupo_cuenta_grid->PageObjName . "_row_" . $subgrupo_cuenta_grid->RowCnt ?>"></a></td>
 	<?php } ?>
@@ -486,20 +486,20 @@ fsubgrupo_cuentagrid.UpdateOpts(<?php echo $subgrupo_cuenta_grid->RowIndex ?>);
 // Render list options (body, left)
 $subgrupo_cuenta_grid->ListOptions->Render("body", "left", $subgrupo_cuenta_grid->RowIndex);
 ?>
-	<?php if ($subgrupo_cuenta->nomeclatura->Visible) { // nomeclatura ?>
+	<?php if ($subgrupo_cuenta->nomenclatura->Visible) { // nomenclatura ?>
 		<td>
 <?php if ($subgrupo_cuenta->CurrentAction <> "F") { ?>
-<span id="el$rowindex$_subgrupo_cuenta_nomeclatura" class="form-group subgrupo_cuenta_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomeclatura" id="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomeclatura->PlaceHolder) ?>" value="<?php echo $subgrupo_cuenta->nomeclatura->EditValue ?>"<?php echo $subgrupo_cuenta->nomeclatura->EditAttributes() ?>>
+<span id="el$rowindex$_subgrupo_cuenta_nomenclatura" class="form-group subgrupo_cuenta_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $subgrupo_cuenta->nomenclatura->EditValue ?>"<?php echo $subgrupo_cuenta->nomenclatura->EditAttributes() ?>>
 </span>
 <?php } else { ?>
-<span id="el$rowindex$_subgrupo_cuenta_nomeclatura" class="form-group subgrupo_cuenta_nomeclatura">
-<span<?php echo $subgrupo_cuenta->nomeclatura->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $subgrupo_cuenta->nomeclatura->ViewValue ?></p></span>
+<span id="el$rowindex$_subgrupo_cuenta_nomenclatura" class="form-group subgrupo_cuenta_nomenclatura">
+<span<?php echo $subgrupo_cuenta->nomenclatura->ViewAttributes() ?>>
+<p class="form-control-static"><?php echo $subgrupo_cuenta->nomenclatura->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_nomeclatura" name="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomeclatura" id="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomeclatura->FormValue) ?>">
+<input type="hidden" data-field="x_nomenclatura" name="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomenclatura->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_nomeclatura" name="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomeclatura" id="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomeclatura->OldValue) ?>">
+<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomenclatura" id="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomenclatura->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($subgrupo_cuenta->nombre->Visible) { // nombre ?>

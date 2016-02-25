@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0"?>
 <configuration date="2016/02/24" author="e.World Technology Ltd.">
-<project id="{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}" file="E:\wamp\www\conta\pmp\contable.pmp" name="contable" product="PHPMaker" version="11.0" datetime="2016/02/24 08:40:53" languagefolder="phplang" userlevel="">
+<project id="{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}" file="E:\wamp\www\conta\pmp\contable.pmp" name="contable" product="PHPMaker" version="11.0" datetime="2016/02/24 14:38:33" languagefolder="phplang" userlevel="">
 <table id="clase_cuenta" name="clase_cuenta" caption="Clase de Cuenta" userlevel="" priv="1"/>
 <table id="cuenta" name="cuenta" caption="cuenta" userlevel="" priv="1"/>
 <table id="cuenta_mayor_auxiliar" name="cuenta_mayor_auxiliar" caption="Cuenta Mayor Auxiliar" userlevel="" priv="1"/>

@@ -46,9 +46,9 @@ fcuenta_mayor_principalgrid.Validate = function() {
 		var checkrow = (gridinsert) ? !this.EmptyRow(infix) : true;
 		if (checkrow) {
 			addcnt++;
-			elm = this.GetElements("x" + infix + "_nomeclatura");
+			elm = this.GetElements("x" + infix + "_nomenclatura");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $cuenta_mayor_principal->nomeclatura->FldCaption(), $cuenta_mayor_principal->nomeclatura->ReqErrMsg)) ?>");
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $cuenta_mayor_principal->nomenclatura->FldCaption(), $cuenta_mayor_principal->nomenclatura->ReqErrMsg)) ?>");
 			elm = this.GetElements("x" + infix + "_nombre");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $cuenta_mayor_principal->nombre->FldCaption(), $cuenta_mayor_principal->nombre->ReqErrMsg)) ?>");
@@ -70,7 +70,7 @@ fcuenta_mayor_principalgrid.Validate = function() {
 // Check empty row
 fcuenta_mayor_principalgrid.EmptyRow = function(infix) {
 	var fobj = this.Form;
-	if (ew_ValueChanged(fobj, infix, "nomeclatura", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "nomenclatura", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "nombre", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "idsubgrupo_cuenta", false)) return false;
 	return true;
@@ -160,12 +160,12 @@ $cuenta_mayor_principal_grid->RenderListOptions();
 // Render list options (header, left)
 $cuenta_mayor_principal_grid->ListOptions->Render("header", "left");
 ?>
-<?php if ($cuenta_mayor_principal->nomeclatura->Visible) { // nomeclatura ?>
-	<?php if ($cuenta_mayor_principal->SortUrl($cuenta_mayor_principal->nomeclatura) == "") { ?>
-		<th data-name="nomeclatura"><div id="elh_cuenta_mayor_principal_nomeclatura" class="cuenta_mayor_principal_nomeclatura"><div class="ewTableHeaderCaption"><?php echo $cuenta_mayor_principal->nomeclatura->FldCaption() ?></div></div></th>
+<?php if ($cuenta_mayor_principal->nomenclatura->Visible) { // nomenclatura ?>
+	<?php if ($cuenta_mayor_principal->SortUrl($cuenta_mayor_principal->nomenclatura) == "") { ?>
+		<th data-name="nomenclatura"><div id="elh_cuenta_mayor_principal_nomenclatura" class="cuenta_mayor_principal_nomenclatura"><div class="ewTableHeaderCaption"><?php echo $cuenta_mayor_principal->nomenclatura->FldCaption() ?></div></div></th>
 	<?php } else { ?>
-		<th data-name="nomeclatura"><div><div id="elh_cuenta_mayor_principal_nomeclatura" class="cuenta_mayor_principal_nomeclatura">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $cuenta_mayor_principal->nomeclatura->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($cuenta_mayor_principal->nomeclatura->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($cuenta_mayor_principal->nomeclatura->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+		<th data-name="nomenclatura"><div><div id="elh_cuenta_mayor_principal_nomenclatura" class="cuenta_mayor_principal_nomenclatura">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $cuenta_mayor_principal->nomenclatura->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($cuenta_mayor_principal->nomenclatura->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($cuenta_mayor_principal->nomenclatura->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -296,24 +296,24 @@ while ($cuenta_mayor_principal_grid->RecCnt < $cuenta_mayor_principal_grid->Stop
 // Render list options (body, left)
 $cuenta_mayor_principal_grid->ListOptions->Render("body", "left", $cuenta_mayor_principal_grid->RowCnt);
 ?>
-	<?php if ($cuenta_mayor_principal->nomeclatura->Visible) { // nomeclatura ?>
-		<td data-name="nomeclatura"<?php echo $cuenta_mayor_principal->nomeclatura->CellAttributes() ?>>
+	<?php if ($cuenta_mayor_principal->nomenclatura->Visible) { // nomenclatura ?>
+		<td data-name="nomenclatura"<?php echo $cuenta_mayor_principal->nomenclatura->CellAttributes() ?>>
 <?php if ($cuenta_mayor_principal->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<span id="el<?php echo $cuenta_mayor_principal_grid->RowCnt ?>_cuenta_mayor_principal_nomeclatura" class="form-group cuenta_mayor_principal_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomeclatura" id="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nomeclatura->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_principal->nomeclatura->EditValue ?>"<?php echo $cuenta_mayor_principal->nomeclatura->EditAttributes() ?>>
+<span id="el<?php echo $cuenta_mayor_principal_grid->RowCnt ?>_cuenta_mayor_principal_nomenclatura" class="form-group cuenta_mayor_principal_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomenclatura" id="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nomenclatura->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_principal->nomenclatura->EditValue ?>"<?php echo $cuenta_mayor_principal->nomenclatura->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_nomeclatura" name="o<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomeclatura" id="o<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nomeclatura->OldValue) ?>">
+<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomenclatura" id="o<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nomenclatura->OldValue) ?>">
 <?php } ?>
 <?php if ($cuenta_mayor_principal->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
-<span id="el<?php echo $cuenta_mayor_principal_grid->RowCnt ?>_cuenta_mayor_principal_nomeclatura" class="form-group cuenta_mayor_principal_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomeclatura" id="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nomeclatura->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_principal->nomeclatura->EditValue ?>"<?php echo $cuenta_mayor_principal->nomeclatura->EditAttributes() ?>>
+<span id="el<?php echo $cuenta_mayor_principal_grid->RowCnt ?>_cuenta_mayor_principal_nomenclatura" class="form-group cuenta_mayor_principal_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomenclatura" id="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nomenclatura->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_principal->nomenclatura->EditValue ?>"<?php echo $cuenta_mayor_principal->nomenclatura->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($cuenta_mayor_principal->RowType == EW_ROWTYPE_VIEW) { // View record ?>
-<span<?php echo $cuenta_mayor_principal->nomeclatura->ViewAttributes() ?>>
-<?php echo $cuenta_mayor_principal->nomeclatura->ListViewValue() ?></span>
-<input type="hidden" data-field="x_nomeclatura" name="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomeclatura" id="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nomeclatura->FormValue) ?>">
-<input type="hidden" data-field="x_nomeclatura" name="o<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomeclatura" id="o<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nomeclatura->OldValue) ?>">
+<span<?php echo $cuenta_mayor_principal->nomenclatura->ViewAttributes() ?>>
+<?php echo $cuenta_mayor_principal->nomenclatura->ListViewValue() ?></span>
+<input type="hidden" data-field="x_nomenclatura" name="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomenclatura" id="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nomenclatura->FormValue) ?>">
+<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomenclatura" id="o<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nomenclatura->OldValue) ?>">
 <?php } ?>
 <a id="<?php echo $cuenta_mayor_principal_grid->PageObjName . "_row_" . $cuenta_mayor_principal_grid->RowCnt ?>"></a></td>
 	<?php } ?>
@@ -486,20 +486,20 @@ fcuenta_mayor_principalgrid.UpdateOpts(<?php echo $cuenta_mayor_principal_grid->
 // Render list options (body, left)
 $cuenta_mayor_principal_grid->ListOptions->Render("body", "left", $cuenta_mayor_principal_grid->RowIndex);
 ?>
-	<?php if ($cuenta_mayor_principal->nomeclatura->Visible) { // nomeclatura ?>
+	<?php if ($cuenta_mayor_principal->nomenclatura->Visible) { // nomenclatura ?>
 		<td>
 <?php if ($cuenta_mayor_principal->CurrentAction <> "F") { ?>
-<span id="el$rowindex$_cuenta_mayor_principal_nomeclatura" class="form-group cuenta_mayor_principal_nomeclatura">
-<input type="text" data-field="x_nomeclatura" name="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomeclatura" id="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomeclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nomeclatura->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_principal->nomeclatura->EditValue ?>"<?php echo $cuenta_mayor_principal->nomeclatura->EditAttributes() ?>>
+<span id="el$rowindex$_cuenta_mayor_principal_nomenclatura" class="form-group cuenta_mayor_principal_nomenclatura">
+<input type="text" data-field="x_nomenclatura" name="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomenclatura" id="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nomenclatura->PlaceHolder) ?>" value="<?php echo $cuenta_mayor_principal->nomenclatura->EditValue ?>"<?php echo $cuenta_mayor_principal->nomenclatura->EditAttributes() ?>>
 </span>
 <?php } else { ?>
-<span id="el$rowindex$_cuenta_mayor_principal_nomeclatura" class="form-group cuenta_mayor_principal_nomeclatura">
-<span<?php echo $cuenta_mayor_principal->nomeclatura->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $cuenta_mayor_principal->nomeclatura->ViewValue ?></p></span>
+<span id="el$rowindex$_cuenta_mayor_principal_nomenclatura" class="form-group cuenta_mayor_principal_nomenclatura">
+<span<?php echo $cuenta_mayor_principal->nomenclatura->ViewAttributes() ?>>
+<p class="form-control-static"><?php echo $cuenta_mayor_principal->nomenclatura->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_nomeclatura" name="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomeclatura" id="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nomeclatura->FormValue) ?>">
+<input type="hidden" data-field="x_nomenclatura" name="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomenclatura" id="x<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nomenclatura->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_nomeclatura" name="o<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomeclatura" id="o<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomeclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nomeclatura->OldValue) ?>">
+<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomenclatura" id="o<?php echo $cuenta_mayor_principal_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($cuenta_mayor_principal->nomenclatura->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($cuenta_mayor_principal->nombre->Visible) { // nombre ?>
