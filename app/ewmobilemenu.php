@@ -11,8 +11,13 @@ $RootMenu->AddMenuItem(3, "mmi_cuenta_mayor_auxiliar", $Language->MenuPhrase("3"
 $RootMenu->AddMenuItem(4, "mmi_cuenta_mayor_principal", $Language->MenuPhrase("4", "MenuText"), "cuenta_mayor_principallist.php?cmd=resetall", 3, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(9, "mmi_subcuenta", $Language->MenuPhrase("9", "MenuText"), "subcuentalist.php?cmd=resetall", 4, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(6, "mmi_pais", $Language->MenuPhrase("6", "MenuText"), "paislist.php", 11, "", TRUE, FALSE);
+$RootMenu->AddMenuItem(14, "mmi_empresa", $Language->MenuPhrase("14", "MenuText"), "empresalist.php", 11, "", TRUE, FALSE);
+$RootMenu->AddMenuItem(15, "mmi_sucursal", $Language->MenuPhrase("15", "MenuText"), "sucursallist.php?cmd=resetall", 14, "", TRUE, FALSE);
+$RootMenu->AddMenuItem(16, "mmi_configuracion", $Language->MenuPhrase("16", "MenuText"), "configuracionlist.php", 11, "", TRUE, FALSE);
+$RootMenu->AddMenuItem(17, "mmi_correlativo", $Language->MenuPhrase("17", "MenuText"), "correlativolist.php?cmd=resetall", 11, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(12, "mmci_CRM", $Language->MenuPhrase("12", "MenuText"), "", -1, "", TRUE, FALSE, TRUE);
 $RootMenu->AddMenuItem(8, "mmi_persona", $Language->MenuPhrase("8", "MenuText"), "personalist.php?cmd=resetall", 12, "", TRUE, FALSE);
+$RootMenu->AddMenuItem(13, "mmi_cliente", $Language->MenuPhrase("13", "MenuText"), "clientelist.php?cmd=resetall", 8, "", TRUE, FALSE);
 $RootMenu->Render();
 ?>
 <!-- End Main Menu -->

@@ -8,6 +8,7 @@ $EW_RELATIVE_PATH = "";
 <?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "personainfo.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "paisinfo.php" ?>
+<?php include_once $EW_RELATIVE_PATH . "clientegridcls.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
 <?php
 
@@ -300,6 +301,14 @@ class cpersona_view extends cpersona {
 
 		// Process auto fill
 		if (@$_POST["ajax"] == "autofill") {
+
+			// Process auto fill for detail table 'cliente'
+			if (@$_POST["grid"] == "fclientegrid") {
+				if (!isset($GLOBALS["cliente_grid"])) $GLOBALS["cliente_grid"] = new ccliente_grid;
+				$GLOBALS["cliente_grid"]->Page_Init();
+				$this->Page_Terminate();
+				exit();
+			}
 			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
 			if ($results) {
 
@@ -413,6 +422,9 @@ class cpersona_view extends cpersona {
 		$this->RowType = EW_ROWTYPE_VIEW;
 		$this->ResetAttrs();
 		$this->RenderRow();
+
+		// Set up detail parameters
+		$this->SetUpDetailParms();
 	}
 
 	// Set up other options
@@ -430,6 +442,85 @@ class cpersona_view extends cpersona {
 		$item = &$option->Add("edit");
 		$item->Body = "<a class=\"ewAction ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("ViewPageEditLink") . "</a>";
 		$item->Visible = ($this->EditUrl <> "");
+
+		// Show detail edit/copy
+		if ($this->getCurrentDetailTable() <> "") {
+
+			// Detail Edit
+			$item = &$option->Add("detailedit");
+			$item->Body = "<a class=\"ewAction ewDetailEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=" . $this->getCurrentDetailTable())) . "\">" . $Language->Phrase("MasterDetailEditLink") . "</a>";
+			$item->Visible = (TRUE);
+		}
+		$option = &$options["detail"];
+		$DetailTableLink = "";
+		$DetailViewTblVar = "";
+		$DetailCopyTblVar = "";
+		$DetailEditTblVar = "";
+
+		// "detail_cliente"
+		$item = &$option->Add("detail_cliente");
+		$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("cliente", "TblCaption");
+		$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("clientelist.php?" . EW_TABLE_SHOW_MASTER . "=persona&fk_idpersona=" . strval($this->idpersona->CurrentValue) . "") . "\">" . $body . "</a>";
+		$links = "";
+		if ($GLOBALS["cliente_grid"] && $GLOBALS["cliente_grid"]->DetailView) {
+			$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=cliente")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+			if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
+			$DetailViewTblVar .= "cliente";
+		}
+		if ($GLOBALS["cliente_grid"] && $GLOBALS["cliente_grid"]->DetailEdit) {
+			$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=cliente")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+			if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
+			$DetailEditTblVar .= "cliente";
+		}
+		if ($links <> "") {
+			$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
+			$body .= "<ul class=\"dropdown-menu\">". $links . "</ul>";
+		}
+		$body = "<div class=\"btn-group\">" . $body . "</div>";
+		$item->Body = $body;
+		$item->Visible = TRUE;
+		if ($item->Visible) {
+			if ($DetailTableLink <> "") $DetailTableLink .= ",";
+			$DetailTableLink .= "cliente";
+		}
+		if ($this->ShowMultipleDetails) $item->Visible = FALSE;
+
+		// Multiple details
+		if ($this->ShowMultipleDetails) {
+			$body = $Language->Phrase("MultipleMasterDetails");
+			$body = "<div class=\"btn-group\">";
+			$links = "";
+			if ($DetailViewTblVar <> "") {
+				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailViewTblVar)) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+			}
+			if ($DetailEditTblVar <> "") {
+				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailEditTblVar)) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+			}
+			if ($DetailCopyTblVar <> "") {
+				$links .= "<li><a class=\"ewRowLink ewDetailCopy\" data-action=\"add\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->GetCopyUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailCopyTblVar)) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailCopyLink")) . "</a></li>";
+			}
+			if ($links <> "") {
+				$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewMasterDetail\" title=\"" . ew_HtmlTitle($Language->Phrase("MultipleMasterDetails")) . "\" data-toggle=\"dropdown\">" . $Language->Phrase("MultipleMasterDetails") . "<b class=\"caret\"></b></button>";
+				$body .= "<ul class=\"dropdown-menu ewMenu\">". $links . "</ul>";
+			}
+			$body .= "</div>";
+
+			// Multiple details
+			$oListOpt = &$option->Add("details");
+			$oListOpt->Body = $body;
+		}
+
+		// Set up detail default
+		$option = &$options["detail"];
+		$options["detail"]->DropDownButtonPhrase = $Language->Phrase("ButtonDetails");
+		$option->UseImageAndText = TRUE;
+		$ar = explode(",", $DetailTableLink);
+		$cnt = count($ar);
+		$option->UseDropDownButton = ($cnt > 1);
+		$option->UseButtonGroup = TRUE;
+		$item = &$option->Add($option->GroupOptionName);
+		$item->Body = "";
+		$item->Visible = FALSE;
 
 		// Set up action default
 		$option = &$options["action"];
@@ -788,6 +879,35 @@ class cpersona_view extends cpersona {
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 
+	// Set up detail parms based on QueryString
+	function SetUpDetailParms() {
+
+		// Get the keys for master table
+		if (isset($_GET[EW_TABLE_SHOW_DETAIL])) {
+			$sDetailTblVar = $_GET[EW_TABLE_SHOW_DETAIL];
+			$this->setCurrentDetailTable($sDetailTblVar);
+		} else {
+			$sDetailTblVar = $this->getCurrentDetailTable();
+		}
+		if ($sDetailTblVar <> "") {
+			$DetailTblVar = explode(",", $sDetailTblVar);
+			if (in_array("cliente", $DetailTblVar)) {
+				if (!isset($GLOBALS["cliente_grid"]))
+					$GLOBALS["cliente_grid"] = new ccliente_grid;
+				if ($GLOBALS["cliente_grid"]->DetailView) {
+					$GLOBALS["cliente_grid"]->CurrentMode = "view";
+
+					// Save current master table to detail table
+					$GLOBALS["cliente_grid"]->setCurrentMasterTable($this->TableVar);
+					$GLOBALS["cliente_grid"]->setStartRecordNumber(1);
+					$GLOBALS["cliente_grid"]->idpersona->FldIsDetailKey = TRUE;
+					$GLOBALS["cliente_grid"]->idpersona->CurrentValue = $this->idpersona->CurrentValue;
+					$GLOBALS["cliente_grid"]->idpersona->setSessionValue($GLOBALS["cliente_grid"]->idpersona->CurrentValue);
+				}
+			}
+		}
+	}
+
 	// Set up Breadcrumb
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
@@ -1079,6 +1199,14 @@ $persona_view->ShowMessage();
 	</tr>
 <?php } ?>
 </table>
+<?php
+	if (in_array("cliente", explode(",", $persona->getCurrentDetailTable())) && $cliente->DetailView) {
+?>
+<?php if ($persona->getCurrentDetailTable() <> "") { ?>
+<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("cliente", "TblCaption") ?></h4>
+<?php } ?>
+<?php include_once "clientegrid.php" ?>
+<?php } ?>
 </form>
 <script type="text/javascript">
 fpersonaview.Init();

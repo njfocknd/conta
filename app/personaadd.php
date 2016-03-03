@@ -8,6 +8,7 @@ $EW_RELATIVE_PATH = "";
 <?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "personainfo.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "paisinfo.php" ?>
+<?php include_once $EW_RELATIVE_PATH . "clientegridcls.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
 <?php
 
@@ -245,6 +246,14 @@ class cpersona_add extends cpersona {
 
 		// Process auto fill
 		if (@$_POST["ajax"] == "autofill") {
+
+			// Process auto fill for detail table 'cliente'
+			if (@$_POST["grid"] == "fclientegrid") {
+				if (!isset($GLOBALS["cliente_grid"])) $GLOBALS["cliente_grid"] = new ccliente_grid;
+				$GLOBALS["cliente_grid"]->Page_Init();
+				$this->Page_Terminate();
+				exit();
+			}
 			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
 			if ($results) {
 
@@ -346,6 +355,9 @@ class cpersona_add extends cpersona {
 		// Set up Breadcrumb
 		$this->SetupBreadcrumb();
 
+		// Set up detail parameters
+		$this->SetUpDetailParms();
+
 		// Validate form if post back
 		if (@$_POST["a_add"] <> "") {
 			if (!$this->ValidateForm()) {
@@ -365,19 +377,28 @@ class cpersona_add extends cpersona {
 					if ($this->getFailureMessage() == "") $this->setFailureMessage($Language->Phrase("NoRecord")); // No record found
 					$this->Page_Terminate("personalist.php"); // No matching record, return to list
 				}
+
+				// Set up detail parameters
+				$this->SetUpDetailParms();
 				break;
 			case "A": // Add new record
 				$this->SendEmail = TRUE; // Send email on add success
 				if ($this->AddRow($this->OldRecordset)) { // Add successful
 					if ($this->getSuccessMessage() == "")
 						$this->setSuccessMessage($Language->Phrase("AddSuccess")); // Set up success message
-					$sReturnUrl = $this->getReturnUrl();
+					if ($this->getCurrentDetailTable() <> "") // Master/detail add
+						$sReturnUrl = $this->GetDetailUrl();
+					else
+						$sReturnUrl = $this->getReturnUrl();
 					if (ew_GetPageName($sReturnUrl) == "personaview.php")
 						$sReturnUrl = $this->GetViewUrl(); // View paging, return to view page with keyurl directly
 					$this->Page_Terminate($sReturnUrl); // Clean up and return
 				} else {
 					$this->EventCancelled = TRUE; // Event cancelled
 					$this->RestoreFormValues(); // Add failed, restore form values
+
+					// Set up detail parameters
+					$this->SetUpDetailParms();
 				}
 		}
 
@@ -908,6 +929,13 @@ class cpersona_add extends cpersona {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->sexo->FldCaption(), $this->sexo->ReqErrMsg));
 		}
 
+		// Validate detail grid
+		$DetailTblVar = explode(",", $this->getCurrentDetailTable());
+		if (in_array("cliente", $DetailTblVar) && $GLOBALS["cliente"]->DetailAdd) {
+			if (!isset($GLOBALS["cliente_grid"])) $GLOBALS["cliente_grid"] = new ccliente_grid(); // get detail page object
+			$GLOBALS["cliente_grid"]->ValidateGridForm();
+		}
+
 		// Return validate result
 		$ValidateForm = ($gsFormError == "");
 
@@ -923,6 +951,10 @@ class cpersona_add extends cpersona {
 	// Add record
 	function AddRow($rsold = NULL) {
 		global $conn, $Language, $Security;
+
+		// Begin transaction
+		if ($this->getCurrentDetailTable() <> "")
+			$conn->BeginTrans();
 
 		// Load db values from rsold
 		if ($rsold) {
@@ -984,6 +1016,27 @@ class cpersona_add extends cpersona {
 			$this->idpersona->setDbValue($conn->Insert_ID());
 			$rsnew['idpersona'] = $this->idpersona->DbValue;
 		}
+
+		// Add detail records
+		if ($AddRow) {
+			$DetailTblVar = explode(",", $this->getCurrentDetailTable());
+			if (in_array("cliente", $DetailTblVar) && $GLOBALS["cliente"]->DetailAdd) {
+				$GLOBALS["cliente"]->idpersona->setSessionValue($this->idpersona->CurrentValue); // Set master key
+				if (!isset($GLOBALS["cliente_grid"])) $GLOBALS["cliente_grid"] = new ccliente_grid(); // Get detail page object
+				$AddRow = $GLOBALS["cliente_grid"]->GridInsert();
+				if (!$AddRow)
+					$GLOBALS["cliente"]->idpersona->setSessionValue(""); // Clear master key if insert failed
+			}
+		}
+
+		// Commit/Rollback transaction
+		if ($this->getCurrentDetailTable() <> "") {
+			if ($AddRow) {
+				$conn->CommitTrans(); // Commit transaction
+			} else {
+				$conn->RollbackTrans(); // Rollback transaction
+			}
+		}
 		if ($AddRow) {
 
 			// Call Row Inserted event
@@ -1033,6 +1086,39 @@ class cpersona_add extends cpersona {
 		}
 		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
+	}
+
+	// Set up detail parms based on QueryString
+	function SetUpDetailParms() {
+
+		// Get the keys for master table
+		if (isset($_GET[EW_TABLE_SHOW_DETAIL])) {
+			$sDetailTblVar = $_GET[EW_TABLE_SHOW_DETAIL];
+			$this->setCurrentDetailTable($sDetailTblVar);
+		} else {
+			$sDetailTblVar = $this->getCurrentDetailTable();
+		}
+		if ($sDetailTblVar <> "") {
+			$DetailTblVar = explode(",", $sDetailTblVar);
+			if (in_array("cliente", $DetailTblVar)) {
+				if (!isset($GLOBALS["cliente_grid"]))
+					$GLOBALS["cliente_grid"] = new ccliente_grid;
+				if ($GLOBALS["cliente_grid"]->DetailAdd) {
+					if ($this->CopyRecord)
+						$GLOBALS["cliente_grid"]->CurrentMode = "copy";
+					else
+						$GLOBALS["cliente_grid"]->CurrentMode = "add";
+					$GLOBALS["cliente_grid"]->CurrentAction = "gridadd";
+
+					// Save current master table to detail table
+					$GLOBALS["cliente_grid"]->setCurrentMasterTable($this->TableVar);
+					$GLOBALS["cliente_grid"]->setStartRecordNumber(1);
+					$GLOBALS["cliente_grid"]->idpersona->FldIsDetailKey = TRUE;
+					$GLOBALS["cliente_grid"]->idpersona->CurrentValue = $this->idpersona->CurrentValue;
+					$GLOBALS["cliente_grid"]->idpersona->setSessionValue($GLOBALS["cliente_grid"]->idpersona->CurrentValue);
+				}
+			}
+		}
 	}
 
 	// Set up Breadcrumb
@@ -1350,6 +1436,11 @@ if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 		<div class="col-sm-10"><div<?php echo $persona->fecha_nacimiento->CellAttributes() ?>>
 <span id="el_persona_fecha_nacimiento">
 <input type="text" data-field="x_fecha_nacimiento" name="x_fecha_nacimiento" id="x_fecha_nacimiento" placeholder="<?php echo ew_HtmlEncode($persona->fecha_nacimiento->PlaceHolder) ?>" value="<?php echo $persona->fecha_nacimiento->EditValue ?>"<?php echo $persona->fecha_nacimiento->EditAttributes() ?>>
+<?php if (!$persona->fecha_nacimiento->ReadOnly && !$persona->fecha_nacimiento->Disabled && @$persona->fecha_nacimiento->EditAttrs["readonly"] == "" && @$persona->fecha_nacimiento->EditAttrs["disabled"] == "") { ?>
+<script type="text/javascript">
+ew_CreateCalendar("fpersonaadd", "x_fecha_nacimiento", "%d/%m/%Y");
+</script>
+<?php } ?>
 </span>
 <?php echo $persona->fecha_nacimiento->CustomMsg ?></div></div>
 	</div>
@@ -1392,6 +1483,14 @@ if (is_array($persona->sexo->EditValue)) {
 	</div>
 <?php } ?>
 </div>
+<?php
+	if (in_array("cliente", explode(",", $persona->getCurrentDetailTable())) && $cliente->DetailAdd) {
+?>
+<?php if ($persona->getCurrentDetailTable() <> "") { ?>
+<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("cliente", "TblCaption") ?></h4>
+<?php } ?>
+<?php include_once "clientegrid.php" ?>
+<?php } ?>
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">
 <button class="btn btn-primary ewButton" name="btnAction" id="btnAction" type="submit"><?php echo $Language->Phrase("AddBtn") ?></button>

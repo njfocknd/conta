@@ -29,7 +29,7 @@ define("EW_CONFIG_FILE_FOLDER", EW_PROJECT_NAME . "", TRUE); // Config file name
 define("EW_PROJECT_ID", "{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}", TRUE); // Project ID (GUID)
 $EW_RELATED_PROJECT_ID = "";
 $EW_RELATED_LANGUAGE_FOLDER = "";
-define("EW_RANDOM_KEY", 'TTlFTJoOWAk4Fg1u', TRUE); // Random key for encryption
+define("EW_RANDOM_KEY", 'flRt2HJ1Yt1U4gZs', TRUE); // Random key for encryption
 define("EW_PROJECT_STYLESHEET_FILENAME", "phpcss/contable.css", TRUE); // Project stylesheet file name
 define("EW_CHARSET", "utf-8", TRUE); // Project charset
 define("EW_EMAIL_CHARSET", EW_CHARSET, TRUE); // Email charset
@@ -489,23 +489,22 @@ $Breadcrumb = NULL;
 <?php
 
 // Menu
-define("EW_MENUBAR_ID", "RootMenu", TRUE);
-define("EW_MENUBAR_BRAND", "", TRUE);
-define("EW_MENUBAR_BRAND_HYPERLINK", "", TRUE);
-define("EW_MENUBAR_CLASSNAME", "", TRUE);
-
-//define("EW_MENU_CLASSNAME", "nav nav-list", TRUE);
-define("EW_MENU_CLASSNAME", "dropdown-menu", TRUE);
+define("EW_MENUBAR_ID", "ewHorizMenu", TRUE);
+define("EW_MENUBAR_CLASSNAME", "navbar navbar-default", TRUE);
+define("EW_MENUBAR_INNER_CLASSNAME", "", TRUE);
+define("EW_MENU_CLASSNAME", "nav navbar-nav", TRUE);
 define("EW_SUBMENU_CLASSNAME", "dropdown-menu", TRUE);
-define("EW_SUBMENU_DROPDOWN_IMAGE", "", TRUE);
+define("EW_SUBMENU_DROPDOWN_IMAGE", " <b class=\"caret\"></b>", TRUE);
 define("EW_SUBMENU_DROPDOWN_ICON_CLASSNAME", "", TRUE);
+
+//define("EW_MENU_DIVIDER_CLASSNAME", "divider-vertical", TRUE);
 define("EW_MENU_DIVIDER_CLASSNAME", "divider", TRUE);
-define("EW_MENU_ITEM_CLASSNAME", "dropdown-submenu", TRUE);
+define("EW_MENU_ITEM_CLASSNAME", "dropdown", TRUE);
 define("EW_SUBMENU_ITEM_CLASSNAME", "dropdown-submenu", TRUE);
 define("EW_MENU_ACTIVE_ITEM_CLASS", "active", TRUE);
 define("EW_SUBMENU_ACTIVE_ITEM_CLASS", "active", TRUE);
-define("EW_MENU_ROOT_GROUP_TITLE_AS_SUBMENU", FALSE, TRUE);
-define("EW_SHOW_RIGHT_MENU", FALSE, TRUE);
+define("EW_MENU_ROOT_GROUP_TITLE_AS_SUBMENU", TRUE, TRUE);
+define("EW_SHOW_RIGHT_MENU", TRUE, TRUE);
 ?>
 <?php
 define("EW_PDF_STYLESHEET_FILENAME", "", TRUE); // Export PDF CSS styles

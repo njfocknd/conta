@@ -42,6 +42,11 @@ if (ew_IsResponsiveLayout()) {
 <script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>jqueryfileupload/load-image.min.js"></script>
 <script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>jqueryfileupload/jqueryfileupload.min.js"></script>
 <script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>colorbox/jquery.colorbox-min.js"></script>
+<link href="calendar/calendar.css" rel="stylesheet" type="text/css">
+<script type="text/javascript" src="calendar/calendar.min.js"></script>
+<script type="text/javascript" src="calendar/lang/calendar-en.js"></script>
+<script type="text/javascript" src="calendar/calendar-setup.js"></script>
+<script type="text/javascript" src="phpjs/ewcalendar.js"></script>
 <script type="text/javascript">
 var EW_LANGUAGE_ID = "<?php echo $gsLanguage ?>";
 var EW_DATE_SEPARATOR = "/" || "/"; // Default date separator
@@ -118,16 +123,14 @@ var EW_CSS_FLIP = <?php echo (EW_CSS_FLIP) ? "true" : "false" ?>;
 </nav>
 <?php } ?>
 	<!-- header (end) -->
+	<div id="ewMenuRow"<?php if (ew_IsResponsiveLayout()) { ?> class="hidden-xs"<?php } ?>>
+		<div class="ewMenu">
+<?php include_once $EW_RELATIVE_PATH . "ewmenu.php" ?>
+		</div>
+	</div>
 	<!-- content (begin) -->
 	<div id="ewContentTable" class="ewContentTable">
 		<div id="ewContentRow">
-			<div id="ewMenuColumn" class="<?php echo $gsMenuColumnClass ?>">
-				<!-- left column (begin) -->
-				<div class="ewMenu">
-<?php include_once $EW_RELATIVE_PATH . "ewmenu.php" ?>
-				</div>
-				<!-- left column (end) -->
-			</div>
 			<div id="ewContentColumn" class="ewContentColumn">
 				<!-- right column (begin) -->
 				<h4 class="<?php echo $gsSiteTitleClass ?>"><?php echo $Language->ProjectPhrase("BodyTitle") ?></h4>
