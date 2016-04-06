@@ -9,6 +9,8 @@ $EW_RELATIVE_PATH = "";
 <?php include_once $EW_RELATIVE_PATH . "personainfo.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "paisinfo.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "clientegridcls.php" ?>
+<?php include_once $EW_RELATIVE_PATH . "empleadogridcls.php" ?>
+<?php include_once $EW_RELATIVE_PATH . "proveedorgridcls.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
 <?php
 
@@ -309,6 +311,22 @@ class cpersona_view extends cpersona {
 				$this->Page_Terminate();
 				exit();
 			}
+
+			// Process auto fill for detail table 'empleado'
+			if (@$_POST["grid"] == "fempleadogrid") {
+				if (!isset($GLOBALS["empleado_grid"])) $GLOBALS["empleado_grid"] = new cempleado_grid;
+				$GLOBALS["empleado_grid"]->Page_Init();
+				$this->Page_Terminate();
+				exit();
+			}
+
+			// Process auto fill for detail table 'proveedor'
+			if (@$_POST["grid"] == "fproveedorgrid") {
+				if (!isset($GLOBALS["proveedor_grid"])) $GLOBALS["proveedor_grid"] = new cproveedor_grid;
+				$GLOBALS["proveedor_grid"]->Page_Init();
+				$this->Page_Terminate();
+				exit();
+			}
 			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
 			if ($results) {
 
@@ -482,6 +500,62 @@ class cpersona_view extends cpersona {
 		if ($item->Visible) {
 			if ($DetailTableLink <> "") $DetailTableLink .= ",";
 			$DetailTableLink .= "cliente";
+		}
+		if ($this->ShowMultipleDetails) $item->Visible = FALSE;
+
+		// "detail_empleado"
+		$item = &$option->Add("detail_empleado");
+		$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("empleado", "TblCaption");
+		$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("empleadolist.php?" . EW_TABLE_SHOW_MASTER . "=persona&fk_idpersona=" . strval($this->idpersona->CurrentValue) . "") . "\">" . $body . "</a>";
+		$links = "";
+		if ($GLOBALS["empleado_grid"] && $GLOBALS["empleado_grid"]->DetailView) {
+			$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=empleado")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+			if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
+			$DetailViewTblVar .= "empleado";
+		}
+		if ($GLOBALS["empleado_grid"] && $GLOBALS["empleado_grid"]->DetailEdit) {
+			$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=empleado")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+			if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
+			$DetailEditTblVar .= "empleado";
+		}
+		if ($links <> "") {
+			$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
+			$body .= "<ul class=\"dropdown-menu\">". $links . "</ul>";
+		}
+		$body = "<div class=\"btn-group\">" . $body . "</div>";
+		$item->Body = $body;
+		$item->Visible = TRUE;
+		if ($item->Visible) {
+			if ($DetailTableLink <> "") $DetailTableLink .= ",";
+			$DetailTableLink .= "empleado";
+		}
+		if ($this->ShowMultipleDetails) $item->Visible = FALSE;
+
+		// "detail_proveedor"
+		$item = &$option->Add("detail_proveedor");
+		$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("proveedor", "TblCaption");
+		$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("proveedorlist.php?" . EW_TABLE_SHOW_MASTER . "=persona&fk_idpersona=" . strval($this->idpersona->CurrentValue) . "") . "\">" . $body . "</a>";
+		$links = "";
+		if ($GLOBALS["proveedor_grid"] && $GLOBALS["proveedor_grid"]->DetailView) {
+			$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=proveedor")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+			if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
+			$DetailViewTblVar .= "proveedor";
+		}
+		if ($GLOBALS["proveedor_grid"] && $GLOBALS["proveedor_grid"]->DetailEdit) {
+			$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=proveedor")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+			if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
+			$DetailEditTblVar .= "proveedor";
+		}
+		if ($links <> "") {
+			$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
+			$body .= "<ul class=\"dropdown-menu\">". $links . "</ul>";
+		}
+		$body = "<div class=\"btn-group\">" . $body . "</div>";
+		$item->Body = $body;
+		$item->Visible = TRUE;
+		if ($item->Visible) {
+			if ($DetailTableLink <> "") $DetailTableLink .= ",";
+			$DetailTableLink .= "proveedor";
 		}
 		if ($this->ShowMultipleDetails) $item->Visible = FALSE;
 
@@ -905,6 +979,34 @@ class cpersona_view extends cpersona {
 					$GLOBALS["cliente_grid"]->idpersona->setSessionValue($GLOBALS["cliente_grid"]->idpersona->CurrentValue);
 				}
 			}
+			if (in_array("empleado", $DetailTblVar)) {
+				if (!isset($GLOBALS["empleado_grid"]))
+					$GLOBALS["empleado_grid"] = new cempleado_grid;
+				if ($GLOBALS["empleado_grid"]->DetailView) {
+					$GLOBALS["empleado_grid"]->CurrentMode = "view";
+
+					// Save current master table to detail table
+					$GLOBALS["empleado_grid"]->setCurrentMasterTable($this->TableVar);
+					$GLOBALS["empleado_grid"]->setStartRecordNumber(1);
+					$GLOBALS["empleado_grid"]->idpersona->FldIsDetailKey = TRUE;
+					$GLOBALS["empleado_grid"]->idpersona->CurrentValue = $this->idpersona->CurrentValue;
+					$GLOBALS["empleado_grid"]->idpersona->setSessionValue($GLOBALS["empleado_grid"]->idpersona->CurrentValue);
+				}
+			}
+			if (in_array("proveedor", $DetailTblVar)) {
+				if (!isset($GLOBALS["proveedor_grid"]))
+					$GLOBALS["proveedor_grid"] = new cproveedor_grid;
+				if ($GLOBALS["proveedor_grid"]->DetailView) {
+					$GLOBALS["proveedor_grid"]->CurrentMode = "view";
+
+					// Save current master table to detail table
+					$GLOBALS["proveedor_grid"]->setCurrentMasterTable($this->TableVar);
+					$GLOBALS["proveedor_grid"]->setStartRecordNumber(1);
+					$GLOBALS["proveedor_grid"]->idpersona->FldIsDetailKey = TRUE;
+					$GLOBALS["proveedor_grid"]->idpersona->CurrentValue = $this->idpersona->CurrentValue;
+					$GLOBALS["proveedor_grid"]->idpersona->setSessionValue($GLOBALS["proveedor_grid"]->idpersona->CurrentValue);
+				}
+			}
 		}
 	}
 
@@ -1206,6 +1308,22 @@ $persona_view->ShowMessage();
 <h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("cliente", "TblCaption") ?></h4>
 <?php } ?>
 <?php include_once "clientegrid.php" ?>
+<?php } ?>
+<?php
+	if (in_array("empleado", explode(",", $persona->getCurrentDetailTable())) && $empleado->DetailView) {
+?>
+<?php if ($persona->getCurrentDetailTable() <> "") { ?>
+<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("empleado", "TblCaption") ?></h4>
+<?php } ?>
+<?php include_once "empleadogrid.php" ?>
+<?php } ?>
+<?php
+	if (in_array("proveedor", explode(",", $persona->getCurrentDetailTable())) && $proveedor->DetailView) {
+?>
+<?php if ($persona->getCurrentDetailTable() <> "") { ?>
+<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("proveedor", "TblCaption") ?></h4>
+<?php } ?>
+<?php include_once "proveedorgrid.php" ?>
 <?php } ?>
 </form>
 <script type="text/javascript">

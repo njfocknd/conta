@@ -129,6 +129,30 @@ class csubcuenta extends cTable {
 		return "`idcuenta_mayor_auxiliar`=@idcuenta_mayor_auxiliar@";
 	}
 
+	// Current detail table name
+	function getCurrentDetailTable() {
+		return @$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_DETAIL_TABLE];
+	}
+
+	function setCurrentDetailTable($v) {
+		$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_DETAIL_TABLE] = $v;
+	}
+
+	// Get detail url
+	function GetDetailUrl() {
+
+		// Detail url
+		$sDetailUrl = "";
+		if ($this->getCurrentDetailTable() == "cuenta") {
+			$sDetailUrl = $GLOBALS["cuenta"]->GetListUrl() . "?showmaster=" . $this->TableVar;
+			$sDetailUrl .= "&fk_idsubcuenta=" . urlencode($this->idsubcuenta->CurrentValue);
+		}
+		if ($sDetailUrl == "") {
+			$sDetailUrl = "subcuentalist.php";
+		}
+		return $sDetailUrl;
+	}
+
 	// Table level SQL
 	var $_SqlFrom = "";
 
@@ -482,7 +506,10 @@ class csubcuenta extends cTable {
 
 	// Edit URL
 	function GetEditUrl($parm = "") {
-		return $this->KeyUrl("subcuentaedit.php", $this->UrlParm($parm));
+		if ($parm <> "")
+			return $this->KeyUrl("subcuentaedit.php", $this->UrlParm($parm));
+		else
+			return $this->KeyUrl("subcuentaedit.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
 	}
 
 	// Inline edit URL
@@ -492,7 +519,10 @@ class csubcuenta extends cTable {
 
 	// Copy URL
 	function GetCopyUrl($parm = "") {
-		return $this->KeyUrl("subcuentaadd.php", $this->UrlParm($parm));
+		if ($parm <> "")
+			return $this->KeyUrl("subcuentaadd.php", $this->UrlParm($parm));
+		else
+			return $this->KeyUrl("subcuentaadd.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
 	}
 
 	// Inline copy URL

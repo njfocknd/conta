@@ -748,6 +748,7 @@ class cconfiguracion_list extends cconfiguracion {
 			$this->UpdateSort($this->codigo); // codigo
 			$this->UpdateSort($this->valor); // valor
 			$this->UpdateSort($this->descripcion); // descripcion
+			$this->UpdateSort($this->idempresa); // idempresa
 			$this->setStartRecordNumber(1); // Reset start position
 		}
 	}
@@ -783,6 +784,7 @@ class cconfiguracion_list extends cconfiguracion {
 				$this->codigo->setSort("");
 				$this->valor->setSort("");
 				$this->descripcion->setSort("");
+				$this->idempresa->setSort("");
 			}
 
 			// Reset start position
@@ -1098,6 +1100,7 @@ class cconfiguracion_list extends cconfiguracion {
 		$this->valor->setDbValue($rs->fields('valor'));
 		$this->descripcion->setDbValue($rs->fields('descripcion'));
 		$this->estado->setDbValue($rs->fields('estado'));
+		$this->idempresa->setDbValue($rs->fields('idempresa'));
 	}
 
 	// Load DbValue from recordset
@@ -1109,6 +1112,7 @@ class cconfiguracion_list extends cconfiguracion {
 		$this->valor->DbValue = $row['valor'];
 		$this->descripcion->DbValue = $row['descripcion'];
 		$this->estado->DbValue = $row['estado'];
+		$this->idempresa->DbValue = $row['idempresa'];
 	}
 
 	// Load old record
@@ -1155,6 +1159,7 @@ class cconfiguracion_list extends cconfiguracion {
 		// valor
 		// descripcion
 		// estado
+		// idempresa
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -1191,6 +1196,10 @@ class cconfiguracion_list extends cconfiguracion {
 			}
 			$this->estado->ViewCustomAttributes = "";
 
+			// idempresa
+			$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
+			$this->idempresa->ViewCustomAttributes = "";
+
 			// codigo
 			$this->codigo->LinkCustomAttributes = "";
 			$this->codigo->HrefValue = "";
@@ -1205,6 +1214,11 @@ class cconfiguracion_list extends cconfiguracion {
 			$this->descripcion->LinkCustomAttributes = "";
 			$this->descripcion->HrefValue = "";
 			$this->descripcion->TooltipValue = "";
+
+			// idempresa
+			$this->idempresa->LinkCustomAttributes = "";
+			$this->idempresa->HrefValue = "";
+			$this->idempresa->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -1510,6 +1524,15 @@ $configuracion_list->ListOptions->Render("header", "left");
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
+<?php if ($configuracion->idempresa->Visible) { // idempresa ?>
+	<?php if ($configuracion->SortUrl($configuracion->idempresa) == "") { ?>
+		<th data-name="idempresa"><div id="elh_configuracion_idempresa" class="configuracion_idempresa"><div class="ewTableHeaderCaption"><?php echo $configuracion->idempresa->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="idempresa"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $configuracion->SortUrl($configuracion->idempresa) ?>',1);"><div id="elh_configuracion_idempresa" class="configuracion_idempresa">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $configuracion->idempresa->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($configuracion->idempresa->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($configuracion->idempresa->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
 <?php
 
 // Render list options (header, right)
@@ -1591,6 +1614,12 @@ $configuracion_list->ListOptions->Render("body", "left", $configuracion_list->Ro
 		<td data-name="descripcion"<?php echo $configuracion->descripcion->CellAttributes() ?>>
 <span<?php echo $configuracion->descripcion->ViewAttributes() ?>>
 <?php echo $configuracion->descripcion->ListViewValue() ?></span>
+</td>
+	<?php } ?>
+	<?php if ($configuracion->idempresa->Visible) { // idempresa ?>
+		<td data-name="idempresa"<?php echo $configuracion->idempresa->CellAttributes() ?>>
+<span<?php echo $configuracion->idempresa->ViewAttributes() ?>>
+<?php echo $configuracion->idempresa->ListViewValue() ?></span>
 </td>
 	<?php } ?>
 <?php

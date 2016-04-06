@@ -12,6 +12,7 @@ class cconfiguracion extends cTable {
 	var $valor;
 	var $descripcion;
 	var $estado;
+	var $idempresa;
 
 	//
 	// Table class constructor
@@ -57,6 +58,11 @@ class cconfiguracion extends cTable {
 		// estado
 		$this->estado = new cField('configuracion', 'configuracion', 'x_estado', 'estado', '`estado`', '`estado`', 202, -1, FALSE, '`estado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
 		$this->fields['estado'] = &$this->estado;
+
+		// idempresa
+		$this->idempresa = new cField('configuracion', 'configuracion', 'x_idempresa', 'idempresa', '`idempresa`', '`idempresa`', 3, -1, FALSE, '`idempresa`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->idempresa->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
+		$this->fields['idempresa'] = &$this->idempresa;
 	}
 
 	// Single column sort
@@ -536,6 +542,7 @@ class cconfiguracion extends cTable {
 		$this->valor->setDbValue($rs->fields('valor'));
 		$this->descripcion->setDbValue($rs->fields('descripcion'));
 		$this->estado->setDbValue($rs->fields('estado'));
+		$this->idempresa->setDbValue($rs->fields('idempresa'));
 	}
 
 	// Render list row values
@@ -551,6 +558,7 @@ class cconfiguracion extends cTable {
 		// valor
 		// descripcion
 		// estado
+		// idempresa
 		// idconfiguracion
 
 		$this->idconfiguracion->ViewValue = $this->idconfiguracion->CurrentValue;
@@ -585,6 +593,10 @@ class cconfiguracion extends cTable {
 		}
 		$this->estado->ViewCustomAttributes = "";
 
+		// idempresa
+		$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
+		$this->idempresa->ViewCustomAttributes = "";
+
 		// idconfiguracion
 		$this->idconfiguracion->LinkCustomAttributes = "";
 		$this->idconfiguracion->HrefValue = "";
@@ -609,6 +621,11 @@ class cconfiguracion extends cTable {
 		$this->estado->LinkCustomAttributes = "";
 		$this->estado->HrefValue = "";
 		$this->estado->TooltipValue = "";
+
+		// idempresa
+		$this->idempresa->LinkCustomAttributes = "";
+		$this->idempresa->HrefValue = "";
+		$this->idempresa->TooltipValue = "";
 
 		// Call Row Rendered event
 		$this->Row_Rendered();
@@ -654,6 +671,12 @@ class cconfiguracion extends cTable {
 		array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
 		$this->estado->EditValue = $arwrk;
 
+		// idempresa
+		$this->idempresa->EditAttrs["class"] = "form-control";
+		$this->idempresa->EditCustomAttributes = "";
+		$this->idempresa->EditValue = ew_HtmlEncode($this->idempresa->CurrentValue);
+		$this->idempresa->PlaceHolder = ew_RemoveHtml($this->idempresa->FldCaption());
+
 		// Call Row Rendered event
 		$this->Row_Rendered();
 	}
@@ -683,12 +706,14 @@ class cconfiguracion extends cTable {
 					if ($this->valor->Exportable) $Doc->ExportCaption($this->valor);
 					if ($this->descripcion->Exportable) $Doc->ExportCaption($this->descripcion);
 					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
+					if ($this->idempresa->Exportable) $Doc->ExportCaption($this->idempresa);
 				} else {
 					if ($this->idconfiguracion->Exportable) $Doc->ExportCaption($this->idconfiguracion);
 					if ($this->codigo->Exportable) $Doc->ExportCaption($this->codigo);
 					if ($this->valor->Exportable) $Doc->ExportCaption($this->valor);
 					if ($this->descripcion->Exportable) $Doc->ExportCaption($this->descripcion);
 					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
+					if ($this->idempresa->Exportable) $Doc->ExportCaption($this->idempresa);
 				}
 				$Doc->EndExportRow();
 			}
@@ -725,12 +750,14 @@ class cconfiguracion extends cTable {
 						if ($this->valor->Exportable) $Doc->ExportField($this->valor);
 						if ($this->descripcion->Exportable) $Doc->ExportField($this->descripcion);
 						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
+						if ($this->idempresa->Exportable) $Doc->ExportField($this->idempresa);
 					} else {
 						if ($this->idconfiguracion->Exportable) $Doc->ExportField($this->idconfiguracion);
 						if ($this->codigo->Exportable) $Doc->ExportField($this->codigo);
 						if ($this->valor->Exportable) $Doc->ExportField($this->valor);
 						if ($this->descripcion->Exportable) $Doc->ExportField($this->descripcion);
 						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
+						if ($this->idempresa->Exportable) $Doc->ExportField($this->idempresa);
 					}
 					$Doc->EndExportRow();
 				}

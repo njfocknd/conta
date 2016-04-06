@@ -179,6 +179,14 @@ class cpersona extends cTable {
 			$sDetailUrl = $GLOBALS["cliente"]->GetListUrl() . "?showmaster=" . $this->TableVar;
 			$sDetailUrl .= "&fk_idpersona=" . urlencode($this->idpersona->CurrentValue);
 		}
+		if ($this->getCurrentDetailTable() == "empleado") {
+			$sDetailUrl = $GLOBALS["empleado"]->GetListUrl() . "?showmaster=" . $this->TableVar;
+			$sDetailUrl .= "&fk_idpersona=" . urlencode($this->idpersona->CurrentValue);
+		}
+		if ($this->getCurrentDetailTable() == "proveedor") {
+			$sDetailUrl = $GLOBALS["proveedor"]->GetListUrl() . "?showmaster=" . $this->TableVar;
+			$sDetailUrl .= "&fk_idpersona=" . urlencode($this->idpersona->CurrentValue);
+		}
 		if ($sDetailUrl == "") {
 			$sDetailUrl = "personalist.php";
 		}

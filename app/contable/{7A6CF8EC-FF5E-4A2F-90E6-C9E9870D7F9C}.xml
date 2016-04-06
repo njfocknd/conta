@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0"?>
-<configuration date="2016/03/02" author="e.World Technology Ltd.">
-<project id="{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}" file="E:\wamp\www\conta\pmp\contable.pmp" name="contable" product="PHPMaker" version="11.0" datetime="2016/03/02 23:55:54" languagefolder="phplang" userlevel="">
+<configuration date="2016/04/06" author="e.World Technology Ltd.">
+<project id="{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}" file="E:\wamp\www\conta\pmp\contable.pmp" name="contable" product="PHPMaker" version="11.0" datetime="2016/04/06 14:08:55" languagefolder="phplang" userlevel="">
 <table id="clase_cuenta" name="clase_cuenta" caption="Clase de Cuenta" userlevel="" priv="1"/>
-<table id="cuenta" name="cuenta" caption="cuenta" userlevel="" priv="1"/>
+<table id="cuenta" name="cuenta" caption="Cuenta" userlevel="" priv="1"/>
 <table id="cuenta_mayor_auxiliar" name="cuenta_mayor_auxiliar" caption="Cuenta Mayor Auxiliar" userlevel="" priv="1"/>
 <table id="cuenta_mayor_principal" name="cuenta_mayor_principal" caption="Cuenta Mayor Principal" userlevel="" priv="1"/>
 <table id="grupo_cuenta" name="grupo_cuenta" caption="grupo cuenta" userlevel="" priv="1"/>
@@ -16,4 +16,9 @@
 <table id="sucursal" name="sucursal" caption="Sucursal" userlevel="" priv="1"/>
 <table id="configuracion" name="configuracion" caption="Configuración" userlevel="" priv="1"/>
 <table id="correlativo" name="correlativo" caption="Correlativo" userlevel="" priv="1"/>
+<table id="caja_chica" name="caja_chica" caption="Caja Chica" userlevel="" priv="1"/>
+<table id="empleado" name="empleado" caption="Empleado" userlevel="" priv="1"/>
+<table id="encargado" name="encargado" caption="Historial de Encargados" userlevel="" priv="1"/>
+<table id="caja_chica_detalle" name="caja_chica_detalle" caption="Detalle Caja Chica" userlevel="" priv="1"/>
+<table id="proveedor" name="proveedor" caption="Proveedor" userlevel="" priv="1"/>
 </project></configuration>

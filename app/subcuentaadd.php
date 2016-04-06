@@ -8,6 +8,7 @@ $EW_RELATIVE_PATH = "";
 <?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "subcuentainfo.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "cuenta_mayor_auxiliarinfo.php" ?>
+<?php include_once $EW_RELATIVE_PATH . "cuentagridcls.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
 <?php
 
@@ -245,6 +246,14 @@ class csubcuenta_add extends csubcuenta {
 
 		// Process auto fill
 		if (@$_POST["ajax"] == "autofill") {
+
+			// Process auto fill for detail table 'cuenta'
+			if (@$_POST["grid"] == "fcuentagrid") {
+				if (!isset($GLOBALS["cuenta_grid"])) $GLOBALS["cuenta_grid"] = new ccuenta_grid;
+				$GLOBALS["cuenta_grid"]->Page_Init();
+				$this->Page_Terminate();
+				exit();
+			}
 			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
 			if ($results) {
 
@@ -346,6 +355,9 @@ class csubcuenta_add extends csubcuenta {
 		// Set up Breadcrumb
 		$this->SetupBreadcrumb();
 
+		// Set up detail parameters
+		$this->SetUpDetailParms();
+
 		// Validate form if post back
 		if (@$_POST["a_add"] <> "") {
 			if (!$this->ValidateForm()) {
@@ -365,19 +377,28 @@ class csubcuenta_add extends csubcuenta {
 					if ($this->getFailureMessage() == "") $this->setFailureMessage($Language->Phrase("NoRecord")); // No record found
 					$this->Page_Terminate("subcuentalist.php"); // No matching record, return to list
 				}
+
+				// Set up detail parameters
+				$this->SetUpDetailParms();
 				break;
 			case "A": // Add new record
 				$this->SendEmail = TRUE; // Send email on add success
 				if ($this->AddRow($this->OldRecordset)) { // Add successful
 					if ($this->getSuccessMessage() == "")
 						$this->setSuccessMessage($Language->Phrase("AddSuccess")); // Set up success message
-					$sReturnUrl = $this->getReturnUrl();
+					if ($this->getCurrentDetailTable() <> "") // Master/detail add
+						$sReturnUrl = $this->GetDetailUrl();
+					else
+						$sReturnUrl = $this->getReturnUrl();
 					if (ew_GetPageName($sReturnUrl) == "subcuentaview.php")
 						$sReturnUrl = $this->GetViewUrl(); // View paging, return to view page with keyurl directly
 					$this->Page_Terminate($sReturnUrl); // Clean up and return
 				} else {
 					$this->EventCancelled = TRUE; // Event cancelled
 					$this->RestoreFormValues(); // Add failed, restore form values
+
+					// Set up detail parameters
+					$this->SetUpDetailParms();
 				}
 		}
 
@@ -690,6 +711,13 @@ class csubcuenta_add extends csubcuenta {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->estado->FldCaption(), $this->estado->ReqErrMsg));
 		}
 
+		// Validate detail grid
+		$DetailTblVar = explode(",", $this->getCurrentDetailTable());
+		if (in_array("cuenta", $DetailTblVar) && $GLOBALS["cuenta"]->DetailAdd) {
+			if (!isset($GLOBALS["cuenta_grid"])) $GLOBALS["cuenta_grid"] = new ccuenta_grid(); // get detail page object
+			$GLOBALS["cuenta_grid"]->ValidateGridForm();
+		}
+
 		// Return validate result
 		$ValidateForm = ($gsFormError == "");
 
@@ -705,6 +733,10 @@ class csubcuenta_add extends csubcuenta {
 	// Add record
 	function AddRow($rsold = NULL) {
 		global $conn, $Language, $Security;
+
+		// Begin transaction
+		if ($this->getCurrentDetailTable() <> "")
+			$conn->BeginTrans();
 
 		// Load db values from rsold
 		if ($rsold) {
@@ -753,6 +785,27 @@ class csubcuenta_add extends csubcuenta {
 		if ($AddRow) {
 			$this->idsubcuenta->setDbValue($conn->Insert_ID());
 			$rsnew['idsubcuenta'] = $this->idsubcuenta->DbValue;
+		}
+
+		// Add detail records
+		if ($AddRow) {
+			$DetailTblVar = explode(",", $this->getCurrentDetailTable());
+			if (in_array("cuenta", $DetailTblVar) && $GLOBALS["cuenta"]->DetailAdd) {
+				$GLOBALS["cuenta"]->idsubcuenta->setSessionValue($this->idsubcuenta->CurrentValue); // Set master key
+				if (!isset($GLOBALS["cuenta_grid"])) $GLOBALS["cuenta_grid"] = new ccuenta_grid(); // Get detail page object
+				$AddRow = $GLOBALS["cuenta_grid"]->GridInsert();
+				if (!$AddRow)
+					$GLOBALS["cuenta"]->idsubcuenta->setSessionValue(""); // Clear master key if insert failed
+			}
+		}
+
+		// Commit/Rollback transaction
+		if ($this->getCurrentDetailTable() <> "") {
+			if ($AddRow) {
+				$conn->CommitTrans(); // Commit transaction
+			} else {
+				$conn->RollbackTrans(); // Rollback transaction
+			}
 		}
 		if ($AddRow) {
 
@@ -803,6 +856,39 @@ class csubcuenta_add extends csubcuenta {
 		}
 		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
+	}
+
+	// Set up detail parms based on QueryString
+	function SetUpDetailParms() {
+
+		// Get the keys for master table
+		if (isset($_GET[EW_TABLE_SHOW_DETAIL])) {
+			$sDetailTblVar = $_GET[EW_TABLE_SHOW_DETAIL];
+			$this->setCurrentDetailTable($sDetailTblVar);
+		} else {
+			$sDetailTblVar = $this->getCurrentDetailTable();
+		}
+		if ($sDetailTblVar <> "") {
+			$DetailTblVar = explode(",", $sDetailTblVar);
+			if (in_array("cuenta", $DetailTblVar)) {
+				if (!isset($GLOBALS["cuenta_grid"]))
+					$GLOBALS["cuenta_grid"] = new ccuenta_grid;
+				if ($GLOBALS["cuenta_grid"]->DetailAdd) {
+					if ($this->CopyRecord)
+						$GLOBALS["cuenta_grid"]->CurrentMode = "copy";
+					else
+						$GLOBALS["cuenta_grid"]->CurrentMode = "add";
+					$GLOBALS["cuenta_grid"]->CurrentAction = "gridadd";
+
+					// Save current master table to detail table
+					$GLOBALS["cuenta_grid"]->setCurrentMasterTable($this->TableVar);
+					$GLOBALS["cuenta_grid"]->setStartRecordNumber(1);
+					$GLOBALS["cuenta_grid"]->idsubcuenta->FldIsDetailKey = TRUE;
+					$GLOBALS["cuenta_grid"]->idsubcuenta->CurrentValue = $this->idsubcuenta->CurrentValue;
+					$GLOBALS["cuenta_grid"]->idsubcuenta->setSessionValue($GLOBALS["cuenta_grid"]->idsubcuenta->CurrentValue);
+				}
+			}
+		}
 	}
 
 	// Set up Breadcrumb
@@ -1083,6 +1169,14 @@ if (is_array($arwrk)) {
 	</div>
 <?php } ?>
 </div>
+<?php
+	if (in_array("cuenta", explode(",", $subcuenta->getCurrentDetailTable())) && $cuenta->DetailAdd) {
+?>
+<?php if ($subcuenta->getCurrentDetailTable() <> "") { ?>
+<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("cuenta", "TblCaption") ?></h4>
+<?php } ?>
+<?php include_once "cuentagrid.php" ?>
+<?php } ?>
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">
 <button class="btn btn-primary ewButton" name="btnAction" id="btnAction" type="submit"><?php echo $Language->Phrase("AddBtn") ?></button>

@@ -505,6 +505,7 @@ class cconfiguracion_view extends cconfiguracion {
 		$this->valor->setDbValue($rs->fields('valor'));
 		$this->descripcion->setDbValue($rs->fields('descripcion'));
 		$this->estado->setDbValue($rs->fields('estado'));
+		$this->idempresa->setDbValue($rs->fields('idempresa'));
 	}
 
 	// Load DbValue from recordset
@@ -516,6 +517,7 @@ class cconfiguracion_view extends cconfiguracion {
 		$this->valor->DbValue = $row['valor'];
 		$this->descripcion->DbValue = $row['descripcion'];
 		$this->estado->DbValue = $row['estado'];
+		$this->idempresa->DbValue = $row['idempresa'];
 	}
 
 	// Render row values based on field settings
@@ -540,6 +542,7 @@ class cconfiguracion_view extends cconfiguracion {
 		// valor
 		// descripcion
 		// estado
+		// idempresa
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -576,6 +579,10 @@ class cconfiguracion_view extends cconfiguracion {
 			}
 			$this->estado->ViewCustomAttributes = "";
 
+			// idempresa
+			$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
+			$this->idempresa->ViewCustomAttributes = "";
+
 			// idconfiguracion
 			$this->idconfiguracion->LinkCustomAttributes = "";
 			$this->idconfiguracion->HrefValue = "";
@@ -600,6 +607,11 @@ class cconfiguracion_view extends cconfiguracion {
 			$this->estado->LinkCustomAttributes = "";
 			$this->estado->HrefValue = "";
 			$this->estado->TooltipValue = "";
+
+			// idempresa
+			$this->idempresa->LinkCustomAttributes = "";
+			$this->idempresa->HrefValue = "";
+			$this->idempresa->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -826,6 +838,17 @@ $configuracion_view->ShowMessage();
 <span id="el_configuracion_estado" class="form-group">
 <span<?php echo $configuracion->estado->ViewAttributes() ?>>
 <?php echo $configuracion->estado->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($configuracion->idempresa->Visible) { // idempresa ?>
+	<tr id="r_idempresa">
+		<td><span id="elh_configuracion_idempresa"><?php echo $configuracion->idempresa->FldCaption() ?></span></td>
+		<td<?php echo $configuracion->idempresa->CellAttributes() ?>>
+<span id="el_configuracion_idempresa" class="form-group">
+<span<?php echo $configuracion->idempresa->ViewAttributes() ?>>
+<?php echo $configuracion->idempresa->ViewValue ?></span>
 </span>
 </td>
 	</tr>

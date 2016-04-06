@@ -397,6 +397,7 @@ class cconfiguracion_add extends cconfiguracion {
 		$this->valor->OldValue = $this->valor->CurrentValue;
 		$this->descripcion->CurrentValue = NULL;
 		$this->descripcion->OldValue = $this->descripcion->CurrentValue;
+		$this->idempresa->CurrentValue = 1;
 	}
 
 	// Load form values
@@ -413,6 +414,9 @@ class cconfiguracion_add extends cconfiguracion {
 		if (!$this->descripcion->FldIsDetailKey) {
 			$this->descripcion->setFormValue($objForm->GetValue("x_descripcion"));
 		}
+		if (!$this->idempresa->FldIsDetailKey) {
+			$this->idempresa->setFormValue($objForm->GetValue("x_idempresa"));
+		}
 	}
 
 	// Restore form values
@@ -422,6 +426,7 @@ class cconfiguracion_add extends cconfiguracion {
 		$this->codigo->CurrentValue = $this->codigo->FormValue;
 		$this->valor->CurrentValue = $this->valor->FormValue;
 		$this->descripcion->CurrentValue = $this->descripcion->FormValue;
+		$this->idempresa->CurrentValue = $this->idempresa->FormValue;
 	}
 
 	// Load row based on key values
@@ -458,6 +463,7 @@ class cconfiguracion_add extends cconfiguracion {
 		$this->valor->setDbValue($rs->fields('valor'));
 		$this->descripcion->setDbValue($rs->fields('descripcion'));
 		$this->estado->setDbValue($rs->fields('estado'));
+		$this->idempresa->setDbValue($rs->fields('idempresa'));
 	}
 
 	// Load DbValue from recordset
@@ -469,6 +475,7 @@ class cconfiguracion_add extends cconfiguracion {
 		$this->valor->DbValue = $row['valor'];
 		$this->descripcion->DbValue = $row['descripcion'];
 		$this->estado->DbValue = $row['estado'];
+		$this->idempresa->DbValue = $row['idempresa'];
 	}
 
 	// Load old record
@@ -509,6 +516,7 @@ class cconfiguracion_add extends cconfiguracion {
 		// valor
 		// descripcion
 		// estado
+		// idempresa
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -545,6 +553,10 @@ class cconfiguracion_add extends cconfiguracion {
 			}
 			$this->estado->ViewCustomAttributes = "";
 
+			// idempresa
+			$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
+			$this->idempresa->ViewCustomAttributes = "";
+
 			// codigo
 			$this->codigo->LinkCustomAttributes = "";
 			$this->codigo->HrefValue = "";
@@ -559,6 +571,11 @@ class cconfiguracion_add extends cconfiguracion {
 			$this->descripcion->LinkCustomAttributes = "";
 			$this->descripcion->HrefValue = "";
 			$this->descripcion->TooltipValue = "";
+
+			// idempresa
+			$this->idempresa->LinkCustomAttributes = "";
+			$this->idempresa->HrefValue = "";
+			$this->idempresa->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
 
 			// codigo
@@ -579,6 +596,12 @@ class cconfiguracion_add extends cconfiguracion {
 			$this->descripcion->EditValue = ew_HtmlEncode($this->descripcion->CurrentValue);
 			$this->descripcion->PlaceHolder = ew_RemoveHtml($this->descripcion->FldCaption());
 
+			// idempresa
+			$this->idempresa->EditAttrs["class"] = "form-control";
+			$this->idempresa->EditCustomAttributes = "";
+			$this->idempresa->EditValue = ew_HtmlEncode($this->idempresa->CurrentValue);
+			$this->idempresa->PlaceHolder = ew_RemoveHtml($this->idempresa->FldCaption());
+
 			// Edit refer script
 			// codigo
 
@@ -589,6 +612,9 @@ class cconfiguracion_add extends cconfiguracion {
 
 			// descripcion
 			$this->descripcion->HrefValue = "";
+
+			// idempresa
+			$this->idempresa->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
 			$this->RowType == EW_ROWTYPE_EDIT ||
@@ -611,6 +637,12 @@ class cconfiguracion_add extends cconfiguracion {
 		// Check if validation required
 		if (!EW_SERVER_VALIDATE)
 			return ($gsFormError == "");
+		if (!$this->idempresa->FldIsDetailKey && !is_null($this->idempresa->FormValue) && $this->idempresa->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->idempresa->FldCaption(), $this->idempresa->ReqErrMsg));
+		}
+		if (!ew_CheckInteger($this->idempresa->FormValue)) {
+			ew_AddMessage($gsFormError, $this->idempresa->FldErrMsg());
+		}
 
 		// Return validate result
 		$ValidateForm = ($gsFormError == "");
@@ -642,6 +674,9 @@ class cconfiguracion_add extends cconfiguracion {
 
 		// descripcion
 		$this->descripcion->SetDbValueDef($rsnew, $this->descripcion->CurrentValue, NULL, FALSE);
+
+		// idempresa
+		$this->idempresa->SetDbValueDef($rsnew, $this->idempresa->CurrentValue, 0, strval($this->idempresa->CurrentValue) == "");
 
 		// Call Row Inserting event
 		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
@@ -801,6 +836,12 @@ fconfiguracionadd.Validate = function() {
 	for (var i = startcnt; i <= rowcnt; i++) {
 		var infix = ($k[0]) ? String(i) : "";
 		$fobj.data("rowindex", infix);
+			elm = this.GetElements("x" + infix + "_idempresa");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $configuracion->idempresa->FldCaption(), $configuracion->idempresa->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_idempresa");
+			if (elm && !ew_CheckInteger(elm.value))
+				return this.OnError(elm, "<?php echo ew_JsEncode2($configuracion->idempresa->FldErrMsg()) ?>");
 
 			// Set up row object
 			ew_ElementsToRow(fobj);
@@ -888,6 +929,16 @@ $configuracion_add->ShowMessage();
 <input type="text" data-field="x_descripcion" name="x_descripcion" id="x_descripcion" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($configuracion->descripcion->PlaceHolder) ?>" value="<?php echo $configuracion->descripcion->EditValue ?>"<?php echo $configuracion->descripcion->EditAttributes() ?>>
 </span>
 <?php echo $configuracion->descripcion->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
+<?php if ($configuracion->idempresa->Visible) { // idempresa ?>
+	<div id="r_idempresa" class="form-group">
+		<label id="elh_configuracion_idempresa" for="x_idempresa" class="col-sm-2 control-label ewLabel"><?php echo $configuracion->idempresa->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $configuracion->idempresa->CellAttributes() ?>>
+<span id="el_configuracion_idempresa">
+<input type="text" data-field="x_idempresa" name="x_idempresa" id="x_idempresa" size="30" placeholder="<?php echo ew_HtmlEncode($configuracion->idempresa->PlaceHolder) ?>" value="<?php echo $configuracion->idempresa->EditValue ?>"<?php echo $configuracion->idempresa->EditAttributes() ?>>
+</span>
+<?php echo $configuracion->idempresa->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
 </div>
