@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0"?>
 <configuration date="2016/04/06" author="e.World Technology Ltd.">
-<project id="{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}" file="E:\wamp\www\conta\pmp\contable.pmp" name="contable" product="PHPMaker" version="11.0" datetime="2016/04/06 14:08:55" languagefolder="phplang" userlevel="">
+<project id="{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}" file="E:\wamp\www\conta\pmp\contable.pmp" name="contable" product="PHPMaker" version="11.0" datetime="2016/04/06 16:28:42" languagefolder="phplang" userlevel="">
 <table id="clase_cuenta" name="clase_cuenta" caption="Clase de Cuenta" userlevel="" priv="1"/>
 <table id="cuenta" name="cuenta" caption="Cuenta" userlevel="" priv="1"/>
 <table id="cuenta_mayor_auxiliar" name="cuenta_mayor_auxiliar" caption="Cuenta Mayor Auxiliar" userlevel="" priv="1"/>
@@ -19,6 +19,9 @@
 <table id="caja_chica" name="caja_chica" caption="Caja Chica" userlevel="" priv="1"/>
 <table id="empleado" name="empleado" caption="Empleado" userlevel="" priv="1"/>
 <table id="encargado" name="encargado" caption="Historial de Encargados" userlevel="" priv="1"/>
-<table id="caja_chica_detalle" name="caja_chica_detalle" caption="Detalle Caja Chica" userlevel="" priv="1"/>
 <table id="proveedor" name="proveedor" caption="Proveedor" userlevel="" priv="1"/>
+<table id="modulo" name="modulo" caption="Módulo" userlevel="" priv="1"/>
+<table id="tipo_documento" name="tipo_documento" caption="Tipo de Documento" userlevel="" priv="1"/>
+<table id="tipo_documento_modulo" name="tipo_documento_modulo" caption="Tipo de Documento por Módulo" userlevel="" priv="1"/>
+<table id="documento_caja_chica" name="documento_caja_chica" caption="Documento de Caja Chica" userlevel="" priv="1"/>
 </project></configuration>

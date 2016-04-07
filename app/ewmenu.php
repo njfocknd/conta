@@ -5,6 +5,7 @@
 // Generate all menu items
 $RootMenu->IsRoot = TRUE;
 $RootMenu->AddMenuItem(18, "mi_caja_chica", $Language->MenuPhrase("18", "MenuText"), "caja_chicalist.php", -1, "", TRUE, FALSE);
+$RootMenu->AddMenuItem(26, "mi_documento_caja_chica", $Language->MenuPhrase("26", "MenuText"), "documento_caja_chicalist.php?cmd=resetall", 18, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(11, "mci_Cate1logo", $Language->MenuPhrase("11", "MenuText"), "", -1, "", TRUE, FALSE, TRUE);
 $RootMenu->AddMenuItem(1, "mi_clase_cuenta", $Language->MenuPhrase("1", "MenuText"), "clase_cuentalist.php", 11, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(5, "mi_grupo_cuenta", $Language->MenuPhrase("5", "MenuText"), "grupo_cuentalist.php?cmd=resetall", 1, "", TRUE, FALSE);
@@ -18,6 +19,9 @@ $RootMenu->AddMenuItem(14, "mi_empresa", $Language->MenuPhrase("14", "MenuText")
 $RootMenu->AddMenuItem(15, "mi_sucursal", $Language->MenuPhrase("15", "MenuText"), "sucursallist.php?cmd=resetall", 14, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(16, "mi_configuracion", $Language->MenuPhrase("16", "MenuText"), "configuracionlist.php", 11, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(17, "mi_correlativo", $Language->MenuPhrase("17", "MenuText"), "correlativolist.php?cmd=resetall", 11, "", TRUE, FALSE);
+$RootMenu->AddMenuItem(23, "mi_modulo", $Language->MenuPhrase("23", "MenuText"), "modulolist.php", 11, "", TRUE, FALSE);
+$RootMenu->AddMenuItem(25, "mi_tipo_documento_modulo", $Language->MenuPhrase("25", "MenuText"), "tipo_documento_modulolist.php?cmd=resetall", 23, "", TRUE, FALSE);
+$RootMenu->AddMenuItem(24, "mi_tipo_documento", $Language->MenuPhrase("24", "MenuText"), "tipo_documentolist.php", 11, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(12, "mci_CRM", $Language->MenuPhrase("12", "MenuText"), "", -1, "", TRUE, FALSE, TRUE);
 $RootMenu->AddMenuItem(8, "mi_persona", $Language->MenuPhrase("8", "MenuText"), "personalist.php?cmd=resetall", 12, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(19, "mi_empleado", $Language->MenuPhrase("19", "MenuText"), "empleadolist.php?cmd=resetall", 8, "", TRUE, FALSE);

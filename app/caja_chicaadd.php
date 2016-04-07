@@ -8,7 +8,7 @@ $EW_RELATIVE_PATH = "";
 <?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "caja_chicainfo.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "encargadogridcls.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "caja_chica_detallegridcls.php" ?>
+<?php include_once $EW_RELATIVE_PATH . "documento_caja_chicagridcls.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
 <?php
 
@@ -252,10 +252,10 @@ class ccaja_chica_add extends ccaja_chica {
 				exit();
 			}
 
-			// Process auto fill for detail table 'caja_chica_detalle'
-			if (@$_POST["grid"] == "fcaja_chica_detallegrid") {
-				if (!isset($GLOBALS["caja_chica_detalle_grid"])) $GLOBALS["caja_chica_detalle_grid"] = new ccaja_chica_detalle_grid;
-				$GLOBALS["caja_chica_detalle_grid"]->Page_Init();
+			// Process auto fill for detail table 'documento_caja_chica'
+			if (@$_POST["grid"] == "fdocumento_caja_chicagrid") {
+				if (!isset($GLOBALS["documento_caja_chica_grid"])) $GLOBALS["documento_caja_chica_grid"] = new cdocumento_caja_chica_grid;
+				$GLOBALS["documento_caja_chica_grid"]->Page_Init();
 				$this->Page_Terminate();
 				exit();
 			}
@@ -834,9 +834,9 @@ class ccaja_chica_add extends ccaja_chica {
 			if (!isset($GLOBALS["encargado_grid"])) $GLOBALS["encargado_grid"] = new cencargado_grid(); // get detail page object
 			$GLOBALS["encargado_grid"]->ValidateGridForm();
 		}
-		if (in_array("caja_chica_detalle", $DetailTblVar) && $GLOBALS["caja_chica_detalle"]->DetailAdd) {
-			if (!isset($GLOBALS["caja_chica_detalle_grid"])) $GLOBALS["caja_chica_detalle_grid"] = new ccaja_chica_detalle_grid(); // get detail page object
-			$GLOBALS["caja_chica_detalle_grid"]->ValidateGridForm();
+		if (in_array("documento_caja_chica", $DetailTblVar) && $GLOBALS["documento_caja_chica"]->DetailAdd) {
+			if (!isset($GLOBALS["documento_caja_chica_grid"])) $GLOBALS["documento_caja_chica_grid"] = new cdocumento_caja_chica_grid(); // get detail page object
+			$GLOBALS["documento_caja_chica_grid"]->ValidateGridForm();
 		}
 
 		// Return validate result
@@ -915,12 +915,12 @@ class ccaja_chica_add extends ccaja_chica {
 				if (!$AddRow)
 					$GLOBALS["encargado"]->idreferencia->setSessionValue(""); // Clear master key if insert failed
 			}
-			if (in_array("caja_chica_detalle", $DetailTblVar) && $GLOBALS["caja_chica_detalle"]->DetailAdd) {
-				$GLOBALS["caja_chica_detalle"]->idcaja_chica->setSessionValue($this->idcaja_chica->CurrentValue); // Set master key
-				if (!isset($GLOBALS["caja_chica_detalle_grid"])) $GLOBALS["caja_chica_detalle_grid"] = new ccaja_chica_detalle_grid(); // Get detail page object
-				$AddRow = $GLOBALS["caja_chica_detalle_grid"]->GridInsert();
+			if (in_array("documento_caja_chica", $DetailTblVar) && $GLOBALS["documento_caja_chica"]->DetailAdd) {
+				$GLOBALS["documento_caja_chica"]->idcaja_chica->setSessionValue($this->idcaja_chica->CurrentValue); // Set master key
+				if (!isset($GLOBALS["documento_caja_chica_grid"])) $GLOBALS["documento_caja_chica_grid"] = new cdocumento_caja_chica_grid(); // Get detail page object
+				$AddRow = $GLOBALS["documento_caja_chica_grid"]->GridInsert();
 				if (!$AddRow)
-					$GLOBALS["caja_chica_detalle"]->idcaja_chica->setSessionValue(""); // Clear master key if insert failed
+					$GLOBALS["documento_caja_chica"]->idcaja_chica->setSessionValue(""); // Clear master key if insert failed
 			}
 		}
 
@@ -971,22 +971,22 @@ class ccaja_chica_add extends ccaja_chica {
 					$GLOBALS["encargado_grid"]->idreferencia->setSessionValue($GLOBALS["encargado_grid"]->idreferencia->CurrentValue);
 				}
 			}
-			if (in_array("caja_chica_detalle", $DetailTblVar)) {
-				if (!isset($GLOBALS["caja_chica_detalle_grid"]))
-					$GLOBALS["caja_chica_detalle_grid"] = new ccaja_chica_detalle_grid;
-				if ($GLOBALS["caja_chica_detalle_grid"]->DetailAdd) {
+			if (in_array("documento_caja_chica", $DetailTblVar)) {
+				if (!isset($GLOBALS["documento_caja_chica_grid"]))
+					$GLOBALS["documento_caja_chica_grid"] = new cdocumento_caja_chica_grid;
+				if ($GLOBALS["documento_caja_chica_grid"]->DetailAdd) {
 					if ($this->CopyRecord)
-						$GLOBALS["caja_chica_detalle_grid"]->CurrentMode = "copy";
+						$GLOBALS["documento_caja_chica_grid"]->CurrentMode = "copy";
 					else
-						$GLOBALS["caja_chica_detalle_grid"]->CurrentMode = "add";
-					$GLOBALS["caja_chica_detalle_grid"]->CurrentAction = "gridadd";
+						$GLOBALS["documento_caja_chica_grid"]->CurrentMode = "add";
+					$GLOBALS["documento_caja_chica_grid"]->CurrentAction = "gridadd";
 
 					// Save current master table to detail table
-					$GLOBALS["caja_chica_detalle_grid"]->setCurrentMasterTable($this->TableVar);
-					$GLOBALS["caja_chica_detalle_grid"]->setStartRecordNumber(1);
-					$GLOBALS["caja_chica_detalle_grid"]->idcaja_chica->FldIsDetailKey = TRUE;
-					$GLOBALS["caja_chica_detalle_grid"]->idcaja_chica->CurrentValue = $this->idcaja_chica->CurrentValue;
-					$GLOBALS["caja_chica_detalle_grid"]->idcaja_chica->setSessionValue($GLOBALS["caja_chica_detalle_grid"]->idcaja_chica->CurrentValue);
+					$GLOBALS["documento_caja_chica_grid"]->setCurrentMasterTable($this->TableVar);
+					$GLOBALS["documento_caja_chica_grid"]->setStartRecordNumber(1);
+					$GLOBALS["documento_caja_chica_grid"]->idcaja_chica->FldIsDetailKey = TRUE;
+					$GLOBALS["documento_caja_chica_grid"]->idcaja_chica->CurrentValue = $this->idcaja_chica->CurrentValue;
+					$GLOBALS["documento_caja_chica_grid"]->idcaja_chica->setSessionValue($GLOBALS["documento_caja_chica_grid"]->idcaja_chica->CurrentValue);
 				}
 			}
 		}
@@ -1329,12 +1329,12 @@ if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 <?php include_once "encargadogrid.php" ?>
 <?php } ?>
 <?php
-	if (in_array("caja_chica_detalle", explode(",", $caja_chica->getCurrentDetailTable())) && $caja_chica_detalle->DetailAdd) {
+	if (in_array("documento_caja_chica", explode(",", $caja_chica->getCurrentDetailTable())) && $documento_caja_chica->DetailAdd) {
 ?>
 <?php if ($caja_chica->getCurrentDetailTable() <> "") { ?>
-<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("caja_chica_detalle", "TblCaption") ?></h4>
+<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("documento_caja_chica", "TblCaption") ?></h4>
 <?php } ?>
-<?php include_once "caja_chica_detallegrid.php" ?>
+<?php include_once "documento_caja_chicagrid.php" ?>
 <?php } ?>
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">

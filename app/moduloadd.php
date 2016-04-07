@@ -6,8 +6,8 @@ $EW_RELATIVE_PATH = "";
 <?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "proveedorinfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "personainfo.php" ?>
+<?php include_once $EW_RELATIVE_PATH . "moduloinfo.php" ?>
+<?php include_once $EW_RELATIVE_PATH . "tipo_documento_modulogridcls.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
 <?php
 
@@ -15,9 +15,9 @@ $EW_RELATIVE_PATH = "";
 // Page class
 //
 
-$proveedor_add = NULL; // Initialize page object first
+$modulo_add = NULL; // Initialize page object first
 
-class cproveedor_add extends cproveedor {
+class cmodulo_add extends cmodulo {
 
 	// Page ID
 	var $PageID = 'add';
@@ -26,10 +26,10 @@ class cproveedor_add extends cproveedor {
 	var $ProjectID = "{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}";
 
 	// Table name
-	var $TableName = 'proveedor';
+	var $TableName = 'modulo';
 
 	// Page object name
-	var $PageObjName = 'proveedor_add';
+	var $PageObjName = 'modulo_add';
 
 	// Page name
 	function PageName() {
@@ -196,14 +196,11 @@ class cproveedor_add extends cproveedor {
 		// Parent constuctor
 		parent::__construct();
 
-		// Table object (proveedor)
-		if (!isset($GLOBALS["proveedor"]) || get_class($GLOBALS["proveedor"]) == "cproveedor") {
-			$GLOBALS["proveedor"] = &$this;
-			$GLOBALS["Table"] = &$GLOBALS["proveedor"];
+		// Table object (modulo)
+		if (!isset($GLOBALS["modulo"]) || get_class($GLOBALS["modulo"]) == "cmodulo") {
+			$GLOBALS["modulo"] = &$this;
+			$GLOBALS["Table"] = &$GLOBALS["modulo"];
 		}
-
-		// Table object (persona)
-		if (!isset($GLOBALS['persona'])) $GLOBALS['persona'] = new cpersona();
 
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
@@ -211,7 +208,7 @@ class cproveedor_add extends cproveedor {
 
 		// Table name (for backward compatibility)
 		if (!defined("EW_TABLE_NAME"))
-			define("EW_TABLE_NAME", 'proveedor', TRUE);
+			define("EW_TABLE_NAME", 'modulo', TRUE);
 
 		// Start timer
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
@@ -245,6 +242,14 @@ class cproveedor_add extends cproveedor {
 
 		// Process auto fill
 		if (@$_POST["ajax"] == "autofill") {
+
+			// Process auto fill for detail table 'tipo_documento_modulo'
+			if (@$_POST["grid"] == "ftipo_documento_modulogrid") {
+				if (!isset($GLOBALS["tipo_documento_modulo_grid"])) $GLOBALS["tipo_documento_modulo_grid"] = new ctipo_documento_modulo_grid;
+				$GLOBALS["tipo_documento_modulo_grid"]->Page_Init();
+				$this->Page_Terminate();
+				exit();
+			}
 			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
 			if ($results) {
 
@@ -274,13 +279,13 @@ class cproveedor_add extends cproveedor {
 		Page_Unloaded();
 
 		// Export
-		global $EW_EXPORT, $proveedor;
+		global $EW_EXPORT, $modulo;
 		if ($this->CustomExport <> "" && $this->CustomExport == $this->Export && array_key_exists($this->CustomExport, $EW_EXPORT)) {
 				$sContent = ob_get_contents();
 			if ($gsExportFile == "") $gsExportFile = $this->TableVar;
 			$class = $EW_EXPORT[$this->CustomExport];
 			if (class_exists($class)) {
-				$doc = new $class($proveedor);
+				$doc = new $class($modulo);
 				$doc->Text = $sContent;
 				if ($this->Export == "email")
 					echo $this->ExportEmail($doc->Text);
@@ -316,9 +321,6 @@ class cproveedor_add extends cproveedor {
 	function Page_Main() {
 		global $objForm, $Language, $gsFormError;
 
-		// Set up master/detail parameters
-		$this->SetUpMasterParms();
-
 		// Process form if post back
 		if (@$_POST["a_add"] <> "") {
 			$this->CurrentAction = $_POST["a_add"]; // Get form action
@@ -328,11 +330,11 @@ class cproveedor_add extends cproveedor {
 
 			// Load key values from QueryString
 			$this->CopyRecord = TRUE;
-			if (@$_GET["idproveedor"] != "") {
-				$this->idproveedor->setQueryStringValue($_GET["idproveedor"]);
-				$this->setKey("idproveedor", $this->idproveedor->CurrentValue); // Set up key
+			if (@$_GET["idmodulo"] != "") {
+				$this->idmodulo->setQueryStringValue($_GET["idmodulo"]);
+				$this->setKey("idmodulo", $this->idmodulo->CurrentValue); // Set up key
 			} else {
-				$this->setKey("idproveedor", ""); // Clear key
+				$this->setKey("idmodulo", ""); // Clear key
 				$this->CopyRecord = FALSE;
 			}
 			if ($this->CopyRecord) {
@@ -345,6 +347,9 @@ class cproveedor_add extends cproveedor {
 
 		// Set up Breadcrumb
 		$this->SetupBreadcrumb();
+
+		// Set up detail parameters
+		$this->SetUpDetailParms();
 
 		// Validate form if post back
 		if (@$_POST["a_add"] <> "") {
@@ -363,21 +368,30 @@ class cproveedor_add extends cproveedor {
 			case "C": // Copy an existing record
 				if (!$this->LoadRow()) { // Load record based on key
 					if ($this->getFailureMessage() == "") $this->setFailureMessage($Language->Phrase("NoRecord")); // No record found
-					$this->Page_Terminate("proveedorlist.php"); // No matching record, return to list
+					$this->Page_Terminate("modulolist.php"); // No matching record, return to list
 				}
+
+				// Set up detail parameters
+				$this->SetUpDetailParms();
 				break;
 			case "A": // Add new record
 				$this->SendEmail = TRUE; // Send email on add success
 				if ($this->AddRow($this->OldRecordset)) { // Add successful
 					if ($this->getSuccessMessage() == "")
 						$this->setSuccessMessage($Language->Phrase("AddSuccess")); // Set up success message
-					$sReturnUrl = $this->getReturnUrl();
-					if (ew_GetPageName($sReturnUrl) == "proveedorview.php")
+					if ($this->getCurrentDetailTable() <> "") // Master/detail add
+						$sReturnUrl = $this->GetDetailUrl();
+					else
+						$sReturnUrl = $this->getReturnUrl();
+					if (ew_GetPageName($sReturnUrl) == "moduloview.php")
 						$sReturnUrl = $this->GetViewUrl(); // View paging, return to view page with keyurl directly
 					$this->Page_Terminate($sReturnUrl); // Clean up and return
 				} else {
 					$this->EventCancelled = TRUE; // Event cancelled
 					$this->RestoreFormValues(); // Add failed, restore form values
+
+					// Set up detail parameters
+					$this->SetUpDetailParms();
 				}
 		}
 
@@ -398,15 +412,8 @@ class cproveedor_add extends cproveedor {
 
 	// Load default values
 	function LoadDefaultValues() {
-		$this->nit->CurrentValue = NULL;
-		$this->nit->OldValue = $this->nit->CurrentValue;
 		$this->nombre->CurrentValue = NULL;
 		$this->nombre->OldValue = $this->nombre->CurrentValue;
-		$this->direccion->CurrentValue = NULL;
-		$this->direccion->OldValue = $this->direccion->CurrentValue;
-		$this->idpersona->CurrentValue = 1;
-		$this->fecha_insercion->CurrentValue = NULL;
-		$this->fecha_insercion->OldValue = $this->fecha_insercion->CurrentValue;
 	}
 
 	// Load form values
@@ -414,21 +421,8 @@ class cproveedor_add extends cproveedor {
 
 		// Load from form
 		global $objForm;
-		if (!$this->nit->FldIsDetailKey) {
-			$this->nit->setFormValue($objForm->GetValue("x_nit"));
-		}
 		if (!$this->nombre->FldIsDetailKey) {
 			$this->nombre->setFormValue($objForm->GetValue("x_nombre"));
-		}
-		if (!$this->direccion->FldIsDetailKey) {
-			$this->direccion->setFormValue($objForm->GetValue("x_direccion"));
-		}
-		if (!$this->idpersona->FldIsDetailKey) {
-			$this->idpersona->setFormValue($objForm->GetValue("x_idpersona"));
-		}
-		if (!$this->fecha_insercion->FldIsDetailKey) {
-			$this->fecha_insercion->setFormValue($objForm->GetValue("x_fecha_insercion"));
-			$this->fecha_insercion->CurrentValue = ew_UnFormatDateTime($this->fecha_insercion->CurrentValue, 7);
 		}
 	}
 
@@ -436,12 +430,7 @@ class cproveedor_add extends cproveedor {
 	function RestoreFormValues() {
 		global $objForm;
 		$this->LoadOldRecord();
-		$this->nit->CurrentValue = $this->nit->FormValue;
 		$this->nombre->CurrentValue = $this->nombre->FormValue;
-		$this->direccion->CurrentValue = $this->direccion->FormValue;
-		$this->idpersona->CurrentValue = $this->idpersona->FormValue;
-		$this->fecha_insercion->CurrentValue = $this->fecha_insercion->FormValue;
-		$this->fecha_insercion->CurrentValue = ew_UnFormatDateTime($this->fecha_insercion->CurrentValue, 7);
 	}
 
 	// Load row based on key values
@@ -473,12 +462,8 @@ class cproveedor_add extends cproveedor {
 		// Call Row Selected event
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
-		$this->idproveedor->setDbValue($rs->fields('idproveedor'));
-		$this->codigo->setDbValue($rs->fields('codigo'));
-		$this->nit->setDbValue($rs->fields('nit'));
+		$this->idmodulo->setDbValue($rs->fields('idmodulo'));
 		$this->nombre->setDbValue($rs->fields('nombre'));
-		$this->direccion->setDbValue($rs->fields('direccion'));
-		$this->idpersona->setDbValue($rs->fields('idpersona'));
 		$this->estado->setDbValue($rs->fields('estado'));
 		$this->fecha_insercion->setDbValue($rs->fields('fecha_insercion'));
 	}
@@ -487,12 +472,8 @@ class cproveedor_add extends cproveedor {
 	function LoadDbValues(&$rs) {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
-		$this->idproveedor->DbValue = $row['idproveedor'];
-		$this->codigo->DbValue = $row['codigo'];
-		$this->nit->DbValue = $row['nit'];
+		$this->idmodulo->DbValue = $row['idmodulo'];
 		$this->nombre->DbValue = $row['nombre'];
-		$this->direccion->DbValue = $row['direccion'];
-		$this->idpersona->DbValue = $row['idpersona'];
 		$this->estado->DbValue = $row['estado'];
 		$this->fecha_insercion->DbValue = $row['fecha_insercion'];
 	}
@@ -502,8 +483,8 @@ class cproveedor_add extends cproveedor {
 
 		// Load key values from Session
 		$bValidKey = TRUE;
-		if (strval($this->getKey("idproveedor")) <> "")
-			$this->idproveedor->CurrentValue = $this->getKey("idproveedor"); // idproveedor
+		if (strval($this->getKey("idmodulo")) <> "")
+			$this->idmodulo->CurrentValue = $this->getKey("idmodulo"); // idmodulo
 		else
 			$bValidKey = FALSE;
 
@@ -530,60 +511,20 @@ class cproveedor_add extends cproveedor {
 		$this->Row_Rendering();
 
 		// Common render codes for all row types
-		// idproveedor
-		// codigo
-		// nit
+		// idmodulo
 		// nombre
-		// direccion
-		// idpersona
 		// estado
 		// fecha_insercion
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idproveedor
-			$this->idproveedor->ViewValue = $this->idproveedor->CurrentValue;
-			$this->idproveedor->ViewCustomAttributes = "";
-
-			// codigo
-			$this->codigo->ViewValue = $this->codigo->CurrentValue;
-			$this->codigo->ViewCustomAttributes = "";
-
-			// nit
-			$this->nit->ViewValue = $this->nit->CurrentValue;
-			$this->nit->ViewCustomAttributes = "";
+			// idmodulo
+			$this->idmodulo->ViewValue = $this->idmodulo->CurrentValue;
+			$this->idmodulo->ViewCustomAttributes = "";
 
 			// nombre
 			$this->nombre->ViewValue = $this->nombre->CurrentValue;
 			$this->nombre->ViewCustomAttributes = "";
-
-			// direccion
-			$this->direccion->ViewValue = $this->direccion->CurrentValue;
-			$this->direccion->ViewCustomAttributes = "";
-
-			// idpersona
-			if (strval($this->idpersona->CurrentValue) <> "") {
-				$sFilterWrk = "`idpersona`" . ew_SearchString("=", $this->idpersona->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idpersona`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `persona`";
-			$sWhereWrk = "";
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idpersona, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idpersona->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idpersona->ViewValue = $this->idpersona->CurrentValue;
-				}
-			} else {
-				$this->idpersona->ViewValue = NULL;
-			}
-			$this->idpersona->ViewCustomAttributes = "";
 
 			// estado
 			if (strval($this->estado->CurrentValue) <> "") {
@@ -607,37 +548,11 @@ class cproveedor_add extends cproveedor {
 			$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
 			$this->fecha_insercion->ViewCustomAttributes = "";
 
-			// nit
-			$this->nit->LinkCustomAttributes = "";
-			$this->nit->HrefValue = "";
-			$this->nit->TooltipValue = "";
-
 			// nombre
 			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
 			$this->nombre->TooltipValue = "";
-
-			// direccion
-			$this->direccion->LinkCustomAttributes = "";
-			$this->direccion->HrefValue = "";
-			$this->direccion->TooltipValue = "";
-
-			// idpersona
-			$this->idpersona->LinkCustomAttributes = "";
-			$this->idpersona->HrefValue = "";
-			$this->idpersona->TooltipValue = "";
-
-			// fecha_insercion
-			$this->fecha_insercion->LinkCustomAttributes = "";
-			$this->fecha_insercion->HrefValue = "";
-			$this->fecha_insercion->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
-
-			// nit
-			$this->nit->EditAttrs["class"] = "form-control";
-			$this->nit->EditCustomAttributes = "";
-			$this->nit->EditValue = ew_HtmlEncode($this->nit->CurrentValue);
-			$this->nit->PlaceHolder = ew_RemoveHtml($this->nit->FldCaption());
 
 			// nombre
 			$this->nombre->EditAttrs["class"] = "form-control";
@@ -645,83 +560,10 @@ class cproveedor_add extends cproveedor {
 			$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
 			$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
 
-			// direccion
-			$this->direccion->EditAttrs["class"] = "form-control";
-			$this->direccion->EditCustomAttributes = "";
-			$this->direccion->EditValue = ew_HtmlEncode($this->direccion->CurrentValue);
-			$this->direccion->PlaceHolder = ew_RemoveHtml($this->direccion->FldCaption());
-
-			// idpersona
-			$this->idpersona->EditAttrs["class"] = "form-control";
-			$this->idpersona->EditCustomAttributes = "";
-			if ($this->idpersona->getSessionValue() <> "") {
-				$this->idpersona->CurrentValue = $this->idpersona->getSessionValue();
-			if (strval($this->idpersona->CurrentValue) <> "") {
-				$sFilterWrk = "`idpersona`" . ew_SearchString("=", $this->idpersona->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idpersona`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `persona`";
-			$sWhereWrk = "";
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idpersona, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idpersona->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idpersona->ViewValue = $this->idpersona->CurrentValue;
-				}
-			} else {
-				$this->idpersona->ViewValue = NULL;
-			}
-			$this->idpersona->ViewCustomAttributes = "";
-			} else {
-			if (trim(strval($this->idpersona->CurrentValue)) == "") {
-				$sFilterWrk = "0=1";
-			} else {
-				$sFilterWrk = "`idpersona`" . ew_SearchString("=", $this->idpersona->CurrentValue, EW_DATATYPE_NUMBER);
-			}
-			$sSqlWrk = "SELECT `idpersona`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `persona`";
-			$sWhereWrk = "";
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idpersona, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
-			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
-			if ($rswrk) $rswrk->Close();
-			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
-			$this->idpersona->EditValue = $arwrk;
-			}
-
-			// fecha_insercion
-			$this->fecha_insercion->EditAttrs["class"] = "form-control";
-			$this->fecha_insercion->EditCustomAttributes = "";
-			$this->fecha_insercion->EditValue = ew_HtmlEncode(ew_FormatDateTime($this->fecha_insercion->CurrentValue, 7));
-			$this->fecha_insercion->PlaceHolder = ew_RemoveHtml($this->fecha_insercion->FldCaption());
-
 			// Edit refer script
-			// nit
-
-			$this->nit->HrefValue = "";
-
 			// nombre
+
 			$this->nombre->HrefValue = "";
-
-			// direccion
-			$this->direccion->HrefValue = "";
-
-			// idpersona
-			$this->idpersona->HrefValue = "";
-
-			// fecha_insercion
-			$this->fecha_insercion->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
 			$this->RowType == EW_ROWTYPE_EDIT ||
@@ -744,11 +586,12 @@ class cproveedor_add extends cproveedor {
 		// Check if validation required
 		if (!EW_SERVER_VALIDATE)
 			return ($gsFormError == "");
-		if (!$this->idpersona->FldIsDetailKey && !is_null($this->idpersona->FormValue) && $this->idpersona->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->idpersona->FldCaption(), $this->idpersona->ReqErrMsg));
-		}
-		if (!ew_CheckEuroDate($this->fecha_insercion->FormValue)) {
-			ew_AddMessage($gsFormError, $this->fecha_insercion->FldErrMsg());
+
+		// Validate detail grid
+		$DetailTblVar = explode(",", $this->getCurrentDetailTable());
+		if (in_array("tipo_documento_modulo", $DetailTblVar) && $GLOBALS["tipo_documento_modulo"]->DetailAdd) {
+			if (!isset($GLOBALS["tipo_documento_modulo_grid"])) $GLOBALS["tipo_documento_modulo_grid"] = new ctipo_documento_modulo_grid(); // get detail page object
+			$GLOBALS["tipo_documento_modulo_grid"]->ValidateGridForm();
 		}
 
 		// Return validate result
@@ -767,26 +610,18 @@ class cproveedor_add extends cproveedor {
 	function AddRow($rsold = NULL) {
 		global $conn, $Language, $Security;
 
+		// Begin transaction
+		if ($this->getCurrentDetailTable() <> "")
+			$conn->BeginTrans();
+
 		// Load db values from rsold
 		if ($rsold) {
 			$this->LoadDbValues($rsold);
 		}
 		$rsnew = array();
 
-		// nit
-		$this->nit->SetDbValueDef($rsnew, $this->nit->CurrentValue, NULL, FALSE);
-
 		// nombre
 		$this->nombre->SetDbValueDef($rsnew, $this->nombre->CurrentValue, NULL, FALSE);
-
-		// direccion
-		$this->direccion->SetDbValueDef($rsnew, $this->direccion->CurrentValue, NULL, FALSE);
-
-		// idpersona
-		$this->idpersona->SetDbValueDef($rsnew, $this->idpersona->CurrentValue, 0, strval($this->idpersona->CurrentValue) == "");
-
-		// fecha_insercion
-		$this->fecha_insercion->SetDbValueDef($rsnew, ew_UnFormatDateTime($this->fecha_insercion->CurrentValue, 7), NULL, FALSE);
 
 		// Call Row Inserting event
 		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
@@ -812,8 +647,29 @@ class cproveedor_add extends cproveedor {
 
 		// Get insert id if necessary
 		if ($AddRow) {
-			$this->idproveedor->setDbValue($conn->Insert_ID());
-			$rsnew['idproveedor'] = $this->idproveedor->DbValue;
+			$this->idmodulo->setDbValue($conn->Insert_ID());
+			$rsnew['idmodulo'] = $this->idmodulo->DbValue;
+		}
+
+		// Add detail records
+		if ($AddRow) {
+			$DetailTblVar = explode(",", $this->getCurrentDetailTable());
+			if (in_array("tipo_documento_modulo", $DetailTblVar) && $GLOBALS["tipo_documento_modulo"]->DetailAdd) {
+				$GLOBALS["tipo_documento_modulo"]->idmodulo->setSessionValue($this->idmodulo->CurrentValue); // Set master key
+				if (!isset($GLOBALS["tipo_documento_modulo_grid"])) $GLOBALS["tipo_documento_modulo_grid"] = new ctipo_documento_modulo_grid(); // Get detail page object
+				$AddRow = $GLOBALS["tipo_documento_modulo_grid"]->GridInsert();
+				if (!$AddRow)
+					$GLOBALS["tipo_documento_modulo"]->idmodulo->setSessionValue(""); // Clear master key if insert failed
+			}
+		}
+
+		// Commit/Rollback transaction
+		if ($this->getCurrentDetailTable() <> "") {
+			if ($AddRow) {
+				$conn->CommitTrans(); // Commit transaction
+			} else {
+				$conn->RollbackTrans(); // Rollback transaction
+			}
 		}
 		if ($AddRow) {
 
@@ -824,53 +680,44 @@ class cproveedor_add extends cproveedor {
 		return $AddRow;
 	}
 
-	// Set up master/detail based on QueryString
-	function SetUpMasterParms() {
-		$bValidMaster = FALSE;
+	// Set up detail parms based on QueryString
+	function SetUpDetailParms() {
 
 		// Get the keys for master table
-		if (isset($_GET[EW_TABLE_SHOW_MASTER])) {
-			$sMasterTblVar = $_GET[EW_TABLE_SHOW_MASTER];
-			if ($sMasterTblVar == "") {
-				$bValidMaster = TRUE;
-				$this->DbMasterFilter = "";
-				$this->DbDetailFilter = "";
-			}
-			if ($sMasterTblVar == "persona") {
-				$bValidMaster = TRUE;
-				if (@$_GET["fk_idpersona"] <> "") {
-					$GLOBALS["persona"]->idpersona->setQueryStringValue($_GET["fk_idpersona"]);
-					$this->idpersona->setQueryStringValue($GLOBALS["persona"]->idpersona->QueryStringValue);
-					$this->idpersona->setSessionValue($this->idpersona->QueryStringValue);
-					if (!is_numeric($GLOBALS["persona"]->idpersona->QueryStringValue)) $bValidMaster = FALSE;
-				} else {
-					$bValidMaster = FALSE;
+		if (isset($_GET[EW_TABLE_SHOW_DETAIL])) {
+			$sDetailTblVar = $_GET[EW_TABLE_SHOW_DETAIL];
+			$this->setCurrentDetailTable($sDetailTblVar);
+		} else {
+			$sDetailTblVar = $this->getCurrentDetailTable();
+		}
+		if ($sDetailTblVar <> "") {
+			$DetailTblVar = explode(",", $sDetailTblVar);
+			if (in_array("tipo_documento_modulo", $DetailTblVar)) {
+				if (!isset($GLOBALS["tipo_documento_modulo_grid"]))
+					$GLOBALS["tipo_documento_modulo_grid"] = new ctipo_documento_modulo_grid;
+				if ($GLOBALS["tipo_documento_modulo_grid"]->DetailAdd) {
+					if ($this->CopyRecord)
+						$GLOBALS["tipo_documento_modulo_grid"]->CurrentMode = "copy";
+					else
+						$GLOBALS["tipo_documento_modulo_grid"]->CurrentMode = "add";
+					$GLOBALS["tipo_documento_modulo_grid"]->CurrentAction = "gridadd";
+
+					// Save current master table to detail table
+					$GLOBALS["tipo_documento_modulo_grid"]->setCurrentMasterTable($this->TableVar);
+					$GLOBALS["tipo_documento_modulo_grid"]->setStartRecordNumber(1);
+					$GLOBALS["tipo_documento_modulo_grid"]->idmodulo->FldIsDetailKey = TRUE;
+					$GLOBALS["tipo_documento_modulo_grid"]->idmodulo->CurrentValue = $this->idmodulo->CurrentValue;
+					$GLOBALS["tipo_documento_modulo_grid"]->idmodulo->setSessionValue($GLOBALS["tipo_documento_modulo_grid"]->idmodulo->CurrentValue);
 				}
 			}
 		}
-		if ($bValidMaster) {
-
-			// Save current master table
-			$this->setCurrentMasterTable($sMasterTblVar);
-
-			// Reset start record counter (new master key)
-			$this->StartRec = 1;
-			$this->setStartRecordNumber($this->StartRec);
-
-			// Clear previous master key from Session
-			if ($sMasterTblVar <> "persona") {
-				if ($this->idpersona->QueryStringValue == "") $this->idpersona->setSessionValue("");
-			}
-		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
-		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 
 	// Set up Breadcrumb
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$Breadcrumb->Add("list", $this->TableVar, "proveedorlist.php", "", $this->TableVar, TRUE);
+		$Breadcrumb->Add("list", $this->TableVar, "modulolist.php", "", $this->TableVar, TRUE);
 		$PageId = ($this->CurrentAction == "C") ? "Copy" : "Add";
 		$Breadcrumb->Add("add", $PageId, ew_CurrentUrl());
 	}
@@ -947,33 +794,33 @@ class cproveedor_add extends cproveedor {
 <?php
 
 // Create page object
-if (!isset($proveedor_add)) $proveedor_add = new cproveedor_add();
+if (!isset($modulo_add)) $modulo_add = new cmodulo_add();
 
 // Page init
-$proveedor_add->Page_Init();
+$modulo_add->Page_Init();
 
 // Page main
-$proveedor_add->Page_Main();
+$modulo_add->Page_Main();
 
 // Global Page Rendering event (in userfn*.php)
 Page_Rendering();
 
 // Page Rendering event
-$proveedor_add->Page_Render();
+$modulo_add->Page_Render();
 ?>
 <?php include_once $EW_RELATIVE_PATH . "header.php" ?>
 <script type="text/javascript">
 
 // Page object
-var proveedor_add = new ew_Page("proveedor_add");
-proveedor_add.PageID = "add"; // Page ID
-var EW_PAGE_ID = proveedor_add.PageID; // For backward compatibility
+var modulo_add = new ew_Page("modulo_add");
+modulo_add.PageID = "add"; // Page ID
+var EW_PAGE_ID = modulo_add.PageID; // For backward compatibility
 
 // Form object
-var fproveedoradd = new ew_Form("fproveedoradd");
+var fmoduloadd = new ew_Form("fmoduloadd");
 
 // Validate form
-fproveedoradd.Validate = function() {
+fmoduloadd.Validate = function() {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
@@ -988,12 +835,6 @@ fproveedoradd.Validate = function() {
 	for (var i = startcnt; i <= rowcnt; i++) {
 		var infix = ($k[0]) ? String(i) : "";
 		$fobj.data("rowindex", infix);
-			elm = this.GetElements("x" + infix + "_idpersona");
-			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $proveedor->idpersona->FldCaption(), $proveedor->idpersona->ReqErrMsg)) ?>");
-			elm = this.GetElements("x" + infix + "_fecha_insercion");
-			if (elm && !ew_CheckEuroDate(elm.value))
-				return this.OnError(elm, "<?php echo ew_JsEncode2($proveedor->fecha_insercion->FldErrMsg()) ?>");
 
 			// Set up row object
 			ew_ElementsToRow(fobj);
@@ -1015,7 +856,7 @@ fproveedoradd.Validate = function() {
 }
 
 // Form_CustomValidate event
-fproveedoradd.Form_CustomValidate = 
+fmoduloadd.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
 
  	// Your custom validation code here, return false if invalid. 
@@ -1024,15 +865,14 @@ fproveedoradd.Form_CustomValidate =
 
 // Use JavaScript validation or not
 <?php if (EW_CLIENT_VALIDATE) { ?>
-fproveedoradd.ValidateRequired = true;
+fmoduloadd.ValidateRequired = true;
 <?php } else { ?>
-fproveedoradd.ValidateRequired = false; 
+fmoduloadd.ValidateRequired = false; 
 <?php } ?>
 
 // Dynamic selection lists
-fproveedoradd.Lists["x_idpersona"] = {"LinkField":"x_idpersona","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
-
 // Form object for search
+
 </script>
 <script type="text/javascript">
 
@@ -1043,102 +883,36 @@ fproveedoradd.Lists["x_idpersona"] = {"LinkField":"x_idpersona","Ajax":true,"Aut
 <?php echo $Language->SelectionForm(); ?>
 <div class="clearfix"></div>
 </div>
-<?php $proveedor_add->ShowPageHeader(); ?>
+<?php $modulo_add->ShowPageHeader(); ?>
 <?php
-$proveedor_add->ShowMessage();
+$modulo_add->ShowMessage();
 ?>
-<form name="fproveedoradd" id="fproveedoradd" class="form-horizontal ewForm ewAddForm" action="<?php echo ew_CurrentPage() ?>" method="post">
-<?php if ($proveedor_add->CheckToken) { ?>
-<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $proveedor_add->Token ?>">
+<form name="fmoduloadd" id="fmoduloadd" class="form-horizontal ewForm ewAddForm" action="<?php echo ew_CurrentPage() ?>" method="post">
+<?php if ($modulo_add->CheckToken) { ?>
+<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $modulo_add->Token ?>">
 <?php } ?>
-<input type="hidden" name="t" value="proveedor">
+<input type="hidden" name="t" value="modulo">
 <input type="hidden" name="a_add" id="a_add" value="A">
 <div>
-<?php if ($proveedor->nit->Visible) { // nit ?>
-	<div id="r_nit" class="form-group">
-		<label id="elh_proveedor_nit" for="x_nit" class="col-sm-2 control-label ewLabel"><?php echo $proveedor->nit->FldCaption() ?></label>
-		<div class="col-sm-10"><div<?php echo $proveedor->nit->CellAttributes() ?>>
-<span id="el_proveedor_nit">
-<input type="text" data-field="x_nit" name="x_nit" id="x_nit" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->nit->PlaceHolder) ?>" value="<?php echo $proveedor->nit->EditValue ?>"<?php echo $proveedor->nit->EditAttributes() ?>>
-</span>
-<?php echo $proveedor->nit->CustomMsg ?></div></div>
-	</div>
-<?php } ?>
-<?php if ($proveedor->nombre->Visible) { // nombre ?>
+<?php if ($modulo->nombre->Visible) { // nombre ?>
 	<div id="r_nombre" class="form-group">
-		<label id="elh_proveedor_nombre" for="x_nombre" class="col-sm-2 control-label ewLabel"><?php echo $proveedor->nombre->FldCaption() ?></label>
-		<div class="col-sm-10"><div<?php echo $proveedor->nombre->CellAttributes() ?>>
-<span id="el_proveedor_nombre">
-<input type="text" data-field="x_nombre" name="x_nombre" id="x_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->nombre->PlaceHolder) ?>" value="<?php echo $proveedor->nombre->EditValue ?>"<?php echo $proveedor->nombre->EditAttributes() ?>>
+		<label id="elh_modulo_nombre" for="x_nombre" class="col-sm-2 control-label ewLabel"><?php echo $modulo->nombre->FldCaption() ?></label>
+		<div class="col-sm-10"><div<?php echo $modulo->nombre->CellAttributes() ?>>
+<span id="el_modulo_nombre">
+<input type="text" data-field="x_nombre" name="x_nombre" id="x_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($modulo->nombre->PlaceHolder) ?>" value="<?php echo $modulo->nombre->EditValue ?>"<?php echo $modulo->nombre->EditAttributes() ?>>
 </span>
-<?php echo $proveedor->nombre->CustomMsg ?></div></div>
-	</div>
-<?php } ?>
-<?php if ($proveedor->direccion->Visible) { // direccion ?>
-	<div id="r_direccion" class="form-group">
-		<label id="elh_proveedor_direccion" for="x_direccion" class="col-sm-2 control-label ewLabel"><?php echo $proveedor->direccion->FldCaption() ?></label>
-		<div class="col-sm-10"><div<?php echo $proveedor->direccion->CellAttributes() ?>>
-<span id="el_proveedor_direccion">
-<input type="text" data-field="x_direccion" name="x_direccion" id="x_direccion" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->direccion->PlaceHolder) ?>" value="<?php echo $proveedor->direccion->EditValue ?>"<?php echo $proveedor->direccion->EditAttributes() ?>>
-</span>
-<?php echo $proveedor->direccion->CustomMsg ?></div></div>
-	</div>
-<?php } ?>
-<?php if ($proveedor->idpersona->Visible) { // idpersona ?>
-	<div id="r_idpersona" class="form-group">
-		<label id="elh_proveedor_idpersona" for="x_idpersona" class="col-sm-2 control-label ewLabel"><?php echo $proveedor->idpersona->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
-		<div class="col-sm-10"><div<?php echo $proveedor->idpersona->CellAttributes() ?>>
-<?php if ($proveedor->idpersona->getSessionValue() <> "") { ?>
-<span id="el_proveedor_idpersona">
-<span<?php echo $proveedor->idpersona->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $proveedor->idpersona->ViewValue ?></p></span>
-</span>
-<input type="hidden" id="x_idpersona" name="x_idpersona" value="<?php echo ew_HtmlEncode($proveedor->idpersona->CurrentValue) ?>">
-<?php } else { ?>
-<span id="el_proveedor_idpersona">
-<select data-field="x_idpersona" id="x_idpersona" name="x_idpersona"<?php echo $proveedor->idpersona->EditAttributes() ?>>
-<?php
-if (is_array($proveedor->idpersona->EditValue)) {
-	$arwrk = $proveedor->idpersona->EditValue;
-	$rowswrk = count($arwrk);
-	$emptywrk = TRUE;
-	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($proveedor->idpersona->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
-?>
-<option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
-</option>
-<?php
-	}
-}
-?>
-</select>
-<?php
-$sSqlWrk = "SELECT `idpersona`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `persona`";
-$sWhereWrk = "";
-
-// Call Lookup selecting
-$proveedor->Lookup_Selecting($proveedor->idpersona, $sWhereWrk);
-if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-?>
-<input type="hidden" name="s_x_idpersona" id="s_x_idpersona" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idpersona` = {filter_value}"); ?>&amp;t0=3">
-</span>
-<?php } ?>
-<?php echo $proveedor->idpersona->CustomMsg ?></div></div>
-	</div>
-<?php } ?>
-<?php if ($proveedor->fecha_insercion->Visible) { // fecha_insercion ?>
-	<div id="r_fecha_insercion" class="form-group">
-		<label id="elh_proveedor_fecha_insercion" for="x_fecha_insercion" class="col-sm-2 control-label ewLabel"><?php echo $proveedor->fecha_insercion->FldCaption() ?></label>
-		<div class="col-sm-10"><div<?php echo $proveedor->fecha_insercion->CellAttributes() ?>>
-<span id="el_proveedor_fecha_insercion">
-<input type="text" data-field="x_fecha_insercion" name="x_fecha_insercion" id="x_fecha_insercion" placeholder="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->PlaceHolder) ?>" value="<?php echo $proveedor->fecha_insercion->EditValue ?>"<?php echo $proveedor->fecha_insercion->EditAttributes() ?>>
-</span>
-<?php echo $proveedor->fecha_insercion->CustomMsg ?></div></div>
+<?php echo $modulo->nombre->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
 </div>
+<?php
+	if (in_array("tipo_documento_modulo", explode(",", $modulo->getCurrentDetailTable())) && $tipo_documento_modulo->DetailAdd) {
+?>
+<?php if ($modulo->getCurrentDetailTable() <> "") { ?>
+<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("tipo_documento_modulo", "TblCaption") ?></h4>
+<?php } ?>
+<?php include_once "tipo_documento_modulogrid.php" ?>
+<?php } ?>
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">
 <button class="btn btn-primary ewButton" name="btnAction" id="btnAction" type="submit"><?php echo $Language->Phrase("AddBtn") ?></button>
@@ -1146,10 +920,10 @@ if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 </div>
 </form>
 <script type="text/javascript">
-fproveedoradd.Init();
+fmoduloadd.Init();
 </script>
 <?php
-$proveedor_add->ShowPageFooter();
+$modulo_add->ShowPageFooter();
 if (EW_DEBUG_ENABLED)
 	echo ew_DebugMsg();
 ?>
@@ -1161,5 +935,5 @@ if (EW_DEBUG_ENABLED)
 </script>
 <?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
 <?php
-$proveedor_add->Page_Terminate();
+$modulo_add->Page_Terminate();
 ?>

@@ -4,6 +4,7 @@
 // Generate all menu items
 $RootMenu->IsRoot = TRUE;
 $RootMenu->AddMenuItem(18, "mmi_caja_chica", $Language->MenuPhrase("18", "MenuText"), "caja_chicalist.php", -1, "", TRUE, FALSE);
+$RootMenu->AddMenuItem(26, "mmi_documento_caja_chica", $Language->MenuPhrase("26", "MenuText"), "documento_caja_chicalist.php?cmd=resetall", 18, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(11, "mmci_Cate1logo", $Language->MenuPhrase("11", "MenuText"), "", -1, "", TRUE, FALSE, TRUE);
 $RootMenu->AddMenuItem(1, "mmi_clase_cuenta", $Language->MenuPhrase("1", "MenuText"), "clase_cuentalist.php", 11, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(5, "mmi_grupo_cuenta", $Language->MenuPhrase("5", "MenuText"), "grupo_cuentalist.php?cmd=resetall", 1, "", TRUE, FALSE);
@@ -17,6 +18,9 @@ $RootMenu->AddMenuItem(14, "mmi_empresa", $Language->MenuPhrase("14", "MenuText"
 $RootMenu->AddMenuItem(15, "mmi_sucursal", $Language->MenuPhrase("15", "MenuText"), "sucursallist.php?cmd=resetall", 14, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(16, "mmi_configuracion", $Language->MenuPhrase("16", "MenuText"), "configuracionlist.php", 11, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(17, "mmi_correlativo", $Language->MenuPhrase("17", "MenuText"), "correlativolist.php?cmd=resetall", 11, "", TRUE, FALSE);
+$RootMenu->AddMenuItem(23, "mmi_modulo", $Language->MenuPhrase("23", "MenuText"), "modulolist.php", 11, "", TRUE, FALSE);
+$RootMenu->AddMenuItem(25, "mmi_tipo_documento_modulo", $Language->MenuPhrase("25", "MenuText"), "tipo_documento_modulolist.php?cmd=resetall", 23, "", TRUE, FALSE);
+$RootMenu->AddMenuItem(24, "mmi_tipo_documento", $Language->MenuPhrase("24", "MenuText"), "tipo_documentolist.php", 11, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(12, "mmci_CRM", $Language->MenuPhrase("12", "MenuText"), "", -1, "", TRUE, FALSE, TRUE);
 $RootMenu->AddMenuItem(8, "mmi_persona", $Language->MenuPhrase("8", "MenuText"), "personalist.php?cmd=resetall", 12, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(19, "mmi_empleado", $Language->MenuPhrase("19", "MenuText"), "empleadolist.php?cmd=resetall", 8, "", TRUE, FALSE);

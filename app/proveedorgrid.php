@@ -52,6 +52,9 @@ fproveedorgrid.Validate = function() {
 			elm = this.GetElements("x" + infix + "_estado");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $proveedor->estado->FldCaption(), $proveedor->estado->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_fecha_insercion");
+			if (elm && !ew_CheckEuroDate(elm.value))
+				return this.OnError(elm, "<?php echo ew_JsEncode2($proveedor->fecha_insercion->FldErrMsg()) ?>");
 
 			// Set up row object
 			ew_ElementsToRow(fobj);
@@ -73,6 +76,7 @@ fproveedorgrid.EmptyRow = function(infix) {
 	if (ew_ValueChanged(fobj, infix, "direccion", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "idpersona", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "estado", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "fecha_insercion", false)) return false;
 	return true;
 }
 
@@ -211,6 +215,15 @@ $proveedor_grid->ListOptions->Render("header", "left");
 	<?php } else { ?>
 		<th data-name="estado"><div><div id="elh_proveedor_estado" class="proveedor_estado">
 			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $proveedor->estado->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($proveedor->estado->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($proveedor->estado->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
+<?php if ($proveedor->fecha_insercion->Visible) { // fecha_insercion ?>
+	<?php if ($proveedor->SortUrl($proveedor->fecha_insercion) == "") { ?>
+		<th data-name="fecha_insercion"><div id="elh_proveedor_fecha_insercion" class="proveedor_fecha_insercion"><div class="ewTableHeaderCaption"><?php echo $proveedor->fecha_insercion->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="fecha_insercion"><div><div id="elh_proveedor_fecha_insercion" class="proveedor_fecha_insercion">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $proveedor->fecha_insercion->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($proveedor->fecha_insercion->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($proveedor->fecha_insercion->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -568,6 +581,27 @@ if (@$emptywrk) $proveedor->estado->OldValue = "";
 <?php } ?>
 </td>
 	<?php } ?>
+	<?php if ($proveedor->fecha_insercion->Visible) { // fecha_insercion ?>
+		<td data-name="fecha_insercion"<?php echo $proveedor->fecha_insercion->CellAttributes() ?>>
+<?php if ($proveedor->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_fecha_insercion" class="form-group proveedor_fecha_insercion">
+<input type="text" data-field="x_fecha_insercion" name="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" placeholder="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->PlaceHolder) ?>" value="<?php echo $proveedor->fecha_insercion->EditValue ?>"<?php echo $proveedor->fecha_insercion->EditAttributes() ?>>
+</span>
+<input type="hidden" data-field="x_fecha_insercion" name="o<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="o<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" value="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->OldValue) ?>">
+<?php } ?>
+<?php if ($proveedor->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_fecha_insercion" class="form-group proveedor_fecha_insercion">
+<input type="text" data-field="x_fecha_insercion" name="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" placeholder="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->PlaceHolder) ?>" value="<?php echo $proveedor->fecha_insercion->EditValue ?>"<?php echo $proveedor->fecha_insercion->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($proveedor->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span<?php echo $proveedor->fecha_insercion->ViewAttributes() ?>>
+<?php echo $proveedor->fecha_insercion->ListViewValue() ?></span>
+<input type="hidden" data-field="x_fecha_insercion" name="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" value="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->FormValue) ?>">
+<input type="hidden" data-field="x_fecha_insercion" name="o<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="o<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" value="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->OldValue) ?>">
+<?php } ?>
+</td>
+	<?php } ?>
 <?php
 
 // Render list options (body, right)
@@ -760,6 +794,22 @@ if (@$emptywrk) $proveedor->estado->OldValue = "";
 <input type="hidden" data-field="x_estado" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado" value="<?php echo ew_HtmlEncode($proveedor->estado->FormValue) ?>">
 <?php } ?>
 <input type="hidden" data-field="x_estado" name="o<?php echo $proveedor_grid->RowIndex ?>_estado" id="o<?php echo $proveedor_grid->RowIndex ?>_estado" value="<?php echo ew_HtmlEncode($proveedor->estado->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($proveedor->fecha_insercion->Visible) { // fecha_insercion ?>
+		<td>
+<?php if ($proveedor->CurrentAction <> "F") { ?>
+<span id="el$rowindex$_proveedor_fecha_insercion" class="form-group proveedor_fecha_insercion">
+<input type="text" data-field="x_fecha_insercion" name="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" placeholder="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->PlaceHolder) ?>" value="<?php echo $proveedor->fecha_insercion->EditValue ?>"<?php echo $proveedor->fecha_insercion->EditAttributes() ?>>
+</span>
+<?php } else { ?>
+<span id="el$rowindex$_proveedor_fecha_insercion" class="form-group proveedor_fecha_insercion">
+<span<?php echo $proveedor->fecha_insercion->ViewAttributes() ?>>
+<p class="form-control-static"><?php echo $proveedor->fecha_insercion->ViewValue ?></p></span>
+</span>
+<input type="hidden" data-field="x_fecha_insercion" name="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" value="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->FormValue) ?>">
+<?php } ?>
+<input type="hidden" data-field="x_fecha_insercion" name="o<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="o<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" value="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->OldValue) ?>">
 </td>
 	<?php } ?>
 <?php

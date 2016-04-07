@@ -6,8 +6,8 @@ $EW_RELATIVE_PATH = "";
 <?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "proveedorinfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "personainfo.php" ?>
+<?php include_once $EW_RELATIVE_PATH . "tipo_documentoinfo.php" ?>
+<?php include_once $EW_RELATIVE_PATH . "tipo_documento_modulogridcls.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
 <?php
 
@@ -15,9 +15,9 @@ $EW_RELATIVE_PATH = "";
 // Page class
 //
 
-$proveedor_view = NULL; // Initialize page object first
+$tipo_documento_view = NULL; // Initialize page object first
 
-class cproveedor_view extends cproveedor {
+class ctipo_documento_view extends ctipo_documento {
 
 	// Page ID
 	var $PageID = 'view';
@@ -26,10 +26,10 @@ class cproveedor_view extends cproveedor {
 	var $ProjectID = "{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}";
 
 	// Table name
-	var $TableName = 'proveedor';
+	var $TableName = 'tipo_documento';
 
 	// Page object name
-	var $PageObjName = 'proveedor_view';
+	var $PageObjName = 'tipo_documento_view';
 
 	// Page name
 	function PageName() {
@@ -228,15 +228,15 @@ class cproveedor_view extends cproveedor {
 		// Parent constuctor
 		parent::__construct();
 
-		// Table object (proveedor)
-		if (!isset($GLOBALS["proveedor"]) || get_class($GLOBALS["proveedor"]) == "cproveedor") {
-			$GLOBALS["proveedor"] = &$this;
-			$GLOBALS["Table"] = &$GLOBALS["proveedor"];
+		// Table object (tipo_documento)
+		if (!isset($GLOBALS["tipo_documento"]) || get_class($GLOBALS["tipo_documento"]) == "ctipo_documento") {
+			$GLOBALS["tipo_documento"] = &$this;
+			$GLOBALS["Table"] = &$GLOBALS["tipo_documento"];
 		}
 		$KeyUrl = "";
-		if (@$_GET["idproveedor"] <> "") {
-			$this->RecKey["idproveedor"] = $_GET["idproveedor"];
-			$KeyUrl .= "&amp;idproveedor=" . urlencode($this->RecKey["idproveedor"]);
+		if (@$_GET["idtipo_documento"] <> "") {
+			$this->RecKey["idtipo_documento"] = $_GET["idtipo_documento"];
+			$KeyUrl .= "&amp;idtipo_documento=" . urlencode($this->RecKey["idtipo_documento"]);
 		}
 		$this->ExportPrintUrl = $this->PageUrl() . "export=print" . $KeyUrl;
 		$this->ExportHtmlUrl = $this->PageUrl() . "export=html" . $KeyUrl;
@@ -246,16 +246,13 @@ class cproveedor_view extends cproveedor {
 		$this->ExportCsvUrl = $this->PageUrl() . "export=csv" . $KeyUrl;
 		$this->ExportPdfUrl = $this->PageUrl() . "export=pdf" . $KeyUrl;
 
-		// Table object (persona)
-		if (!isset($GLOBALS['persona'])) $GLOBALS['persona'] = new cpersona();
-
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'view', TRUE);
 
 		// Table name (for backward compatibility)
 		if (!defined("EW_TABLE_NAME"))
-			define("EW_TABLE_NAME", 'proveedor', TRUE);
+			define("EW_TABLE_NAME", 'tipo_documento', TRUE);
 
 		// Start timer
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
@@ -283,7 +280,7 @@ class cproveedor_view extends cproveedor {
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
-		$this->idproveedor->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
+		$this->idtipo_documento->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 
 		// Global Page Loading event (in userfn*.php)
 		Page_Loading();
@@ -300,6 +297,14 @@ class cproveedor_view extends cproveedor {
 
 		// Process auto fill
 		if (@$_POST["ajax"] == "autofill") {
+
+			// Process auto fill for detail table 'tipo_documento_modulo'
+			if (@$_POST["grid"] == "ftipo_documento_modulogrid") {
+				if (!isset($GLOBALS["tipo_documento_modulo_grid"])) $GLOBALS["tipo_documento_modulo_grid"] = new ctipo_documento_modulo_grid;
+				$GLOBALS["tipo_documento_modulo_grid"]->Page_Init();
+				$this->Page_Terminate();
+				exit();
+			}
 			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
 			if ($results) {
 
@@ -329,13 +334,13 @@ class cproveedor_view extends cproveedor {
 		Page_Unloaded();
 
 		// Export
-		global $EW_EXPORT, $proveedor;
+		global $EW_EXPORT, $tipo_documento;
 		if ($this->CustomExport <> "" && $this->CustomExport == $this->Export && array_key_exists($this->CustomExport, $EW_EXPORT)) {
 				$sContent = ob_get_contents();
 			if ($gsExportFile == "") $gsExportFile = $this->TableVar;
 			$class = $EW_EXPORT[$this->CustomExport];
 			if (class_exists($class)) {
-				$doc = new $class($proveedor);
+				$doc = new $class($tipo_documento);
 				$doc->Text = $sContent;
 				if ($this->Export == "email")
 					echo $this->ExportEmail($doc->Text);
@@ -379,18 +384,15 @@ class cproveedor_view extends cproveedor {
 		$sReturnUrl = "";
 		$bMatchRecord = FALSE;
 
-		// Set up master/detail parameters
-		$this->SetUpMasterParms();
-
 		// Set up Breadcrumb
 		if ($this->Export == "")
 			$this->SetupBreadcrumb();
 		if ($this->IsPageRequest()) { // Validate request
-			if (@$_GET["idproveedor"] <> "") {
-				$this->idproveedor->setQueryStringValue($_GET["idproveedor"]);
-				$this->RecKey["idproveedor"] = $this->idproveedor->QueryStringValue;
+			if (@$_GET["idtipo_documento"] <> "") {
+				$this->idtipo_documento->setQueryStringValue($_GET["idtipo_documento"]);
+				$this->RecKey["idtipo_documento"] = $this->idtipo_documento->QueryStringValue;
 			} else {
-				$sReturnUrl = "proveedorlist.php"; // Return to list
+				$sReturnUrl = "tipo_documentolist.php"; // Return to list
 			}
 
 			// Get action
@@ -400,11 +402,11 @@ class cproveedor_view extends cproveedor {
 					if (!$this->LoadRow()) { // Load record based on key
 						if ($this->getSuccessMessage() == "" && $this->getFailureMessage() == "")
 							$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record message
-						$sReturnUrl = "proveedorlist.php"; // No matching record, return to list
+						$sReturnUrl = "tipo_documentolist.php"; // No matching record, return to list
 					}
 			}
 		} else {
-			$sReturnUrl = "proveedorlist.php"; // Not page request, return to list
+			$sReturnUrl = "tipo_documentolist.php"; // Not page request, return to list
 		}
 		if ($sReturnUrl <> "")
 			$this->Page_Terminate($sReturnUrl);
@@ -413,6 +415,9 @@ class cproveedor_view extends cproveedor {
 		$this->RowType = EW_ROWTYPE_VIEW;
 		$this->ResetAttrs();
 		$this->RenderRow();
+
+		// Set up detail parameters
+		$this->SetUpDetailParms();
 	}
 
 	// Set up other options
@@ -430,6 +435,85 @@ class cproveedor_view extends cproveedor {
 		$item = &$option->Add("edit");
 		$item->Body = "<a class=\"ewAction ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("ViewPageEditLink") . "</a>";
 		$item->Visible = ($this->EditUrl <> "");
+
+		// Show detail edit/copy
+		if ($this->getCurrentDetailTable() <> "") {
+
+			// Detail Edit
+			$item = &$option->Add("detailedit");
+			$item->Body = "<a class=\"ewAction ewDetailEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=" . $this->getCurrentDetailTable())) . "\">" . $Language->Phrase("MasterDetailEditLink") . "</a>";
+			$item->Visible = (TRUE);
+		}
+		$option = &$options["detail"];
+		$DetailTableLink = "";
+		$DetailViewTblVar = "";
+		$DetailCopyTblVar = "";
+		$DetailEditTblVar = "";
+
+		// "detail_tipo_documento_modulo"
+		$item = &$option->Add("detail_tipo_documento_modulo");
+		$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("tipo_documento_modulo", "TblCaption");
+		$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("tipo_documento_modulolist.php?" . EW_TABLE_SHOW_MASTER . "=tipo_documento&fk_idtipo_documento=" . strval($this->idtipo_documento->CurrentValue) . "") . "\">" . $body . "</a>";
+		$links = "";
+		if ($GLOBALS["tipo_documento_modulo_grid"] && $GLOBALS["tipo_documento_modulo_grid"]->DetailView) {
+			$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=tipo_documento_modulo")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+			if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
+			$DetailViewTblVar .= "tipo_documento_modulo";
+		}
+		if ($GLOBALS["tipo_documento_modulo_grid"] && $GLOBALS["tipo_documento_modulo_grid"]->DetailEdit) {
+			$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=tipo_documento_modulo")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+			if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
+			$DetailEditTblVar .= "tipo_documento_modulo";
+		}
+		if ($links <> "") {
+			$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
+			$body .= "<ul class=\"dropdown-menu\">". $links . "</ul>";
+		}
+		$body = "<div class=\"btn-group\">" . $body . "</div>";
+		$item->Body = $body;
+		$item->Visible = TRUE;
+		if ($item->Visible) {
+			if ($DetailTableLink <> "") $DetailTableLink .= ",";
+			$DetailTableLink .= "tipo_documento_modulo";
+		}
+		if ($this->ShowMultipleDetails) $item->Visible = FALSE;
+
+		// Multiple details
+		if ($this->ShowMultipleDetails) {
+			$body = $Language->Phrase("MultipleMasterDetails");
+			$body = "<div class=\"btn-group\">";
+			$links = "";
+			if ($DetailViewTblVar <> "") {
+				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailViewTblVar)) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+			}
+			if ($DetailEditTblVar <> "") {
+				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailEditTblVar)) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+			}
+			if ($DetailCopyTblVar <> "") {
+				$links .= "<li><a class=\"ewRowLink ewDetailCopy\" data-action=\"add\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->GetCopyUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailCopyTblVar)) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailCopyLink")) . "</a></li>";
+			}
+			if ($links <> "") {
+				$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewMasterDetail\" title=\"" . ew_HtmlTitle($Language->Phrase("MultipleMasterDetails")) . "\" data-toggle=\"dropdown\">" . $Language->Phrase("MultipleMasterDetails") . "<b class=\"caret\"></b></button>";
+				$body .= "<ul class=\"dropdown-menu ewMenu\">". $links . "</ul>";
+			}
+			$body .= "</div>";
+
+			// Multiple details
+			$oListOpt = &$option->Add("details");
+			$oListOpt->Body = $body;
+		}
+
+		// Set up detail default
+		$option = &$options["detail"];
+		$options["detail"]->DropDownButtonPhrase = $Language->Phrase("ButtonDetails");
+		$option->UseImageAndText = TRUE;
+		$ar = explode(",", $DetailTableLink);
+		$cnt = count($ar);
+		$option->UseDropDownButton = ($cnt > 1);
+		$option->UseButtonGroup = TRUE;
+		$item = &$option->Add($option->GroupOptionName);
+		$item->Body = "";
+		$item->Visible = FALSE;
 
 		// Set up action default
 		$option = &$options["action"];
@@ -507,12 +591,8 @@ class cproveedor_view extends cproveedor {
 		// Call Row Selected event
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
-		$this->idproveedor->setDbValue($rs->fields('idproveedor'));
-		$this->codigo->setDbValue($rs->fields('codigo'));
-		$this->nit->setDbValue($rs->fields('nit'));
+		$this->idtipo_documento->setDbValue($rs->fields('idtipo_documento'));
 		$this->nombre->setDbValue($rs->fields('nombre'));
-		$this->direccion->setDbValue($rs->fields('direccion'));
-		$this->idpersona->setDbValue($rs->fields('idpersona'));
 		$this->estado->setDbValue($rs->fields('estado'));
 		$this->fecha_insercion->setDbValue($rs->fields('fecha_insercion'));
 	}
@@ -521,12 +601,8 @@ class cproveedor_view extends cproveedor {
 	function LoadDbValues(&$rs) {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
-		$this->idproveedor->DbValue = $row['idproveedor'];
-		$this->codigo->DbValue = $row['codigo'];
-		$this->nit->DbValue = $row['nit'];
+		$this->idtipo_documento->DbValue = $row['idtipo_documento'];
 		$this->nombre->DbValue = $row['nombre'];
-		$this->direccion->DbValue = $row['direccion'];
-		$this->idpersona->DbValue = $row['idpersona'];
 		$this->estado->DbValue = $row['estado'];
 		$this->fecha_insercion->DbValue = $row['fecha_insercion'];
 	}
@@ -548,60 +624,20 @@ class cproveedor_view extends cproveedor {
 		$this->Row_Rendering();
 
 		// Common render codes for all row types
-		// idproveedor
-		// codigo
-		// nit
+		// idtipo_documento
 		// nombre
-		// direccion
-		// idpersona
 		// estado
 		// fecha_insercion
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idproveedor
-			$this->idproveedor->ViewValue = $this->idproveedor->CurrentValue;
-			$this->idproveedor->ViewCustomAttributes = "";
-
-			// codigo
-			$this->codigo->ViewValue = $this->codigo->CurrentValue;
-			$this->codigo->ViewCustomAttributes = "";
-
-			// nit
-			$this->nit->ViewValue = $this->nit->CurrentValue;
-			$this->nit->ViewCustomAttributes = "";
+			// idtipo_documento
+			$this->idtipo_documento->ViewValue = $this->idtipo_documento->CurrentValue;
+			$this->idtipo_documento->ViewCustomAttributes = "";
 
 			// nombre
 			$this->nombre->ViewValue = $this->nombre->CurrentValue;
 			$this->nombre->ViewCustomAttributes = "";
-
-			// direccion
-			$this->direccion->ViewValue = $this->direccion->CurrentValue;
-			$this->direccion->ViewCustomAttributes = "";
-
-			// idpersona
-			if (strval($this->idpersona->CurrentValue) <> "") {
-				$sFilterWrk = "`idpersona`" . ew_SearchString("=", $this->idpersona->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idpersona`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `persona`";
-			$sWhereWrk = "";
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idpersona, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idpersona->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idpersona->ViewValue = $this->idpersona->CurrentValue;
-				}
-			} else {
-				$this->idpersona->ViewValue = NULL;
-			}
-			$this->idpersona->ViewCustomAttributes = "";
 
 			// estado
 			if (strval($this->estado->CurrentValue) <> "") {
@@ -625,35 +661,15 @@ class cproveedor_view extends cproveedor {
 			$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
 			$this->fecha_insercion->ViewCustomAttributes = "";
 
-			// idproveedor
-			$this->idproveedor->LinkCustomAttributes = "";
-			$this->idproveedor->HrefValue = "";
-			$this->idproveedor->TooltipValue = "";
-
-			// codigo
-			$this->codigo->LinkCustomAttributes = "";
-			$this->codigo->HrefValue = "";
-			$this->codigo->TooltipValue = "";
-
-			// nit
-			$this->nit->LinkCustomAttributes = "";
-			$this->nit->HrefValue = "";
-			$this->nit->TooltipValue = "";
+			// idtipo_documento
+			$this->idtipo_documento->LinkCustomAttributes = "";
+			$this->idtipo_documento->HrefValue = "";
+			$this->idtipo_documento->TooltipValue = "";
 
 			// nombre
 			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
 			$this->nombre->TooltipValue = "";
-
-			// direccion
-			$this->direccion->LinkCustomAttributes = "";
-			$this->direccion->HrefValue = "";
-			$this->direccion->TooltipValue = "";
-
-			// idpersona
-			$this->idpersona->LinkCustomAttributes = "";
-			$this->idpersona->HrefValue = "";
-			$this->idpersona->TooltipValue = "";
 
 			// estado
 			$this->estado->LinkCustomAttributes = "";
@@ -671,54 +687,40 @@ class cproveedor_view extends cproveedor {
 			$this->Row_Rendered();
 	}
 
-	// Set up master/detail based on QueryString
-	function SetUpMasterParms() {
-		$bValidMaster = FALSE;
+	// Set up detail parms based on QueryString
+	function SetUpDetailParms() {
 
 		// Get the keys for master table
-		if (isset($_GET[EW_TABLE_SHOW_MASTER])) {
-			$sMasterTblVar = $_GET[EW_TABLE_SHOW_MASTER];
-			if ($sMasterTblVar == "") {
-				$bValidMaster = TRUE;
-				$this->DbMasterFilter = "";
-				$this->DbDetailFilter = "";
-			}
-			if ($sMasterTblVar == "persona") {
-				$bValidMaster = TRUE;
-				if (@$_GET["fk_idpersona"] <> "") {
-					$GLOBALS["persona"]->idpersona->setQueryStringValue($_GET["fk_idpersona"]);
-					$this->idpersona->setQueryStringValue($GLOBALS["persona"]->idpersona->QueryStringValue);
-					$this->idpersona->setSessionValue($this->idpersona->QueryStringValue);
-					if (!is_numeric($GLOBALS["persona"]->idpersona->QueryStringValue)) $bValidMaster = FALSE;
-				} else {
-					$bValidMaster = FALSE;
+		if (isset($_GET[EW_TABLE_SHOW_DETAIL])) {
+			$sDetailTblVar = $_GET[EW_TABLE_SHOW_DETAIL];
+			$this->setCurrentDetailTable($sDetailTblVar);
+		} else {
+			$sDetailTblVar = $this->getCurrentDetailTable();
+		}
+		if ($sDetailTblVar <> "") {
+			$DetailTblVar = explode(",", $sDetailTblVar);
+			if (in_array("tipo_documento_modulo", $DetailTblVar)) {
+				if (!isset($GLOBALS["tipo_documento_modulo_grid"]))
+					$GLOBALS["tipo_documento_modulo_grid"] = new ctipo_documento_modulo_grid;
+				if ($GLOBALS["tipo_documento_modulo_grid"]->DetailView) {
+					$GLOBALS["tipo_documento_modulo_grid"]->CurrentMode = "view";
+
+					// Save current master table to detail table
+					$GLOBALS["tipo_documento_modulo_grid"]->setCurrentMasterTable($this->TableVar);
+					$GLOBALS["tipo_documento_modulo_grid"]->setStartRecordNumber(1);
+					$GLOBALS["tipo_documento_modulo_grid"]->idtipo_documento->FldIsDetailKey = TRUE;
+					$GLOBALS["tipo_documento_modulo_grid"]->idtipo_documento->CurrentValue = $this->idtipo_documento->CurrentValue;
+					$GLOBALS["tipo_documento_modulo_grid"]->idtipo_documento->setSessionValue($GLOBALS["tipo_documento_modulo_grid"]->idtipo_documento->CurrentValue);
 				}
 			}
 		}
-		if ($bValidMaster) {
-
-			// Save current master table
-			$this->setCurrentMasterTable($sMasterTblVar);
-			$this->setSessionWhere($this->GetDetailFilter());
-
-			// Reset start record counter (new master key)
-			$this->StartRec = 1;
-			$this->setStartRecordNumber($this->StartRec);
-
-			// Clear previous master key from Session
-			if ($sMasterTblVar <> "persona") {
-				if ($this->idpersona->QueryStringValue == "") $this->idpersona->setSessionValue("");
-			}
-		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
-		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 
 	// Set up Breadcrumb
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$Breadcrumb->Add("list", $this->TableVar, "proveedorlist.php", "", $this->TableVar, TRUE);
+		$Breadcrumb->Add("list", $this->TableVar, "tipo_documentolist.php", "", $this->TableVar, TRUE);
 		$PageId = "view";
 		$Breadcrumb->Add("view", $PageId, ew_CurrentUrl());
 	}
@@ -814,33 +816,33 @@ class cproveedor_view extends cproveedor {
 <?php
 
 // Create page object
-if (!isset($proveedor_view)) $proveedor_view = new cproveedor_view();
+if (!isset($tipo_documento_view)) $tipo_documento_view = new ctipo_documento_view();
 
 // Page init
-$proveedor_view->Page_Init();
+$tipo_documento_view->Page_Init();
 
 // Page main
-$proveedor_view->Page_Main();
+$tipo_documento_view->Page_Main();
 
 // Global Page Rendering event (in userfn*.php)
 Page_Rendering();
 
 // Page Rendering event
-$proveedor_view->Page_Render();
+$tipo_documento_view->Page_Render();
 ?>
 <?php include_once $EW_RELATIVE_PATH . "header.php" ?>
 <script type="text/javascript">
 
 // Page object
-var proveedor_view = new ew_Page("proveedor_view");
-proveedor_view.PageID = "view"; // Page ID
-var EW_PAGE_ID = proveedor_view.PageID; // For backward compatibility
+var tipo_documento_view = new ew_Page("tipo_documento_view");
+tipo_documento_view.PageID = "view"; // Page ID
+var EW_PAGE_ID = tipo_documento_view.PageID; // For backward compatibility
 
 // Form object
-var fproveedorview = new ew_Form("fproveedorview");
+var ftipo_documentoview = new ew_Form("ftipo_documentoview");
 
 // Form_CustomValidate event
-fproveedorview.Form_CustomValidate = 
+ftipo_documentoview.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
 
  	// Your custom validation code here, return false if invalid. 
@@ -849,15 +851,14 @@ fproveedorview.Form_CustomValidate =
 
 // Use JavaScript validation or not
 <?php if (EW_CLIENT_VALIDATE) { ?>
-fproveedorview.ValidateRequired = true;
+ftipo_documentoview.ValidateRequired = true;
 <?php } else { ?>
-fproveedorview.ValidateRequired = false; 
+ftipo_documentoview.ValidateRequired = false; 
 <?php } ?>
 
 // Dynamic selection lists
-fproveedorview.Lists["x_idpersona"] = {"LinkField":"x_idpersona","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
-
 // Form object for search
+
 </script>
 <script type="text/javascript">
 
@@ -865,119 +866,83 @@ fproveedorview.Lists["x_idpersona"] = {"LinkField":"x_idpersona","Ajax":true,"Au
 </script>
 <div class="ewToolbar">
 <?php $Breadcrumb->Render(); ?>
-<?php $proveedor_view->ExportOptions->Render("body") ?>
+<?php $tipo_documento_view->ExportOptions->Render("body") ?>
 <?php
-	foreach ($proveedor_view->OtherOptions as &$option)
+	foreach ($tipo_documento_view->OtherOptions as &$option)
 		$option->Render("body");
 ?>
 <?php echo $Language->SelectionForm(); ?>
 <div class="clearfix"></div>
 </div>
-<?php $proveedor_view->ShowPageHeader(); ?>
+<?php $tipo_documento_view->ShowPageHeader(); ?>
 <?php
-$proveedor_view->ShowMessage();
+$tipo_documento_view->ShowMessage();
 ?>
-<form name="fproveedorview" id="fproveedorview" class="form-inline ewForm ewViewForm" action="<?php echo ew_CurrentPage() ?>" method="post">
-<?php if ($proveedor_view->CheckToken) { ?>
-<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $proveedor_view->Token ?>">
+<form name="ftipo_documentoview" id="ftipo_documentoview" class="form-inline ewForm ewViewForm" action="<?php echo ew_CurrentPage() ?>" method="post">
+<?php if ($tipo_documento_view->CheckToken) { ?>
+<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $tipo_documento_view->Token ?>">
 <?php } ?>
-<input type="hidden" name="t" value="proveedor">
+<input type="hidden" name="t" value="tipo_documento">
 <table class="table table-bordered table-striped ewViewTable">
-<?php if ($proveedor->idproveedor->Visible) { // idproveedor ?>
-	<tr id="r_idproveedor">
-		<td><span id="elh_proveedor_idproveedor"><?php echo $proveedor->idproveedor->FldCaption() ?></span></td>
-		<td<?php echo $proveedor->idproveedor->CellAttributes() ?>>
-<span id="el_proveedor_idproveedor" class="form-group">
-<span<?php echo $proveedor->idproveedor->ViewAttributes() ?>>
-<?php echo $proveedor->idproveedor->ViewValue ?></span>
+<?php if ($tipo_documento->idtipo_documento->Visible) { // idtipo_documento ?>
+	<tr id="r_idtipo_documento">
+		<td><span id="elh_tipo_documento_idtipo_documento"><?php echo $tipo_documento->idtipo_documento->FldCaption() ?></span></td>
+		<td<?php echo $tipo_documento->idtipo_documento->CellAttributes() ?>>
+<span id="el_tipo_documento_idtipo_documento" class="form-group">
+<span<?php echo $tipo_documento->idtipo_documento->ViewAttributes() ?>>
+<?php echo $tipo_documento->idtipo_documento->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($proveedor->codigo->Visible) { // codigo ?>
-	<tr id="r_codigo">
-		<td><span id="elh_proveedor_codigo"><?php echo $proveedor->codigo->FldCaption() ?></span></td>
-		<td<?php echo $proveedor->codigo->CellAttributes() ?>>
-<span id="el_proveedor_codigo" class="form-group">
-<span<?php echo $proveedor->codigo->ViewAttributes() ?>>
-<?php echo $proveedor->codigo->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($proveedor->nit->Visible) { // nit ?>
-	<tr id="r_nit">
-		<td><span id="elh_proveedor_nit"><?php echo $proveedor->nit->FldCaption() ?></span></td>
-		<td<?php echo $proveedor->nit->CellAttributes() ?>>
-<span id="el_proveedor_nit" class="form-group">
-<span<?php echo $proveedor->nit->ViewAttributes() ?>>
-<?php echo $proveedor->nit->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($proveedor->nombre->Visible) { // nombre ?>
+<?php if ($tipo_documento->nombre->Visible) { // nombre ?>
 	<tr id="r_nombre">
-		<td><span id="elh_proveedor_nombre"><?php echo $proveedor->nombre->FldCaption() ?></span></td>
-		<td<?php echo $proveedor->nombre->CellAttributes() ?>>
-<span id="el_proveedor_nombre" class="form-group">
-<span<?php echo $proveedor->nombre->ViewAttributes() ?>>
-<?php echo $proveedor->nombre->ViewValue ?></span>
+		<td><span id="elh_tipo_documento_nombre"><?php echo $tipo_documento->nombre->FldCaption() ?></span></td>
+		<td<?php echo $tipo_documento->nombre->CellAttributes() ?>>
+<span id="el_tipo_documento_nombre" class="form-group">
+<span<?php echo $tipo_documento->nombre->ViewAttributes() ?>>
+<?php echo $tipo_documento->nombre->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($proveedor->direccion->Visible) { // direccion ?>
-	<tr id="r_direccion">
-		<td><span id="elh_proveedor_direccion"><?php echo $proveedor->direccion->FldCaption() ?></span></td>
-		<td<?php echo $proveedor->direccion->CellAttributes() ?>>
-<span id="el_proveedor_direccion" class="form-group">
-<span<?php echo $proveedor->direccion->ViewAttributes() ?>>
-<?php echo $proveedor->direccion->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($proveedor->idpersona->Visible) { // idpersona ?>
-	<tr id="r_idpersona">
-		<td><span id="elh_proveedor_idpersona"><?php echo $proveedor->idpersona->FldCaption() ?></span></td>
-		<td<?php echo $proveedor->idpersona->CellAttributes() ?>>
-<span id="el_proveedor_idpersona" class="form-group">
-<span<?php echo $proveedor->idpersona->ViewAttributes() ?>>
-<?php echo $proveedor->idpersona->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($proveedor->estado->Visible) { // estado ?>
+<?php if ($tipo_documento->estado->Visible) { // estado ?>
 	<tr id="r_estado">
-		<td><span id="elh_proveedor_estado"><?php echo $proveedor->estado->FldCaption() ?></span></td>
-		<td<?php echo $proveedor->estado->CellAttributes() ?>>
-<span id="el_proveedor_estado" class="form-group">
-<span<?php echo $proveedor->estado->ViewAttributes() ?>>
-<?php echo $proveedor->estado->ViewValue ?></span>
+		<td><span id="elh_tipo_documento_estado"><?php echo $tipo_documento->estado->FldCaption() ?></span></td>
+		<td<?php echo $tipo_documento->estado->CellAttributes() ?>>
+<span id="el_tipo_documento_estado" class="form-group">
+<span<?php echo $tipo_documento->estado->ViewAttributes() ?>>
+<?php echo $tipo_documento->estado->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($proveedor->fecha_insercion->Visible) { // fecha_insercion ?>
+<?php if ($tipo_documento->fecha_insercion->Visible) { // fecha_insercion ?>
 	<tr id="r_fecha_insercion">
-		<td><span id="elh_proveedor_fecha_insercion"><?php echo $proveedor->fecha_insercion->FldCaption() ?></span></td>
-		<td<?php echo $proveedor->fecha_insercion->CellAttributes() ?>>
-<span id="el_proveedor_fecha_insercion" class="form-group">
-<span<?php echo $proveedor->fecha_insercion->ViewAttributes() ?>>
-<?php echo $proveedor->fecha_insercion->ViewValue ?></span>
+		<td><span id="elh_tipo_documento_fecha_insercion"><?php echo $tipo_documento->fecha_insercion->FldCaption() ?></span></td>
+		<td<?php echo $tipo_documento->fecha_insercion->CellAttributes() ?>>
+<span id="el_tipo_documento_fecha_insercion" class="form-group">
+<span<?php echo $tipo_documento->fecha_insercion->ViewAttributes() ?>>
+<?php echo $tipo_documento->fecha_insercion->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
 </table>
+<?php
+	if (in_array("tipo_documento_modulo", explode(",", $tipo_documento->getCurrentDetailTable())) && $tipo_documento_modulo->DetailView) {
+?>
+<?php if ($tipo_documento->getCurrentDetailTable() <> "") { ?>
+<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("tipo_documento_modulo", "TblCaption") ?></h4>
+<?php } ?>
+<?php include_once "tipo_documento_modulogrid.php" ?>
+<?php } ?>
 </form>
 <script type="text/javascript">
-fproveedorview.Init();
+ftipo_documentoview.Init();
 </script>
 <?php
-$proveedor_view->ShowPageFooter();
+$tipo_documento_view->ShowPageFooter();
 if (EW_DEBUG_ENABLED)
 	echo ew_DebugMsg();
 ?>
@@ -989,5 +954,5 @@ if (EW_DEBUG_ENABLED)
 </script>
 <?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
 <?php
-$proveedor_view->Page_Terminate();
+$tipo_documento_view->Page_Terminate();
 ?>

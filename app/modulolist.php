@@ -6,9 +6,8 @@ $EW_RELATIVE_PATH = "";
 <?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "caja_chicainfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "encargadogridcls.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "documento_caja_chicagridcls.php" ?>
+<?php include_once $EW_RELATIVE_PATH . "moduloinfo.php" ?>
+<?php include_once $EW_RELATIVE_PATH . "tipo_documento_modulogridcls.php" ?>
 <?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
 <?php
 
@@ -16,9 +15,9 @@ $EW_RELATIVE_PATH = "";
 // Page class
 //
 
-$caja_chica_list = NULL; // Initialize page object first
+$modulo_list = NULL; // Initialize page object first
 
-class ccaja_chica_list extends ccaja_chica {
+class cmodulo_list extends cmodulo {
 
 	// Page ID
 	var $PageID = 'list';
@@ -27,13 +26,13 @@ class ccaja_chica_list extends ccaja_chica {
 	var $ProjectID = "{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}";
 
 	// Table name
-	var $TableName = 'caja_chica';
+	var $TableName = 'modulo';
 
 	// Page object name
-	var $PageObjName = 'caja_chica_list';
+	var $PageObjName = 'modulo_list';
 
 	// Grid form hidden field names
-	var $FormName = 'fcaja_chicalist';
+	var $FormName = 'fmodulolist';
 	var $FormActionName = 'k_action';
 	var $FormKeyName = 'k_key';
 	var $FormOldKeyName = 'k_oldkey';
@@ -237,10 +236,10 @@ class ccaja_chica_list extends ccaja_chica {
 		// Parent constuctor
 		parent::__construct();
 
-		// Table object (caja_chica)
-		if (!isset($GLOBALS["caja_chica"]) || get_class($GLOBALS["caja_chica"]) == "ccaja_chica") {
-			$GLOBALS["caja_chica"] = &$this;
-			$GLOBALS["Table"] = &$GLOBALS["caja_chica"];
+		// Table object (modulo)
+		if (!isset($GLOBALS["modulo"]) || get_class($GLOBALS["modulo"]) == "cmodulo") {
+			$GLOBALS["modulo"] = &$this;
+			$GLOBALS["Table"] = &$GLOBALS["modulo"];
 		}
 
 		// Initialize URLs
@@ -251,12 +250,12 @@ class ccaja_chica_list extends ccaja_chica {
 		$this->ExportXmlUrl = $this->PageUrl() . "export=xml";
 		$this->ExportCsvUrl = $this->PageUrl() . "export=csv";
 		$this->ExportPdfUrl = $this->PageUrl() . "export=pdf";
-		$this->AddUrl = "caja_chicaadd.php?" . EW_TABLE_SHOW_DETAIL . "=";
+		$this->AddUrl = "moduloadd.php?" . EW_TABLE_SHOW_DETAIL . "=";
 		$this->InlineAddUrl = $this->PageUrl() . "a=add";
 		$this->GridAddUrl = $this->PageUrl() . "a=gridadd";
 		$this->GridEditUrl = $this->PageUrl() . "a=gridedit";
-		$this->MultiDeleteUrl = "caja_chicadelete.php";
-		$this->MultiUpdateUrl = "caja_chicaupdate.php";
+		$this->MultiDeleteUrl = "modulodelete.php";
+		$this->MultiUpdateUrl = "moduloupdate.php";
 
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
@@ -264,7 +263,7 @@ class ccaja_chica_list extends ccaja_chica {
 
 		// Table name (for backward compatibility)
 		if (!defined("EW_TABLE_NAME"))
-			define("EW_TABLE_NAME", 'caja_chica', TRUE);
+			define("EW_TABLE_NAME", 'modulo', TRUE);
 
 		// Start timer
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
@@ -324,18 +323,10 @@ class ccaja_chica_list extends ccaja_chica {
 		// Process auto fill
 		if (@$_POST["ajax"] == "autofill") {
 
-			// Process auto fill for detail table 'encargado'
-			if (@$_POST["grid"] == "fencargadogrid") {
-				if (!isset($GLOBALS["encargado_grid"])) $GLOBALS["encargado_grid"] = new cencargado_grid;
-				$GLOBALS["encargado_grid"]->Page_Init();
-				$this->Page_Terminate();
-				exit();
-			}
-
-			// Process auto fill for detail table 'documento_caja_chica'
-			if (@$_POST["grid"] == "fdocumento_caja_chicagrid") {
-				if (!isset($GLOBALS["documento_caja_chica_grid"])) $GLOBALS["documento_caja_chica_grid"] = new cdocumento_caja_chica_grid;
-				$GLOBALS["documento_caja_chica_grid"]->Page_Init();
+			// Process auto fill for detail table 'tipo_documento_modulo'
+			if (@$_POST["grid"] == "ftipo_documento_modulogrid") {
+				if (!isset($GLOBALS["tipo_documento_modulo_grid"])) $GLOBALS["tipo_documento_modulo_grid"] = new ctipo_documento_modulo_grid;
+				$GLOBALS["tipo_documento_modulo_grid"]->Page_Init();
 				$this->Page_Terminate();
 				exit();
 			}
@@ -375,13 +366,13 @@ class ccaja_chica_list extends ccaja_chica {
 		Page_Unloaded();
 
 		// Export
-		global $EW_EXPORT, $caja_chica;
+		global $EW_EXPORT, $modulo;
 		if ($this->CustomExport <> "" && $this->CustomExport == $this->Export && array_key_exists($this->CustomExport, $EW_EXPORT)) {
 				$sContent = ob_get_contents();
 			if ($gsExportFile == "") $gsExportFile = $this->TableVar;
 			$class = $EW_EXPORT[$this->CustomExport];
 			if (class_exists($class)) {
-				$doc = new $class($caja_chica);
+				$doc = new $class($modulo);
 				$doc->Text = $sContent;
 				if ($this->Export == "email")
 					echo $this->ExportEmail($doc->Text);
@@ -598,8 +589,8 @@ class ccaja_chica_list extends ccaja_chica {
 	function SetupKeyValues($key) {
 		$arrKeyFlds = explode($GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"], $key);
 		if (count($arrKeyFlds) >= 1) {
-			$this->idcaja_chica->setFormValue($arrKeyFlds[0]);
-			if (!is_numeric($this->idcaja_chica->FormValue))
+			$this->idmodulo->setFormValue($arrKeyFlds[0]);
+			if (!is_numeric($this->idmodulo->FormValue))
 				return FALSE;
 		}
 		return TRUE;
@@ -762,10 +753,6 @@ class ccaja_chica_list extends ccaja_chica {
 			$this->CurrentOrder = ew_StripSlashes(@$_GET["order"]);
 			$this->CurrentOrderType = @$_GET["ordertype"];
 			$this->UpdateSort($this->nombre); // nombre
-			$this->UpdateSort($this->saldo); // saldo
-			$this->UpdateSort($this->idempresa); // idempresa
-			$this->UpdateSort($this->idempleado); // idempleado
-			$this->UpdateSort($this->idcuenta); // idcuenta
 			$this->setStartRecordNumber(1); // Reset start position
 		}
 	}
@@ -799,10 +786,6 @@ class ccaja_chica_list extends ccaja_chica {
 				$sOrderBy = "";
 				$this->setSessionOrderBy($sOrderBy);
 				$this->nombre->setSort("");
-				$this->saldo->setSort("");
-				$this->idempresa->setSort("");
-				$this->idempleado->setSort("");
-				$this->idcuenta->setSort("");
 			}
 
 			// Reset start position
@@ -833,21 +816,13 @@ class ccaja_chica_list extends ccaja_chica {
 		$item->Visible = TRUE;
 		$item->OnLeft = FALSE;
 
-		// "detail_encargado"
-		$item = &$this->ListOptions->Add("detail_encargado");
+		// "detail_tipo_documento_modulo"
+		$item = &$this->ListOptions->Add("detail_tipo_documento_modulo");
 		$item->CssStyle = "white-space: nowrap;";
 		$item->Visible = TRUE && !$this->ShowMultipleDetails;
 		$item->OnLeft = FALSE;
 		$item->ShowInButtonGroup = FALSE;
-		if (!isset($GLOBALS["encargado_grid"])) $GLOBALS["encargado_grid"] = new cencargado_grid;
-
-		// "detail_documento_caja_chica"
-		$item = &$this->ListOptions->Add("detail_documento_caja_chica");
-		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = TRUE && !$this->ShowMultipleDetails;
-		$item->OnLeft = FALSE;
-		$item->ShowInButtonGroup = FALSE;
-		if (!isset($GLOBALS["documento_caja_chica_grid"])) $GLOBALS["documento_caja_chica_grid"] = new cdocumento_caja_chica_grid;
+		if (!isset($GLOBALS["tipo_documento_modulo_grid"])) $GLOBALS["tipo_documento_modulo_grid"] = new ctipo_documento_modulo_grid;
 
 		// Multiple details
 		if ($this->ShowMultipleDetails) {
@@ -905,46 +880,21 @@ class ccaja_chica_list extends ccaja_chica {
 		$DetailCopyTblVar = "";
 		$DetailEditTblVar = "";
 
-		// "detail_encargado"
-		$oListOpt = &$this->ListOptions->Items["detail_encargado"];
+		// "detail_tipo_documento_modulo"
+		$oListOpt = &$this->ListOptions->Items["detail_tipo_documento_modulo"];
 		if (TRUE) {
-			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("encargado", "TblCaption");
-			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("encargadolist.php?" . EW_TABLE_SHOW_MASTER . "=caja_chica&fk_idcaja_chica=" . strval($this->idcaja_chica->CurrentValue) . "") . "\">" . $body . "</a>";
+			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("tipo_documento_modulo", "TblCaption");
+			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("tipo_documento_modulolist.php?" . EW_TABLE_SHOW_MASTER . "=modulo&fk_idmodulo=" . strval($this->idmodulo->CurrentValue) . "") . "\">" . $body . "</a>";
 			$links = "";
-			if ($GLOBALS["encargado_grid"]->DetailView) {
-				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=encargado")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+			if ($GLOBALS["tipo_documento_modulo_grid"]->DetailView) {
+				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=tipo_documento_modulo")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
 				if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
-				$DetailViewTblVar .= "encargado";
+				$DetailViewTblVar .= "tipo_documento_modulo";
 			}
-			if ($GLOBALS["encargado_grid"]->DetailEdit) {
-				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=encargado")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+			if ($GLOBALS["tipo_documento_modulo_grid"]->DetailEdit) {
+				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=tipo_documento_modulo")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
 				if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
-				$DetailEditTblVar .= "encargado";
-			}
-			if ($links <> "") {
-				$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
-				$body .= "<ul class=\"dropdown-menu\">". $links . "</ul>";
-			}
-			$body = "<div class=\"btn-group\">" . $body . "</div>";
-			$oListOpt->Body = $body;
-			if ($this->ShowMultipleDetails) $oListOpt->Visible = FALSE;
-		}
-
-		// "detail_documento_caja_chica"
-		$oListOpt = &$this->ListOptions->Items["detail_documento_caja_chica"];
-		if (TRUE) {
-			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("documento_caja_chica", "TblCaption");
-			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("documento_caja_chicalist.php?" . EW_TABLE_SHOW_MASTER . "=caja_chica&fk_idcaja_chica=" . strval($this->idcaja_chica->CurrentValue) . "") . "\">" . $body . "</a>";
-			$links = "";
-			if ($GLOBALS["documento_caja_chica_grid"]->DetailView) {
-				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=documento_caja_chica")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
-				if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
-				$DetailViewTblVar .= "documento_caja_chica";
-			}
-			if ($GLOBALS["documento_caja_chica_grid"]->DetailEdit) {
-				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=documento_caja_chica")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
-				if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
-				$DetailEditTblVar .= "documento_caja_chica";
+				$DetailEditTblVar .= "tipo_documento_modulo";
 			}
 			if ($links <> "") {
 				$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
@@ -980,7 +930,7 @@ class ccaja_chica_list extends ccaja_chica {
 
 		// "checkbox"
 		$oListOpt = &$this->ListOptions->Items["checkbox"];
-		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->idcaja_chica->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event, this);'>";
+		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->idmodulo->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event, this);'>";
 		$this->RenderListOptionsExt();
 
 		// Call ListOptions_Rendered event
@@ -999,19 +949,12 @@ class ccaja_chica_list extends ccaja_chica {
 		$item->Visible = ($this->AddUrl <> "");
 		$option = $options["detail"];
 		$DetailTableLink = "";
-		$item = &$option->Add("detailadd_encargado");
-		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($this->GetAddUrl() . "?" . EW_TABLE_SHOW_DETAIL . "=encargado") . "\">" . $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["encargado"]->TableCaption() . "</a>";
-		$item->Visible = ($GLOBALS["encargado"]->DetailAdd);
+		$item = &$option->Add("detailadd_tipo_documento_modulo");
+		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($this->GetAddUrl() . "?" . EW_TABLE_SHOW_DETAIL . "=tipo_documento_modulo") . "\">" . $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["tipo_documento_modulo"]->TableCaption() . "</a>";
+		$item->Visible = ($GLOBALS["tipo_documento_modulo"]->DetailAdd);
 		if ($item->Visible) {
 			if ($DetailTableLink <> "") $DetailTableLink .= ",";
-			$DetailTableLink .= "encargado";
-		}
-		$item = &$option->Add("detailadd_documento_caja_chica");
-		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($this->GetAddUrl() . "?" . EW_TABLE_SHOW_DETAIL . "=documento_caja_chica") . "\">" . $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["documento_caja_chica"]->TableCaption() . "</a>";
-		$item->Visible = ($GLOBALS["documento_caja_chica"]->DetailAdd);
-		if ($item->Visible) {
-			if ($DetailTableLink <> "") $DetailTableLink .= ",";
-			$DetailTableLink .= "documento_caja_chica";
+			$DetailTableLink .= "tipo_documento_modulo";
 		}
 
 		// Add multiple details
@@ -1054,7 +997,7 @@ class ccaja_chica_list extends ccaja_chica {
 
 				// Add custom action
 				$item = &$option->Add("custom_" . $action);
-				$item->Body = "<a class=\"ewAction ewCustomAction\" href=\"\" onclick=\"ew_SubmitSelected(document.fcaja_chicalist, '" . ew_CurrentUrl() . "', null, '" . $action . "');return false;\">" . $name . "</a>";
+				$item->Body = "<a class=\"ewAction ewCustomAction\" href=\"\" onclick=\"ew_SubmitSelected(document.fmodulolist, '" . ew_CurrentUrl() . "', null, '" . $action . "');return false;\">" . $name . "</a>";
 			}
 
 			// Hide grid edit, multi-delete and multi-update
@@ -1124,7 +1067,7 @@ class ccaja_chica_list extends ccaja_chica {
 		// Search button
 		$item = &$this->SearchOptions->Add("searchtoggle");
 		$SearchToggleClass = ($this->SearchWhere <> "") ? " active" : " active";
-		$item->Body = "<button type=\"button\" class=\"btn btn-default ewSearchToggle" . $SearchToggleClass . "\" title=\"" . $Language->Phrase("SearchPanel") . "\" data-caption=\"" . $Language->Phrase("SearchPanel") . "\" data-toggle=\"button\" data-form=\"fcaja_chicalistsrch\">" . $Language->Phrase("SearchBtn") . "</button>";
+		$item->Body = "<button type=\"button\" class=\"btn btn-default ewSearchToggle" . $SearchToggleClass . "\" title=\"" . $Language->Phrase("SearchPanel") . "\" data-caption=\"" . $Language->Phrase("SearchPanel") . "\" data-toggle=\"button\" data-form=\"fmodulolistsrch\">" . $Language->Phrase("SearchBtn") . "</button>";
 		$item->Visible = TRUE;
 
 		// Show all button
@@ -1245,12 +1188,8 @@ class ccaja_chica_list extends ccaja_chica {
 		// Call Row Selected event
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
-		$this->idcaja_chica->setDbValue($rs->fields('idcaja_chica'));
+		$this->idmodulo->setDbValue($rs->fields('idmodulo'));
 		$this->nombre->setDbValue($rs->fields('nombre'));
-		$this->saldo->setDbValue($rs->fields('saldo'));
-		$this->idempresa->setDbValue($rs->fields('idempresa'));
-		$this->idempleado->setDbValue($rs->fields('idempleado'));
-		$this->idcuenta->setDbValue($rs->fields('idcuenta'));
 		$this->estado->setDbValue($rs->fields('estado'));
 		$this->fecha_insercion->setDbValue($rs->fields('fecha_insercion'));
 	}
@@ -1259,12 +1198,8 @@ class ccaja_chica_list extends ccaja_chica {
 	function LoadDbValues(&$rs) {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
-		$this->idcaja_chica->DbValue = $row['idcaja_chica'];
+		$this->idmodulo->DbValue = $row['idmodulo'];
 		$this->nombre->DbValue = $row['nombre'];
-		$this->saldo->DbValue = $row['saldo'];
-		$this->idempresa->DbValue = $row['idempresa'];
-		$this->idempleado->DbValue = $row['idempleado'];
-		$this->idcuenta->DbValue = $row['idcuenta'];
 		$this->estado->DbValue = $row['estado'];
 		$this->fecha_insercion->DbValue = $row['fecha_insercion'];
 	}
@@ -1274,8 +1209,8 @@ class ccaja_chica_list extends ccaja_chica {
 
 		// Load key values from Session
 		$bValidKey = TRUE;
-		if (strval($this->getKey("idcaja_chica")) <> "")
-			$this->idcaja_chica->CurrentValue = $this->getKey("idcaja_chica"); // idcaja_chica
+		if (strval($this->getKey("idmodulo")) <> "")
+			$this->idmodulo->CurrentValue = $this->getKey("idmodulo"); // idmodulo
 		else
 			$bValidKey = FALSE;
 
@@ -1304,120 +1239,24 @@ class ccaja_chica_list extends ccaja_chica {
 		$this->InlineCopyUrl = $this->GetInlineCopyUrl();
 		$this->DeleteUrl = $this->GetDeleteUrl();
 
-		// Convert decimal values if posted back
-		if ($this->saldo->FormValue == $this->saldo->CurrentValue && is_numeric(ew_StrToFloat($this->saldo->CurrentValue)))
-			$this->saldo->CurrentValue = ew_StrToFloat($this->saldo->CurrentValue);
-
 		// Call Row_Rendering event
 		$this->Row_Rendering();
 
 		// Common render codes for all row types
-		// idcaja_chica
+		// idmodulo
 		// nombre
-		// saldo
-		// idempresa
-		// idempleado
-		// idcuenta
 		// estado
 		// fecha_insercion
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idcaja_chica
-			$this->idcaja_chica->ViewValue = $this->idcaja_chica->CurrentValue;
-			$this->idcaja_chica->ViewCustomAttributes = "";
+			// idmodulo
+			$this->idmodulo->ViewValue = $this->idmodulo->CurrentValue;
+			$this->idmodulo->ViewCustomAttributes = "";
 
 			// nombre
 			$this->nombre->ViewValue = $this->nombre->CurrentValue;
 			$this->nombre->ViewCustomAttributes = "";
-
-			// saldo
-			$this->saldo->ViewValue = $this->saldo->CurrentValue;
-			$this->saldo->ViewCustomAttributes = "";
-
-			// idempresa
-			if (strval($this->idempresa->CurrentValue) <> "") {
-				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idempresa->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
-				}
-			} else {
-				$this->idempresa->ViewValue = NULL;
-			}
-			$this->idempresa->ViewCustomAttributes = "";
-
-			// idempleado
-			if (strval($this->idempleado->CurrentValue) <> "") {
-				$sFilterWrk = "`idempleado`" . ew_SearchString("=", $this->idempleado->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idempleado`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empleado`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempleado, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idempleado->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idempleado->ViewValue = $this->idempleado->CurrentValue;
-				}
-			} else {
-				$this->idempleado->ViewValue = NULL;
-			}
-			$this->idempleado->ViewCustomAttributes = "";
-
-			// idcuenta
-			if (strval($this->idcuenta->CurrentValue) <> "") {
-				$sFilterWrk = "`idcuenta`" . ew_SearchString("=", $this->idcuenta->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idcuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo' ";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idcuenta, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idcuenta->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idcuenta->ViewValue = $this->idcuenta->CurrentValue;
-				}
-			} else {
-				$this->idcuenta->ViewValue = NULL;
-			}
-			$this->idcuenta->ViewCustomAttributes = "";
 
 			// estado
 			if (strval($this->estado->CurrentValue) <> "") {
@@ -1445,26 +1284,6 @@ class ccaja_chica_list extends ccaja_chica {
 			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
 			$this->nombre->TooltipValue = "";
-
-			// saldo
-			$this->saldo->LinkCustomAttributes = "";
-			$this->saldo->HrefValue = "";
-			$this->saldo->TooltipValue = "";
-
-			// idempresa
-			$this->idempresa->LinkCustomAttributes = "";
-			$this->idempresa->HrefValue = "";
-			$this->idempresa->TooltipValue = "";
-
-			// idempleado
-			$this->idempleado->LinkCustomAttributes = "";
-			$this->idempleado->HrefValue = "";
-			$this->idempleado->TooltipValue = "";
-
-			// idcuenta
-			$this->idcuenta->LinkCustomAttributes = "";
-			$this->idcuenta->HrefValue = "";
-			$this->idcuenta->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -1605,34 +1424,34 @@ class ccaja_chica_list extends ccaja_chica {
 <?php
 
 // Create page object
-if (!isset($caja_chica_list)) $caja_chica_list = new ccaja_chica_list();
+if (!isset($modulo_list)) $modulo_list = new cmodulo_list();
 
 // Page init
-$caja_chica_list->Page_Init();
+$modulo_list->Page_Init();
 
 // Page main
-$caja_chica_list->Page_Main();
+$modulo_list->Page_Main();
 
 // Global Page Rendering event (in userfn*.php)
 Page_Rendering();
 
 // Page Rendering event
-$caja_chica_list->Page_Render();
+$modulo_list->Page_Render();
 ?>
 <?php include_once $EW_RELATIVE_PATH . "header.php" ?>
 <script type="text/javascript">
 
 // Page object
-var caja_chica_list = new ew_Page("caja_chica_list");
-caja_chica_list.PageID = "list"; // Page ID
-var EW_PAGE_ID = caja_chica_list.PageID; // For backward compatibility
+var modulo_list = new ew_Page("modulo_list");
+modulo_list.PageID = "list"; // Page ID
+var EW_PAGE_ID = modulo_list.PageID; // For backward compatibility
 
 // Form object
-var fcaja_chicalist = new ew_Form("fcaja_chicalist");
-fcaja_chicalist.FormKeyCountName = '<?php echo $caja_chica_list->FormKeyCountName ?>';
+var fmodulolist = new ew_Form("fmodulolist");
+fmodulolist.FormKeyCountName = '<?php echo $modulo_list->FormKeyCountName ?>';
 
 // Form_CustomValidate event
-fcaja_chicalist.Form_CustomValidate = 
+fmodulolist.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
 
  	// Your custom validation code here, return false if invalid. 
@@ -1641,18 +1460,15 @@ fcaja_chicalist.Form_CustomValidate =
 
 // Use JavaScript validation or not
 <?php if (EW_CLIENT_VALIDATE) { ?>
-fcaja_chicalist.ValidateRequired = true;
+fmodulolist.ValidateRequired = true;
 <?php } else { ?>
-fcaja_chicalist.ValidateRequired = false; 
+fmodulolist.ValidateRequired = false; 
 <?php } ?>
 
 // Dynamic selection lists
-fcaja_chicalist.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
-fcaja_chicalist.Lists["x_idempleado"] = {"LinkField":"x_idempleado","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
-fcaja_chicalist.Lists["x_idcuenta"] = {"LinkField":"x_idcuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
-
 // Form object for search
-var fcaja_chicalistsrch = new ew_Form("fcaja_chicalistsrch");
+
+var fmodulolistsrch = new ew_Form("fmodulolistsrch");
 </script>
 <script type="text/javascript">
 
@@ -1660,11 +1476,11 @@ var fcaja_chicalistsrch = new ew_Form("fcaja_chicalistsrch");
 </script>
 <div class="ewToolbar">
 <?php $Breadcrumb->Render(); ?>
-<?php if ($caja_chica_list->TotalRecs > 0 && $caja_chica_list->ExportOptions->Visible()) { ?>
-<?php $caja_chica_list->ExportOptions->Render("body") ?>
+<?php if ($modulo_list->TotalRecs > 0 && $modulo_list->ExportOptions->Visible()) { ?>
+<?php $modulo_list->ExportOptions->Render("body") ?>
 <?php } ?>
-<?php if ($caja_chica_list->SearchOptions->Visible()) { ?>
-<?php $caja_chica_list->SearchOptions->Render("body") ?>
+<?php if ($modulo_list->SearchOptions->Visible()) { ?>
+<?php $modulo_list->SearchOptions->Render("body") ?>
 <?php } ?>
 <?php echo $Language->SelectionForm(); ?>
 <div class="clearfix"></div>
@@ -1672,46 +1488,46 @@ var fcaja_chicalistsrch = new ew_Form("fcaja_chicalistsrch");
 <?php
 	$bSelectLimit = EW_SELECT_LIMIT;
 	if ($bSelectLimit) {
-		$caja_chica_list->TotalRecs = $caja_chica->SelectRecordCount();
+		$modulo_list->TotalRecs = $modulo->SelectRecordCount();
 	} else {
-		if ($caja_chica_list->Recordset = $caja_chica_list->LoadRecordset())
-			$caja_chica_list->TotalRecs = $caja_chica_list->Recordset->RecordCount();
+		if ($modulo_list->Recordset = $modulo_list->LoadRecordset())
+			$modulo_list->TotalRecs = $modulo_list->Recordset->RecordCount();
 	}
-	$caja_chica_list->StartRec = 1;
-	if ($caja_chica_list->DisplayRecs <= 0 || ($caja_chica->Export <> "" && $caja_chica->ExportAll)) // Display all records
-		$caja_chica_list->DisplayRecs = $caja_chica_list->TotalRecs;
-	if (!($caja_chica->Export <> "" && $caja_chica->ExportAll))
-		$caja_chica_list->SetUpStartRec(); // Set up start record position
+	$modulo_list->StartRec = 1;
+	if ($modulo_list->DisplayRecs <= 0 || ($modulo->Export <> "" && $modulo->ExportAll)) // Display all records
+		$modulo_list->DisplayRecs = $modulo_list->TotalRecs;
+	if (!($modulo->Export <> "" && $modulo->ExportAll))
+		$modulo_list->SetUpStartRec(); // Set up start record position
 	if ($bSelectLimit)
-		$caja_chica_list->Recordset = $caja_chica_list->LoadRecordset($caja_chica_list->StartRec-1, $caja_chica_list->DisplayRecs);
+		$modulo_list->Recordset = $modulo_list->LoadRecordset($modulo_list->StartRec-1, $modulo_list->DisplayRecs);
 
 	// Set no record found message
-	if ($caja_chica->CurrentAction == "" && $caja_chica_list->TotalRecs == 0) {
-		if ($caja_chica_list->SearchWhere == "0=101")
-			$caja_chica_list->setWarningMessage($Language->Phrase("EnterSearchCriteria"));
+	if ($modulo->CurrentAction == "" && $modulo_list->TotalRecs == 0) {
+		if ($modulo_list->SearchWhere == "0=101")
+			$modulo_list->setWarningMessage($Language->Phrase("EnterSearchCriteria"));
 		else
-			$caja_chica_list->setWarningMessage($Language->Phrase("NoRecord"));
+			$modulo_list->setWarningMessage($Language->Phrase("NoRecord"));
 	}
-$caja_chica_list->RenderOtherOptions();
+$modulo_list->RenderOtherOptions();
 ?>
-<?php if ($caja_chica->Export == "" && $caja_chica->CurrentAction == "") { ?>
-<form name="fcaja_chicalistsrch" id="fcaja_chicalistsrch" class="form-inline ewForm" action="<?php echo ew_CurrentPage() ?>">
-<?php $SearchPanelClass = ($caja_chica_list->SearchWhere <> "") ? " in" : " in"; ?>
-<div id="fcaja_chicalistsrch_SearchPanel" class="ewSearchPanel collapse<?php echo $SearchPanelClass ?>">
+<?php if ($modulo->Export == "" && $modulo->CurrentAction == "") { ?>
+<form name="fmodulolistsrch" id="fmodulolistsrch" class="form-inline ewForm" action="<?php echo ew_CurrentPage() ?>">
+<?php $SearchPanelClass = ($modulo_list->SearchWhere <> "") ? " in" : " in"; ?>
+<div id="fmodulolistsrch_SearchPanel" class="ewSearchPanel collapse<?php echo $SearchPanelClass ?>">
 <input type="hidden" name="cmd" value="search">
-<input type="hidden" name="t" value="caja_chica">
+<input type="hidden" name="t" value="modulo">
 	<div class="ewBasicSearch">
 <div id="xsr_1" class="ewRow">
 	<div class="ewQuickSearch input-group">
-	<input type="text" name="<?php echo EW_TABLE_BASIC_SEARCH ?>" id="<?php echo EW_TABLE_BASIC_SEARCH ?>" class="form-control" value="<?php echo ew_HtmlEncode($caja_chica_list->BasicSearch->getKeyword()) ?>" placeholder="<?php echo ew_HtmlEncode($Language->Phrase("Search")) ?>">
-	<input type="hidden" name="<?php echo EW_TABLE_BASIC_SEARCH_TYPE ?>" id="<?php echo EW_TABLE_BASIC_SEARCH_TYPE ?>" value="<?php echo ew_HtmlEncode($caja_chica_list->BasicSearch->getType()) ?>">
+	<input type="text" name="<?php echo EW_TABLE_BASIC_SEARCH ?>" id="<?php echo EW_TABLE_BASIC_SEARCH ?>" class="form-control" value="<?php echo ew_HtmlEncode($modulo_list->BasicSearch->getKeyword()) ?>" placeholder="<?php echo ew_HtmlEncode($Language->Phrase("Search")) ?>">
+	<input type="hidden" name="<?php echo EW_TABLE_BASIC_SEARCH_TYPE ?>" id="<?php echo EW_TABLE_BASIC_SEARCH_TYPE ?>" value="<?php echo ew_HtmlEncode($modulo_list->BasicSearch->getType()) ?>">
 	<div class="input-group-btn">
-		<button type="button" data-toggle="dropdown" class="btn btn-default"><span id="searchtype"><?php echo $caja_chica_list->BasicSearch->getTypeNameShort() ?></span><span class="caret"></span></button>
+		<button type="button" data-toggle="dropdown" class="btn btn-default"><span id="searchtype"><?php echo $modulo_list->BasicSearch->getTypeNameShort() ?></span><span class="caret"></span></button>
 		<ul class="dropdown-menu pull-right" role="menu">
-			<li<?php if ($caja_chica_list->BasicSearch->getType() == "") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this)"><?php echo $Language->Phrase("QuickSearchAuto") ?></a></li>
-			<li<?php if ($caja_chica_list->BasicSearch->getType() == "=") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'=')"><?php echo $Language->Phrase("QuickSearchExact") ?></a></li>
-			<li<?php if ($caja_chica_list->BasicSearch->getType() == "AND") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'AND')"><?php echo $Language->Phrase("QuickSearchAll") ?></a></li>
-			<li<?php if ($caja_chica_list->BasicSearch->getType() == "OR") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'OR')"><?php echo $Language->Phrase("QuickSearchAny") ?></a></li>
+			<li<?php if ($modulo_list->BasicSearch->getType() == "") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this)"><?php echo $Language->Phrase("QuickSearchAuto") ?></a></li>
+			<li<?php if ($modulo_list->BasicSearch->getType() == "=") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'=')"><?php echo $Language->Phrase("QuickSearchExact") ?></a></li>
+			<li<?php if ($modulo_list->BasicSearch->getType() == "AND") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'AND')"><?php echo $Language->Phrase("QuickSearchAll") ?></a></li>
+			<li<?php if ($modulo_list->BasicSearch->getType() == "OR") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'OR')"><?php echo $Language->Phrase("QuickSearchAny") ?></a></li>
 		</ul>
 	<button class="btn btn-primary ewButton" name="btnsubmit" id="btnsubmit" type="submit"><?php echo $Language->Phrase("QuickSearchBtn") ?></button>
 	</div>
@@ -1721,187 +1537,127 @@ $caja_chica_list->RenderOtherOptions();
 </div>
 </form>
 <?php } ?>
-<?php $caja_chica_list->ShowPageHeader(); ?>
+<?php $modulo_list->ShowPageHeader(); ?>
 <?php
-$caja_chica_list->ShowMessage();
+$modulo_list->ShowMessage();
 ?>
-<?php if ($caja_chica_list->TotalRecs > 0 || $caja_chica->CurrentAction <> "") { ?>
+<?php if ($modulo_list->TotalRecs > 0 || $modulo->CurrentAction <> "") { ?>
 <div class="ewGrid">
-<form name="fcaja_chicalist" id="fcaja_chicalist" class="form-inline ewForm ewListForm" action="<?php echo ew_CurrentPage() ?>" method="post">
-<?php if ($caja_chica_list->CheckToken) { ?>
-<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $caja_chica_list->Token ?>">
+<form name="fmodulolist" id="fmodulolist" class="form-inline ewForm ewListForm" action="<?php echo ew_CurrentPage() ?>" method="post">
+<?php if ($modulo_list->CheckToken) { ?>
+<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $modulo_list->Token ?>">
 <?php } ?>
-<input type="hidden" name="t" value="caja_chica">
-<div id="gmp_caja_chica" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
-<?php if ($caja_chica_list->TotalRecs > 0) { ?>
-<table id="tbl_caja_chicalist" class="table ewTable">
-<?php echo $caja_chica->TableCustomInnerHtml ?>
+<input type="hidden" name="t" value="modulo">
+<div id="gmp_modulo" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
+<?php if ($modulo_list->TotalRecs > 0) { ?>
+<table id="tbl_modulolist" class="table ewTable">
+<?php echo $modulo->TableCustomInnerHtml ?>
 <thead><!-- Table header -->
 	<tr class="ewTableHeader">
 <?php
 
 // Render list options
-$caja_chica_list->RenderListOptions();
+$modulo_list->RenderListOptions();
 
 // Render list options (header, left)
-$caja_chica_list->ListOptions->Render("header", "left");
+$modulo_list->ListOptions->Render("header", "left");
 ?>
-<?php if ($caja_chica->nombre->Visible) { // nombre ?>
-	<?php if ($caja_chica->SortUrl($caja_chica->nombre) == "") { ?>
-		<th data-name="nombre"><div id="elh_caja_chica_nombre" class="caja_chica_nombre"><div class="ewTableHeaderCaption"><?php echo $caja_chica->nombre->FldCaption() ?></div></div></th>
+<?php if ($modulo->nombre->Visible) { // nombre ?>
+	<?php if ($modulo->SortUrl($modulo->nombre) == "") { ?>
+		<th data-name="nombre"><div id="elh_modulo_nombre" class="modulo_nombre"><div class="ewTableHeaderCaption"><?php echo $modulo->nombre->FldCaption() ?></div></div></th>
 	<?php } else { ?>
-		<th data-name="nombre"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $caja_chica->SortUrl($caja_chica->nombre) ?>',1);"><div id="elh_caja_chica_nombre" class="caja_chica_nombre">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $caja_chica->nombre->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($caja_chica->nombre->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($caja_chica->nombre->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($caja_chica->saldo->Visible) { // saldo ?>
-	<?php if ($caja_chica->SortUrl($caja_chica->saldo) == "") { ?>
-		<th data-name="saldo"><div id="elh_caja_chica_saldo" class="caja_chica_saldo"><div class="ewTableHeaderCaption"><?php echo $caja_chica->saldo->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="saldo"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $caja_chica->SortUrl($caja_chica->saldo) ?>',1);"><div id="elh_caja_chica_saldo" class="caja_chica_saldo">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $caja_chica->saldo->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($caja_chica->saldo->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($caja_chica->saldo->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($caja_chica->idempresa->Visible) { // idempresa ?>
-	<?php if ($caja_chica->SortUrl($caja_chica->idempresa) == "") { ?>
-		<th data-name="idempresa"><div id="elh_caja_chica_idempresa" class="caja_chica_idempresa"><div class="ewTableHeaderCaption"><?php echo $caja_chica->idempresa->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="idempresa"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $caja_chica->SortUrl($caja_chica->idempresa) ?>',1);"><div id="elh_caja_chica_idempresa" class="caja_chica_idempresa">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $caja_chica->idempresa->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($caja_chica->idempresa->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($caja_chica->idempresa->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($caja_chica->idempleado->Visible) { // idempleado ?>
-	<?php if ($caja_chica->SortUrl($caja_chica->idempleado) == "") { ?>
-		<th data-name="idempleado"><div id="elh_caja_chica_idempleado" class="caja_chica_idempleado"><div class="ewTableHeaderCaption"><?php echo $caja_chica->idempleado->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="idempleado"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $caja_chica->SortUrl($caja_chica->idempleado) ?>',1);"><div id="elh_caja_chica_idempleado" class="caja_chica_idempleado">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $caja_chica->idempleado->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($caja_chica->idempleado->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($caja_chica->idempleado->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($caja_chica->idcuenta->Visible) { // idcuenta ?>
-	<?php if ($caja_chica->SortUrl($caja_chica->idcuenta) == "") { ?>
-		<th data-name="idcuenta"><div id="elh_caja_chica_idcuenta" class="caja_chica_idcuenta"><div class="ewTableHeaderCaption"><?php echo $caja_chica->idcuenta->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="idcuenta"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $caja_chica->SortUrl($caja_chica->idcuenta) ?>',1);"><div id="elh_caja_chica_idcuenta" class="caja_chica_idcuenta">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $caja_chica->idcuenta->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($caja_chica->idcuenta->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($caja_chica->idcuenta->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+		<th data-name="nombre"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $modulo->SortUrl($modulo->nombre) ?>',1);"><div id="elh_modulo_nombre" class="modulo_nombre">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $modulo->nombre->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($modulo->nombre->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($modulo->nombre->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
 <?php
 
 // Render list options (header, right)
-$caja_chica_list->ListOptions->Render("header", "right");
+$modulo_list->ListOptions->Render("header", "right");
 ?>
 	</tr>
 </thead>
 <tbody>
 <?php
-if ($caja_chica->ExportAll && $caja_chica->Export <> "") {
-	$caja_chica_list->StopRec = $caja_chica_list->TotalRecs;
+if ($modulo->ExportAll && $modulo->Export <> "") {
+	$modulo_list->StopRec = $modulo_list->TotalRecs;
 } else {
 
 	// Set the last record to display
-	if ($caja_chica_list->TotalRecs > $caja_chica_list->StartRec + $caja_chica_list->DisplayRecs - 1)
-		$caja_chica_list->StopRec = $caja_chica_list->StartRec + $caja_chica_list->DisplayRecs - 1;
+	if ($modulo_list->TotalRecs > $modulo_list->StartRec + $modulo_list->DisplayRecs - 1)
+		$modulo_list->StopRec = $modulo_list->StartRec + $modulo_list->DisplayRecs - 1;
 	else
-		$caja_chica_list->StopRec = $caja_chica_list->TotalRecs;
+		$modulo_list->StopRec = $modulo_list->TotalRecs;
 }
-$caja_chica_list->RecCnt = $caja_chica_list->StartRec - 1;
-if ($caja_chica_list->Recordset && !$caja_chica_list->Recordset->EOF) {
-	$caja_chica_list->Recordset->MoveFirst();
+$modulo_list->RecCnt = $modulo_list->StartRec - 1;
+if ($modulo_list->Recordset && !$modulo_list->Recordset->EOF) {
+	$modulo_list->Recordset->MoveFirst();
 	$bSelectLimit = EW_SELECT_LIMIT;
-	if (!$bSelectLimit && $caja_chica_list->StartRec > 1)
-		$caja_chica_list->Recordset->Move($caja_chica_list->StartRec - 1);
-} elseif (!$caja_chica->AllowAddDeleteRow && $caja_chica_list->StopRec == 0) {
-	$caja_chica_list->StopRec = $caja_chica->GridAddRowCount;
+	if (!$bSelectLimit && $modulo_list->StartRec > 1)
+		$modulo_list->Recordset->Move($modulo_list->StartRec - 1);
+} elseif (!$modulo->AllowAddDeleteRow && $modulo_list->StopRec == 0) {
+	$modulo_list->StopRec = $modulo->GridAddRowCount;
 }
 
 // Initialize aggregate
-$caja_chica->RowType = EW_ROWTYPE_AGGREGATEINIT;
-$caja_chica->ResetAttrs();
-$caja_chica_list->RenderRow();
-while ($caja_chica_list->RecCnt < $caja_chica_list->StopRec) {
-	$caja_chica_list->RecCnt++;
-	if (intval($caja_chica_list->RecCnt) >= intval($caja_chica_list->StartRec)) {
-		$caja_chica_list->RowCnt++;
+$modulo->RowType = EW_ROWTYPE_AGGREGATEINIT;
+$modulo->ResetAttrs();
+$modulo_list->RenderRow();
+while ($modulo_list->RecCnt < $modulo_list->StopRec) {
+	$modulo_list->RecCnt++;
+	if (intval($modulo_list->RecCnt) >= intval($modulo_list->StartRec)) {
+		$modulo_list->RowCnt++;
 
 		// Set up key count
-		$caja_chica_list->KeyCount = $caja_chica_list->RowIndex;
+		$modulo_list->KeyCount = $modulo_list->RowIndex;
 
 		// Init row class and style
-		$caja_chica->ResetAttrs();
-		$caja_chica->CssClass = "";
-		if ($caja_chica->CurrentAction == "gridadd") {
+		$modulo->ResetAttrs();
+		$modulo->CssClass = "";
+		if ($modulo->CurrentAction == "gridadd") {
 		} else {
-			$caja_chica_list->LoadRowValues($caja_chica_list->Recordset); // Load row values
+			$modulo_list->LoadRowValues($modulo_list->Recordset); // Load row values
 		}
-		$caja_chica->RowType = EW_ROWTYPE_VIEW; // Render view
+		$modulo->RowType = EW_ROWTYPE_VIEW; // Render view
 
 		// Set up row id / data-rowindex
-		$caja_chica->RowAttrs = array_merge($caja_chica->RowAttrs, array('data-rowindex'=>$caja_chica_list->RowCnt, 'id'=>'r' . $caja_chica_list->RowCnt . '_caja_chica', 'data-rowtype'=>$caja_chica->RowType));
+		$modulo->RowAttrs = array_merge($modulo->RowAttrs, array('data-rowindex'=>$modulo_list->RowCnt, 'id'=>'r' . $modulo_list->RowCnt . '_modulo', 'data-rowtype'=>$modulo->RowType));
 
 		// Render row
-		$caja_chica_list->RenderRow();
+		$modulo_list->RenderRow();
 
 		// Render list options
-		$caja_chica_list->RenderListOptions();
+		$modulo_list->RenderListOptions();
 ?>
-	<tr<?php echo $caja_chica->RowAttributes() ?>>
+	<tr<?php echo $modulo->RowAttributes() ?>>
 <?php
 
 // Render list options (body, left)
-$caja_chica_list->ListOptions->Render("body", "left", $caja_chica_list->RowCnt);
+$modulo_list->ListOptions->Render("body", "left", $modulo_list->RowCnt);
 ?>
-	<?php if ($caja_chica->nombre->Visible) { // nombre ?>
-		<td data-name="nombre"<?php echo $caja_chica->nombre->CellAttributes() ?>>
-<span<?php echo $caja_chica->nombre->ViewAttributes() ?>>
-<?php echo $caja_chica->nombre->ListViewValue() ?></span>
-<a id="<?php echo $caja_chica_list->PageObjName . "_row_" . $caja_chica_list->RowCnt ?>"></a></td>
-	<?php } ?>
-	<?php if ($caja_chica->saldo->Visible) { // saldo ?>
-		<td data-name="saldo"<?php echo $caja_chica->saldo->CellAttributes() ?>>
-<span<?php echo $caja_chica->saldo->ViewAttributes() ?>>
-<?php echo $caja_chica->saldo->ListViewValue() ?></span>
-</td>
-	<?php } ?>
-	<?php if ($caja_chica->idempresa->Visible) { // idempresa ?>
-		<td data-name="idempresa"<?php echo $caja_chica->idempresa->CellAttributes() ?>>
-<span<?php echo $caja_chica->idempresa->ViewAttributes() ?>>
-<?php echo $caja_chica->idempresa->ListViewValue() ?></span>
-</td>
-	<?php } ?>
-	<?php if ($caja_chica->idempleado->Visible) { // idempleado ?>
-		<td data-name="idempleado"<?php echo $caja_chica->idempleado->CellAttributes() ?>>
-<span<?php echo $caja_chica->idempleado->ViewAttributes() ?>>
-<?php echo $caja_chica->idempleado->ListViewValue() ?></span>
-</td>
-	<?php } ?>
-	<?php if ($caja_chica->idcuenta->Visible) { // idcuenta ?>
-		<td data-name="idcuenta"<?php echo $caja_chica->idcuenta->CellAttributes() ?>>
-<span<?php echo $caja_chica->idcuenta->ViewAttributes() ?>>
-<?php echo $caja_chica->idcuenta->ListViewValue() ?></span>
-</td>
+	<?php if ($modulo->nombre->Visible) { // nombre ?>
+		<td data-name="nombre"<?php echo $modulo->nombre->CellAttributes() ?>>
+<span<?php echo $modulo->nombre->ViewAttributes() ?>>
+<?php echo $modulo->nombre->ListViewValue() ?></span>
+<a id="<?php echo $modulo_list->PageObjName . "_row_" . $modulo_list->RowCnt ?>"></a></td>
 	<?php } ?>
 <?php
 
 // Render list options (body, right)
-$caja_chica_list->ListOptions->Render("body", "right", $caja_chica_list->RowCnt);
+$modulo_list->ListOptions->Render("body", "right", $modulo_list->RowCnt);
 ?>
 	</tr>
 <?php
 	}
-	if ($caja_chica->CurrentAction <> "gridadd")
-		$caja_chica_list->Recordset->MoveNext();
+	if ($modulo->CurrentAction <> "gridadd")
+		$modulo_list->Recordset->MoveNext();
 }
 ?>
 </tbody>
 </table>
 <?php } ?>
-<?php if ($caja_chica->CurrentAction == "") { ?>
+<?php if ($modulo->CurrentAction == "") { ?>
 <input type="hidden" name="a_list" id="a_list" value="">
 <?php } ?>
 </div>
@@ -1909,60 +1665,60 @@ $caja_chica_list->ListOptions->Render("body", "right", $caja_chica_list->RowCnt)
 <?php
 
 // Close recordset
-if ($caja_chica_list->Recordset)
-	$caja_chica_list->Recordset->Close();
+if ($modulo_list->Recordset)
+	$modulo_list->Recordset->Close();
 ?>
 <div class="ewGridLowerPanel">
-<?php if ($caja_chica->CurrentAction <> "gridadd" && $caja_chica->CurrentAction <> "gridedit") { ?>
+<?php if ($modulo->CurrentAction <> "gridadd" && $modulo->CurrentAction <> "gridedit") { ?>
 <form name="ewPagerForm" class="ewForm form-inline ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
-<?php if (!isset($caja_chica_list->Pager)) $caja_chica_list->Pager = new cPrevNextPager($caja_chica_list->StartRec, $caja_chica_list->DisplayRecs, $caja_chica_list->TotalRecs) ?>
-<?php if ($caja_chica_list->Pager->RecordCount > 0) { ?>
+<?php if (!isset($modulo_list->Pager)) $modulo_list->Pager = new cPrevNextPager($modulo_list->StartRec, $modulo_list->DisplayRecs, $modulo_list->TotalRecs) ?>
+<?php if ($modulo_list->Pager->RecordCount > 0) { ?>
 <div class="ewPager">
 <span><?php echo $Language->Phrase("Page") ?>&nbsp;</span>
 <div class="ewPrevNext"><div class="input-group">
 <div class="input-group-btn">
 <!--first page button-->
-	<?php if ($caja_chica_list->Pager->FirstButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerFirst") ?>" href="<?php echo $caja_chica_list->PageUrl() ?>start=<?php echo $caja_chica_list->Pager->FirstButton->Start ?>"><span class="icon-first ewIcon"></span></a>
+	<?php if ($modulo_list->Pager->FirstButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerFirst") ?>" href="<?php echo $modulo_list->PageUrl() ?>start=<?php echo $modulo_list->Pager->FirstButton->Start ?>"><span class="icon-first ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerFirst") ?>"><span class="icon-first ewIcon"></span></a>
 	<?php } ?>
 <!--previous page button-->
-	<?php if ($caja_chica_list->Pager->PrevButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerPrevious") ?>" href="<?php echo $caja_chica_list->PageUrl() ?>start=<?php echo $caja_chica_list->Pager->PrevButton->Start ?>"><span class="icon-prev ewIcon"></span></a>
+	<?php if ($modulo_list->Pager->PrevButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerPrevious") ?>" href="<?php echo $modulo_list->PageUrl() ?>start=<?php echo $modulo_list->Pager->PrevButton->Start ?>"><span class="icon-prev ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerPrevious") ?>"><span class="icon-prev ewIcon"></span></a>
 	<?php } ?>
 </div>
 <!--current page number-->
-	<input class="form-control input-sm" type="text" name="<?php echo EW_TABLE_PAGE_NO ?>" value="<?php echo $caja_chica_list->Pager->CurrentPage ?>">
+	<input class="form-control input-sm" type="text" name="<?php echo EW_TABLE_PAGE_NO ?>" value="<?php echo $modulo_list->Pager->CurrentPage ?>">
 <div class="input-group-btn">
 <!--next page button-->
-	<?php if ($caja_chica_list->Pager->NextButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerNext") ?>" href="<?php echo $caja_chica_list->PageUrl() ?>start=<?php echo $caja_chica_list->Pager->NextButton->Start ?>"><span class="icon-next ewIcon"></span></a>
+	<?php if ($modulo_list->Pager->NextButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerNext") ?>" href="<?php echo $modulo_list->PageUrl() ?>start=<?php echo $modulo_list->Pager->NextButton->Start ?>"><span class="icon-next ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerNext") ?>"><span class="icon-next ewIcon"></span></a>
 	<?php } ?>
 <!--last page button-->
-	<?php if ($caja_chica_list->Pager->LastButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerLast") ?>" href="<?php echo $caja_chica_list->PageUrl() ?>start=<?php echo $caja_chica_list->Pager->LastButton->Start ?>"><span class="icon-last ewIcon"></span></a>
+	<?php if ($modulo_list->Pager->LastButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerLast") ?>" href="<?php echo $modulo_list->PageUrl() ?>start=<?php echo $modulo_list->Pager->LastButton->Start ?>"><span class="icon-last ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerLast") ?>"><span class="icon-last ewIcon"></span></a>
 	<?php } ?>
 </div>
 </div>
 </div>
-<span>&nbsp;<?php echo $Language->Phrase("of") ?>&nbsp;<?php echo $caja_chica_list->Pager->PageCount ?></span>
+<span>&nbsp;<?php echo $Language->Phrase("of") ?>&nbsp;<?php echo $modulo_list->Pager->PageCount ?></span>
 </div>
 <div class="ewPager ewRec">
-	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $caja_chica_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $caja_chica_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $caja_chica_list->Pager->RecordCount ?></span>
+	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $modulo_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $modulo_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $modulo_list->Pager->RecordCount ?></span>
 </div>
 <?php } ?>
 </form>
 <?php } ?>
 <div class="ewListOtherOptions">
 <?php
-	foreach ($caja_chica_list->OtherOptions as &$option)
+	foreach ($modulo_list->OtherOptions as &$option)
 		$option->Render("body", "bottom");
 ?>
 </div>
@@ -1970,10 +1726,10 @@ if ($caja_chica_list->Recordset)
 </div>
 </div>
 <?php } ?>
-<?php if ($caja_chica_list->TotalRecs == 0 && $caja_chica->CurrentAction == "") { // Show other options ?>
+<?php if ($modulo_list->TotalRecs == 0 && $modulo->CurrentAction == "") { // Show other options ?>
 <div class="ewListOtherOptions">
 <?php
-	foreach ($caja_chica_list->OtherOptions as &$option) {
+	foreach ($modulo_list->OtherOptions as &$option) {
 		$option->ButtonClass = "";
 		$option->Render("body", "");
 	}
@@ -1982,11 +1738,11 @@ if ($caja_chica_list->Recordset)
 <div class="clearfix"></div>
 <?php } ?>
 <script type="text/javascript">
-fcaja_chicalistsrch.Init();
-fcaja_chicalist.Init();
+fmodulolistsrch.Init();
+fmodulolist.Init();
 </script>
 <?php
-$caja_chica_list->ShowPageFooter();
+$modulo_list->ShowPageFooter();
 if (EW_DEBUG_ENABLED)
 	echo ew_DebugMsg();
 ?>
@@ -1998,5 +1754,5 @@ if (EW_DEBUG_ENABLED)
 </script>
 <?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
 <?php
-$caja_chica_list->Page_Terminate();
+$modulo_list->Page_Terminate();
 ?>

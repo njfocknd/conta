@@ -1,18 +1,15 @@
 <?php
 
 // Global variable for table object
-$caja_chica = NULL;
+$tipo_documento_modulo = NULL;
 
 //
-// Table class for caja_chica
+// Table class for tipo_documento_modulo
 //
-class ccaja_chica extends cTable {
-	var $idcaja_chica;
-	var $nombre;
-	var $saldo;
-	var $idempresa;
-	var $idempleado;
-	var $idcuenta;
+class ctipo_documento_modulo extends cTable {
+	var $idtipo_documento_modulo;
+	var $idtipo_documento;
+	var $idmodulo;
 	var $estado;
 	var $fecha_insercion;
 
@@ -24,8 +21,8 @@ class ccaja_chica extends cTable {
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
-		$this->TableVar = 'caja_chica';
-		$this->TableName = 'caja_chica';
+		$this->TableVar = 'tipo_documento_modulo';
+		$this->TableName = 'tipo_documento_modulo';
 		$this->TableType = 'TABLE';
 		$this->ExportAll = TRUE;
 		$this->ExportPageBreakCount = 0; // Page break per every n record (PDF only)
@@ -40,41 +37,27 @@ class ccaja_chica extends cTable {
 		$this->UserIDAllowSecurity = 0; // User ID Allow
 		$this->BasicSearch = new cBasicSearch($this->TableVar);
 
-		// idcaja_chica
-		$this->idcaja_chica = new cField('caja_chica', 'caja_chica', 'x_idcaja_chica', 'idcaja_chica', '`idcaja_chica`', '`idcaja_chica`', 3, -1, FALSE, '`idcaja_chica`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
-		$this->idcaja_chica->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['idcaja_chica'] = &$this->idcaja_chica;
+		// idtipo_documento_modulo
+		$this->idtipo_documento_modulo = new cField('tipo_documento_modulo', 'tipo_documento_modulo', 'x_idtipo_documento_modulo', 'idtipo_documento_modulo', '`idtipo_documento_modulo`', '`idtipo_documento_modulo`', 3, -1, FALSE, '`idtipo_documento_modulo`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->idtipo_documento_modulo->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
+		$this->fields['idtipo_documento_modulo'] = &$this->idtipo_documento_modulo;
 
-		// nombre
-		$this->nombre = new cField('caja_chica', 'caja_chica', 'x_nombre', 'nombre', '`nombre`', '`nombre`', 200, -1, FALSE, '`nombre`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
-		$this->fields['nombre'] = &$this->nombre;
+		// idtipo_documento
+		$this->idtipo_documento = new cField('tipo_documento_modulo', 'tipo_documento_modulo', 'x_idtipo_documento', 'idtipo_documento', '`idtipo_documento`', '`idtipo_documento`', 3, -1, FALSE, '`idtipo_documento`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->idtipo_documento->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
+		$this->fields['idtipo_documento'] = &$this->idtipo_documento;
 
-		// saldo
-		$this->saldo = new cField('caja_chica', 'caja_chica', 'x_saldo', 'saldo', '`saldo`', '`saldo`', 131, -1, FALSE, '`saldo`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
-		$this->saldo->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
-		$this->fields['saldo'] = &$this->saldo;
-
-		// idempresa
-		$this->idempresa = new cField('caja_chica', 'caja_chica', 'x_idempresa', 'idempresa', '`idempresa`', '`idempresa`', 3, -1, FALSE, '`idempresa`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
-		$this->idempresa->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['idempresa'] = &$this->idempresa;
-
-		// idempleado
-		$this->idempleado = new cField('caja_chica', 'caja_chica', 'x_idempleado', 'idempleado', '`idempleado`', '`idempleado`', 3, -1, FALSE, '`idempleado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
-		$this->idempleado->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['idempleado'] = &$this->idempleado;
-
-		// idcuenta
-		$this->idcuenta = new cField('caja_chica', 'caja_chica', 'x_idcuenta', 'idcuenta', '`idcuenta`', '`idcuenta`', 3, -1, FALSE, '`idcuenta`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
-		$this->idcuenta->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['idcuenta'] = &$this->idcuenta;
+		// idmodulo
+		$this->idmodulo = new cField('tipo_documento_modulo', 'tipo_documento_modulo', 'x_idmodulo', 'idmodulo', '`idmodulo`', '`idmodulo`', 3, -1, FALSE, '`idmodulo`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->idmodulo->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
+		$this->fields['idmodulo'] = &$this->idmodulo;
 
 		// estado
-		$this->estado = new cField('caja_chica', 'caja_chica', 'x_estado', 'estado', '`estado`', '`estado`', 202, -1, FALSE, '`estado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->estado = new cField('tipo_documento_modulo', 'tipo_documento_modulo', 'x_estado', 'estado', '`estado`', '`estado`', 202, -1, FALSE, '`estado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
 		$this->fields['estado'] = &$this->estado;
 
 		// fecha_insercion
-		$this->fecha_insercion = new cField('caja_chica', 'caja_chica', 'x_fecha_insercion', 'fecha_insercion', '`fecha_insercion`', 'DATE_FORMAT(`fecha_insercion`, \'%d/%m/%Y\')', 135, 7, FALSE, '`fecha_insercion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->fecha_insercion = new cField('tipo_documento_modulo', 'tipo_documento_modulo', 'x_fecha_insercion', 'fecha_insercion', '`fecha_insercion`', 'DATE_FORMAT(`fecha_insercion`, \'%d/%m/%Y\')', 135, 7, FALSE, '`fecha_insercion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
 		$this->fecha_insercion->FldDefaultErrMsg = str_replace("%s", "/", $Language->Phrase("IncorrectDateDMY"));
 		$this->fields['fecha_insercion'] = &$this->fecha_insercion;
 	}
@@ -96,39 +79,80 @@ class ccaja_chica extends cTable {
 		}
 	}
 
-	// Current detail table name
-	function getCurrentDetailTable() {
-		return @$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_DETAIL_TABLE];
+	// Current master table name
+	function getCurrentMasterTable() {
+		return @$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_MASTER_TABLE];
 	}
 
-	function setCurrentDetailTable($v) {
-		$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_DETAIL_TABLE] = $v;
+	function setCurrentMasterTable($v) {
+		$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_MASTER_TABLE] = $v;
 	}
 
-	// Get detail url
-	function GetDetailUrl() {
+	// Session master WHERE clause
+	function GetMasterFilter() {
 
-		// Detail url
-		$sDetailUrl = "";
-		if ($this->getCurrentDetailTable() == "encargado") {
-			$sDetailUrl = $GLOBALS["encargado"]->GetListUrl() . "?showmaster=" . $this->TableVar;
-			$sDetailUrl .= "&fk_idcaja_chica=" . urlencode($this->idcaja_chica->CurrentValue);
+		// Master filter
+		$sMasterFilter = "";
+		if ($this->getCurrentMasterTable() == "tipo_documento") {
+			if ($this->idtipo_documento->getSessionValue() <> "")
+				$sMasterFilter .= "`idtipo_documento`=" . ew_QuotedValue($this->idtipo_documento->getSessionValue(), EW_DATATYPE_NUMBER);
+			else
+				return "";
 		}
-		if ($this->getCurrentDetailTable() == "documento_caja_chica") {
-			$sDetailUrl = $GLOBALS["documento_caja_chica"]->GetListUrl() . "?showmaster=" . $this->TableVar;
-			$sDetailUrl .= "&fk_idcaja_chica=" . urlencode($this->idcaja_chica->CurrentValue);
+		if ($this->getCurrentMasterTable() == "modulo") {
+			if ($this->idmodulo->getSessionValue() <> "")
+				$sMasterFilter .= "`idmodulo`=" . ew_QuotedValue($this->idmodulo->getSessionValue(), EW_DATATYPE_NUMBER);
+			else
+				return "";
 		}
-		if ($sDetailUrl == "") {
-			$sDetailUrl = "caja_chicalist.php";
+		return $sMasterFilter;
+	}
+
+	// Session detail WHERE clause
+	function GetDetailFilter() {
+
+		// Detail filter
+		$sDetailFilter = "";
+		if ($this->getCurrentMasterTable() == "tipo_documento") {
+			if ($this->idtipo_documento->getSessionValue() <> "")
+				$sDetailFilter .= "`idtipo_documento`=" . ew_QuotedValue($this->idtipo_documento->getSessionValue(), EW_DATATYPE_NUMBER);
+			else
+				return "";
 		}
-		return $sDetailUrl;
+		if ($this->getCurrentMasterTable() == "modulo") {
+			if ($this->idmodulo->getSessionValue() <> "")
+				$sDetailFilter .= "`idmodulo`=" . ew_QuotedValue($this->idmodulo->getSessionValue(), EW_DATATYPE_NUMBER);
+			else
+				return "";
+		}
+		return $sDetailFilter;
+	}
+
+	// Master filter
+	function SqlMasterFilter_tipo_documento() {
+		return "`idtipo_documento`=@idtipo_documento@";
+	}
+
+	// Detail filter
+	function SqlDetailFilter_tipo_documento() {
+		return "`idtipo_documento`=@idtipo_documento@";
+	}
+
+	// Master filter
+	function SqlMasterFilter_modulo() {
+		return "`idmodulo`=@idmodulo@";
+	}
+
+	// Detail filter
+	function SqlDetailFilter_modulo() {
+		return "`idmodulo`=@idmodulo@";
 	}
 
 	// Table level SQL
 	var $_SqlFrom = "";
 
 	function getSqlFrom() { // From
-		return ($this->_SqlFrom <> "") ? $this->_SqlFrom : "`caja_chica`";
+		return ($this->_SqlFrom <> "") ? $this->_SqlFrom : "`tipo_documento_modulo`";
 	}
 
 	function SqlFrom() { // For backward compatibility
@@ -351,7 +375,7 @@ class ccaja_chica extends cTable {
 	}
 
 	// Update Table
-	var $UpdateTable = "`caja_chica`";
+	var $UpdateTable = "`tipo_documento_modulo`";
 
 	// INSERT statement
 	function InsertSQL(&$rs) {
@@ -404,8 +428,8 @@ class ccaja_chica extends cTable {
 	function DeleteSQL(&$rs, $where = "") {
 		$sql = "DELETE FROM " . $this->UpdateTable . " WHERE ";
 		if ($rs) {
-			if (array_key_exists('idcaja_chica', $rs))
-				ew_AddFilter($where, ew_QuotedName('idcaja_chica') . '=' . ew_QuotedValue($rs['idcaja_chica'], $this->idcaja_chica->FldDataType));
+			if (array_key_exists('idtipo_documento_modulo', $rs))
+				ew_AddFilter($where, ew_QuotedName('idtipo_documento_modulo') . '=' . ew_QuotedValue($rs['idtipo_documento_modulo'], $this->idtipo_documento_modulo->FldDataType));
 		}
 		$filter = $this->CurrentFilter;
 		ew_AddFilter($filter, $where);
@@ -424,15 +448,15 @@ class ccaja_chica extends cTable {
 
 	// Key filter WHERE clause
 	function SqlKeyFilter() {
-		return "`idcaja_chica` = @idcaja_chica@";
+		return "`idtipo_documento_modulo` = @idtipo_documento_modulo@";
 	}
 
 	// Key filter
 	function KeyFilter() {
 		$sKeyFilter = $this->SqlKeyFilter();
-		if (!is_numeric($this->idcaja_chica->CurrentValue))
+		if (!is_numeric($this->idtipo_documento_modulo->CurrentValue))
 			$sKeyFilter = "0=1"; // Invalid key
-		$sKeyFilter = str_replace("@idcaja_chica@", ew_AdjustSql($this->idcaja_chica->CurrentValue), $sKeyFilter); // Replace key value
+		$sKeyFilter = str_replace("@idtipo_documento_modulo@", ew_AdjustSql($this->idtipo_documento_modulo->CurrentValue), $sKeyFilter); // Replace key value
 		return $sKeyFilter;
 	}
 
@@ -446,7 +470,7 @@ class ccaja_chica extends cTable {
 		if (@$_SESSION[$name] <> "") {
 			return $_SESSION[$name];
 		} else {
-			return "caja_chicalist.php";
+			return "tipo_documento_modulolist.php";
 		}
 	}
 
@@ -456,31 +480,28 @@ class ccaja_chica extends cTable {
 
 	// List URL
 	function GetListUrl() {
-		return "caja_chicalist.php";
+		return "tipo_documento_modulolist.php";
 	}
 
 	// View URL
 	function GetViewUrl($parm = "") {
 		if ($parm <> "")
-			return $this->KeyUrl("caja_chicaview.php", $this->UrlParm($parm));
+			return $this->KeyUrl("tipo_documento_moduloview.php", $this->UrlParm($parm));
 		else
-			return $this->KeyUrl("caja_chicaview.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+			return $this->KeyUrl("tipo_documento_moduloview.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
 	}
 
 	// Add URL
 	function GetAddUrl($parm = "") {
 		if ($parm <> "")
-			return "caja_chicaadd.php?" . $this->UrlParm($parm);
+			return "tipo_documento_moduloadd.php?" . $this->UrlParm($parm);
 		else
-			return "caja_chicaadd.php";
+			return "tipo_documento_moduloadd.php";
 	}
 
 	// Edit URL
 	function GetEditUrl($parm = "") {
-		if ($parm <> "")
-			return $this->KeyUrl("caja_chicaedit.php", $this->UrlParm($parm));
-		else
-			return $this->KeyUrl("caja_chicaedit.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+		return $this->KeyUrl("tipo_documento_moduloedit.php", $this->UrlParm($parm));
 	}
 
 	// Inline edit URL
@@ -490,10 +511,7 @@ class ccaja_chica extends cTable {
 
 	// Copy URL
 	function GetCopyUrl($parm = "") {
-		if ($parm <> "")
-			return $this->KeyUrl("caja_chicaadd.php", $this->UrlParm($parm));
-		else
-			return $this->KeyUrl("caja_chicaadd.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+		return $this->KeyUrl("tipo_documento_moduloadd.php", $this->UrlParm($parm));
 	}
 
 	// Inline copy URL
@@ -503,15 +521,15 @@ class ccaja_chica extends cTable {
 
 	// Delete URL
 	function GetDeleteUrl() {
-		return $this->KeyUrl("caja_chicadelete.php", $this->UrlParm());
+		return $this->KeyUrl("tipo_documento_modulodelete.php", $this->UrlParm());
 	}
 
 	// Add key value to URL
 	function KeyUrl($url, $parm = "") {
 		$sUrl = $url . "?";
 		if ($parm <> "") $sUrl .= $parm . "&";
-		if (!is_null($this->idcaja_chica->CurrentValue)) {
-			$sUrl .= "idcaja_chica=" . urlencode($this->idcaja_chica->CurrentValue);
+		if (!is_null($this->idtipo_documento_modulo->CurrentValue)) {
+			$sUrl .= "idtipo_documento_modulo=" . urlencode($this->idtipo_documento_modulo->CurrentValue);
 		} else {
 			return "javascript:alert(ewLanguage.Phrase('InvalidRecord'));";
 		}
@@ -543,7 +561,7 @@ class ccaja_chica extends cTable {
 			$arKeys = ew_StripSlashes($_GET["key_m"]);
 			$cnt = count($arKeys);
 		} elseif (isset($_GET)) {
-			$arKeys[] = @$_GET["idcaja_chica"]; // idcaja_chica
+			$arKeys[] = @$_GET["idtipo_documento_modulo"]; // idtipo_documento_modulo
 
 			//return $arKeys; // Do not return yet, so the values will also be checked by the following code
 		}
@@ -564,7 +582,7 @@ class ccaja_chica extends cTable {
 		$sKeyFilter = "";
 		foreach ($arKeys as $key) {
 			if ($sKeyFilter <> "") $sKeyFilter .= " OR ";
-			$this->idcaja_chica->CurrentValue = $key;
+			$this->idtipo_documento_modulo->CurrentValue = $key;
 			$sKeyFilter .= "(" . $this->KeyFilter() . ")";
 		}
 		return $sKeyFilter;
@@ -585,12 +603,9 @@ class ccaja_chica extends cTable {
 
 	// Load row values from recordset
 	function LoadListRowValues(&$rs) {
-		$this->idcaja_chica->setDbValue($rs->fields('idcaja_chica'));
-		$this->nombre->setDbValue($rs->fields('nombre'));
-		$this->saldo->setDbValue($rs->fields('saldo'));
-		$this->idempresa->setDbValue($rs->fields('idempresa'));
-		$this->idempleado->setDbValue($rs->fields('idempleado'));
-		$this->idcuenta->setDbValue($rs->fields('idcuenta'));
+		$this->idtipo_documento_modulo->setDbValue($rs->fields('idtipo_documento_modulo'));
+		$this->idtipo_documento->setDbValue($rs->fields('idtipo_documento'));
+		$this->idmodulo->setDbValue($rs->fields('idmodulo'));
 		$this->estado->setDbValue($rs->fields('estado'));
 		$this->fecha_insercion->setDbValue($rs->fields('fecha_insercion'));
 	}
@@ -603,31 +618,20 @@ class ccaja_chica extends cTable {
 		$this->Row_Rendering();
 
    // Common render codes
-		// idcaja_chica
-		// nombre
-		// saldo
-		// idempresa
-		// idempleado
-		// idcuenta
+		// idtipo_documento_modulo
+		// idtipo_documento
+		// idmodulo
 		// estado
 		// fecha_insercion
-		// idcaja_chica
+		// idtipo_documento_modulo
 
-		$this->idcaja_chica->ViewValue = $this->idcaja_chica->CurrentValue;
-		$this->idcaja_chica->ViewCustomAttributes = "";
+		$this->idtipo_documento_modulo->ViewValue = $this->idtipo_documento_modulo->CurrentValue;
+		$this->idtipo_documento_modulo->ViewCustomAttributes = "";
 
-		// nombre
-		$this->nombre->ViewValue = $this->nombre->CurrentValue;
-		$this->nombre->ViewCustomAttributes = "";
-
-		// saldo
-		$this->saldo->ViewValue = $this->saldo->CurrentValue;
-		$this->saldo->ViewCustomAttributes = "";
-
-		// idempresa
-		if (strval($this->idempresa->CurrentValue) <> "") {
-			$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
-		$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
+		// idtipo_documento
+		if (strval($this->idtipo_documento->CurrentValue) <> "") {
+			$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER);
+		$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
 		$sWhereWrk = "";
 		$lookuptblfilter = "`estado` = 'Activo'";
 		if (strval($lookuptblfilter) <> "") {
@@ -638,24 +642,24 @@ class ccaja_chica extends cTable {
 		}
 
 		// Call Lookup selecting
-		$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
+		$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk);
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 			$rswrk = $conn->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$this->idempresa->ViewValue = $rswrk->fields('DispFld');
+				$this->idtipo_documento->ViewValue = $rswrk->fields('DispFld');
 				$rswrk->Close();
 			} else {
-				$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
+				$this->idtipo_documento->ViewValue = $this->idtipo_documento->CurrentValue;
 			}
 		} else {
-			$this->idempresa->ViewValue = NULL;
+			$this->idtipo_documento->ViewValue = NULL;
 		}
-		$this->idempresa->ViewCustomAttributes = "";
+		$this->idtipo_documento->ViewCustomAttributes = "";
 
-		// idempleado
-		if (strval($this->idempleado->CurrentValue) <> "") {
-			$sFilterWrk = "`idempleado`" . ew_SearchString("=", $this->idempleado->CurrentValue, EW_DATATYPE_NUMBER);
-		$sSqlWrk = "SELECT `idempleado`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empleado`";
+		// idmodulo
+		if (strval($this->idmodulo->CurrentValue) <> "") {
+			$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER);
+		$sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `modulo`";
 		$sWhereWrk = "";
 		$lookuptblfilter = "`estado` = 'Activo'";
 		if (strval($lookuptblfilter) <> "") {
@@ -666,47 +670,19 @@ class ccaja_chica extends cTable {
 		}
 
 		// Call Lookup selecting
-		$this->Lookup_Selecting($this->idempleado, $sWhereWrk);
+		$this->Lookup_Selecting($this->idmodulo, $sWhereWrk);
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 			$rswrk = $conn->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$this->idempleado->ViewValue = $rswrk->fields('DispFld');
+				$this->idmodulo->ViewValue = $rswrk->fields('DispFld');
 				$rswrk->Close();
 			} else {
-				$this->idempleado->ViewValue = $this->idempleado->CurrentValue;
+				$this->idmodulo->ViewValue = $this->idmodulo->CurrentValue;
 			}
 		} else {
-			$this->idempleado->ViewValue = NULL;
+			$this->idmodulo->ViewValue = NULL;
 		}
-		$this->idempleado->ViewCustomAttributes = "";
-
-		// idcuenta
-		if (strval($this->idcuenta->CurrentValue) <> "") {
-			$sFilterWrk = "`idcuenta`" . ew_SearchString("=", $this->idcuenta->CurrentValue, EW_DATATYPE_NUMBER);
-		$sSqlWrk = "SELECT `idcuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta`";
-		$sWhereWrk = "";
-		$lookuptblfilter = "`estado` = 'Activo' ";
-		if (strval($lookuptblfilter) <> "") {
-			ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		}
-		if ($sFilterWrk <> "") {
-			ew_AddFilter($sWhereWrk, $sFilterWrk);
-		}
-
-		// Call Lookup selecting
-		$this->Lookup_Selecting($this->idcuenta, $sWhereWrk);
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
-			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$this->idcuenta->ViewValue = $rswrk->fields('DispFld');
-				$rswrk->Close();
-			} else {
-				$this->idcuenta->ViewValue = $this->idcuenta->CurrentValue;
-			}
-		} else {
-			$this->idcuenta->ViewValue = NULL;
-		}
-		$this->idcuenta->ViewCustomAttributes = "";
+		$this->idmodulo->ViewCustomAttributes = "";
 
 		// estado
 		if (strval($this->estado->CurrentValue) <> "") {
@@ -730,35 +706,20 @@ class ccaja_chica extends cTable {
 		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
 		$this->fecha_insercion->ViewCustomAttributes = "";
 
-		// idcaja_chica
-		$this->idcaja_chica->LinkCustomAttributes = "";
-		$this->idcaja_chica->HrefValue = "";
-		$this->idcaja_chica->TooltipValue = "";
+		// idtipo_documento_modulo
+		$this->idtipo_documento_modulo->LinkCustomAttributes = "";
+		$this->idtipo_documento_modulo->HrefValue = "";
+		$this->idtipo_documento_modulo->TooltipValue = "";
 
-		// nombre
-		$this->nombre->LinkCustomAttributes = "";
-		$this->nombre->HrefValue = "";
-		$this->nombre->TooltipValue = "";
+		// idtipo_documento
+		$this->idtipo_documento->LinkCustomAttributes = "";
+		$this->idtipo_documento->HrefValue = "";
+		$this->idtipo_documento->TooltipValue = "";
 
-		// saldo
-		$this->saldo->LinkCustomAttributes = "";
-		$this->saldo->HrefValue = "";
-		$this->saldo->TooltipValue = "";
-
-		// idempresa
-		$this->idempresa->LinkCustomAttributes = "";
-		$this->idempresa->HrefValue = "";
-		$this->idempresa->TooltipValue = "";
-
-		// idempleado
-		$this->idempleado->LinkCustomAttributes = "";
-		$this->idempleado->HrefValue = "";
-		$this->idempleado->TooltipValue = "";
-
-		// idcuenta
-		$this->idcuenta->LinkCustomAttributes = "";
-		$this->idcuenta->HrefValue = "";
-		$this->idcuenta->TooltipValue = "";
+		// idmodulo
+		$this->idmodulo->LinkCustomAttributes = "";
+		$this->idmodulo->HrefValue = "";
+		$this->idmodulo->TooltipValue = "";
 
 		// estado
 		$this->estado->LinkCustomAttributes = "";
@@ -781,42 +742,87 @@ class ccaja_chica extends cTable {
 		// Call Row Rendering event
 		$this->Row_Rendering();
 
-		// idcaja_chica
-		$this->idcaja_chica->EditAttrs["class"] = "form-control";
-		$this->idcaja_chica->EditCustomAttributes = "";
-		$this->idcaja_chica->EditValue = $this->idcaja_chica->CurrentValue;
-		$this->idcaja_chica->ViewCustomAttributes = "";
+		// idtipo_documento_modulo
+		$this->idtipo_documento_modulo->EditAttrs["class"] = "form-control";
+		$this->idtipo_documento_modulo->EditCustomAttributes = "";
+		$this->idtipo_documento_modulo->EditValue = $this->idtipo_documento_modulo->CurrentValue;
+		$this->idtipo_documento_modulo->ViewCustomAttributes = "";
 
-		// nombre
-		$this->nombre->EditAttrs["class"] = "form-control";
-		$this->nombre->EditCustomAttributes = "";
-		$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
-		$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
+		// idtipo_documento
+		$this->idtipo_documento->EditAttrs["class"] = "form-control";
+		$this->idtipo_documento->EditCustomAttributes = "";
+		if ($this->idtipo_documento->getSessionValue() <> "") {
+			$this->idtipo_documento->CurrentValue = $this->idtipo_documento->getSessionValue();
+		if (strval($this->idtipo_documento->CurrentValue) <> "") {
+			$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER);
+		$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		if (strval($lookuptblfilter) <> "") {
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		}
+		if ($sFilterWrk <> "") {
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+		}
 
-		// saldo
-		$this->saldo->EditAttrs["class"] = "form-control";
-		$this->saldo->EditCustomAttributes = "";
-		$this->saldo->EditValue = ew_HtmlEncode($this->saldo->CurrentValue);
-		$this->saldo->PlaceHolder = ew_RemoveHtml($this->saldo->FldCaption());
-		if (strval($this->saldo->EditValue) <> "" && is_numeric($this->saldo->EditValue)) $this->saldo->EditValue = ew_FormatNumber($this->saldo->EditValue, -2, -1, -2, 0);
+		// Call Lookup selecting
+		$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk);
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = $conn->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$this->idtipo_documento->ViewValue = $rswrk->fields('DispFld');
+				$rswrk->Close();
+			} else {
+				$this->idtipo_documento->ViewValue = $this->idtipo_documento->CurrentValue;
+			}
+		} else {
+			$this->idtipo_documento->ViewValue = NULL;
+		}
+		$this->idtipo_documento->ViewCustomAttributes = "";
+		} else {
+		}
 
-		// idempresa
-		$this->idempresa->EditAttrs["class"] = "form-control";
-		$this->idempresa->EditCustomAttributes = "";
+		// idmodulo
+		$this->idmodulo->EditAttrs["class"] = "form-control";
+		$this->idmodulo->EditCustomAttributes = "";
+		if ($this->idmodulo->getSessionValue() <> "") {
+			$this->idmodulo->CurrentValue = $this->idmodulo->getSessionValue();
+		if (strval($this->idmodulo->CurrentValue) <> "") {
+			$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER);
+		$sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `modulo`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		if (strval($lookuptblfilter) <> "") {
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		}
+		if ($sFilterWrk <> "") {
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+		}
 
-		// idempleado
-		$this->idempleado->EditAttrs["class"] = "form-control";
-		$this->idempleado->EditCustomAttributes = "";
-
-		// idcuenta
-		$this->idcuenta->EditAttrs["class"] = "form-control";
-		$this->idcuenta->EditCustomAttributes = "";
+		// Call Lookup selecting
+		$this->Lookup_Selecting($this->idmodulo, $sWhereWrk);
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = $conn->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$this->idmodulo->ViewValue = $rswrk->fields('DispFld');
+				$rswrk->Close();
+			} else {
+				$this->idmodulo->ViewValue = $this->idmodulo->CurrentValue;
+			}
+		} else {
+			$this->idmodulo->ViewValue = NULL;
+		}
+		$this->idmodulo->ViewCustomAttributes = "";
+		} else {
+		}
 
 		// estado
+		$this->estado->EditAttrs["class"] = "form-control";
 		$this->estado->EditCustomAttributes = "";
 		$arwrk = array();
 		$arwrk[] = array($this->estado->FldTagValue(1), $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->FldTagValue(1));
 		$arwrk[] = array($this->estado->FldTagValue(2), $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->FldTagValue(2));
+		array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
 		$this->estado->EditValue = $arwrk;
 
 		// fecha_insercion
@@ -849,21 +855,15 @@ class ccaja_chica extends cTable {
 			if ($Doc->Horizontal) { // Horizontal format, write header
 				$Doc->BeginExportRow();
 				if ($ExportPageType == "view") {
-					if ($this->idcaja_chica->Exportable) $Doc->ExportCaption($this->idcaja_chica);
-					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
-					if ($this->saldo->Exportable) $Doc->ExportCaption($this->saldo);
-					if ($this->idempresa->Exportable) $Doc->ExportCaption($this->idempresa);
-					if ($this->idempleado->Exportable) $Doc->ExportCaption($this->idempleado);
-					if ($this->idcuenta->Exportable) $Doc->ExportCaption($this->idcuenta);
+					if ($this->idtipo_documento_modulo->Exportable) $Doc->ExportCaption($this->idtipo_documento_modulo);
+					if ($this->idtipo_documento->Exportable) $Doc->ExportCaption($this->idtipo_documento);
+					if ($this->idmodulo->Exportable) $Doc->ExportCaption($this->idmodulo);
 					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
 					if ($this->fecha_insercion->Exportable) $Doc->ExportCaption($this->fecha_insercion);
 				} else {
-					if ($this->idcaja_chica->Exportable) $Doc->ExportCaption($this->idcaja_chica);
-					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
-					if ($this->saldo->Exportable) $Doc->ExportCaption($this->saldo);
-					if ($this->idempresa->Exportable) $Doc->ExportCaption($this->idempresa);
-					if ($this->idempleado->Exportable) $Doc->ExportCaption($this->idempleado);
-					if ($this->idcuenta->Exportable) $Doc->ExportCaption($this->idcuenta);
+					if ($this->idtipo_documento_modulo->Exportable) $Doc->ExportCaption($this->idtipo_documento_modulo);
+					if ($this->idtipo_documento->Exportable) $Doc->ExportCaption($this->idtipo_documento);
+					if ($this->idmodulo->Exportable) $Doc->ExportCaption($this->idmodulo);
 					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
 					if ($this->fecha_insercion->Exportable) $Doc->ExportCaption($this->fecha_insercion);
 				}
@@ -897,21 +897,15 @@ class ccaja_chica extends cTable {
 				if (!$Doc->ExportCustom) {
 					$Doc->BeginExportRow($RowCnt); // Allow CSS styles if enabled
 					if ($ExportPageType == "view") {
-						if ($this->idcaja_chica->Exportable) $Doc->ExportField($this->idcaja_chica);
-						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
-						if ($this->saldo->Exportable) $Doc->ExportField($this->saldo);
-						if ($this->idempresa->Exportable) $Doc->ExportField($this->idempresa);
-						if ($this->idempleado->Exportable) $Doc->ExportField($this->idempleado);
-						if ($this->idcuenta->Exportable) $Doc->ExportField($this->idcuenta);
+						if ($this->idtipo_documento_modulo->Exportable) $Doc->ExportField($this->idtipo_documento_modulo);
+						if ($this->idtipo_documento->Exportable) $Doc->ExportField($this->idtipo_documento);
+						if ($this->idmodulo->Exportable) $Doc->ExportField($this->idmodulo);
 						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
 						if ($this->fecha_insercion->Exportable) $Doc->ExportField($this->fecha_insercion);
 					} else {
-						if ($this->idcaja_chica->Exportable) $Doc->ExportField($this->idcaja_chica);
-						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
-						if ($this->saldo->Exportable) $Doc->ExportField($this->saldo);
-						if ($this->idempresa->Exportable) $Doc->ExportField($this->idempresa);
-						if ($this->idempleado->Exportable) $Doc->ExportField($this->idempleado);
-						if ($this->idcuenta->Exportable) $Doc->ExportField($this->idcuenta);
+						if ($this->idtipo_documento_modulo->Exportable) $Doc->ExportField($this->idtipo_documento_modulo);
+						if ($this->idtipo_documento->Exportable) $Doc->ExportField($this->idtipo_documento);
+						if ($this->idmodulo->Exportable) $Doc->ExportField($this->idmodulo);
 						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
 						if ($this->fecha_insercion->Exportable) $Doc->ExportField($this->fecha_insercion);
 					}

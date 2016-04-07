@@ -14,6 +14,7 @@ class cproveedor extends cTable {
 	var $direccion;
 	var $idpersona;
 	var $estado;
+	var $fecha_insercion;
 
 	//
 	// Table class constructor
@@ -68,6 +69,11 @@ class cproveedor extends cTable {
 		// estado
 		$this->estado = new cField('proveedor', 'proveedor', 'x_estado', 'estado', '`estado`', '`estado`', 202, -1, FALSE, '`estado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
 		$this->fields['estado'] = &$this->estado;
+
+		// fecha_insercion
+		$this->fecha_insercion = new cField('proveedor', 'proveedor', 'x_fecha_insercion', 'fecha_insercion', '`fecha_insercion`', 'DATE_FORMAT(`fecha_insercion`, \'%d/%m/%Y\')', 135, 7, FALSE, '`fecha_insercion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->fecha_insercion->FldDefaultErrMsg = str_replace("%s", "/", $Language->Phrase("IncorrectDateDMY"));
+		$this->fields['fecha_insercion'] = &$this->fecha_insercion;
 	}
 
 	// Single column sort
@@ -596,6 +602,7 @@ class cproveedor extends cTable {
 		$this->direccion->setDbValue($rs->fields('direccion'));
 		$this->idpersona->setDbValue($rs->fields('idpersona'));
 		$this->estado->setDbValue($rs->fields('estado'));
+		$this->fecha_insercion->setDbValue($rs->fields('fecha_insercion'));
 	}
 
 	// Render list row values
@@ -613,6 +620,7 @@ class cproveedor extends cTable {
 		// direccion
 		// idpersona
 		// estado
+		// fecha_insercion
 		// idproveedor
 
 		$this->idproveedor->ViewValue = $this->idproveedor->CurrentValue;
@@ -675,6 +683,11 @@ class cproveedor extends cTable {
 		}
 		$this->estado->ViewCustomAttributes = "";
 
+		// fecha_insercion
+		$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
+		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
+		$this->fecha_insercion->ViewCustomAttributes = "";
+
 		// idproveedor
 		$this->idproveedor->LinkCustomAttributes = "";
 		$this->idproveedor->HrefValue = "";
@@ -709,6 +722,11 @@ class cproveedor extends cTable {
 		$this->estado->LinkCustomAttributes = "";
 		$this->estado->HrefValue = "";
 		$this->estado->TooltipValue = "";
+
+		// fecha_insercion
+		$this->fecha_insercion->LinkCustomAttributes = "";
+		$this->fecha_insercion->HrefValue = "";
+		$this->fecha_insercion->TooltipValue = "";
 
 		// Call Row Rendered event
 		$this->Row_Rendered();
@@ -788,6 +806,12 @@ class cproveedor extends cTable {
 		$arwrk[] = array($this->estado->FldTagValue(2), $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->FldTagValue(2));
 		$this->estado->EditValue = $arwrk;
 
+		// fecha_insercion
+		$this->fecha_insercion->EditAttrs["class"] = "form-control";
+		$this->fecha_insercion->EditCustomAttributes = "";
+		$this->fecha_insercion->EditValue = ew_HtmlEncode(ew_FormatDateTime($this->fecha_insercion->CurrentValue, 7));
+		$this->fecha_insercion->PlaceHolder = ew_RemoveHtml($this->fecha_insercion->FldCaption());
+
 		// Call Row Rendered event
 		$this->Row_Rendered();
 	}
@@ -819,6 +843,7 @@ class cproveedor extends cTable {
 					if ($this->direccion->Exportable) $Doc->ExportCaption($this->direccion);
 					if ($this->idpersona->Exportable) $Doc->ExportCaption($this->idpersona);
 					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
+					if ($this->fecha_insercion->Exportable) $Doc->ExportCaption($this->fecha_insercion);
 				} else {
 					if ($this->idproveedor->Exportable) $Doc->ExportCaption($this->idproveedor);
 					if ($this->codigo->Exportable) $Doc->ExportCaption($this->codigo);
@@ -827,6 +852,7 @@ class cproveedor extends cTable {
 					if ($this->direccion->Exportable) $Doc->ExportCaption($this->direccion);
 					if ($this->idpersona->Exportable) $Doc->ExportCaption($this->idpersona);
 					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
+					if ($this->fecha_insercion->Exportable) $Doc->ExportCaption($this->fecha_insercion);
 				}
 				$Doc->EndExportRow();
 			}
@@ -865,6 +891,7 @@ class cproveedor extends cTable {
 						if ($this->direccion->Exportable) $Doc->ExportField($this->direccion);
 						if ($this->idpersona->Exportable) $Doc->ExportField($this->idpersona);
 						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
+						if ($this->fecha_insercion->Exportable) $Doc->ExportField($this->fecha_insercion);
 					} else {
 						if ($this->idproveedor->Exportable) $Doc->ExportField($this->idproveedor);
 						if ($this->codigo->Exportable) $Doc->ExportField($this->codigo);
@@ -873,6 +900,7 @@ class cproveedor extends cTable {
 						if ($this->direccion->Exportable) $Doc->ExportField($this->direccion);
 						if ($this->idpersona->Exportable) $Doc->ExportField($this->idpersona);
 						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
+						if ($this->fecha_insercion->Exportable) $Doc->ExportField($this->fecha_insercion);
 					}
 					$Doc->EndExportRow();
 				}
