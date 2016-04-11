@@ -8,6 +8,8 @@ ob_start(); // Turn on output buffering
 <?php include_once "caja_chicainfo.php" ?>
 <?php include_once "encargadogridcls.php" ?>
 <?php include_once "documento_caja_chicagridcls.php" ?>
+<?php include_once "caja_chica_detallegridcls.php" ?>
+<?php include_once "caja_chica_chequegridcls.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -369,6 +371,22 @@ class ccaja_chica_list extends ccaja_chica {
 			if (@$_POST["grid"] == "fdocumento_caja_chicagrid") {
 				if (!isset($GLOBALS["documento_caja_chica_grid"])) $GLOBALS["documento_caja_chica_grid"] = new cdocumento_caja_chica_grid;
 				$GLOBALS["documento_caja_chica_grid"]->Page_Init();
+				$this->Page_Terminate();
+				exit();
+			}
+
+			// Process auto fill for detail table 'caja_chica_detalle'
+			if (@$_POST["grid"] == "fcaja_chica_detallegrid") {
+				if (!isset($GLOBALS["caja_chica_detalle_grid"])) $GLOBALS["caja_chica_detalle_grid"] = new ccaja_chica_detalle_grid;
+				$GLOBALS["caja_chica_detalle_grid"]->Page_Init();
+				$this->Page_Terminate();
+				exit();
+			}
+
+			// Process auto fill for detail table 'caja_chica_cheque'
+			if (@$_POST["grid"] == "fcaja_chica_chequegrid") {
+				if (!isset($GLOBALS["caja_chica_cheque_grid"])) $GLOBALS["caja_chica_cheque_grid"] = new ccaja_chica_cheque_grid;
+				$GLOBALS["caja_chica_cheque_grid"]->Page_Init();
 				$this->Page_Terminate();
 				exit();
 			}
@@ -1012,6 +1030,22 @@ class ccaja_chica_list extends ccaja_chica {
 		$item->ShowInButtonGroup = FALSE;
 		if (!isset($GLOBALS["documento_caja_chica_grid"])) $GLOBALS["documento_caja_chica_grid"] = new cdocumento_caja_chica_grid;
 
+		// "detail_caja_chica_detalle"
+		$item = &$this->ListOptions->Add("detail_caja_chica_detalle");
+		$item->CssStyle = "white-space: nowrap;";
+		$item->Visible = TRUE && !$this->ShowMultipleDetails;
+		$item->OnLeft = FALSE;
+		$item->ShowInButtonGroup = FALSE;
+		if (!isset($GLOBALS["caja_chica_detalle_grid"])) $GLOBALS["caja_chica_detalle_grid"] = new ccaja_chica_detalle_grid;
+
+		// "detail_caja_chica_cheque"
+		$item = &$this->ListOptions->Add("detail_caja_chica_cheque");
+		$item->CssStyle = "white-space: nowrap;";
+		$item->Visible = TRUE && !$this->ShowMultipleDetails;
+		$item->OnLeft = FALSE;
+		$item->ShowInButtonGroup = FALSE;
+		if (!isset($GLOBALS["caja_chica_cheque_grid"])) $GLOBALS["caja_chica_cheque_grid"] = new ccaja_chica_cheque_grid;
+
 		// Multiple details
 		if ($this->ShowMultipleDetails) {
 			$item = &$this->ListOptions->Add("details");
@@ -1025,6 +1059,8 @@ class ccaja_chica_list extends ccaja_chica {
 		$pages = new cSubPages();
 		$pages->Add("encargado");
 		$pages->Add("documento_caja_chica");
+		$pages->Add("caja_chica_detalle");
+		$pages->Add("caja_chica_cheque");
 		$this->DetailPages = $pages;
 
 		// List actions
@@ -1160,6 +1196,56 @@ class ccaja_chica_list extends ccaja_chica {
 			$oListOpt->Body = $body;
 			if ($this->ShowMultipleDetails) $oListOpt->Visible = FALSE;
 		}
+
+		// "detail_caja_chica_detalle"
+		$oListOpt = &$this->ListOptions->Items["detail_caja_chica_detalle"];
+		if (TRUE) {
+			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("caja_chica_detalle", "TblCaption");
+			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("caja_chica_detallelist.php?" . EW_TABLE_SHOW_MASTER . "=caja_chica&fk_idcaja_chica=" . urlencode(strval($this->idcaja_chica->CurrentValue)) . "") . "\">" . $body . "</a>";
+			$links = "";
+			if ($GLOBALS["caja_chica_detalle_grid"]->DetailView) {
+				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=caja_chica_detalle")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+				if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
+				$DetailViewTblVar .= "caja_chica_detalle";
+			}
+			if ($GLOBALS["caja_chica_detalle_grid"]->DetailEdit) {
+				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=caja_chica_detalle")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+				if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
+				$DetailEditTblVar .= "caja_chica_detalle";
+			}
+			if ($links <> "") {
+				$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
+				$body .= "<ul class=\"dropdown-menu\">". $links . "</ul>";
+			}
+			$body = "<div class=\"btn-group\">" . $body . "</div>";
+			$oListOpt->Body = $body;
+			if ($this->ShowMultipleDetails) $oListOpt->Visible = FALSE;
+		}
+
+		// "detail_caja_chica_cheque"
+		$oListOpt = &$this->ListOptions->Items["detail_caja_chica_cheque"];
+		if (TRUE) {
+			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("caja_chica_cheque", "TblCaption");
+			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("caja_chica_chequelist.php?" . EW_TABLE_SHOW_MASTER . "=caja_chica&fk_idcaja_chica=" . urlencode(strval($this->idcaja_chica->CurrentValue)) . "") . "\">" . $body . "</a>";
+			$links = "";
+			if ($GLOBALS["caja_chica_cheque_grid"]->DetailView) {
+				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=caja_chica_cheque")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+				if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
+				$DetailViewTblVar .= "caja_chica_cheque";
+			}
+			if ($GLOBALS["caja_chica_cheque_grid"]->DetailEdit) {
+				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=caja_chica_cheque")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+				if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
+				$DetailEditTblVar .= "caja_chica_cheque";
+			}
+			if ($links <> "") {
+				$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
+				$body .= "<ul class=\"dropdown-menu\">". $links . "</ul>";
+			}
+			$body = "<div class=\"btn-group\">" . $body . "</div>";
+			$oListOpt->Body = $body;
+			if ($this->ShowMultipleDetails) $oListOpt->Visible = FALSE;
+		}
 		if ($this->ShowMultipleDetails) {
 			$body = $Language->Phrase("MultipleMasterDetails");
 			$body = "<div class=\"btn-group\">";
@@ -1222,6 +1308,24 @@ class ccaja_chica_list extends ccaja_chica {
 		if ($item->Visible) {
 			if ($DetailTableLink <> "") $DetailTableLink .= ",";
 			$DetailTableLink .= "documento_caja_chica";
+		}
+		$item = &$option->Add("detailadd_caja_chica_detalle");
+		$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=caja_chica_detalle");
+		$caption = $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["caja_chica_detalle"]->TableCaption();
+		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $caption . "</a>";
+		$item->Visible = ($GLOBALS["caja_chica_detalle"]->DetailAdd);
+		if ($item->Visible) {
+			if ($DetailTableLink <> "") $DetailTableLink .= ",";
+			$DetailTableLink .= "caja_chica_detalle";
+		}
+		$item = &$option->Add("detailadd_caja_chica_cheque");
+		$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=caja_chica_cheque");
+		$caption = $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["caja_chica_cheque"]->TableCaption();
+		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $caption . "</a>";
+		$item->Visible = ($GLOBALS["caja_chica_cheque"]->DetailAdd);
+		if ($item->Visible) {
+			if ($DetailTableLink <> "") $DetailTableLink .= ",";
+			$DetailTableLink .= "caja_chica_cheque";
 		}
 
 		// Add multiple details

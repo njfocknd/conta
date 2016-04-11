@@ -5,10 +5,8 @@ ob_start(); // Turn on output buffering
 <?php include_once "ewcfg12.php" ?>
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
-<?php include_once "caja_chicainfo.php" ?>
-<?php include_once "encargadogridcls.php" ?>
-<?php include_once "documento_caja_chicagridcls.php" ?>
-<?php include_once "caja_chica_detallegridcls.php" ?>
+<?php include_once "banco_cuentainfo.php" ?>
+<?php include_once "bancoinfo.php" ?>
 <?php include_once "caja_chica_chequegridcls.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
@@ -17,9 +15,9 @@ ob_start(); // Turn on output buffering
 // Page class
 //
 
-$caja_chica_add = NULL; // Initialize page object first
+$banco_cuenta_add = NULL; // Initialize page object first
 
-class ccaja_chica_add extends ccaja_chica {
+class cbanco_cuenta_add extends cbanco_cuenta {
 
 	// Page ID
 	var $PageID = 'add';
@@ -28,10 +26,10 @@ class ccaja_chica_add extends ccaja_chica {
 	var $ProjectID = "{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}";
 
 	// Table name
-	var $TableName = 'caja_chica';
+	var $TableName = 'banco_cuenta';
 
 	// Page object name
-	var $PageObjName = 'caja_chica_add';
+	var $PageObjName = 'banco_cuenta_add';
 
 	// Page name
 	function PageName() {
@@ -224,11 +222,14 @@ class ccaja_chica_add extends ccaja_chica {
 		// Parent constuctor
 		parent::__construct();
 
-		// Table object (caja_chica)
-		if (!isset($GLOBALS["caja_chica"]) || get_class($GLOBALS["caja_chica"]) == "ccaja_chica") {
-			$GLOBALS["caja_chica"] = &$this;
-			$GLOBALS["Table"] = &$GLOBALS["caja_chica"];
+		// Table object (banco_cuenta)
+		if (!isset($GLOBALS["banco_cuenta"]) || get_class($GLOBALS["banco_cuenta"]) == "cbanco_cuenta") {
+			$GLOBALS["banco_cuenta"] = &$this;
+			$GLOBALS["Table"] = &$GLOBALS["banco_cuenta"];
 		}
+
+		// Table object (banco)
+		if (!isset($GLOBALS['banco'])) $GLOBALS['banco'] = new cbanco();
 
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
@@ -236,7 +237,7 @@ class ccaja_chica_add extends ccaja_chica {
 
 		// Table name (for backward compatibility)
 		if (!defined("EW_TABLE_NAME"))
-			define("EW_TABLE_NAME", 'caja_chica', TRUE);
+			define("EW_TABLE_NAME", 'banco_cuenta', TRUE);
 
 		// Start timer
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
@@ -270,30 +271,6 @@ class ccaja_chica_add extends ccaja_chica {
 
 		// Process auto fill
 		if (@$_POST["ajax"] == "autofill") {
-
-			// Process auto fill for detail table 'encargado'
-			if (@$_POST["grid"] == "fencargadogrid") {
-				if (!isset($GLOBALS["encargado_grid"])) $GLOBALS["encargado_grid"] = new cencargado_grid;
-				$GLOBALS["encargado_grid"]->Page_Init();
-				$this->Page_Terminate();
-				exit();
-			}
-
-			// Process auto fill for detail table 'documento_caja_chica'
-			if (@$_POST["grid"] == "fdocumento_caja_chicagrid") {
-				if (!isset($GLOBALS["documento_caja_chica_grid"])) $GLOBALS["documento_caja_chica_grid"] = new cdocumento_caja_chica_grid;
-				$GLOBALS["documento_caja_chica_grid"]->Page_Init();
-				$this->Page_Terminate();
-				exit();
-			}
-
-			// Process auto fill for detail table 'caja_chica_detalle'
-			if (@$_POST["grid"] == "fcaja_chica_detallegrid") {
-				if (!isset($GLOBALS["caja_chica_detalle_grid"])) $GLOBALS["caja_chica_detalle_grid"] = new ccaja_chica_detalle_grid;
-				$GLOBALS["caja_chica_detalle_grid"]->Page_Init();
-				$this->Page_Terminate();
-				exit();
-			}
 
 			// Process auto fill for detail table 'caja_chica_cheque'
 			if (@$_POST["grid"] == "fcaja_chica_chequegrid") {
@@ -331,13 +308,13 @@ class ccaja_chica_add extends ccaja_chica {
 		Page_Unloaded();
 
 		// Export
-		global $EW_EXPORT, $caja_chica;
+		global $EW_EXPORT, $banco_cuenta;
 		if ($this->CustomExport <> "" && $this->CustomExport == $this->Export && array_key_exists($this->CustomExport, $EW_EXPORT)) {
 				$sContent = ob_get_contents();
 			if ($gsExportFile == "") $gsExportFile = $this->TableVar;
 			$class = $EW_EXPORT[$this->CustomExport];
 			if (class_exists($class)) {
-				$doc = new $class($caja_chica);
+				$doc = new $class($banco_cuenta);
 				$doc->Text = $sContent;
 				if ($this->Export == "email")
 					echo $this->ExportEmail($doc->Text);
@@ -374,6 +351,9 @@ class ccaja_chica_add extends ccaja_chica {
 	function Page_Main() {
 		global $objForm, $Language, $gsFormError;
 
+		// Set up master/detail parameters
+		$this->SetUpMasterParms();
+
 		// Process form if post back
 		if (@$_POST["a_add"] <> "") {
 			$this->CurrentAction = $_POST["a_add"]; // Get form action
@@ -383,11 +363,11 @@ class ccaja_chica_add extends ccaja_chica {
 
 			// Load key values from QueryString
 			$this->CopyRecord = TRUE;
-			if (@$_GET["idcaja_chica"] != "") {
-				$this->idcaja_chica->setQueryStringValue($_GET["idcaja_chica"]);
-				$this->setKey("idcaja_chica", $this->idcaja_chica->CurrentValue); // Set up key
+			if (@$_GET["idbanco_cuenta"] != "") {
+				$this->idbanco_cuenta->setQueryStringValue($_GET["idbanco_cuenta"]);
+				$this->setKey("idbanco_cuenta", $this->idbanco_cuenta->CurrentValue); // Set up key
 			} else {
-				$this->setKey("idcaja_chica", ""); // Clear key
+				$this->setKey("idbanco_cuenta", ""); // Clear key
 				$this->CopyRecord = FALSE;
 			}
 			if ($this->CopyRecord) {
@@ -423,7 +403,7 @@ class ccaja_chica_add extends ccaja_chica {
 			case "C": // Copy an existing record
 				if (!$this->LoadRow()) { // Load record based on key
 					if ($this->getFailureMessage() == "") $this->setFailureMessage($Language->Phrase("NoRecord")); // No record found
-					$this->Page_Terminate("caja_chicalist.php"); // No matching record, return to list
+					$this->Page_Terminate("banco_cuentalist.php"); // No matching record, return to list
 				}
 
 				// Set up detail parameters
@@ -438,9 +418,9 @@ class ccaja_chica_add extends ccaja_chica {
 						$sReturnUrl = $this->GetDetailUrl();
 					else
 						$sReturnUrl = $this->getReturnUrl();
-					if (ew_GetPageName($sReturnUrl) == "caja_chicalist.php")
+					if (ew_GetPageName($sReturnUrl) == "banco_cuentalist.php")
 						$sReturnUrl = $this->AddMasterUrl($sReturnUrl); // List page, return to list page with correct master key if necessary
-					elseif (ew_GetPageName($sReturnUrl) == "caja_chicaview.php")
+					elseif (ew_GetPageName($sReturnUrl) == "banco_cuentaview.php")
 						$sReturnUrl = $this->GetViewUrl(); // View page, return to view page with keyurl directly
 					$this->Page_Terminate($sReturnUrl); // Clean up and return
 				} else {
@@ -469,11 +449,12 @@ class ccaja_chica_add extends ccaja_chica {
 
 	// Load default values
 	function LoadDefaultValues() {
+		$this->idempresa->CurrentValue = 1;
+		$this->idbanco->CurrentValue = 1;
 		$this->nombre->CurrentValue = NULL;
 		$this->nombre->OldValue = $this->nombre->CurrentValue;
-		$this->idempresa->CurrentValue = 1;
-		$this->idempleado->CurrentValue = 1;
-		$this->idcuenta->CurrentValue = 1;
+		$this->numero->CurrentValue = NULL;
+		$this->numero->OldValue = $this->numero->CurrentValue;
 	}
 
 	// Load form values
@@ -481,17 +462,17 @@ class ccaja_chica_add extends ccaja_chica {
 
 		// Load from form
 		global $objForm;
-		if (!$this->nombre->FldIsDetailKey) {
-			$this->nombre->setFormValue($objForm->GetValue("x_nombre"));
-		}
 		if (!$this->idempresa->FldIsDetailKey) {
 			$this->idempresa->setFormValue($objForm->GetValue("x_idempresa"));
 		}
-		if (!$this->idempleado->FldIsDetailKey) {
-			$this->idempleado->setFormValue($objForm->GetValue("x_idempleado"));
+		if (!$this->idbanco->FldIsDetailKey) {
+			$this->idbanco->setFormValue($objForm->GetValue("x_idbanco"));
 		}
-		if (!$this->idcuenta->FldIsDetailKey) {
-			$this->idcuenta->setFormValue($objForm->GetValue("x_idcuenta"));
+		if (!$this->nombre->FldIsDetailKey) {
+			$this->nombre->setFormValue($objForm->GetValue("x_nombre"));
+		}
+		if (!$this->numero->FldIsDetailKey) {
+			$this->numero->setFormValue($objForm->GetValue("x_numero"));
 		}
 	}
 
@@ -499,10 +480,10 @@ class ccaja_chica_add extends ccaja_chica {
 	function RestoreFormValues() {
 		global $objForm;
 		$this->LoadOldRecord();
-		$this->nombre->CurrentValue = $this->nombre->FormValue;
 		$this->idempresa->CurrentValue = $this->idempresa->FormValue;
-		$this->idempleado->CurrentValue = $this->idempleado->FormValue;
-		$this->idcuenta->CurrentValue = $this->idcuenta->FormValue;
+		$this->idbanco->CurrentValue = $this->idbanco->FormValue;
+		$this->nombre->CurrentValue = $this->nombre->FormValue;
+		$this->numero->CurrentValue = $this->numero->FormValue;
 	}
 
 	// Load row based on key values
@@ -534,12 +515,11 @@ class ccaja_chica_add extends ccaja_chica {
 		// Call Row Selected event
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
-		$this->idcaja_chica->setDbValue($rs->fields('idcaja_chica'));
-		$this->nombre->setDbValue($rs->fields('nombre'));
-		$this->saldo->setDbValue($rs->fields('saldo'));
+		$this->idbanco_cuenta->setDbValue($rs->fields('idbanco_cuenta'));
 		$this->idempresa->setDbValue($rs->fields('idempresa'));
-		$this->idempleado->setDbValue($rs->fields('idempleado'));
-		$this->idcuenta->setDbValue($rs->fields('idcuenta'));
+		$this->idbanco->setDbValue($rs->fields('idbanco'));
+		$this->nombre->setDbValue($rs->fields('nombre'));
+		$this->numero->setDbValue($rs->fields('numero'));
 		$this->estado->setDbValue($rs->fields('estado'));
 		$this->fecha_insercion->setDbValue($rs->fields('fecha_insercion'));
 	}
@@ -548,12 +528,11 @@ class ccaja_chica_add extends ccaja_chica {
 	function LoadDbValues(&$rs) {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
-		$this->idcaja_chica->DbValue = $row['idcaja_chica'];
-		$this->nombre->DbValue = $row['nombre'];
-		$this->saldo->DbValue = $row['saldo'];
+		$this->idbanco_cuenta->DbValue = $row['idbanco_cuenta'];
 		$this->idempresa->DbValue = $row['idempresa'];
-		$this->idempleado->DbValue = $row['idempleado'];
-		$this->idcuenta->DbValue = $row['idcuenta'];
+		$this->idbanco->DbValue = $row['idbanco'];
+		$this->nombre->DbValue = $row['nombre'];
+		$this->numero->DbValue = $row['numero'];
 		$this->estado->DbValue = $row['estado'];
 		$this->fecha_insercion->DbValue = $row['fecha_insercion'];
 	}
@@ -563,8 +542,8 @@ class ccaja_chica_add extends ccaja_chica {
 
 		// Load key values from Session
 		$bValidKey = TRUE;
-		if (strval($this->getKey("idcaja_chica")) <> "")
-			$this->idcaja_chica->CurrentValue = $this->getKey("idcaja_chica"); // idcaja_chica
+		if (strval($this->getKey("idbanco_cuenta")) <> "")
+			$this->idbanco_cuenta->CurrentValue = $this->getKey("idbanco_cuenta"); // idbanco_cuenta
 		else
 			$bValidKey = FALSE;
 
@@ -591,28 +570,19 @@ class ccaja_chica_add extends ccaja_chica {
 		$this->Row_Rendering();
 
 		// Common render codes for all row types
-		// idcaja_chica
-		// nombre
-		// saldo
+		// idbanco_cuenta
 		// idempresa
-		// idempleado
-		// idcuenta
+		// idbanco
+		// nombre
+		// numero
 		// estado
 		// fecha_insercion
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-		// idcaja_chica
-		$this->idcaja_chica->ViewValue = $this->idcaja_chica->CurrentValue;
-		$this->idcaja_chica->ViewCustomAttributes = "";
-
-		// nombre
-		$this->nombre->ViewValue = $this->nombre->CurrentValue;
-		$this->nombre->ViewCustomAttributes = "";
-
-		// saldo
-		$this->saldo->ViewValue = $this->saldo->CurrentValue;
-		$this->saldo->ViewCustomAttributes = "";
+		// idbanco_cuenta
+		$this->idbanco_cuenta->ViewValue = $this->idbanco_cuenta->CurrentValue;
+		$this->idbanco_cuenta->ViewCustomAttributes = "";
 
 		// idempresa
 		if (strval($this->idempresa->CurrentValue) <> "") {
@@ -638,53 +608,37 @@ class ccaja_chica_add extends ccaja_chica {
 		}
 		$this->idempresa->ViewCustomAttributes = "";
 
-		// idempleado
-		if (strval($this->idempleado->CurrentValue) <> "") {
-			$sFilterWrk = "`idempleado`" . ew_SearchString("=", $this->idempleado->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `idempleado`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empleado`";
+		// idbanco
+		if (strval($this->idbanco->CurrentValue) <> "") {
+			$sFilterWrk = "`idbanco`" . ew_SearchString("=", $this->idbanco->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idbanco`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `banco`";
 		$sWhereWrk = "";
 		$lookuptblfilter = "`estado` = 'Activo'";
 		ew_AddFilter($sWhereWrk, $lookuptblfilter);
 		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idempleado, $sWhereWrk); // Call Lookup selecting
+		$this->Lookup_Selecting($this->idbanco, $sWhereWrk); // Call Lookup selecting
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 			$rswrk = Conn()->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
 				$arwrk = array();
 				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idempleado->ViewValue = $this->idempleado->DisplayValue($arwrk);
+				$this->idbanco->ViewValue = $this->idbanco->DisplayValue($arwrk);
 				$rswrk->Close();
 			} else {
-				$this->idempleado->ViewValue = $this->idempleado->CurrentValue;
+				$this->idbanco->ViewValue = $this->idbanco->CurrentValue;
 			}
 		} else {
-			$this->idempleado->ViewValue = NULL;
+			$this->idbanco->ViewValue = NULL;
 		}
-		$this->idempleado->ViewCustomAttributes = "";
+		$this->idbanco->ViewCustomAttributes = "";
 
-		// idcuenta
-		if (strval($this->idcuenta->CurrentValue) <> "") {
-			$sFilterWrk = "`idcuenta`" . ew_SearchString("=", $this->idcuenta->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `idcuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta`";
-		$sWhereWrk = "";
-		$lookuptblfilter = "`estado` = 'Activo' ";
-		ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idcuenta, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = Conn()->Execute($sSqlWrk);
-			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$arwrk = array();
-				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idcuenta->ViewValue = $this->idcuenta->DisplayValue($arwrk);
-				$rswrk->Close();
-			} else {
-				$this->idcuenta->ViewValue = $this->idcuenta->CurrentValue;
-			}
-		} else {
-			$this->idcuenta->ViewValue = NULL;
-		}
-		$this->idcuenta->ViewCustomAttributes = "";
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
+
+		// numero
+		$this->numero->ViewValue = $this->numero->CurrentValue;
+		$this->numero->ViewCustomAttributes = "";
 
 		// estado
 		if (strval($this->estado->CurrentValue) <> "") {
@@ -699,32 +653,26 @@ class ccaja_chica_add extends ccaja_chica {
 		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
 		$this->fecha_insercion->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->LinkCustomAttributes = "";
-			$this->nombre->HrefValue = "";
-			$this->nombre->TooltipValue = "";
-
 			// idempresa
 			$this->idempresa->LinkCustomAttributes = "";
 			$this->idempresa->HrefValue = "";
 			$this->idempresa->TooltipValue = "";
 
-			// idempleado
-			$this->idempleado->LinkCustomAttributes = "";
-			$this->idempleado->HrefValue = "";
-			$this->idempleado->TooltipValue = "";
-
-			// idcuenta
-			$this->idcuenta->LinkCustomAttributes = "";
-			$this->idcuenta->HrefValue = "";
-			$this->idcuenta->TooltipValue = "";
-		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
+			// idbanco
+			$this->idbanco->LinkCustomAttributes = "";
+			$this->idbanco->HrefValue = "";
+			$this->idbanco->TooltipValue = "";
 
 			// nombre
-			$this->nombre->EditAttrs["class"] = "form-control";
-			$this->nombre->EditCustomAttributes = "";
-			$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
-			$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
+			$this->nombre->LinkCustomAttributes = "";
+			$this->nombre->HrefValue = "";
+			$this->nombre->TooltipValue = "";
+
+			// numero
+			$this->numero->LinkCustomAttributes = "";
+			$this->numero->HrefValue = "";
+			$this->numero->TooltipValue = "";
+		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
 
 			// idempresa
 			$this->idempresa->EditAttrs["class"] = "form-control";
@@ -747,65 +695,82 @@ class ccaja_chica_add extends ccaja_chica {
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
 			$this->idempresa->EditValue = $arwrk;
 
-			// idempleado
-			$this->idempleado->EditAttrs["class"] = "form-control";
-			$this->idempleado->EditCustomAttributes = "";
-			if (trim(strval($this->idempleado->CurrentValue)) == "") {
-				$sFilterWrk = "0=1";
-			} else {
-				$sFilterWrk = "`idempleado`" . ew_SearchString("=", $this->idempleado->CurrentValue, EW_DATATYPE_NUMBER, "");
-			}
-			$sSqlWrk = "SELECT `idempleado`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, `idempresa` AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `empleado`";
+			// idbanco
+			$this->idbanco->EditAttrs["class"] = "form-control";
+			$this->idbanco->EditCustomAttributes = "";
+			if ($this->idbanco->getSessionValue() <> "") {
+				$this->idbanco->CurrentValue = $this->idbanco->getSessionValue();
+			if (strval($this->idbanco->CurrentValue) <> "") {
+				$sFilterWrk = "`idbanco`" . ew_SearchString("=", $this->idbanco->CurrentValue, EW_DATATYPE_NUMBER, "");
+			$sSqlWrk = "SELECT `idbanco`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `banco`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
 			ew_AddFilter($sWhereWrk, $lookuptblfilter);
 			ew_AddFilter($sWhereWrk, $sFilterWrk);
-			$this->Lookup_Selecting($this->idempleado, $sWhereWrk); // Call Lookup selecting
+			$this->Lookup_Selecting($this->idbanco, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = Conn()->Execute($sSqlWrk);
-			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
-			if ($rswrk) $rswrk->Close();
-			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
-			$this->idempleado->EditValue = $arwrk;
-
-			// idcuenta
-			$this->idcuenta->EditAttrs["class"] = "form-control";
-			$this->idcuenta->EditCustomAttributes = "";
-			if (trim(strval($this->idcuenta->CurrentValue)) == "") {
+				$rswrk = Conn()->Execute($sSqlWrk);
+				if ($rswrk && !$rswrk->EOF) { // Lookup values found
+					$arwrk = array();
+					$arwrk[1] = $rswrk->fields('DispFld');
+					$this->idbanco->ViewValue = $this->idbanco->DisplayValue($arwrk);
+					$rswrk->Close();
+				} else {
+					$this->idbanco->ViewValue = $this->idbanco->CurrentValue;
+				}
+			} else {
+				$this->idbanco->ViewValue = NULL;
+			}
+			$this->idbanco->ViewCustomAttributes = "";
+			} else {
+			if (trim(strval($this->idbanco->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idcuenta`" . ew_SearchString("=", $this->idcuenta->CurrentValue, EW_DATATYPE_NUMBER, "");
+				$sFilterWrk = "`idbanco`" . ew_SearchString("=", $this->idbanco->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
-			$sSqlWrk = "SELECT `idcuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `cuenta`";
+			$sSqlWrk = "SELECT `idbanco`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `banco`";
 			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo' ";
+			$lookuptblfilter = "`estado` = 'Activo'";
 			ew_AddFilter($sWhereWrk, $lookuptblfilter);
 			ew_AddFilter($sWhereWrk, $sFilterWrk);
-			$this->Lookup_Selecting($this->idcuenta, $sWhereWrk); // Call Lookup selecting
+			$this->Lookup_Selecting($this->idbanco, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
-			$this->idcuenta->EditValue = $arwrk;
+			$this->idbanco->EditValue = $arwrk;
+			}
+
+			// nombre
+			$this->nombre->EditAttrs["class"] = "form-control";
+			$this->nombre->EditCustomAttributes = "";
+			$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
+			$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
+
+			// numero
+			$this->numero->EditAttrs["class"] = "form-control";
+			$this->numero->EditCustomAttributes = "";
+			$this->numero->EditValue = ew_HtmlEncode($this->numero->CurrentValue);
+			$this->numero->PlaceHolder = ew_RemoveHtml($this->numero->FldCaption());
 
 			// Add refer script
-			// nombre
-
-			$this->nombre->LinkCustomAttributes = "";
-			$this->nombre->HrefValue = "";
-
 			// idempresa
+
 			$this->idempresa->LinkCustomAttributes = "";
 			$this->idempresa->HrefValue = "";
 
-			// idempleado
-			$this->idempleado->LinkCustomAttributes = "";
-			$this->idempleado->HrefValue = "";
+			// idbanco
+			$this->idbanco->LinkCustomAttributes = "";
+			$this->idbanco->HrefValue = "";
 
-			// idcuenta
-			$this->idcuenta->LinkCustomAttributes = "";
-			$this->idcuenta->HrefValue = "";
+			// nombre
+			$this->nombre->LinkCustomAttributes = "";
+			$this->nombre->HrefValue = "";
+
+			// numero
+			$this->numero->LinkCustomAttributes = "";
+			$this->numero->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
 			$this->RowType == EW_ROWTYPE_EDIT ||
@@ -828,33 +793,15 @@ class ccaja_chica_add extends ccaja_chica {
 		// Check if validation required
 		if (!EW_SERVER_VALIDATE)
 			return ($gsFormError == "");
-		if (!$this->nombre->FldIsDetailKey && !is_null($this->nombre->FormValue) && $this->nombre->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->nombre->FldCaption(), $this->nombre->ReqErrMsg));
-		}
 		if (!$this->idempresa->FldIsDetailKey && !is_null($this->idempresa->FormValue) && $this->idempresa->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->idempresa->FldCaption(), $this->idempresa->ReqErrMsg));
 		}
-		if (!$this->idempleado->FldIsDetailKey && !is_null($this->idempleado->FormValue) && $this->idempleado->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->idempleado->FldCaption(), $this->idempleado->ReqErrMsg));
-		}
-		if (!$this->idcuenta->FldIsDetailKey && !is_null($this->idcuenta->FormValue) && $this->idcuenta->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->idcuenta->FldCaption(), $this->idcuenta->ReqErrMsg));
+		if (!$this->idbanco->FldIsDetailKey && !is_null($this->idbanco->FormValue) && $this->idbanco->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->idbanco->FldCaption(), $this->idbanco->ReqErrMsg));
 		}
 
 		// Validate detail grid
 		$DetailTblVar = explode(",", $this->getCurrentDetailTable());
-		if (in_array("encargado", $DetailTblVar) && $GLOBALS["encargado"]->DetailAdd) {
-			if (!isset($GLOBALS["encargado_grid"])) $GLOBALS["encargado_grid"] = new cencargado_grid(); // get detail page object
-			$GLOBALS["encargado_grid"]->ValidateGridForm();
-		}
-		if (in_array("documento_caja_chica", $DetailTblVar) && $GLOBALS["documento_caja_chica"]->DetailAdd) {
-			if (!isset($GLOBALS["documento_caja_chica_grid"])) $GLOBALS["documento_caja_chica_grid"] = new cdocumento_caja_chica_grid(); // get detail page object
-			$GLOBALS["documento_caja_chica_grid"]->ValidateGridForm();
-		}
-		if (in_array("caja_chica_detalle", $DetailTblVar) && $GLOBALS["caja_chica_detalle"]->DetailAdd) {
-			if (!isset($GLOBALS["caja_chica_detalle_grid"])) $GLOBALS["caja_chica_detalle_grid"] = new ccaja_chica_detalle_grid(); // get detail page object
-			$GLOBALS["caja_chica_detalle_grid"]->ValidateGridForm();
-		}
 		if (in_array("caja_chica_cheque", $DetailTblVar) && $GLOBALS["caja_chica_cheque"]->DetailAdd) {
 			if (!isset($GLOBALS["caja_chica_cheque_grid"])) $GLOBALS["caja_chica_cheque_grid"] = new ccaja_chica_cheque_grid(); // get detail page object
 			$GLOBALS["caja_chica_cheque_grid"]->ValidateGridForm();
@@ -887,17 +834,17 @@ class ccaja_chica_add extends ccaja_chica {
 		}
 		$rsnew = array();
 
-		// nombre
-		$this->nombre->SetDbValueDef($rsnew, $this->nombre->CurrentValue, "", FALSE);
-
 		// idempresa
 		$this->idempresa->SetDbValueDef($rsnew, $this->idempresa->CurrentValue, 0, strval($this->idempresa->CurrentValue) == "");
 
-		// idempleado
-		$this->idempleado->SetDbValueDef($rsnew, $this->idempleado->CurrentValue, 0, strval($this->idempleado->CurrentValue) == "");
+		// idbanco
+		$this->idbanco->SetDbValueDef($rsnew, $this->idbanco->CurrentValue, 0, strval($this->idbanco->CurrentValue) == "");
 
-		// idcuenta
-		$this->idcuenta->SetDbValueDef($rsnew, $this->idcuenta->CurrentValue, 0, strval($this->idcuenta->CurrentValue) == "");
+		// nombre
+		$this->nombre->SetDbValueDef($rsnew, $this->nombre->CurrentValue, NULL, FALSE);
+
+		// numero
+		$this->numero->SetDbValueDef($rsnew, $this->numero->CurrentValue, NULL, FALSE);
 
 		// Call Row Inserting event
 		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
@@ -909,8 +856,8 @@ class ccaja_chica_add extends ccaja_chica {
 			if ($AddRow) {
 
 				// Get insert id if necessary
-				$this->idcaja_chica->setDbValue($conn->Insert_ID());
-				$rsnew['idcaja_chica'] = $this->idcaja_chica->DbValue;
+				$this->idbanco_cuenta->setDbValue($conn->Insert_ID());
+				$rsnew['idbanco_cuenta'] = $this->idbanco_cuenta->DbValue;
 			}
 		} else {
 			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
@@ -928,33 +875,12 @@ class ccaja_chica_add extends ccaja_chica {
 		// Add detail records
 		if ($AddRow) {
 			$DetailTblVar = explode(",", $this->getCurrentDetailTable());
-			if (in_array("encargado", $DetailTblVar) && $GLOBALS["encargado"]->DetailAdd) {
-				$GLOBALS["encargado"]->idreferencia->setSessionValue($this->idcaja_chica->CurrentValue); // Set master key
-				if (!isset($GLOBALS["encargado_grid"])) $GLOBALS["encargado_grid"] = new cencargado_grid(); // Get detail page object
-				$AddRow = $GLOBALS["encargado_grid"]->GridInsert();
-				if (!$AddRow)
-					$GLOBALS["encargado"]->idreferencia->setSessionValue(""); // Clear master key if insert failed
-			}
-			if (in_array("documento_caja_chica", $DetailTblVar) && $GLOBALS["documento_caja_chica"]->DetailAdd) {
-				$GLOBALS["documento_caja_chica"]->idcaja_chica->setSessionValue($this->idcaja_chica->CurrentValue); // Set master key
-				if (!isset($GLOBALS["documento_caja_chica_grid"])) $GLOBALS["documento_caja_chica_grid"] = new cdocumento_caja_chica_grid(); // Get detail page object
-				$AddRow = $GLOBALS["documento_caja_chica_grid"]->GridInsert();
-				if (!$AddRow)
-					$GLOBALS["documento_caja_chica"]->idcaja_chica->setSessionValue(""); // Clear master key if insert failed
-			}
-			if (in_array("caja_chica_detalle", $DetailTblVar) && $GLOBALS["caja_chica_detalle"]->DetailAdd) {
-				$GLOBALS["caja_chica_detalle"]->idcaja_chica->setSessionValue($this->idcaja_chica->CurrentValue); // Set master key
-				if (!isset($GLOBALS["caja_chica_detalle_grid"])) $GLOBALS["caja_chica_detalle_grid"] = new ccaja_chica_detalle_grid(); // Get detail page object
-				$AddRow = $GLOBALS["caja_chica_detalle_grid"]->GridInsert();
-				if (!$AddRow)
-					$GLOBALS["caja_chica_detalle"]->idcaja_chica->setSessionValue(""); // Clear master key if insert failed
-			}
 			if (in_array("caja_chica_cheque", $DetailTblVar) && $GLOBALS["caja_chica_cheque"]->DetailAdd) {
-				$GLOBALS["caja_chica_cheque"]->idcaja_chica->setSessionValue($this->idcaja_chica->CurrentValue); // Set master key
+				$GLOBALS["caja_chica_cheque"]->idbanco_cuenta->setSessionValue($this->idbanco_cuenta->CurrentValue); // Set master key
 				if (!isset($GLOBALS["caja_chica_cheque_grid"])) $GLOBALS["caja_chica_cheque_grid"] = new ccaja_chica_cheque_grid(); // Get detail page object
 				$AddRow = $GLOBALS["caja_chica_cheque_grid"]->GridInsert();
 				if (!$AddRow)
-					$GLOBALS["caja_chica_cheque"]->idcaja_chica->setSessionValue(""); // Clear master key if insert failed
+					$GLOBALS["caja_chica_cheque"]->idbanco_cuenta->setSessionValue(""); // Clear master key if insert failed
 			}
 		}
 
@@ -975,6 +901,66 @@ class ccaja_chica_add extends ccaja_chica {
 		return $AddRow;
 	}
 
+	// Set up master/detail based on QueryString
+	function SetUpMasterParms() {
+		$bValidMaster = FALSE;
+
+		// Get the keys for master table
+		if (isset($_GET[EW_TABLE_SHOW_MASTER])) {
+			$sMasterTblVar = $_GET[EW_TABLE_SHOW_MASTER];
+			if ($sMasterTblVar == "") {
+				$bValidMaster = TRUE;
+				$this->DbMasterFilter = "";
+				$this->DbDetailFilter = "";
+			}
+			if ($sMasterTblVar == "banco") {
+				$bValidMaster = TRUE;
+				if (@$_GET["fk_idbanco"] <> "") {
+					$GLOBALS["banco"]->idbanco->setQueryStringValue($_GET["fk_idbanco"]);
+					$this->idbanco->setQueryStringValue($GLOBALS["banco"]->idbanco->QueryStringValue);
+					$this->idbanco->setSessionValue($this->idbanco->QueryStringValue);
+					if (!is_numeric($GLOBALS["banco"]->idbanco->QueryStringValue)) $bValidMaster = FALSE;
+				} else {
+					$bValidMaster = FALSE;
+				}
+			}
+		} elseif (isset($_POST[EW_TABLE_SHOW_MASTER])) {
+			$sMasterTblVar = $_POST[EW_TABLE_SHOW_MASTER];
+			if ($sMasterTblVar == "") {
+				$bValidMaster = TRUE;
+				$this->DbMasterFilter = "";
+				$this->DbDetailFilter = "";
+			}
+			if ($sMasterTblVar == "banco") {
+				$bValidMaster = TRUE;
+				if (@$_POST["fk_idbanco"] <> "") {
+					$GLOBALS["banco"]->idbanco->setFormValue($_POST["fk_idbanco"]);
+					$this->idbanco->setFormValue($GLOBALS["banco"]->idbanco->FormValue);
+					$this->idbanco->setSessionValue($this->idbanco->FormValue);
+					if (!is_numeric($GLOBALS["banco"]->idbanco->FormValue)) $bValidMaster = FALSE;
+				} else {
+					$bValidMaster = FALSE;
+				}
+			}
+		}
+		if ($bValidMaster) {
+
+			// Save current master table
+			$this->setCurrentMasterTable($sMasterTblVar);
+
+			// Reset start record counter (new master key)
+			$this->StartRec = 1;
+			$this->setStartRecordNumber($this->StartRec);
+
+			// Clear previous master key from Session
+			if ($sMasterTblVar <> "banco") {
+				if ($this->idbanco->CurrentValue == "") $this->idbanco->setSessionValue("");
+			}
+		}
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
+		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
+	}
+
 	// Set up detail parms based on QueryString
 	function SetUpDetailParms() {
 
@@ -987,60 +973,6 @@ class ccaja_chica_add extends ccaja_chica {
 		}
 		if ($sDetailTblVar <> "") {
 			$DetailTblVar = explode(",", $sDetailTblVar);
-			if (in_array("encargado", $DetailTblVar)) {
-				if (!isset($GLOBALS["encargado_grid"]))
-					$GLOBALS["encargado_grid"] = new cencargado_grid;
-				if ($GLOBALS["encargado_grid"]->DetailAdd) {
-					if ($this->CopyRecord)
-						$GLOBALS["encargado_grid"]->CurrentMode = "copy";
-					else
-						$GLOBALS["encargado_grid"]->CurrentMode = "add";
-					$GLOBALS["encargado_grid"]->CurrentAction = "gridadd";
-
-					// Save current master table to detail table
-					$GLOBALS["encargado_grid"]->setCurrentMasterTable($this->TableVar);
-					$GLOBALS["encargado_grid"]->setStartRecordNumber(1);
-					$GLOBALS["encargado_grid"]->idreferencia->FldIsDetailKey = TRUE;
-					$GLOBALS["encargado_grid"]->idreferencia->CurrentValue = $this->idcaja_chica->CurrentValue;
-					$GLOBALS["encargado_grid"]->idreferencia->setSessionValue($GLOBALS["encargado_grid"]->idreferencia->CurrentValue);
-				}
-			}
-			if (in_array("documento_caja_chica", $DetailTblVar)) {
-				if (!isset($GLOBALS["documento_caja_chica_grid"]))
-					$GLOBALS["documento_caja_chica_grid"] = new cdocumento_caja_chica_grid;
-				if ($GLOBALS["documento_caja_chica_grid"]->DetailAdd) {
-					if ($this->CopyRecord)
-						$GLOBALS["documento_caja_chica_grid"]->CurrentMode = "copy";
-					else
-						$GLOBALS["documento_caja_chica_grid"]->CurrentMode = "add";
-					$GLOBALS["documento_caja_chica_grid"]->CurrentAction = "gridadd";
-
-					// Save current master table to detail table
-					$GLOBALS["documento_caja_chica_grid"]->setCurrentMasterTable($this->TableVar);
-					$GLOBALS["documento_caja_chica_grid"]->setStartRecordNumber(1);
-					$GLOBALS["documento_caja_chica_grid"]->idcaja_chica->FldIsDetailKey = TRUE;
-					$GLOBALS["documento_caja_chica_grid"]->idcaja_chica->CurrentValue = $this->idcaja_chica->CurrentValue;
-					$GLOBALS["documento_caja_chica_grid"]->idcaja_chica->setSessionValue($GLOBALS["documento_caja_chica_grid"]->idcaja_chica->CurrentValue);
-				}
-			}
-			if (in_array("caja_chica_detalle", $DetailTblVar)) {
-				if (!isset($GLOBALS["caja_chica_detalle_grid"]))
-					$GLOBALS["caja_chica_detalle_grid"] = new ccaja_chica_detalle_grid;
-				if ($GLOBALS["caja_chica_detalle_grid"]->DetailAdd) {
-					if ($this->CopyRecord)
-						$GLOBALS["caja_chica_detalle_grid"]->CurrentMode = "copy";
-					else
-						$GLOBALS["caja_chica_detalle_grid"]->CurrentMode = "add";
-					$GLOBALS["caja_chica_detalle_grid"]->CurrentAction = "gridadd";
-
-					// Save current master table to detail table
-					$GLOBALS["caja_chica_detalle_grid"]->setCurrentMasterTable($this->TableVar);
-					$GLOBALS["caja_chica_detalle_grid"]->setStartRecordNumber(1);
-					$GLOBALS["caja_chica_detalle_grid"]->idcaja_chica->FldIsDetailKey = TRUE;
-					$GLOBALS["caja_chica_detalle_grid"]->idcaja_chica->CurrentValue = $this->idcaja_chica->CurrentValue;
-					$GLOBALS["caja_chica_detalle_grid"]->idcaja_chica->setSessionValue($GLOBALS["caja_chica_detalle_grid"]->idcaja_chica->CurrentValue);
-				}
-			}
 			if (in_array("caja_chica_cheque", $DetailTblVar)) {
 				if (!isset($GLOBALS["caja_chica_cheque_grid"]))
 					$GLOBALS["caja_chica_cheque_grid"] = new ccaja_chica_cheque_grid;
@@ -1054,9 +986,9 @@ class ccaja_chica_add extends ccaja_chica {
 					// Save current master table to detail table
 					$GLOBALS["caja_chica_cheque_grid"]->setCurrentMasterTable($this->TableVar);
 					$GLOBALS["caja_chica_cheque_grid"]->setStartRecordNumber(1);
-					$GLOBALS["caja_chica_cheque_grid"]->idcaja_chica->FldIsDetailKey = TRUE;
-					$GLOBALS["caja_chica_cheque_grid"]->idcaja_chica->CurrentValue = $this->idcaja_chica->CurrentValue;
-					$GLOBALS["caja_chica_cheque_grid"]->idcaja_chica->setSessionValue($GLOBALS["caja_chica_cheque_grid"]->idcaja_chica->CurrentValue);
+					$GLOBALS["caja_chica_cheque_grid"]->idbanco_cuenta->FldIsDetailKey = TRUE;
+					$GLOBALS["caja_chica_cheque_grid"]->idbanco_cuenta->CurrentValue = $this->idbanco_cuenta->CurrentValue;
+					$GLOBALS["caja_chica_cheque_grid"]->idbanco_cuenta->setSessionValue($GLOBALS["caja_chica_cheque_grid"]->idbanco_cuenta->CurrentValue);
 				}
 			}
 		}
@@ -1067,7 +999,7 @@ class ccaja_chica_add extends ccaja_chica {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
 		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
-		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("caja_chicalist.php"), "", $this->TableVar, TRUE);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("banco_cuentalist.php"), "", $this->TableVar, TRUE);
 		$PageId = ($this->CurrentAction == "C") ? "Copy" : "Add";
 		$Breadcrumb->Add("add", $PageId, $url);
 	}
@@ -1144,29 +1076,29 @@ class ccaja_chica_add extends ccaja_chica {
 <?php
 
 // Create page object
-if (!isset($caja_chica_add)) $caja_chica_add = new ccaja_chica_add();
+if (!isset($banco_cuenta_add)) $banco_cuenta_add = new cbanco_cuenta_add();
 
 // Page init
-$caja_chica_add->Page_Init();
+$banco_cuenta_add->Page_Init();
 
 // Page main
-$caja_chica_add->Page_Main();
+$banco_cuenta_add->Page_Main();
 
 // Global Page Rendering event (in userfn*.php)
 Page_Rendering();
 
 // Page Rendering event
-$caja_chica_add->Page_Render();
+$banco_cuenta_add->Page_Render();
 ?>
 <?php include_once "header.php" ?>
 <script type="text/javascript">
 
 // Form object
 var CurrentPageID = EW_PAGE_ID = "add";
-var CurrentForm = fcaja_chicaadd = new ew_Form("fcaja_chicaadd", "add");
+var CurrentForm = fbanco_cuentaadd = new ew_Form("fbanco_cuentaadd", "add");
 
 // Validate form
-fcaja_chicaadd.Validate = function() {
+fbanco_cuentaadd.Validate = function() {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
@@ -1180,18 +1112,12 @@ fcaja_chicaadd.Validate = function() {
 	for (var i = startcnt; i <= rowcnt; i++) {
 		var infix = ($k[0]) ? String(i) : "";
 		$fobj.data("rowindex", infix);
-			elm = this.GetElements("x" + infix + "_nombre");
-			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $caja_chica->nombre->FldCaption(), $caja_chica->nombre->ReqErrMsg)) ?>");
 			elm = this.GetElements("x" + infix + "_idempresa");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $caja_chica->idempresa->FldCaption(), $caja_chica->idempresa->ReqErrMsg)) ?>");
-			elm = this.GetElements("x" + infix + "_idempleado");
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $banco_cuenta->idempresa->FldCaption(), $banco_cuenta->idempresa->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_idbanco");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $caja_chica->idempleado->FldCaption(), $caja_chica->idempleado->ReqErrMsg)) ?>");
-			elm = this.GetElements("x" + infix + "_idcuenta");
-			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $caja_chica->idcuenta->FldCaption(), $caja_chica->idcuenta->ReqErrMsg)) ?>");
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $banco_cuenta->idbanco->FldCaption(), $banco_cuenta->idbanco->ReqErrMsg)) ?>");
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -1210,7 +1136,7 @@ fcaja_chicaadd.Validate = function() {
 }
 
 // Form_CustomValidate event
-fcaja_chicaadd.Form_CustomValidate = 
+fbanco_cuentaadd.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
 
  	// Your custom validation code here, return false if invalid. 
@@ -1219,15 +1145,14 @@ fcaja_chicaadd.Form_CustomValidate =
 
 // Use JavaScript validation or not
 <?php if (EW_CLIENT_VALIDATE) { ?>
-fcaja_chicaadd.ValidateRequired = true;
+fbanco_cuentaadd.ValidateRequired = true;
 <?php } else { ?>
-fcaja_chicaadd.ValidateRequired = false; 
+fbanco_cuentaadd.ValidateRequired = false; 
 <?php } ?>
 
 // Dynamic selection lists
-fcaja_chicaadd.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":["x_idempleado"],"FilterFields":[],"Options":[],"Template":""};
-fcaja_chicaadd.Lists["x_idempleado"] = {"LinkField":"x_idempleado","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":["x_idempresa"],"ChildFields":[],"FilterFields":["x_idempresa"],"Options":[],"Template":""};
-fcaja_chicaadd.Lists["x_idcuenta"] = {"LinkField":"x_idcuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fbanco_cuentaadd.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fbanco_cuentaadd.Lists["x_idbanco"] = {"LinkField":"x_idbanco","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
 // Form object for search
 </script>
@@ -1240,51 +1165,44 @@ fcaja_chicaadd.Lists["x_idcuenta"] = {"LinkField":"x_idcuenta","Ajax":true,"Auto
 <?php echo $Language->SelectionForm(); ?>
 <div class="clearfix"></div>
 </div>
-<?php $caja_chica_add->ShowPageHeader(); ?>
+<?php $banco_cuenta_add->ShowPageHeader(); ?>
 <?php
-$caja_chica_add->ShowMessage();
+$banco_cuenta_add->ShowMessage();
 ?>
-<form name="fcaja_chicaadd" id="fcaja_chicaadd" class="<?php echo $caja_chica_add->FormClassName ?>" action="<?php echo ew_CurrentPage() ?>" method="post">
-<?php if ($caja_chica_add->CheckToken) { ?>
-<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $caja_chica_add->Token ?>">
+<form name="fbanco_cuentaadd" id="fbanco_cuentaadd" class="<?php echo $banco_cuenta_add->FormClassName ?>" action="<?php echo ew_CurrentPage() ?>" method="post">
+<?php if ($banco_cuenta_add->CheckToken) { ?>
+<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $banco_cuenta_add->Token ?>">
 <?php } ?>
-<input type="hidden" name="t" value="caja_chica">
+<input type="hidden" name="t" value="banco_cuenta">
 <input type="hidden" name="a_add" id="a_add" value="A">
-<div>
-<?php if ($caja_chica->nombre->Visible) { // nombre ?>
-	<div id="r_nombre" class="form-group">
-		<label id="elh_caja_chica_nombre" for="x_nombre" class="col-sm-2 control-label ewLabel"><?php echo $caja_chica->nombre->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
-		<div class="col-sm-10"><div<?php echo $caja_chica->nombre->CellAttributes() ?>>
-<span id="el_caja_chica_nombre">
-<input type="text" data-table="caja_chica" data-field="x_nombre" name="x_nombre" id="x_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($caja_chica->nombre->getPlaceHolder()) ?>" value="<?php echo $caja_chica->nombre->EditValue ?>"<?php echo $caja_chica->nombre->EditAttributes() ?>>
-</span>
-<?php echo $caja_chica->nombre->CustomMsg ?></div></div>
-	</div>
+<?php if ($banco_cuenta->getCurrentMasterTable() == "banco") { ?>
+<input type="hidden" name="<?php echo EW_TABLE_SHOW_MASTER ?>" value="banco">
+<input type="hidden" name="fk_idbanco" value="<?php echo $banco_cuenta->idbanco->getSessionValue() ?>">
 <?php } ?>
-<?php if ($caja_chica->idempresa->Visible) { // idempresa ?>
+<div>
+<?php if ($banco_cuenta->idempresa->Visible) { // idempresa ?>
 	<div id="r_idempresa" class="form-group">
-		<label id="elh_caja_chica_idempresa" for="x_idempresa" class="col-sm-2 control-label ewLabel"><?php echo $caja_chica->idempresa->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
-		<div class="col-sm-10"><div<?php echo $caja_chica->idempresa->CellAttributes() ?>>
-<span id="el_caja_chica_idempresa">
-<?php $caja_chica->idempresa->EditAttrs["onchange"] = "ew_UpdateOpt.call(this); " . @$caja_chica->idempresa->EditAttrs["onchange"]; ?>
-<select data-table="caja_chica" data-field="x_idempresa" data-value-separator="<?php echo ew_HtmlEncode(is_array($caja_chica->idempresa->DisplayValueSeparator) ? json_encode($caja_chica->idempresa->DisplayValueSeparator) : $caja_chica->idempresa->DisplayValueSeparator) ?>" id="x_idempresa" name="x_idempresa"<?php echo $caja_chica->idempresa->EditAttributes() ?>>
+		<label id="elh_banco_cuenta_idempresa" for="x_idempresa" class="col-sm-2 control-label ewLabel"><?php echo $banco_cuenta->idempresa->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $banco_cuenta->idempresa->CellAttributes() ?>>
+<span id="el_banco_cuenta_idempresa">
+<select data-table="banco_cuenta" data-field="x_idempresa" data-value-separator="<?php echo ew_HtmlEncode(is_array($banco_cuenta->idempresa->DisplayValueSeparator) ? json_encode($banco_cuenta->idempresa->DisplayValueSeparator) : $banco_cuenta->idempresa->DisplayValueSeparator) ?>" id="x_idempresa" name="x_idempresa"<?php echo $banco_cuenta->idempresa->EditAttributes() ?>>
 <?php
-if (is_array($caja_chica->idempresa->EditValue)) {
-	$arwrk = $caja_chica->idempresa->EditValue;
+if (is_array($banco_cuenta->idempresa->EditValue)) {
+	$arwrk = $banco_cuenta->idempresa->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = ew_SameStr($caja_chica->idempresa->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		$selwrk = ew_SameStr($banco_cuenta->idempresa->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
 		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $caja_chica->idempresa->DisplayValue($arwrk[$rowcntwrk]) ?>
+<?php echo $banco_cuenta->idempresa->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
-	if ($emptywrk && strval($caja_chica->idempresa->CurrentValue) <> "") {
+	if ($emptywrk && strval($banco_cuenta->idempresa->CurrentValue) <> "") {
 ?>
-<option value="<?php echo ew_HtmlEncode($caja_chica->idempresa->CurrentValue) ?>" selected><?php echo $caja_chica->idempresa->CurrentValue ?></option>
+<option value="<?php echo ew_HtmlEncode($banco_cuenta->idempresa->CurrentValue) ?>" selected><?php echo $banco_cuenta->idempresa->CurrentValue ?></option>
 <?php
     }
 }
@@ -1295,138 +1213,96 @@ $sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `
 $sWhereWrk = "";
 $lookuptblfilter = "`estado` = 'Activo'";
 ew_AddFilter($sWhereWrk, $lookuptblfilter);
-$caja_chica->idempresa->LookupFilters = array("s" => $sSqlWrk, "d" => "");
-$caja_chica->idempresa->LookupFilters += array("f0" => "`idempresa` = {filter_value}", "t0" => "3", "fn0" => "");
+$banco_cuenta->idempresa->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$banco_cuenta->idempresa->LookupFilters += array("f0" => "`idempresa` = {filter_value}", "t0" => "3", "fn0" => "");
 $sSqlWrk = "";
-$caja_chica->Lookup_Selecting($caja_chica->idempresa, $sWhereWrk); // Call Lookup selecting
+$banco_cuenta->Lookup_Selecting($banco_cuenta->idempresa, $sWhereWrk); // Call Lookup selecting
 if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-if ($sSqlWrk <> "") $caja_chica->idempresa->LookupFilters["s"] .= $sSqlWrk;
+if ($sSqlWrk <> "") $banco_cuenta->idempresa->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x_idempresa" id="s_x_idempresa" value="<?php echo $caja_chica->idempresa->LookupFilterQuery() ?>">
+<input type="hidden" name="s_x_idempresa" id="s_x_idempresa" value="<?php echo $banco_cuenta->idempresa->LookupFilterQuery() ?>">
 </span>
-<?php echo $caja_chica->idempresa->CustomMsg ?></div></div>
+<?php echo $banco_cuenta->idempresa->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
-<?php if ($caja_chica->idempleado->Visible) { // idempleado ?>
-	<div id="r_idempleado" class="form-group">
-		<label id="elh_caja_chica_idempleado" for="x_idempleado" class="col-sm-2 control-label ewLabel"><?php echo $caja_chica->idempleado->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
-		<div class="col-sm-10"><div<?php echo $caja_chica->idempleado->CellAttributes() ?>>
-<span id="el_caja_chica_idempleado">
-<select data-table="caja_chica" data-field="x_idempleado" data-value-separator="<?php echo ew_HtmlEncode(is_array($caja_chica->idempleado->DisplayValueSeparator) ? json_encode($caja_chica->idempleado->DisplayValueSeparator) : $caja_chica->idempleado->DisplayValueSeparator) ?>" id="x_idempleado" name="x_idempleado"<?php echo $caja_chica->idempleado->EditAttributes() ?>>
+<?php if ($banco_cuenta->idbanco->Visible) { // idbanco ?>
+	<div id="r_idbanco" class="form-group">
+		<label id="elh_banco_cuenta_idbanco" for="x_idbanco" class="col-sm-2 control-label ewLabel"><?php echo $banco_cuenta->idbanco->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $banco_cuenta->idbanco->CellAttributes() ?>>
+<?php if ($banco_cuenta->idbanco->getSessionValue() <> "") { ?>
+<span id="el_banco_cuenta_idbanco">
+<span<?php echo $banco_cuenta->idbanco->ViewAttributes() ?>>
+<p class="form-control-static"><?php echo $banco_cuenta->idbanco->ViewValue ?></p></span>
+</span>
+<input type="hidden" id="x_idbanco" name="x_idbanco" value="<?php echo ew_HtmlEncode($banco_cuenta->idbanco->CurrentValue) ?>">
+<?php } else { ?>
+<span id="el_banco_cuenta_idbanco">
+<select data-table="banco_cuenta" data-field="x_idbanco" data-value-separator="<?php echo ew_HtmlEncode(is_array($banco_cuenta->idbanco->DisplayValueSeparator) ? json_encode($banco_cuenta->idbanco->DisplayValueSeparator) : $banco_cuenta->idbanco->DisplayValueSeparator) ?>" id="x_idbanco" name="x_idbanco"<?php echo $banco_cuenta->idbanco->EditAttributes() ?>>
 <?php
-if (is_array($caja_chica->idempleado->EditValue)) {
-	$arwrk = $caja_chica->idempleado->EditValue;
+if (is_array($banco_cuenta->idbanco->EditValue)) {
+	$arwrk = $banco_cuenta->idbanco->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = ew_SameStr($caja_chica->idempleado->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		$selwrk = ew_SameStr($banco_cuenta->idbanco->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
 		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $caja_chica->idempleado->DisplayValue($arwrk[$rowcntwrk]) ?>
+<?php echo $banco_cuenta->idbanco->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
-	if ($emptywrk && strval($caja_chica->idempleado->CurrentValue) <> "") {
+	if ($emptywrk && strval($banco_cuenta->idbanco->CurrentValue) <> "") {
 ?>
-<option value="<?php echo ew_HtmlEncode($caja_chica->idempleado->CurrentValue) ?>" selected><?php echo $caja_chica->idempleado->CurrentValue ?></option>
+<option value="<?php echo ew_HtmlEncode($banco_cuenta->idbanco->CurrentValue) ?>" selected><?php echo $banco_cuenta->idbanco->CurrentValue ?></option>
 <?php
     }
 }
 ?>
 </select>
 <?php
-$sSqlWrk = "SELECT `idempleado`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empleado`";
-$sWhereWrk = "{filter}";
+$sSqlWrk = "SELECT `idbanco`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `banco`";
+$sWhereWrk = "";
 $lookuptblfilter = "`estado` = 'Activo'";
 ew_AddFilter($sWhereWrk, $lookuptblfilter);
-$caja_chica->idempleado->LookupFilters = array("s" => $sSqlWrk, "d" => "");
-$caja_chica->idempleado->LookupFilters += array("f0" => "`idempleado` = {filter_value}", "t0" => "3", "fn0" => "");
-$caja_chica->idempleado->LookupFilters += array("f1" => "`idempresa` IN ({filter_value})", "t1" => "3", "fn1" => "");
+$banco_cuenta->idbanco->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$banco_cuenta->idbanco->LookupFilters += array("f0" => "`idbanco` = {filter_value}", "t0" => "3", "fn0" => "");
 $sSqlWrk = "";
-$caja_chica->Lookup_Selecting($caja_chica->idempleado, $sWhereWrk); // Call Lookup selecting
+$banco_cuenta->Lookup_Selecting($banco_cuenta->idbanco, $sWhereWrk); // Call Lookup selecting
 if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-if ($sSqlWrk <> "") $caja_chica->idempleado->LookupFilters["s"] .= $sSqlWrk;
+if ($sSqlWrk <> "") $banco_cuenta->idbanco->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x_idempleado" id="s_x_idempleado" value="<?php echo $caja_chica->idempleado->LookupFilterQuery() ?>">
+<input type="hidden" name="s_x_idbanco" id="s_x_idbanco" value="<?php echo $banco_cuenta->idbanco->LookupFilterQuery() ?>">
 </span>
-<?php echo $caja_chica->idempleado->CustomMsg ?></div></div>
+<?php } ?>
+<?php echo $banco_cuenta->idbanco->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
-<?php if ($caja_chica->idcuenta->Visible) { // idcuenta ?>
-	<div id="r_idcuenta" class="form-group">
-		<label id="elh_caja_chica_idcuenta" for="x_idcuenta" class="col-sm-2 control-label ewLabel"><?php echo $caja_chica->idcuenta->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
-		<div class="col-sm-10"><div<?php echo $caja_chica->idcuenta->CellAttributes() ?>>
-<span id="el_caja_chica_idcuenta">
-<select data-table="caja_chica" data-field="x_idcuenta" data-value-separator="<?php echo ew_HtmlEncode(is_array($caja_chica->idcuenta->DisplayValueSeparator) ? json_encode($caja_chica->idcuenta->DisplayValueSeparator) : $caja_chica->idcuenta->DisplayValueSeparator) ?>" id="x_idcuenta" name="x_idcuenta"<?php echo $caja_chica->idcuenta->EditAttributes() ?>>
-<?php
-if (is_array($caja_chica->idcuenta->EditValue)) {
-	$arwrk = $caja_chica->idcuenta->EditValue;
-	$rowswrk = count($arwrk);
-	$emptywrk = TRUE;
-	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = ew_SameStr($caja_chica->idcuenta->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;		
-?>
-<option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $caja_chica->idcuenta->DisplayValue($arwrk[$rowcntwrk]) ?>
-</option>
-<?php
-	}
-	if ($emptywrk && strval($caja_chica->idcuenta->CurrentValue) <> "") {
-?>
-<option value="<?php echo ew_HtmlEncode($caja_chica->idcuenta->CurrentValue) ?>" selected><?php echo $caja_chica->idcuenta->CurrentValue ?></option>
-<?php
-    }
-}
-?>
-</select>
-<?php
-$sSqlWrk = "SELECT `idcuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta`";
-$sWhereWrk = "";
-$lookuptblfilter = "`estado` = 'Activo' ";
-ew_AddFilter($sWhereWrk, $lookuptblfilter);
-$caja_chica->idcuenta->LookupFilters = array("s" => $sSqlWrk, "d" => "");
-$caja_chica->idcuenta->LookupFilters += array("f0" => "`idcuenta` = {filter_value}", "t0" => "3", "fn0" => "");
-$sSqlWrk = "";
-$caja_chica->Lookup_Selecting($caja_chica->idcuenta, $sWhereWrk); // Call Lookup selecting
-if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-if ($sSqlWrk <> "") $caja_chica->idcuenta->LookupFilters["s"] .= $sSqlWrk;
-?>
-<input type="hidden" name="s_x_idcuenta" id="s_x_idcuenta" value="<?php echo $caja_chica->idcuenta->LookupFilterQuery() ?>">
+<?php if ($banco_cuenta->nombre->Visible) { // nombre ?>
+	<div id="r_nombre" class="form-group">
+		<label id="elh_banco_cuenta_nombre" for="x_nombre" class="col-sm-2 control-label ewLabel"><?php echo $banco_cuenta->nombre->FldCaption() ?></label>
+		<div class="col-sm-10"><div<?php echo $banco_cuenta->nombre->CellAttributes() ?>>
+<span id="el_banco_cuenta_nombre">
+<input type="text" data-table="banco_cuenta" data-field="x_nombre" name="x_nombre" id="x_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($banco_cuenta->nombre->getPlaceHolder()) ?>" value="<?php echo $banco_cuenta->nombre->EditValue ?>"<?php echo $banco_cuenta->nombre->EditAttributes() ?>>
 </span>
-<?php echo $caja_chica->idcuenta->CustomMsg ?></div></div>
+<?php echo $banco_cuenta->nombre->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
+<?php if ($banco_cuenta->numero->Visible) { // numero ?>
+	<div id="r_numero" class="form-group">
+		<label id="elh_banco_cuenta_numero" for="x_numero" class="col-sm-2 control-label ewLabel"><?php echo $banco_cuenta->numero->FldCaption() ?></label>
+		<div class="col-sm-10"><div<?php echo $banco_cuenta->numero->CellAttributes() ?>>
+<span id="el_banco_cuenta_numero">
+<input type="text" data-table="banco_cuenta" data-field="x_numero" name="x_numero" id="x_numero" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($banco_cuenta->numero->getPlaceHolder()) ?>" value="<?php echo $banco_cuenta->numero->EditValue ?>"<?php echo $banco_cuenta->numero->EditAttributes() ?>>
+</span>
+<?php echo $banco_cuenta->numero->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
 </div>
 <?php
-	if (in_array("encargado", explode(",", $caja_chica->getCurrentDetailTable())) && $encargado->DetailAdd) {
+	if (in_array("caja_chica_cheque", explode(",", $banco_cuenta->getCurrentDetailTable())) && $caja_chica_cheque->DetailAdd) {
 ?>
-<?php if ($caja_chica->getCurrentDetailTable() <> "") { ?>
-<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("encargado", "TblCaption") ?></h4>
-<?php } ?>
-<?php include_once "encargadogrid.php" ?>
-<?php } ?>
-<?php
-	if (in_array("documento_caja_chica", explode(",", $caja_chica->getCurrentDetailTable())) && $documento_caja_chica->DetailAdd) {
-?>
-<?php if ($caja_chica->getCurrentDetailTable() <> "") { ?>
-<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("documento_caja_chica", "TblCaption") ?></h4>
-<?php } ?>
-<?php include_once "documento_caja_chicagrid.php" ?>
-<?php } ?>
-<?php
-	if (in_array("caja_chica_detalle", explode(",", $caja_chica->getCurrentDetailTable())) && $caja_chica_detalle->DetailAdd) {
-?>
-<?php if ($caja_chica->getCurrentDetailTable() <> "") { ?>
-<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("caja_chica_detalle", "TblCaption") ?></h4>
-<?php } ?>
-<?php include_once "caja_chica_detallegrid.php" ?>
-<?php } ?>
-<?php
-	if (in_array("caja_chica_cheque", explode(",", $caja_chica->getCurrentDetailTable())) && $caja_chica_cheque->DetailAdd) {
-?>
-<?php if ($caja_chica->getCurrentDetailTable() <> "") { ?>
+<?php if ($banco_cuenta->getCurrentDetailTable() <> "") { ?>
 <h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("caja_chica_cheque", "TblCaption") ?></h4>
 <?php } ?>
 <?php include_once "caja_chica_chequegrid.php" ?>
@@ -1434,15 +1310,15 @@ if ($sSqlWrk <> "") $caja_chica->idcuenta->LookupFilters["s"] .= $sSqlWrk;
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">
 <button class="btn btn-primary ewButton" name="btnAction" id="btnAction" type="submit"><?php echo $Language->Phrase("AddBtn") ?></button>
-<button class="btn btn-default ewButton" name="btnCancel" id="btnCancel" type="button" data-href="<?php echo $caja_chica_add->getReturnUrl() ?>"><?php echo $Language->Phrase("CancelBtn") ?></button>
+<button class="btn btn-default ewButton" name="btnCancel" id="btnCancel" type="button" data-href="<?php echo $banco_cuenta_add->getReturnUrl() ?>"><?php echo $Language->Phrase("CancelBtn") ?></button>
 	</div>
 </div>
 </form>
 <script type="text/javascript">
-fcaja_chicaadd.Init();
+fbanco_cuentaadd.Init();
 </script>
 <?php
-$caja_chica_add->ShowPageFooter();
+$banco_cuenta_add->ShowPageFooter();
 if (EW_DEBUG_ENABLED)
 	echo ew_DebugMsg();
 ?>
@@ -1454,5 +1330,5 @@ if (EW_DEBUG_ENABLED)
 </script>
 <?php include_once "footer.php" ?>
 <?php
-$caja_chica_add->Page_Terminate();
+$banco_cuenta_add->Page_Terminate();
 ?>

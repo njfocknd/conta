@@ -5,9 +5,9 @@ ob_start(); // Turn on output buffering
 <?php include_once "ewcfg12.php" ?>
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
-<?php include_once "documento_caja_chicainfo.php" ?>
-<?php include_once "caja_chicainfo.php" ?>
-<?php include_once "caja_chica_aplicacioninfo.php" ?>
+<?php include_once "banco_cuentainfo.php" ?>
+<?php include_once "bancoinfo.php" ?>
+<?php include_once "caja_chica_chequegridcls.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -15,9 +15,9 @@ ob_start(); // Turn on output buffering
 // Page class
 //
 
-$documento_caja_chica_list = NULL; // Initialize page object first
+$banco_cuenta_list = NULL; // Initialize page object first
 
-class cdocumento_caja_chica_list extends cdocumento_caja_chica {
+class cbanco_cuenta_list extends cbanco_cuenta {
 
 	// Page ID
 	var $PageID = 'list';
@@ -26,13 +26,13 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 	var $ProjectID = "{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}";
 
 	// Table name
-	var $TableName = 'documento_caja_chica';
+	var $TableName = 'banco_cuenta';
 
 	// Page object name
-	var $PageObjName = 'documento_caja_chica_list';
+	var $PageObjName = 'banco_cuenta_list';
 
 	// Grid form hidden field names
-	var $FormName = 'fdocumento_caja_chicalist';
+	var $FormName = 'fbanco_cuentalist';
 	var $FormActionName = 'k_action';
 	var $FormKeyName = 'k_key';
 	var $FormOldKeyName = 'k_oldkey';
@@ -262,10 +262,10 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		// Parent constuctor
 		parent::__construct();
 
-		// Table object (documento_caja_chica)
-		if (!isset($GLOBALS["documento_caja_chica"]) || get_class($GLOBALS["documento_caja_chica"]) == "cdocumento_caja_chica") {
-			$GLOBALS["documento_caja_chica"] = &$this;
-			$GLOBALS["Table"] = &$GLOBALS["documento_caja_chica"];
+		// Table object (banco_cuenta)
+		if (!isset($GLOBALS["banco_cuenta"]) || get_class($GLOBALS["banco_cuenta"]) == "cbanco_cuenta") {
+			$GLOBALS["banco_cuenta"] = &$this;
+			$GLOBALS["Table"] = &$GLOBALS["banco_cuenta"];
 		}
 
 		// Initialize URLs
@@ -276,18 +276,15 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		$this->ExportXmlUrl = $this->PageUrl() . "export=xml";
 		$this->ExportCsvUrl = $this->PageUrl() . "export=csv";
 		$this->ExportPdfUrl = $this->PageUrl() . "export=pdf";
-		$this->AddUrl = "documento_caja_chicaadd.php";
+		$this->AddUrl = "banco_cuentaadd.php?" . EW_TABLE_SHOW_DETAIL . "=";
 		$this->InlineAddUrl = $this->PageUrl() . "a=add";
 		$this->GridAddUrl = $this->PageUrl() . "a=gridadd";
 		$this->GridEditUrl = $this->PageUrl() . "a=gridedit";
-		$this->MultiDeleteUrl = "documento_caja_chicadelete.php";
-		$this->MultiUpdateUrl = "documento_caja_chicaupdate.php";
+		$this->MultiDeleteUrl = "banco_cuentadelete.php";
+		$this->MultiUpdateUrl = "banco_cuentaupdate.php";
 
-		// Table object (caja_chica)
-		if (!isset($GLOBALS['caja_chica'])) $GLOBALS['caja_chica'] = new ccaja_chica();
-
-		// Table object (caja_chica_aplicacion)
-		if (!isset($GLOBALS['caja_chica_aplicacion'])) $GLOBALS['caja_chica_aplicacion'] = new ccaja_chica_aplicacion();
+		// Table object (banco)
+		if (!isset($GLOBALS['banco'])) $GLOBALS['banco'] = new cbanco();
 
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
@@ -295,7 +292,7 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 
 		// Table name (for backward compatibility)
 		if (!defined("EW_TABLE_NAME"))
-			define("EW_TABLE_NAME", 'documento_caja_chica', TRUE);
+			define("EW_TABLE_NAME", 'banco_cuenta', TRUE);
 
 		// Start timer
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
@@ -326,7 +323,7 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		// Filter options
 		$this->FilterOptions = new cListOptions();
 		$this->FilterOptions->Tag = "div";
-		$this->FilterOptions->TagClassName = "ewFilterOption fdocumento_caja_chicalistsrch";
+		$this->FilterOptions->TagClassName = "ewFilterOption fbanco_cuentalistsrch";
 
 		// List actions
 		$this->ListActions = new cListActions();
@@ -362,6 +359,14 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 
 		// Process auto fill
 		if (@$_POST["ajax"] == "autofill") {
+
+			// Process auto fill for detail table 'caja_chica_cheque'
+			if (@$_POST["grid"] == "fcaja_chica_chequegrid") {
+				if (!isset($GLOBALS["caja_chica_cheque_grid"])) $GLOBALS["caja_chica_cheque_grid"] = new ccaja_chica_cheque_grid;
+				$GLOBALS["caja_chica_cheque_grid"]->Page_Init();
+				$this->Page_Terminate();
+				exit();
+			}
 			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
 			if ($results) {
 
@@ -409,13 +414,13 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		Page_Unloaded();
 
 		// Export
-		global $EW_EXPORT, $documento_caja_chica;
+		global $EW_EXPORT, $banco_cuenta;
 		if ($this->CustomExport <> "" && $this->CustomExport == $this->Export && array_key_exists($this->CustomExport, $EW_EXPORT)) {
 				$sContent = ob_get_contents();
 			if ($gsExportFile == "") $gsExportFile = $this->TableVar;
 			$class = $EW_EXPORT[$this->CustomExport];
 			if (class_exists($class)) {
-				$doc = new $class($documento_caja_chica);
+				$doc = new $class($banco_cuenta);
 				$doc->Text = $sContent;
 				if ($this->Export == "email")
 					echo $this->ExportEmail($doc->Text);
@@ -600,33 +605,17 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		ew_AddFilter($sFilter, $this->SearchWhere);
 
 		// Load master record
-		if ($this->CurrentMode <> "add" && $this->GetMasterFilter() <> "" && $this->getCurrentMasterTable() == "caja_chica") {
-			global $caja_chica;
-			$rsmaster = $caja_chica->LoadRs($this->DbMasterFilter);
+		if ($this->CurrentMode <> "add" && $this->GetMasterFilter() <> "" && $this->getCurrentMasterTable() == "banco") {
+			global $banco;
+			$rsmaster = $banco->LoadRs($this->DbMasterFilter);
 			$this->MasterRecordExists = ($rsmaster && !$rsmaster->EOF);
 			if (!$this->MasterRecordExists) {
 				$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record found
-				$this->Page_Terminate("caja_chicalist.php"); // Return to master page
+				$this->Page_Terminate("bancolist.php"); // Return to master page
 			} else {
-				$caja_chica->LoadListRowValues($rsmaster);
-				$caja_chica->RowType = EW_ROWTYPE_MASTER; // Master row
-				$caja_chica->RenderListRow();
-				$rsmaster->Close();
-			}
-		}
-
-		// Load master record
-		if ($this->CurrentMode <> "add" && $this->GetMasterFilter() <> "" && $this->getCurrentMasterTable() == "caja_chica_aplicacion") {
-			global $caja_chica_aplicacion;
-			$rsmaster = $caja_chica_aplicacion->LoadRs($this->DbMasterFilter);
-			$this->MasterRecordExists = ($rsmaster && !$rsmaster->EOF);
-			if (!$this->MasterRecordExists) {
-				$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record found
-				$this->Page_Terminate("caja_chica_aplicacionlist.php"); // Return to master page
-			} else {
-				$caja_chica_aplicacion->LoadListRowValues($rsmaster);
-				$caja_chica_aplicacion->RowType = EW_ROWTYPE_MASTER; // Master row
-				$caja_chica_aplicacion->RenderListRow();
+				$banco->LoadListRowValues($rsmaster);
+				$banco->RowType = EW_ROWTYPE_MASTER; // Master row
+				$banco->RenderListRow();
 				$rsmaster->Close();
 			}
 		}
@@ -681,8 +670,8 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 	function SetupKeyValues($key) {
 		$arrKeyFlds = explode($GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"], $key);
 		if (count($arrKeyFlds) >= 1) {
-			$this->iddocumento_caja_chica->setFormValue($arrKeyFlds[0]);
-			if (!is_numeric($this->iddocumento_caja_chica->FormValue))
+			$this->idbanco_cuenta->setFormValue($arrKeyFlds[0]);
+			if (!is_numeric($this->idbanco_cuenta->FormValue))
 				return FALSE;
 		}
 		return TRUE;
@@ -693,14 +682,11 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 
 		// Initialize
 		$sFilterList = "";
-		$sFilterList = ew_Concat($sFilterList, $this->iddocumento_caja_chica->AdvancedSearch->ToJSON(), ","); // Field iddocumento_caja_chica
-		$sFilterList = ew_Concat($sFilterList, $this->idcaja_chica->AdvancedSearch->ToJSON(), ","); // Field idcaja_chica
-		$sFilterList = ew_Concat($sFilterList, $this->tipo->AdvancedSearch->ToJSON(), ","); // Field tipo
-		$sFilterList = ew_Concat($sFilterList, $this->idtipo_documento->AdvancedSearch->ToJSON(), ","); // Field idtipo_documento
-		$sFilterList = ew_Concat($sFilterList, $this->serie->AdvancedSearch->ToJSON(), ","); // Field serie
+		$sFilterList = ew_Concat($sFilterList, $this->idbanco_cuenta->AdvancedSearch->ToJSON(), ","); // Field idbanco_cuenta
+		$sFilterList = ew_Concat($sFilterList, $this->idempresa->AdvancedSearch->ToJSON(), ","); // Field idempresa
+		$sFilterList = ew_Concat($sFilterList, $this->idbanco->AdvancedSearch->ToJSON(), ","); // Field idbanco
+		$sFilterList = ew_Concat($sFilterList, $this->nombre->AdvancedSearch->ToJSON(), ","); // Field nombre
 		$sFilterList = ew_Concat($sFilterList, $this->numero->AdvancedSearch->ToJSON(), ","); // Field numero
-		$sFilterList = ew_Concat($sFilterList, $this->fecha->AdvancedSearch->ToJSON(), ","); // Field fecha
-		$sFilterList = ew_Concat($sFilterList, $this->monto->AdvancedSearch->ToJSON(), ","); // Field monto
 		$sFilterList = ew_Concat($sFilterList, $this->estado->AdvancedSearch->ToJSON(), ","); // Field estado
 		$sFilterList = ew_Concat($sFilterList, $this->fecha_insercion->AdvancedSearch->ToJSON(), ","); // Field fecha_insercion
 		if ($this->BasicSearch->Keyword <> "") {
@@ -721,45 +707,37 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		$filter = json_decode(ew_StripSlashes(@$_POST["filter"]), TRUE);
 		$this->Command = "search";
 
-		// Field iddocumento_caja_chica
-		$this->iddocumento_caja_chica->AdvancedSearch->SearchValue = @$filter["x_iddocumento_caja_chica"];
-		$this->iddocumento_caja_chica->AdvancedSearch->SearchOperator = @$filter["z_iddocumento_caja_chica"];
-		$this->iddocumento_caja_chica->AdvancedSearch->SearchCondition = @$filter["v_iddocumento_caja_chica"];
-		$this->iddocumento_caja_chica->AdvancedSearch->SearchValue2 = @$filter["y_iddocumento_caja_chica"];
-		$this->iddocumento_caja_chica->AdvancedSearch->SearchOperator2 = @$filter["w_iddocumento_caja_chica"];
-		$this->iddocumento_caja_chica->AdvancedSearch->Save();
+		// Field idbanco_cuenta
+		$this->idbanco_cuenta->AdvancedSearch->SearchValue = @$filter["x_idbanco_cuenta"];
+		$this->idbanco_cuenta->AdvancedSearch->SearchOperator = @$filter["z_idbanco_cuenta"];
+		$this->idbanco_cuenta->AdvancedSearch->SearchCondition = @$filter["v_idbanco_cuenta"];
+		$this->idbanco_cuenta->AdvancedSearch->SearchValue2 = @$filter["y_idbanco_cuenta"];
+		$this->idbanco_cuenta->AdvancedSearch->SearchOperator2 = @$filter["w_idbanco_cuenta"];
+		$this->idbanco_cuenta->AdvancedSearch->Save();
 
-		// Field idcaja_chica
-		$this->idcaja_chica->AdvancedSearch->SearchValue = @$filter["x_idcaja_chica"];
-		$this->idcaja_chica->AdvancedSearch->SearchOperator = @$filter["z_idcaja_chica"];
-		$this->idcaja_chica->AdvancedSearch->SearchCondition = @$filter["v_idcaja_chica"];
-		$this->idcaja_chica->AdvancedSearch->SearchValue2 = @$filter["y_idcaja_chica"];
-		$this->idcaja_chica->AdvancedSearch->SearchOperator2 = @$filter["w_idcaja_chica"];
-		$this->idcaja_chica->AdvancedSearch->Save();
+		// Field idempresa
+		$this->idempresa->AdvancedSearch->SearchValue = @$filter["x_idempresa"];
+		$this->idempresa->AdvancedSearch->SearchOperator = @$filter["z_idempresa"];
+		$this->idempresa->AdvancedSearch->SearchCondition = @$filter["v_idempresa"];
+		$this->idempresa->AdvancedSearch->SearchValue2 = @$filter["y_idempresa"];
+		$this->idempresa->AdvancedSearch->SearchOperator2 = @$filter["w_idempresa"];
+		$this->idempresa->AdvancedSearch->Save();
 
-		// Field tipo
-		$this->tipo->AdvancedSearch->SearchValue = @$filter["x_tipo"];
-		$this->tipo->AdvancedSearch->SearchOperator = @$filter["z_tipo"];
-		$this->tipo->AdvancedSearch->SearchCondition = @$filter["v_tipo"];
-		$this->tipo->AdvancedSearch->SearchValue2 = @$filter["y_tipo"];
-		$this->tipo->AdvancedSearch->SearchOperator2 = @$filter["w_tipo"];
-		$this->tipo->AdvancedSearch->Save();
+		// Field idbanco
+		$this->idbanco->AdvancedSearch->SearchValue = @$filter["x_idbanco"];
+		$this->idbanco->AdvancedSearch->SearchOperator = @$filter["z_idbanco"];
+		$this->idbanco->AdvancedSearch->SearchCondition = @$filter["v_idbanco"];
+		$this->idbanco->AdvancedSearch->SearchValue2 = @$filter["y_idbanco"];
+		$this->idbanco->AdvancedSearch->SearchOperator2 = @$filter["w_idbanco"];
+		$this->idbanco->AdvancedSearch->Save();
 
-		// Field idtipo_documento
-		$this->idtipo_documento->AdvancedSearch->SearchValue = @$filter["x_idtipo_documento"];
-		$this->idtipo_documento->AdvancedSearch->SearchOperator = @$filter["z_idtipo_documento"];
-		$this->idtipo_documento->AdvancedSearch->SearchCondition = @$filter["v_idtipo_documento"];
-		$this->idtipo_documento->AdvancedSearch->SearchValue2 = @$filter["y_idtipo_documento"];
-		$this->idtipo_documento->AdvancedSearch->SearchOperator2 = @$filter["w_idtipo_documento"];
-		$this->idtipo_documento->AdvancedSearch->Save();
-
-		// Field serie
-		$this->serie->AdvancedSearch->SearchValue = @$filter["x_serie"];
-		$this->serie->AdvancedSearch->SearchOperator = @$filter["z_serie"];
-		$this->serie->AdvancedSearch->SearchCondition = @$filter["v_serie"];
-		$this->serie->AdvancedSearch->SearchValue2 = @$filter["y_serie"];
-		$this->serie->AdvancedSearch->SearchOperator2 = @$filter["w_serie"];
-		$this->serie->AdvancedSearch->Save();
+		// Field nombre
+		$this->nombre->AdvancedSearch->SearchValue = @$filter["x_nombre"];
+		$this->nombre->AdvancedSearch->SearchOperator = @$filter["z_nombre"];
+		$this->nombre->AdvancedSearch->SearchCondition = @$filter["v_nombre"];
+		$this->nombre->AdvancedSearch->SearchValue2 = @$filter["y_nombre"];
+		$this->nombre->AdvancedSearch->SearchOperator2 = @$filter["w_nombre"];
+		$this->nombre->AdvancedSearch->Save();
 
 		// Field numero
 		$this->numero->AdvancedSearch->SearchValue = @$filter["x_numero"];
@@ -768,22 +746,6 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		$this->numero->AdvancedSearch->SearchValue2 = @$filter["y_numero"];
 		$this->numero->AdvancedSearch->SearchOperator2 = @$filter["w_numero"];
 		$this->numero->AdvancedSearch->Save();
-
-		// Field fecha
-		$this->fecha->AdvancedSearch->SearchValue = @$filter["x_fecha"];
-		$this->fecha->AdvancedSearch->SearchOperator = @$filter["z_fecha"];
-		$this->fecha->AdvancedSearch->SearchCondition = @$filter["v_fecha"];
-		$this->fecha->AdvancedSearch->SearchValue2 = @$filter["y_fecha"];
-		$this->fecha->AdvancedSearch->SearchOperator2 = @$filter["w_fecha"];
-		$this->fecha->AdvancedSearch->Save();
-
-		// Field monto
-		$this->monto->AdvancedSearch->SearchValue = @$filter["x_monto"];
-		$this->monto->AdvancedSearch->SearchOperator = @$filter["z_monto"];
-		$this->monto->AdvancedSearch->SearchCondition = @$filter["v_monto"];
-		$this->monto->AdvancedSearch->SearchValue2 = @$filter["y_monto"];
-		$this->monto->AdvancedSearch->SearchOperator2 = @$filter["w_monto"];
-		$this->monto->AdvancedSearch->Save();
 
 		// Field estado
 		$this->estado->AdvancedSearch->SearchValue = @$filter["x_estado"];
@@ -807,7 +769,7 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 	// Return basic search SQL
 	function BasicSearchSQL($arKeywords, $type) {
 		$sWhere = "";
-		$this->BuildBasicSearchSQL($sWhere, $this->serie, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->nombre, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->numero, $arKeywords, $type);
 		return $sWhere;
 	}
@@ -972,12 +934,10 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		if (@$_GET["order"] <> "") {
 			$this->CurrentOrder = ew_StripSlashes(@$_GET["order"]);
 			$this->CurrentOrderType = @$_GET["ordertype"];
-			$this->UpdateSort($this->tipo); // tipo
-			$this->UpdateSort($this->idtipo_documento); // idtipo_documento
-			$this->UpdateSort($this->serie); // serie
+			$this->UpdateSort($this->idempresa); // idempresa
+			$this->UpdateSort($this->idbanco); // idbanco
+			$this->UpdateSort($this->nombre); // nombre
 			$this->UpdateSort($this->numero); // numero
-			$this->UpdateSort($this->fecha); // fecha
-			$this->UpdateSort($this->monto); // monto
 			$this->setStartRecordNumber(1); // Reset start position
 		}
 	}
@@ -1011,20 +971,17 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 				$this->setCurrentMasterTable(""); // Clear master table
 				$this->DbMasterFilter = "";
 				$this->DbDetailFilter = "";
-				$this->idcaja_chica->setSessionValue("");
-				$this->iddocumento_caja_chica->setSessionValue("");
+				$this->idbanco->setSessionValue("");
 			}
 
 			// Reset sorting order
 			if ($this->Command == "resetsort") {
 				$sOrderBy = "";
 				$this->setSessionOrderBy($sOrderBy);
-				$this->tipo->setSort("");
-				$this->idtipo_documento->setSort("");
-				$this->serie->setSort("");
+				$this->idempresa->setSort("");
+				$this->idbanco->setSort("");
+				$this->nombre->setSort("");
 				$this->numero->setSort("");
-				$this->fecha->setSort("");
-				$this->monto->setSort("");
 			}
 
 			// Reset start position
@@ -1054,6 +1011,28 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		$item->CssStyle = "white-space: nowrap;";
 		$item->Visible = TRUE;
 		$item->OnLeft = FALSE;
+
+		// "detail_caja_chica_cheque"
+		$item = &$this->ListOptions->Add("detail_caja_chica_cheque");
+		$item->CssStyle = "white-space: nowrap;";
+		$item->Visible = TRUE && !$this->ShowMultipleDetails;
+		$item->OnLeft = FALSE;
+		$item->ShowInButtonGroup = FALSE;
+		if (!isset($GLOBALS["caja_chica_cheque_grid"])) $GLOBALS["caja_chica_cheque_grid"] = new ccaja_chica_cheque_grid;
+
+		// Multiple details
+		if ($this->ShowMultipleDetails) {
+			$item = &$this->ListOptions->Add("details");
+			$item->CssStyle = "white-space: nowrap;";
+			$item->Visible = $this->ShowMultipleDetails;
+			$item->OnLeft = FALSE;
+			$item->ShowInButtonGroup = FALSE;
+		}
+
+		// Set up detail pages
+		$pages = new cSubPages();
+		$pages->Add("caja_chica_cheque");
+		$this->DetailPages = $pages;
 
 		// List actions
 		$item = &$this->ListOptions->Add("listactions");
@@ -1135,10 +1114,61 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 				$oListOpt->Visible = TRUE;
 			}
 		}
+		$DetailViewTblVar = "";
+		$DetailCopyTblVar = "";
+		$DetailEditTblVar = "";
+
+		// "detail_caja_chica_cheque"
+		$oListOpt = &$this->ListOptions->Items["detail_caja_chica_cheque"];
+		if (TRUE) {
+			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("caja_chica_cheque", "TblCaption");
+			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("caja_chica_chequelist.php?" . EW_TABLE_SHOW_MASTER . "=banco_cuenta&fk_idbanco_cuenta=" . urlencode(strval($this->idbanco_cuenta->CurrentValue)) . "") . "\">" . $body . "</a>";
+			$links = "";
+			if ($GLOBALS["caja_chica_cheque_grid"]->DetailView) {
+				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=caja_chica_cheque")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+				if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
+				$DetailViewTblVar .= "caja_chica_cheque";
+			}
+			if ($GLOBALS["caja_chica_cheque_grid"]->DetailEdit) {
+				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=caja_chica_cheque")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+				if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
+				$DetailEditTblVar .= "caja_chica_cheque";
+			}
+			if ($links <> "") {
+				$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
+				$body .= "<ul class=\"dropdown-menu\">". $links . "</ul>";
+			}
+			$body = "<div class=\"btn-group\">" . $body . "</div>";
+			$oListOpt->Body = $body;
+			if ($this->ShowMultipleDetails) $oListOpt->Visible = FALSE;
+		}
+		if ($this->ShowMultipleDetails) {
+			$body = $Language->Phrase("MultipleMasterDetails");
+			$body = "<div class=\"btn-group\">";
+			$links = "";
+			if ($DetailViewTblVar <> "") {
+				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailViewTblVar)) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+			}
+			if ($DetailEditTblVar <> "") {
+				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailEditTblVar)) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+			}
+			if ($DetailCopyTblVar <> "") {
+				$links .= "<li><a class=\"ewRowLink ewDetailCopy\" data-action=\"add\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->GetCopyUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailCopyTblVar)) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailCopyLink")) . "</a></li>";
+			}
+			if ($links <> "") {
+				$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewMasterDetail\" title=\"" . ew_HtmlTitle($Language->Phrase("MultipleMasterDetails")) . "\" data-toggle=\"dropdown\">" . $Language->Phrase("MultipleMasterDetails") . "<b class=\"caret\"></b></button>";
+				$body .= "<ul class=\"dropdown-menu ewMenu\">". $links . "</ul>";
+			}
+			$body .= "</div>";
+
+			// Multiple details
+			$oListOpt = &$this->ListOptions->Items["details"];
+			$oListOpt->Body = $body;
+		}
 
 		// "checkbox"
 		$oListOpt = &$this->ListOptions->Items["checkbox"];
-		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->iddocumento_caja_chica->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event);'>";
+		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->idbanco_cuenta->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event);'>";
 		$this->RenderListOptionsExt();
 
 		// Call ListOptions_Rendered event
@@ -1155,6 +1185,33 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		$item = &$option->Add("add");
 		$item->Body = "<a class=\"ewAddEdit ewAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddLink")) . "\" href=\"" . ew_HtmlEncode($this->AddUrl) . "\">" . $Language->Phrase("AddLink") . "</a>";
 		$item->Visible = ($this->AddUrl <> "");
+		$option = $options["detail"];
+		$DetailTableLink = "";
+		$item = &$option->Add("detailadd_caja_chica_cheque");
+		$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=caja_chica_cheque");
+		$caption = $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["caja_chica_cheque"]->TableCaption();
+		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $caption . "</a>";
+		$item->Visible = ($GLOBALS["caja_chica_cheque"]->DetailAdd);
+		if ($item->Visible) {
+			if ($DetailTableLink <> "") $DetailTableLink .= ",";
+			$DetailTableLink .= "caja_chica_cheque";
+		}
+
+		// Add multiple details
+		if ($this->ShowMultipleDetails) {
+			$item = &$option->Add("detailsadd");
+			$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailTableLink);
+			$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $Language->Phrase("AddMasterDetailLink") . "</a>";
+			$item->Visible = ($DetailTableLink <> "");
+
+			// Hide single master/detail items
+			$ar = explode(",", $DetailTableLink);
+			$cnt = count($ar);
+			for ($i = 0; $i < $cnt; $i++) {
+				if ($item = &$option->GetItem("detailadd_" . $ar[$i]))
+					$item->Visible = FALSE;
+			}
+		}
 		$option = $options["action"];
 
 		// Set up options default
@@ -1173,10 +1230,10 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 
 		// Filter button
 		$item = &$this->FilterOptions->Add("savecurrentfilter");
-		$item->Body = "<a class=\"ewSaveFilter\" data-form=\"fdocumento_caja_chicalistsrch\" href=\"#\">" . $Language->Phrase("SaveCurrentFilter") . "</a>";
+		$item->Body = "<a class=\"ewSaveFilter\" data-form=\"fbanco_cuentalistsrch\" href=\"#\">" . $Language->Phrase("SaveCurrentFilter") . "</a>";
 		$item->Visible = TRUE;
 		$item = &$this->FilterOptions->Add("deletefilter");
-		$item->Body = "<a class=\"ewDeleteFilter\" data-form=\"fdocumento_caja_chicalistsrch\" href=\"#\">" . $Language->Phrase("DeleteFilter") . "</a>";
+		$item->Body = "<a class=\"ewDeleteFilter\" data-form=\"fbanco_cuentalistsrch\" href=\"#\">" . $Language->Phrase("DeleteFilter") . "</a>";
 		$item->Visible = TRUE;
 		$this->FilterOptions->UseDropDownButton = TRUE;
 		$this->FilterOptions->UseButtonGroup = !$this->FilterOptions->UseDropDownButton;
@@ -1200,7 +1257,7 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 					$item = &$option->Add("custom_" . $listaction->Action);
 					$caption = $listaction->Caption;
 					$icon = ($listaction->Icon <> "") ? "<span class=\"" . ew_HtmlEncode($listaction->Icon) . "\" data-caption=\"" . ew_HtmlEncode($caption) . "\"></span> " : $caption;
-					$item->Body = "<a class=\"ewAction ewListAction\" title=\"" . ew_HtmlEncode($caption) . "\" data-caption=\"" . ew_HtmlEncode($caption) . "\" href=\"\" onclick=\"ew_SubmitAction(event,jQuery.extend({f:document.fdocumento_caja_chicalist}," . $listaction->ToJson(TRUE) . "));return false;\">" . $icon . "</a>";
+					$item->Body = "<a class=\"ewAction ewListAction\" title=\"" . ew_HtmlEncode($caption) . "\" data-caption=\"" . ew_HtmlEncode($caption) . "\" href=\"\" onclick=\"ew_SubmitAction(event,jQuery.extend({f:document.fbanco_cuentalist}," . $listaction->ToJson(TRUE) . "));return false;\">" . $icon . "</a>";
 					$item->Visible = $listaction->Allow;
 				}
 			}
@@ -1304,7 +1361,7 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		// Search button
 		$item = &$this->SearchOptions->Add("searchtoggle");
 		$SearchToggleClass = ($this->SearchWhere <> "") ? " active" : " active";
-		$item->Body = "<button type=\"button\" class=\"btn btn-default ewSearchToggle" . $SearchToggleClass . "\" title=\"" . $Language->Phrase("SearchPanel") . "\" data-caption=\"" . $Language->Phrase("SearchPanel") . "\" data-toggle=\"button\" data-form=\"fdocumento_caja_chicalistsrch\">" . $Language->Phrase("SearchBtn") . "</button>";
+		$item->Body = "<button type=\"button\" class=\"btn btn-default ewSearchToggle" . $SearchToggleClass . "\" title=\"" . $Language->Phrase("SearchPanel") . "\" data-caption=\"" . $Language->Phrase("SearchPanel") . "\" data-toggle=\"button\" data-form=\"fbanco_cuentalistsrch\">" . $Language->Phrase("SearchBtn") . "</button>";
 		$item->Visible = TRUE;
 
 		// Show all button
@@ -1434,14 +1491,11 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		// Call Row Selected event
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
-		$this->iddocumento_caja_chica->setDbValue($rs->fields('iddocumento_caja_chica'));
-		$this->idcaja_chica->setDbValue($rs->fields('idcaja_chica'));
-		$this->tipo->setDbValue($rs->fields('tipo'));
-		$this->idtipo_documento->setDbValue($rs->fields('idtipo_documento'));
-		$this->serie->setDbValue($rs->fields('serie'));
+		$this->idbanco_cuenta->setDbValue($rs->fields('idbanco_cuenta'));
+		$this->idempresa->setDbValue($rs->fields('idempresa'));
+		$this->idbanco->setDbValue($rs->fields('idbanco'));
+		$this->nombre->setDbValue($rs->fields('nombre'));
 		$this->numero->setDbValue($rs->fields('numero'));
-		$this->fecha->setDbValue($rs->fields('fecha'));
-		$this->monto->setDbValue($rs->fields('monto'));
 		$this->estado->setDbValue($rs->fields('estado'));
 		$this->fecha_insercion->setDbValue($rs->fields('fecha_insercion'));
 	}
@@ -1450,14 +1504,11 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 	function LoadDbValues(&$rs) {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
-		$this->iddocumento_caja_chica->DbValue = $row['iddocumento_caja_chica'];
-		$this->idcaja_chica->DbValue = $row['idcaja_chica'];
-		$this->tipo->DbValue = $row['tipo'];
-		$this->idtipo_documento->DbValue = $row['idtipo_documento'];
-		$this->serie->DbValue = $row['serie'];
+		$this->idbanco_cuenta->DbValue = $row['idbanco_cuenta'];
+		$this->idempresa->DbValue = $row['idempresa'];
+		$this->idbanco->DbValue = $row['idbanco'];
+		$this->nombre->DbValue = $row['nombre'];
 		$this->numero->DbValue = $row['numero'];
-		$this->fecha->DbValue = $row['fecha'];
-		$this->monto->DbValue = $row['monto'];
 		$this->estado->DbValue = $row['estado'];
 		$this->fecha_insercion->DbValue = $row['fecha_insercion'];
 	}
@@ -1467,8 +1518,8 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 
 		// Load key values from Session
 		$bValidKey = TRUE;
-		if (strval($this->getKey("iddocumento_caja_chica")) <> "")
-			$this->iddocumento_caja_chica->CurrentValue = $this->getKey("iddocumento_caja_chica"); // iddocumento_caja_chica
+		if (strval($this->getKey("idbanco_cuenta")) <> "")
+			$this->idbanco_cuenta->CurrentValue = $this->getKey("idbanco_cuenta"); // idbanco_cuenta
 		else
 			$bValidKey = FALSE;
 
@@ -1497,103 +1548,79 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		$this->InlineCopyUrl = $this->GetInlineCopyUrl();
 		$this->DeleteUrl = $this->GetDeleteUrl();
 
-		// Convert decimal values if posted back
-		if ($this->monto->FormValue == $this->monto->CurrentValue && is_numeric(ew_StrToFloat($this->monto->CurrentValue)))
-			$this->monto->CurrentValue = ew_StrToFloat($this->monto->CurrentValue);
-
 		// Call Row_Rendering event
 		$this->Row_Rendering();
 
 		// Common render codes for all row types
-		// iddocumento_caja_chica
-		// idcaja_chica
-		// tipo
-		// idtipo_documento
-		// serie
+		// idbanco_cuenta
+		// idempresa
+		// idbanco
+		// nombre
 		// numero
-		// fecha
-		// monto
 		// estado
 		// fecha_insercion
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-		// iddocumento_caja_chica
-		$this->iddocumento_caja_chica->ViewValue = $this->iddocumento_caja_chica->CurrentValue;
-		$this->iddocumento_caja_chica->ViewCustomAttributes = "";
+		// idbanco_cuenta
+		$this->idbanco_cuenta->ViewValue = $this->idbanco_cuenta->CurrentValue;
+		$this->idbanco_cuenta->ViewCustomAttributes = "";
 
-		// idcaja_chica
-		if (strval($this->idcaja_chica->CurrentValue) <> "") {
-			$sFilterWrk = "`idcaja_chica`" . ew_SearchString("=", $this->idcaja_chica->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `idcaja_chica`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `caja_chica`";
+		// idempresa
+		if (strval($this->idempresa->CurrentValue) <> "") {
+			$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
 		$sWhereWrk = "";
 		$lookuptblfilter = "`estado` = 'Activo'";
 		ew_AddFilter($sWhereWrk, $lookuptblfilter);
 		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idcaja_chica, $sWhereWrk); // Call Lookup selecting
+		$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 			$rswrk = Conn()->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
 				$arwrk = array();
 				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idcaja_chica->ViewValue = $this->idcaja_chica->DisplayValue($arwrk);
+				$this->idempresa->ViewValue = $this->idempresa->DisplayValue($arwrk);
 				$rswrk->Close();
 			} else {
-				$this->idcaja_chica->ViewValue = $this->idcaja_chica->CurrentValue;
+				$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
 			}
 		} else {
-			$this->idcaja_chica->ViewValue = NULL;
+			$this->idempresa->ViewValue = NULL;
 		}
-		$this->idcaja_chica->ViewCustomAttributes = "";
+		$this->idempresa->ViewCustomAttributes = "";
 
-		// tipo
-		if (strval($this->tipo->CurrentValue) <> "") {
-			$this->tipo->ViewValue = $this->tipo->OptionCaption($this->tipo->CurrentValue);
-		} else {
-			$this->tipo->ViewValue = NULL;
-		}
-		$this->tipo->ViewCustomAttributes = "";
-
-		// idtipo_documento
-		if (strval($this->idtipo_documento->CurrentValue) <> "") {
-			$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
+		// idbanco
+		if (strval($this->idbanco->CurrentValue) <> "") {
+			$sFilterWrk = "`idbanco`" . ew_SearchString("=", $this->idbanco->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idbanco`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `banco`";
 		$sWhereWrk = "";
 		$lookuptblfilter = "`estado` = 'Activo'";
 		ew_AddFilter($sWhereWrk, $lookuptblfilter);
 		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk); // Call Lookup selecting
+		$this->Lookup_Selecting($this->idbanco, $sWhereWrk); // Call Lookup selecting
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 			$rswrk = Conn()->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
 				$arwrk = array();
 				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idtipo_documento->ViewValue = $this->idtipo_documento->DisplayValue($arwrk);
+				$this->idbanco->ViewValue = $this->idbanco->DisplayValue($arwrk);
 				$rswrk->Close();
 			} else {
-				$this->idtipo_documento->ViewValue = $this->idtipo_documento->CurrentValue;
+				$this->idbanco->ViewValue = $this->idbanco->CurrentValue;
 			}
 		} else {
-			$this->idtipo_documento->ViewValue = NULL;
+			$this->idbanco->ViewValue = NULL;
 		}
-		$this->idtipo_documento->ViewCustomAttributes = "";
+		$this->idbanco->ViewCustomAttributes = "";
 
-		// serie
-		$this->serie->ViewValue = $this->serie->CurrentValue;
-		$this->serie->ViewCustomAttributes = "";
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
 
 		// numero
 		$this->numero->ViewValue = $this->numero->CurrentValue;
 		$this->numero->ViewCustomAttributes = "";
-
-		// fecha
-		$this->fecha->ViewValue = $this->fecha->CurrentValue;
-		$this->fecha->ViewValue = ew_FormatDateTime($this->fecha->ViewValue, 7);
-		$this->fecha->ViewCustomAttributes = "";
-
-		// monto
-		$this->monto->ViewValue = $this->monto->CurrentValue;
-		$this->monto->ViewCustomAttributes = "";
 
 		// estado
 		if (strval($this->estado->CurrentValue) <> "") {
@@ -1608,35 +1635,25 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
 		$this->fecha_insercion->ViewCustomAttributes = "";
 
-			// tipo
-			$this->tipo->LinkCustomAttributes = "";
-			$this->tipo->HrefValue = "";
-			$this->tipo->TooltipValue = "";
+			// idempresa
+			$this->idempresa->LinkCustomAttributes = "";
+			$this->idempresa->HrefValue = "";
+			$this->idempresa->TooltipValue = "";
 
-			// idtipo_documento
-			$this->idtipo_documento->LinkCustomAttributes = "";
-			$this->idtipo_documento->HrefValue = "";
-			$this->idtipo_documento->TooltipValue = "";
+			// idbanco
+			$this->idbanco->LinkCustomAttributes = "";
+			$this->idbanco->HrefValue = "";
+			$this->idbanco->TooltipValue = "";
 
-			// serie
-			$this->serie->LinkCustomAttributes = "";
-			$this->serie->HrefValue = "";
-			$this->serie->TooltipValue = "";
+			// nombre
+			$this->nombre->LinkCustomAttributes = "";
+			$this->nombre->HrefValue = "";
+			$this->nombre->TooltipValue = "";
 
 			// numero
 			$this->numero->LinkCustomAttributes = "";
 			$this->numero->HrefValue = "";
 			$this->numero->TooltipValue = "";
-
-			// fecha
-			$this->fecha->LinkCustomAttributes = "";
-			$this->fecha->HrefValue = "";
-			$this->fecha->TooltipValue = "";
-
-			// monto
-			$this->monto->LinkCustomAttributes = "";
-			$this->monto->HrefValue = "";
-			$this->monto->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -1656,24 +1673,13 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 				$this->DbMasterFilter = "";
 				$this->DbDetailFilter = "";
 			}
-			if ($sMasterTblVar == "caja_chica") {
+			if ($sMasterTblVar == "banco") {
 				$bValidMaster = TRUE;
-				if (@$_GET["fk_idcaja_chica"] <> "") {
-					$GLOBALS["caja_chica"]->idcaja_chica->setQueryStringValue($_GET["fk_idcaja_chica"]);
-					$this->idcaja_chica->setQueryStringValue($GLOBALS["caja_chica"]->idcaja_chica->QueryStringValue);
-					$this->idcaja_chica->setSessionValue($this->idcaja_chica->QueryStringValue);
-					if (!is_numeric($GLOBALS["caja_chica"]->idcaja_chica->QueryStringValue)) $bValidMaster = FALSE;
-				} else {
-					$bValidMaster = FALSE;
-				}
-			}
-			if ($sMasterTblVar == "caja_chica_aplicacion") {
-				$bValidMaster = TRUE;
-				if (@$_GET["fk_idreferencia"] <> "") {
-					$GLOBALS["caja_chica_aplicacion"]->idreferencia->setQueryStringValue($_GET["fk_idreferencia"]);
-					$this->iddocumento_caja_chica->setQueryStringValue($GLOBALS["caja_chica_aplicacion"]->idreferencia->QueryStringValue);
-					$this->iddocumento_caja_chica->setSessionValue($this->iddocumento_caja_chica->QueryStringValue);
-					if (!is_numeric($GLOBALS["caja_chica_aplicacion"]->idreferencia->QueryStringValue)) $bValidMaster = FALSE;
+				if (@$_GET["fk_idbanco"] <> "") {
+					$GLOBALS["banco"]->idbanco->setQueryStringValue($_GET["fk_idbanco"]);
+					$this->idbanco->setQueryStringValue($GLOBALS["banco"]->idbanco->QueryStringValue);
+					$this->idbanco->setSessionValue($this->idbanco->QueryStringValue);
+					if (!is_numeric($GLOBALS["banco"]->idbanco->QueryStringValue)) $bValidMaster = FALSE;
 				} else {
 					$bValidMaster = FALSE;
 				}
@@ -1685,24 +1691,13 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 				$this->DbMasterFilter = "";
 				$this->DbDetailFilter = "";
 			}
-			if ($sMasterTblVar == "caja_chica") {
+			if ($sMasterTblVar == "banco") {
 				$bValidMaster = TRUE;
-				if (@$_POST["fk_idcaja_chica"] <> "") {
-					$GLOBALS["caja_chica"]->idcaja_chica->setFormValue($_POST["fk_idcaja_chica"]);
-					$this->idcaja_chica->setFormValue($GLOBALS["caja_chica"]->idcaja_chica->FormValue);
-					$this->idcaja_chica->setSessionValue($this->idcaja_chica->FormValue);
-					if (!is_numeric($GLOBALS["caja_chica"]->idcaja_chica->FormValue)) $bValidMaster = FALSE;
-				} else {
-					$bValidMaster = FALSE;
-				}
-			}
-			if ($sMasterTblVar == "caja_chica_aplicacion") {
-				$bValidMaster = TRUE;
-				if (@$_POST["fk_idreferencia"] <> "") {
-					$GLOBALS["caja_chica_aplicacion"]->idreferencia->setFormValue($_POST["fk_idreferencia"]);
-					$this->iddocumento_caja_chica->setFormValue($GLOBALS["caja_chica_aplicacion"]->idreferencia->FormValue);
-					$this->iddocumento_caja_chica->setSessionValue($this->iddocumento_caja_chica->FormValue);
-					if (!is_numeric($GLOBALS["caja_chica_aplicacion"]->idreferencia->FormValue)) $bValidMaster = FALSE;
+				if (@$_POST["fk_idbanco"] <> "") {
+					$GLOBALS["banco"]->idbanco->setFormValue($_POST["fk_idbanco"]);
+					$this->idbanco->setFormValue($GLOBALS["banco"]->idbanco->FormValue);
+					$this->idbanco->setSessionValue($this->idbanco->FormValue);
+					if (!is_numeric($GLOBALS["banco"]->idbanco->FormValue)) $bValidMaster = FALSE;
 				} else {
 					$bValidMaster = FALSE;
 				}
@@ -1724,11 +1719,8 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 			$this->setStartRecordNumber($this->StartRec);
 
 			// Clear previous master key from Session
-			if ($sMasterTblVar <> "caja_chica") {
-				if ($this->idcaja_chica->CurrentValue == "") $this->idcaja_chica->setSessionValue("");
-			}
-			if ($sMasterTblVar <> "caja_chica_aplicacion") {
-				if ($this->iddocumento_caja_chica->CurrentValue == "") $this->iddocumento_caja_chica->setSessionValue("");
+			if ($sMasterTblVar <> "banco") {
+				if ($this->idbanco->CurrentValue == "") $this->idbanco->setSessionValue("");
 			}
 		}
 		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
@@ -1868,30 +1860,30 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 <?php
 
 // Create page object
-if (!isset($documento_caja_chica_list)) $documento_caja_chica_list = new cdocumento_caja_chica_list();
+if (!isset($banco_cuenta_list)) $banco_cuenta_list = new cbanco_cuenta_list();
 
 // Page init
-$documento_caja_chica_list->Page_Init();
+$banco_cuenta_list->Page_Init();
 
 // Page main
-$documento_caja_chica_list->Page_Main();
+$banco_cuenta_list->Page_Main();
 
 // Global Page Rendering event (in userfn*.php)
 Page_Rendering();
 
 // Page Rendering event
-$documento_caja_chica_list->Page_Render();
+$banco_cuenta_list->Page_Render();
 ?>
 <?php include_once "header.php" ?>
 <script type="text/javascript">
 
 // Form object
 var CurrentPageID = EW_PAGE_ID = "list";
-var CurrentForm = fdocumento_caja_chicalist = new ew_Form("fdocumento_caja_chicalist", "list");
-fdocumento_caja_chicalist.FormKeyCountName = '<?php echo $documento_caja_chica_list->FormKeyCountName ?>';
+var CurrentForm = fbanco_cuentalist = new ew_Form("fbanco_cuentalist", "list");
+fbanco_cuentalist.FormKeyCountName = '<?php echo $banco_cuenta_list->FormKeyCountName ?>';
 
 // Form_CustomValidate event
-fdocumento_caja_chicalist.Form_CustomValidate = 
+fbanco_cuentalist.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
 
  	// Your custom validation code here, return false if invalid. 
@@ -1900,18 +1892,17 @@ fdocumento_caja_chicalist.Form_CustomValidate =
 
 // Use JavaScript validation or not
 <?php if (EW_CLIENT_VALIDATE) { ?>
-fdocumento_caja_chicalist.ValidateRequired = true;
+fbanco_cuentalist.ValidateRequired = true;
 <?php } else { ?>
-fdocumento_caja_chicalist.ValidateRequired = false; 
+fbanco_cuentalist.ValidateRequired = false; 
 <?php } ?>
 
 // Dynamic selection lists
-fdocumento_caja_chicalist.Lists["x_tipo"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
-fdocumento_caja_chicalist.Lists["x_tipo"].Options = <?php echo json_encode($documento_caja_chica->tipo->Options()) ?>;
-fdocumento_caja_chicalist.Lists["x_idtipo_documento"] = {"LinkField":"x_idtipo_documento","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fbanco_cuentalist.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fbanco_cuentalist.Lists["x_idbanco"] = {"LinkField":"x_idbanco","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
 // Form object for search
-var CurrentSearchForm = fdocumento_caja_chicalistsrch = new ew_Form("fdocumento_caja_chicalistsrch");
+var CurrentSearchForm = fbanco_cuentalistsrch = new ew_Form("fbanco_cuentalistsrch");
 </script>
 <script type="text/javascript">
 
@@ -1919,86 +1910,75 @@ var CurrentSearchForm = fdocumento_caja_chicalistsrch = new ew_Form("fdocumento_
 </script>
 <div class="ewToolbar">
 <?php $Breadcrumb->Render(); ?>
-<?php if ($documento_caja_chica_list->TotalRecs > 0 && $documento_caja_chica_list->ExportOptions->Visible()) { ?>
-<?php $documento_caja_chica_list->ExportOptions->Render("body") ?>
+<?php if ($banco_cuenta_list->TotalRecs > 0 && $banco_cuenta_list->ExportOptions->Visible()) { ?>
+<?php $banco_cuenta_list->ExportOptions->Render("body") ?>
 <?php } ?>
-<?php if ($documento_caja_chica_list->SearchOptions->Visible()) { ?>
-<?php $documento_caja_chica_list->SearchOptions->Render("body") ?>
+<?php if ($banco_cuenta_list->SearchOptions->Visible()) { ?>
+<?php $banco_cuenta_list->SearchOptions->Render("body") ?>
 <?php } ?>
-<?php if ($documento_caja_chica_list->FilterOptions->Visible()) { ?>
-<?php $documento_caja_chica_list->FilterOptions->Render("body") ?>
+<?php if ($banco_cuenta_list->FilterOptions->Visible()) { ?>
+<?php $banco_cuenta_list->FilterOptions->Render("body") ?>
 <?php } ?>
 <?php echo $Language->SelectionForm(); ?>
 <div class="clearfix"></div>
 </div>
-<?php if (($documento_caja_chica->Export == "") || (EW_EXPORT_MASTER_RECORD && $documento_caja_chica->Export == "print")) { ?>
+<?php if (($banco_cuenta->Export == "") || (EW_EXPORT_MASTER_RECORD && $banco_cuenta->Export == "print")) { ?>
 <?php
-$gsMasterReturnUrl = "caja_chicalist.php";
-if ($documento_caja_chica_list->DbMasterFilter <> "" && $documento_caja_chica->getCurrentMasterTable() == "caja_chica") {
-	if ($documento_caja_chica_list->MasterRecordExists) {
-		if ($documento_caja_chica->getCurrentMasterTable() == $documento_caja_chica->TableVar) $gsMasterReturnUrl .= "?" . EW_TABLE_SHOW_MASTER . "=";
+$gsMasterReturnUrl = "bancolist.php";
+if ($banco_cuenta_list->DbMasterFilter <> "" && $banco_cuenta->getCurrentMasterTable() == "banco") {
+	if ($banco_cuenta_list->MasterRecordExists) {
+		if ($banco_cuenta->getCurrentMasterTable() == $banco_cuenta->TableVar) $gsMasterReturnUrl .= "?" . EW_TABLE_SHOW_MASTER . "=";
 ?>
-<?php include_once "caja_chicamaster.php" ?>
-<?php
-	}
-}
-?>
-<?php
-$gsMasterReturnUrl = "caja_chica_aplicacionlist.php";
-if ($documento_caja_chica_list->DbMasterFilter <> "" && $documento_caja_chica->getCurrentMasterTable() == "caja_chica_aplicacion") {
-	if ($documento_caja_chica_list->MasterRecordExists) {
-		if ($documento_caja_chica->getCurrentMasterTable() == $documento_caja_chica->TableVar) $gsMasterReturnUrl .= "?" . EW_TABLE_SHOW_MASTER . "=";
-?>
-<?php include_once "caja_chica_aplicacionmaster.php" ?>
+<?php include_once "bancomaster.php" ?>
 <?php
 	}
 }
 ?>
 <?php } ?>
 <?php
-	$bSelectLimit = $documento_caja_chica_list->UseSelectLimit;
+	$bSelectLimit = $banco_cuenta_list->UseSelectLimit;
 	if ($bSelectLimit) {
-		if ($documento_caja_chica_list->TotalRecs <= 0)
-			$documento_caja_chica_list->TotalRecs = $documento_caja_chica->SelectRecordCount();
+		if ($banco_cuenta_list->TotalRecs <= 0)
+			$banco_cuenta_list->TotalRecs = $banco_cuenta->SelectRecordCount();
 	} else {
-		if (!$documento_caja_chica_list->Recordset && ($documento_caja_chica_list->Recordset = $documento_caja_chica_list->LoadRecordset()))
-			$documento_caja_chica_list->TotalRecs = $documento_caja_chica_list->Recordset->RecordCount();
+		if (!$banco_cuenta_list->Recordset && ($banco_cuenta_list->Recordset = $banco_cuenta_list->LoadRecordset()))
+			$banco_cuenta_list->TotalRecs = $banco_cuenta_list->Recordset->RecordCount();
 	}
-	$documento_caja_chica_list->StartRec = 1;
-	if ($documento_caja_chica_list->DisplayRecs <= 0 || ($documento_caja_chica->Export <> "" && $documento_caja_chica->ExportAll)) // Display all records
-		$documento_caja_chica_list->DisplayRecs = $documento_caja_chica_list->TotalRecs;
-	if (!($documento_caja_chica->Export <> "" && $documento_caja_chica->ExportAll))
-		$documento_caja_chica_list->SetUpStartRec(); // Set up start record position
+	$banco_cuenta_list->StartRec = 1;
+	if ($banco_cuenta_list->DisplayRecs <= 0 || ($banco_cuenta->Export <> "" && $banco_cuenta->ExportAll)) // Display all records
+		$banco_cuenta_list->DisplayRecs = $banco_cuenta_list->TotalRecs;
+	if (!($banco_cuenta->Export <> "" && $banco_cuenta->ExportAll))
+		$banco_cuenta_list->SetUpStartRec(); // Set up start record position
 	if ($bSelectLimit)
-		$documento_caja_chica_list->Recordset = $documento_caja_chica_list->LoadRecordset($documento_caja_chica_list->StartRec-1, $documento_caja_chica_list->DisplayRecs);
+		$banco_cuenta_list->Recordset = $banco_cuenta_list->LoadRecordset($banco_cuenta_list->StartRec-1, $banco_cuenta_list->DisplayRecs);
 
 	// Set no record found message
-	if ($documento_caja_chica->CurrentAction == "" && $documento_caja_chica_list->TotalRecs == 0) {
-		if ($documento_caja_chica_list->SearchWhere == "0=101")
-			$documento_caja_chica_list->setWarningMessage($Language->Phrase("EnterSearchCriteria"));
+	if ($banco_cuenta->CurrentAction == "" && $banco_cuenta_list->TotalRecs == 0) {
+		if ($banco_cuenta_list->SearchWhere == "0=101")
+			$banco_cuenta_list->setWarningMessage($Language->Phrase("EnterSearchCriteria"));
 		else
-			$documento_caja_chica_list->setWarningMessage($Language->Phrase("NoRecord"));
+			$banco_cuenta_list->setWarningMessage($Language->Phrase("NoRecord"));
 	}
-$documento_caja_chica_list->RenderOtherOptions();
+$banco_cuenta_list->RenderOtherOptions();
 ?>
-<?php if ($documento_caja_chica->Export == "" && $documento_caja_chica->CurrentAction == "") { ?>
-<form name="fdocumento_caja_chicalistsrch" id="fdocumento_caja_chicalistsrch" class="form-inline ewForm" action="<?php echo ew_CurrentPage() ?>">
-<?php $SearchPanelClass = ($documento_caja_chica_list->SearchWhere <> "") ? " in" : " in"; ?>
-<div id="fdocumento_caja_chicalistsrch_SearchPanel" class="ewSearchPanel collapse<?php echo $SearchPanelClass ?>">
+<?php if ($banco_cuenta->Export == "" && $banco_cuenta->CurrentAction == "") { ?>
+<form name="fbanco_cuentalistsrch" id="fbanco_cuentalistsrch" class="form-inline ewForm" action="<?php echo ew_CurrentPage() ?>">
+<?php $SearchPanelClass = ($banco_cuenta_list->SearchWhere <> "") ? " in" : " in"; ?>
+<div id="fbanco_cuentalistsrch_SearchPanel" class="ewSearchPanel collapse<?php echo $SearchPanelClass ?>">
 <input type="hidden" name="cmd" value="search">
-<input type="hidden" name="t" value="documento_caja_chica">
+<input type="hidden" name="t" value="banco_cuenta">
 	<div class="ewBasicSearch">
 <div id="xsr_1" class="ewRow">
 	<div class="ewQuickSearch input-group">
-	<input type="text" name="<?php echo EW_TABLE_BASIC_SEARCH ?>" id="<?php echo EW_TABLE_BASIC_SEARCH ?>" class="form-control" value="<?php echo ew_HtmlEncode($documento_caja_chica_list->BasicSearch->getKeyword()) ?>" placeholder="<?php echo ew_HtmlEncode($Language->Phrase("Search")) ?>">
-	<input type="hidden" name="<?php echo EW_TABLE_BASIC_SEARCH_TYPE ?>" id="<?php echo EW_TABLE_BASIC_SEARCH_TYPE ?>" value="<?php echo ew_HtmlEncode($documento_caja_chica_list->BasicSearch->getType()) ?>">
+	<input type="text" name="<?php echo EW_TABLE_BASIC_SEARCH ?>" id="<?php echo EW_TABLE_BASIC_SEARCH ?>" class="form-control" value="<?php echo ew_HtmlEncode($banco_cuenta_list->BasicSearch->getKeyword()) ?>" placeholder="<?php echo ew_HtmlEncode($Language->Phrase("Search")) ?>">
+	<input type="hidden" name="<?php echo EW_TABLE_BASIC_SEARCH_TYPE ?>" id="<?php echo EW_TABLE_BASIC_SEARCH_TYPE ?>" value="<?php echo ew_HtmlEncode($banco_cuenta_list->BasicSearch->getType()) ?>">
 	<div class="input-group-btn">
-		<button type="button" data-toggle="dropdown" class="btn btn-default"><span id="searchtype"><?php echo $documento_caja_chica_list->BasicSearch->getTypeNameShort() ?></span><span class="caret"></span></button>
+		<button type="button" data-toggle="dropdown" class="btn btn-default"><span id="searchtype"><?php echo $banco_cuenta_list->BasicSearch->getTypeNameShort() ?></span><span class="caret"></span></button>
 		<ul class="dropdown-menu pull-right" role="menu">
-			<li<?php if ($documento_caja_chica_list->BasicSearch->getType() == "") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this)"><?php echo $Language->Phrase("QuickSearchAuto") ?></a></li>
-			<li<?php if ($documento_caja_chica_list->BasicSearch->getType() == "=") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'=')"><?php echo $Language->Phrase("QuickSearchExact") ?></a></li>
-			<li<?php if ($documento_caja_chica_list->BasicSearch->getType() == "AND") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'AND')"><?php echo $Language->Phrase("QuickSearchAll") ?></a></li>
-			<li<?php if ($documento_caja_chica_list->BasicSearch->getType() == "OR") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'OR')"><?php echo $Language->Phrase("QuickSearchAny") ?></a></li>
+			<li<?php if ($banco_cuenta_list->BasicSearch->getType() == "") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this)"><?php echo $Language->Phrase("QuickSearchAuto") ?></a></li>
+			<li<?php if ($banco_cuenta_list->BasicSearch->getType() == "=") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'=')"><?php echo $Language->Phrase("QuickSearchExact") ?></a></li>
+			<li<?php if ($banco_cuenta_list->BasicSearch->getType() == "AND") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'AND')"><?php echo $Language->Phrase("QuickSearchAll") ?></a></li>
+			<li<?php if ($banco_cuenta_list->BasicSearch->getType() == "OR") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'OR')"><?php echo $Language->Phrase("QuickSearchAny") ?></a></li>
 		</ul>
 	<button class="btn btn-primary ewButton" name="btnsubmit" id="btnsubmit" type="submit"><?php echo $Language->Phrase("QuickSearchBtn") ?></button>
 	</div>
@@ -2008,225 +1988,187 @@ $documento_caja_chica_list->RenderOtherOptions();
 </div>
 </form>
 <?php } ?>
-<?php $documento_caja_chica_list->ShowPageHeader(); ?>
+<?php $banco_cuenta_list->ShowPageHeader(); ?>
 <?php
-$documento_caja_chica_list->ShowMessage();
+$banco_cuenta_list->ShowMessage();
 ?>
-<?php if ($documento_caja_chica_list->TotalRecs > 0 || $documento_caja_chica->CurrentAction <> "") { ?>
+<?php if ($banco_cuenta_list->TotalRecs > 0 || $banco_cuenta->CurrentAction <> "") { ?>
 <div class="panel panel-default ewGrid">
-<form name="fdocumento_caja_chicalist" id="fdocumento_caja_chicalist" class="form-inline ewForm ewListForm" action="<?php echo ew_CurrentPage() ?>" method="post">
-<?php if ($documento_caja_chica_list->CheckToken) { ?>
-<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $documento_caja_chica_list->Token ?>">
+<form name="fbanco_cuentalist" id="fbanco_cuentalist" class="form-inline ewForm ewListForm" action="<?php echo ew_CurrentPage() ?>" method="post">
+<?php if ($banco_cuenta_list->CheckToken) { ?>
+<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $banco_cuenta_list->Token ?>">
 <?php } ?>
-<input type="hidden" name="t" value="documento_caja_chica">
-<?php if ($documento_caja_chica->getCurrentMasterTable() == "caja_chica" && $documento_caja_chica->CurrentAction <> "") { ?>
-<input type="hidden" name="<?php echo EW_TABLE_SHOW_MASTER ?>" value="caja_chica">
-<input type="hidden" name="fk_idcaja_chica" value="<?php echo $documento_caja_chica->idcaja_chica->getSessionValue() ?>">
+<input type="hidden" name="t" value="banco_cuenta">
+<?php if ($banco_cuenta->getCurrentMasterTable() == "banco" && $banco_cuenta->CurrentAction <> "") { ?>
+<input type="hidden" name="<?php echo EW_TABLE_SHOW_MASTER ?>" value="banco">
+<input type="hidden" name="fk_idbanco" value="<?php echo $banco_cuenta->idbanco->getSessionValue() ?>">
 <?php } ?>
-<?php if ($documento_caja_chica->getCurrentMasterTable() == "caja_chica_aplicacion" && $documento_caja_chica->CurrentAction <> "") { ?>
-<input type="hidden" name="<?php echo EW_TABLE_SHOW_MASTER ?>" value="caja_chica_aplicacion">
-<input type="hidden" name="fk_idreferencia" value="<?php echo $documento_caja_chica->iddocumento_caja_chica->getSessionValue() ?>">
-<?php } ?>
-<div id="gmp_documento_caja_chica" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
-<?php if ($documento_caja_chica_list->TotalRecs > 0) { ?>
-<table id="tbl_documento_caja_chicalist" class="table ewTable">
-<?php echo $documento_caja_chica->TableCustomInnerHtml ?>
+<div id="gmp_banco_cuenta" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
+<?php if ($banco_cuenta_list->TotalRecs > 0) { ?>
+<table id="tbl_banco_cuentalist" class="table ewTable">
+<?php echo $banco_cuenta->TableCustomInnerHtml ?>
 <thead><!-- Table header -->
 	<tr class="ewTableHeader">
 <?php
 
 // Header row
-$documento_caja_chica_list->RowType = EW_ROWTYPE_HEADER;
+$banco_cuenta_list->RowType = EW_ROWTYPE_HEADER;
 
 // Render list options
-$documento_caja_chica_list->RenderListOptions();
+$banco_cuenta_list->RenderListOptions();
 
 // Render list options (header, left)
-$documento_caja_chica_list->ListOptions->Render("header", "left");
+$banco_cuenta_list->ListOptions->Render("header", "left");
 ?>
-<?php if ($documento_caja_chica->tipo->Visible) { // tipo ?>
-	<?php if ($documento_caja_chica->SortUrl($documento_caja_chica->tipo) == "") { ?>
-		<th data-name="tipo"><div id="elh_documento_caja_chica_tipo" class="documento_caja_chica_tipo"><div class="ewTableHeaderCaption"><?php echo $documento_caja_chica->tipo->FldCaption() ?></div></div></th>
+<?php if ($banco_cuenta->idempresa->Visible) { // idempresa ?>
+	<?php if ($banco_cuenta->SortUrl($banco_cuenta->idempresa) == "") { ?>
+		<th data-name="idempresa"><div id="elh_banco_cuenta_idempresa" class="banco_cuenta_idempresa"><div class="ewTableHeaderCaption"><?php echo $banco_cuenta->idempresa->FldCaption() ?></div></div></th>
 	<?php } else { ?>
-		<th data-name="tipo"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $documento_caja_chica->SortUrl($documento_caja_chica->tipo) ?>',1);"><div id="elh_documento_caja_chica_tipo" class="documento_caja_chica_tipo">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $documento_caja_chica->tipo->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($documento_caja_chica->tipo->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($documento_caja_chica->tipo->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+		<th data-name="idempresa"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $banco_cuenta->SortUrl($banco_cuenta->idempresa) ?>',1);"><div id="elh_banco_cuenta_idempresa" class="banco_cuenta_idempresa">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $banco_cuenta->idempresa->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($banco_cuenta->idempresa->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($banco_cuenta->idempresa->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
-<?php if ($documento_caja_chica->idtipo_documento->Visible) { // idtipo_documento ?>
-	<?php if ($documento_caja_chica->SortUrl($documento_caja_chica->idtipo_documento) == "") { ?>
-		<th data-name="idtipo_documento"><div id="elh_documento_caja_chica_idtipo_documento" class="documento_caja_chica_idtipo_documento"><div class="ewTableHeaderCaption"><?php echo $documento_caja_chica->idtipo_documento->FldCaption() ?></div></div></th>
+<?php if ($banco_cuenta->idbanco->Visible) { // idbanco ?>
+	<?php if ($banco_cuenta->SortUrl($banco_cuenta->idbanco) == "") { ?>
+		<th data-name="idbanco"><div id="elh_banco_cuenta_idbanco" class="banco_cuenta_idbanco"><div class="ewTableHeaderCaption"><?php echo $banco_cuenta->idbanco->FldCaption() ?></div></div></th>
 	<?php } else { ?>
-		<th data-name="idtipo_documento"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $documento_caja_chica->SortUrl($documento_caja_chica->idtipo_documento) ?>',1);"><div id="elh_documento_caja_chica_idtipo_documento" class="documento_caja_chica_idtipo_documento">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $documento_caja_chica->idtipo_documento->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($documento_caja_chica->idtipo_documento->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($documento_caja_chica->idtipo_documento->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+		<th data-name="idbanco"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $banco_cuenta->SortUrl($banco_cuenta->idbanco) ?>',1);"><div id="elh_banco_cuenta_idbanco" class="banco_cuenta_idbanco">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $banco_cuenta->idbanco->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($banco_cuenta->idbanco->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($banco_cuenta->idbanco->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
-<?php if ($documento_caja_chica->serie->Visible) { // serie ?>
-	<?php if ($documento_caja_chica->SortUrl($documento_caja_chica->serie) == "") { ?>
-		<th data-name="serie"><div id="elh_documento_caja_chica_serie" class="documento_caja_chica_serie"><div class="ewTableHeaderCaption"><?php echo $documento_caja_chica->serie->FldCaption() ?></div></div></th>
+<?php if ($banco_cuenta->nombre->Visible) { // nombre ?>
+	<?php if ($banco_cuenta->SortUrl($banco_cuenta->nombre) == "") { ?>
+		<th data-name="nombre"><div id="elh_banco_cuenta_nombre" class="banco_cuenta_nombre"><div class="ewTableHeaderCaption"><?php echo $banco_cuenta->nombre->FldCaption() ?></div></div></th>
 	<?php } else { ?>
-		<th data-name="serie"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $documento_caja_chica->SortUrl($documento_caja_chica->serie) ?>',1);"><div id="elh_documento_caja_chica_serie" class="documento_caja_chica_serie">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $documento_caja_chica->serie->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($documento_caja_chica->serie->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($documento_caja_chica->serie->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+		<th data-name="nombre"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $banco_cuenta->SortUrl($banco_cuenta->nombre) ?>',1);"><div id="elh_banco_cuenta_nombre" class="banco_cuenta_nombre">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $banco_cuenta->nombre->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($banco_cuenta->nombre->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($banco_cuenta->nombre->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
-<?php if ($documento_caja_chica->numero->Visible) { // numero ?>
-	<?php if ($documento_caja_chica->SortUrl($documento_caja_chica->numero) == "") { ?>
-		<th data-name="numero"><div id="elh_documento_caja_chica_numero" class="documento_caja_chica_numero"><div class="ewTableHeaderCaption"><?php echo $documento_caja_chica->numero->FldCaption() ?></div></div></th>
+<?php if ($banco_cuenta->numero->Visible) { // numero ?>
+	<?php if ($banco_cuenta->SortUrl($banco_cuenta->numero) == "") { ?>
+		<th data-name="numero"><div id="elh_banco_cuenta_numero" class="banco_cuenta_numero"><div class="ewTableHeaderCaption"><?php echo $banco_cuenta->numero->FldCaption() ?></div></div></th>
 	<?php } else { ?>
-		<th data-name="numero"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $documento_caja_chica->SortUrl($documento_caja_chica->numero) ?>',1);"><div id="elh_documento_caja_chica_numero" class="documento_caja_chica_numero">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $documento_caja_chica->numero->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($documento_caja_chica->numero->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($documento_caja_chica->numero->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($documento_caja_chica->fecha->Visible) { // fecha ?>
-	<?php if ($documento_caja_chica->SortUrl($documento_caja_chica->fecha) == "") { ?>
-		<th data-name="fecha"><div id="elh_documento_caja_chica_fecha" class="documento_caja_chica_fecha"><div class="ewTableHeaderCaption"><?php echo $documento_caja_chica->fecha->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="fecha"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $documento_caja_chica->SortUrl($documento_caja_chica->fecha) ?>',1);"><div id="elh_documento_caja_chica_fecha" class="documento_caja_chica_fecha">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $documento_caja_chica->fecha->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($documento_caja_chica->fecha->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($documento_caja_chica->fecha->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($documento_caja_chica->monto->Visible) { // monto ?>
-	<?php if ($documento_caja_chica->SortUrl($documento_caja_chica->monto) == "") { ?>
-		<th data-name="monto"><div id="elh_documento_caja_chica_monto" class="documento_caja_chica_monto"><div class="ewTableHeaderCaption"><?php echo $documento_caja_chica->monto->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="monto"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $documento_caja_chica->SortUrl($documento_caja_chica->monto) ?>',1);"><div id="elh_documento_caja_chica_monto" class="documento_caja_chica_monto">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $documento_caja_chica->monto->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($documento_caja_chica->monto->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($documento_caja_chica->monto->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+		<th data-name="numero"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $banco_cuenta->SortUrl($banco_cuenta->numero) ?>',1);"><div id="elh_banco_cuenta_numero" class="banco_cuenta_numero">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $banco_cuenta->numero->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($banco_cuenta->numero->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($banco_cuenta->numero->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
 <?php
 
 // Render list options (header, right)
-$documento_caja_chica_list->ListOptions->Render("header", "right");
+$banco_cuenta_list->ListOptions->Render("header", "right");
 ?>
 	</tr>
 </thead>
 <tbody>
 <?php
-if ($documento_caja_chica->ExportAll && $documento_caja_chica->Export <> "") {
-	$documento_caja_chica_list->StopRec = $documento_caja_chica_list->TotalRecs;
+if ($banco_cuenta->ExportAll && $banco_cuenta->Export <> "") {
+	$banco_cuenta_list->StopRec = $banco_cuenta_list->TotalRecs;
 } else {
 
 	// Set the last record to display
-	if ($documento_caja_chica_list->TotalRecs > $documento_caja_chica_list->StartRec + $documento_caja_chica_list->DisplayRecs - 1)
-		$documento_caja_chica_list->StopRec = $documento_caja_chica_list->StartRec + $documento_caja_chica_list->DisplayRecs - 1;
+	if ($banco_cuenta_list->TotalRecs > $banco_cuenta_list->StartRec + $banco_cuenta_list->DisplayRecs - 1)
+		$banco_cuenta_list->StopRec = $banco_cuenta_list->StartRec + $banco_cuenta_list->DisplayRecs - 1;
 	else
-		$documento_caja_chica_list->StopRec = $documento_caja_chica_list->TotalRecs;
+		$banco_cuenta_list->StopRec = $banco_cuenta_list->TotalRecs;
 }
-$documento_caja_chica_list->RecCnt = $documento_caja_chica_list->StartRec - 1;
-if ($documento_caja_chica_list->Recordset && !$documento_caja_chica_list->Recordset->EOF) {
-	$documento_caja_chica_list->Recordset->MoveFirst();
-	$bSelectLimit = $documento_caja_chica_list->UseSelectLimit;
-	if (!$bSelectLimit && $documento_caja_chica_list->StartRec > 1)
-		$documento_caja_chica_list->Recordset->Move($documento_caja_chica_list->StartRec - 1);
-} elseif (!$documento_caja_chica->AllowAddDeleteRow && $documento_caja_chica_list->StopRec == 0) {
-	$documento_caja_chica_list->StopRec = $documento_caja_chica->GridAddRowCount;
+$banco_cuenta_list->RecCnt = $banco_cuenta_list->StartRec - 1;
+if ($banco_cuenta_list->Recordset && !$banco_cuenta_list->Recordset->EOF) {
+	$banco_cuenta_list->Recordset->MoveFirst();
+	$bSelectLimit = $banco_cuenta_list->UseSelectLimit;
+	if (!$bSelectLimit && $banco_cuenta_list->StartRec > 1)
+		$banco_cuenta_list->Recordset->Move($banco_cuenta_list->StartRec - 1);
+} elseif (!$banco_cuenta->AllowAddDeleteRow && $banco_cuenta_list->StopRec == 0) {
+	$banco_cuenta_list->StopRec = $banco_cuenta->GridAddRowCount;
 }
 
 // Initialize aggregate
-$documento_caja_chica->RowType = EW_ROWTYPE_AGGREGATEINIT;
-$documento_caja_chica->ResetAttrs();
-$documento_caja_chica_list->RenderRow();
-while ($documento_caja_chica_list->RecCnt < $documento_caja_chica_list->StopRec) {
-	$documento_caja_chica_list->RecCnt++;
-	if (intval($documento_caja_chica_list->RecCnt) >= intval($documento_caja_chica_list->StartRec)) {
-		$documento_caja_chica_list->RowCnt++;
+$banco_cuenta->RowType = EW_ROWTYPE_AGGREGATEINIT;
+$banco_cuenta->ResetAttrs();
+$banco_cuenta_list->RenderRow();
+while ($banco_cuenta_list->RecCnt < $banco_cuenta_list->StopRec) {
+	$banco_cuenta_list->RecCnt++;
+	if (intval($banco_cuenta_list->RecCnt) >= intval($banco_cuenta_list->StartRec)) {
+		$banco_cuenta_list->RowCnt++;
 
 		// Set up key count
-		$documento_caja_chica_list->KeyCount = $documento_caja_chica_list->RowIndex;
+		$banco_cuenta_list->KeyCount = $banco_cuenta_list->RowIndex;
 
 		// Init row class and style
-		$documento_caja_chica->ResetAttrs();
-		$documento_caja_chica->CssClass = "";
-		if ($documento_caja_chica->CurrentAction == "gridadd") {
+		$banco_cuenta->ResetAttrs();
+		$banco_cuenta->CssClass = "";
+		if ($banco_cuenta->CurrentAction == "gridadd") {
 		} else {
-			$documento_caja_chica_list->LoadRowValues($documento_caja_chica_list->Recordset); // Load row values
+			$banco_cuenta_list->LoadRowValues($banco_cuenta_list->Recordset); // Load row values
 		}
-		$documento_caja_chica->RowType = EW_ROWTYPE_VIEW; // Render view
+		$banco_cuenta->RowType = EW_ROWTYPE_VIEW; // Render view
 
 		// Set up row id / data-rowindex
-		$documento_caja_chica->RowAttrs = array_merge($documento_caja_chica->RowAttrs, array('data-rowindex'=>$documento_caja_chica_list->RowCnt, 'id'=>'r' . $documento_caja_chica_list->RowCnt . '_documento_caja_chica', 'data-rowtype'=>$documento_caja_chica->RowType));
+		$banco_cuenta->RowAttrs = array_merge($banco_cuenta->RowAttrs, array('data-rowindex'=>$banco_cuenta_list->RowCnt, 'id'=>'r' . $banco_cuenta_list->RowCnt . '_banco_cuenta', 'data-rowtype'=>$banco_cuenta->RowType));
 
 		// Render row
-		$documento_caja_chica_list->RenderRow();
+		$banco_cuenta_list->RenderRow();
 
 		// Render list options
-		$documento_caja_chica_list->RenderListOptions();
+		$banco_cuenta_list->RenderListOptions();
 ?>
-	<tr<?php echo $documento_caja_chica->RowAttributes() ?>>
+	<tr<?php echo $banco_cuenta->RowAttributes() ?>>
 <?php
 
 // Render list options (body, left)
-$documento_caja_chica_list->ListOptions->Render("body", "left", $documento_caja_chica_list->RowCnt);
+$banco_cuenta_list->ListOptions->Render("body", "left", $banco_cuenta_list->RowCnt);
 ?>
-	<?php if ($documento_caja_chica->tipo->Visible) { // tipo ?>
-		<td data-name="tipo"<?php echo $documento_caja_chica->tipo->CellAttributes() ?>>
-<span id="el<?php echo $documento_caja_chica_list->RowCnt ?>_documento_caja_chica_tipo" class="documento_caja_chica_tipo">
-<span<?php echo $documento_caja_chica->tipo->ViewAttributes() ?>>
-<?php echo $documento_caja_chica->tipo->ListViewValue() ?></span>
+	<?php if ($banco_cuenta->idempresa->Visible) { // idempresa ?>
+		<td data-name="idempresa"<?php echo $banco_cuenta->idempresa->CellAttributes() ?>>
+<span id="el<?php echo $banco_cuenta_list->RowCnt ?>_banco_cuenta_idempresa" class="banco_cuenta_idempresa">
+<span<?php echo $banco_cuenta->idempresa->ViewAttributes() ?>>
+<?php echo $banco_cuenta->idempresa->ListViewValue() ?></span>
 </span>
-<a id="<?php echo $documento_caja_chica_list->PageObjName . "_row_" . $documento_caja_chica_list->RowCnt ?>"></a></td>
+<a id="<?php echo $banco_cuenta_list->PageObjName . "_row_" . $banco_cuenta_list->RowCnt ?>"></a></td>
 	<?php } ?>
-	<?php if ($documento_caja_chica->idtipo_documento->Visible) { // idtipo_documento ?>
-		<td data-name="idtipo_documento"<?php echo $documento_caja_chica->idtipo_documento->CellAttributes() ?>>
-<span id="el<?php echo $documento_caja_chica_list->RowCnt ?>_documento_caja_chica_idtipo_documento" class="documento_caja_chica_idtipo_documento">
-<span<?php echo $documento_caja_chica->idtipo_documento->ViewAttributes() ?>>
-<?php echo $documento_caja_chica->idtipo_documento->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($documento_caja_chica->serie->Visible) { // serie ?>
-		<td data-name="serie"<?php echo $documento_caja_chica->serie->CellAttributes() ?>>
-<span id="el<?php echo $documento_caja_chica_list->RowCnt ?>_documento_caja_chica_serie" class="documento_caja_chica_serie">
-<span<?php echo $documento_caja_chica->serie->ViewAttributes() ?>>
-<?php echo $documento_caja_chica->serie->ListViewValue() ?></span>
+	<?php if ($banco_cuenta->idbanco->Visible) { // idbanco ?>
+		<td data-name="idbanco"<?php echo $banco_cuenta->idbanco->CellAttributes() ?>>
+<span id="el<?php echo $banco_cuenta_list->RowCnt ?>_banco_cuenta_idbanco" class="banco_cuenta_idbanco">
+<span<?php echo $banco_cuenta->idbanco->ViewAttributes() ?>>
+<?php echo $banco_cuenta->idbanco->ListViewValue() ?></span>
 </span>
 </td>
 	<?php } ?>
-	<?php if ($documento_caja_chica->numero->Visible) { // numero ?>
-		<td data-name="numero"<?php echo $documento_caja_chica->numero->CellAttributes() ?>>
-<span id="el<?php echo $documento_caja_chica_list->RowCnt ?>_documento_caja_chica_numero" class="documento_caja_chica_numero">
-<span<?php echo $documento_caja_chica->numero->ViewAttributes() ?>>
-<?php echo $documento_caja_chica->numero->ListViewValue() ?></span>
+	<?php if ($banco_cuenta->nombre->Visible) { // nombre ?>
+		<td data-name="nombre"<?php echo $banco_cuenta->nombre->CellAttributes() ?>>
+<span id="el<?php echo $banco_cuenta_list->RowCnt ?>_banco_cuenta_nombre" class="banco_cuenta_nombre">
+<span<?php echo $banco_cuenta->nombre->ViewAttributes() ?>>
+<?php echo $banco_cuenta->nombre->ListViewValue() ?></span>
 </span>
 </td>
 	<?php } ?>
-	<?php if ($documento_caja_chica->fecha->Visible) { // fecha ?>
-		<td data-name="fecha"<?php echo $documento_caja_chica->fecha->CellAttributes() ?>>
-<span id="el<?php echo $documento_caja_chica_list->RowCnt ?>_documento_caja_chica_fecha" class="documento_caja_chica_fecha">
-<span<?php echo $documento_caja_chica->fecha->ViewAttributes() ?>>
-<?php echo $documento_caja_chica->fecha->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($documento_caja_chica->monto->Visible) { // monto ?>
-		<td data-name="monto"<?php echo $documento_caja_chica->monto->CellAttributes() ?>>
-<span id="el<?php echo $documento_caja_chica_list->RowCnt ?>_documento_caja_chica_monto" class="documento_caja_chica_monto">
-<span<?php echo $documento_caja_chica->monto->ViewAttributes() ?>>
-<?php echo $documento_caja_chica->monto->ListViewValue() ?></span>
+	<?php if ($banco_cuenta->numero->Visible) { // numero ?>
+		<td data-name="numero"<?php echo $banco_cuenta->numero->CellAttributes() ?>>
+<span id="el<?php echo $banco_cuenta_list->RowCnt ?>_banco_cuenta_numero" class="banco_cuenta_numero">
+<span<?php echo $banco_cuenta->numero->ViewAttributes() ?>>
+<?php echo $banco_cuenta->numero->ListViewValue() ?></span>
 </span>
 </td>
 	<?php } ?>
 <?php
 
 // Render list options (body, right)
-$documento_caja_chica_list->ListOptions->Render("body", "right", $documento_caja_chica_list->RowCnt);
+$banco_cuenta_list->ListOptions->Render("body", "right", $banco_cuenta_list->RowCnt);
 ?>
 	</tr>
 <?php
 	}
-	if ($documento_caja_chica->CurrentAction <> "gridadd")
-		$documento_caja_chica_list->Recordset->MoveNext();
+	if ($banco_cuenta->CurrentAction <> "gridadd")
+		$banco_cuenta_list->Recordset->MoveNext();
 }
 ?>
 </tbody>
 </table>
 <?php } ?>
-<?php if ($documento_caja_chica->CurrentAction == "") { ?>
+<?php if ($banco_cuenta->CurrentAction == "") { ?>
 <input type="hidden" name="a_list" id="a_list" value="">
 <?php } ?>
 </div>
@@ -2234,60 +2176,60 @@ $documento_caja_chica_list->ListOptions->Render("body", "right", $documento_caja
 <?php
 
 // Close recordset
-if ($documento_caja_chica_list->Recordset)
-	$documento_caja_chica_list->Recordset->Close();
+if ($banco_cuenta_list->Recordset)
+	$banco_cuenta_list->Recordset->Close();
 ?>
 <div class="panel-footer ewGridLowerPanel">
-<?php if ($documento_caja_chica->CurrentAction <> "gridadd" && $documento_caja_chica->CurrentAction <> "gridedit") { ?>
+<?php if ($banco_cuenta->CurrentAction <> "gridadd" && $banco_cuenta->CurrentAction <> "gridedit") { ?>
 <form name="ewPagerForm" class="ewForm form-inline ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
-<?php if (!isset($documento_caja_chica_list->Pager)) $documento_caja_chica_list->Pager = new cPrevNextPager($documento_caja_chica_list->StartRec, $documento_caja_chica_list->DisplayRecs, $documento_caja_chica_list->TotalRecs) ?>
-<?php if ($documento_caja_chica_list->Pager->RecordCount > 0) { ?>
+<?php if (!isset($banco_cuenta_list->Pager)) $banco_cuenta_list->Pager = new cPrevNextPager($banco_cuenta_list->StartRec, $banco_cuenta_list->DisplayRecs, $banco_cuenta_list->TotalRecs) ?>
+<?php if ($banco_cuenta_list->Pager->RecordCount > 0) { ?>
 <div class="ewPager">
 <span><?php echo $Language->Phrase("Page") ?>&nbsp;</span>
 <div class="ewPrevNext"><div class="input-group">
 <div class="input-group-btn">
 <!--first page button-->
-	<?php if ($documento_caja_chica_list->Pager->FirstButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerFirst") ?>" href="<?php echo $documento_caja_chica_list->PageUrl() ?>start=<?php echo $documento_caja_chica_list->Pager->FirstButton->Start ?>"><span class="icon-first ewIcon"></span></a>
+	<?php if ($banco_cuenta_list->Pager->FirstButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerFirst") ?>" href="<?php echo $banco_cuenta_list->PageUrl() ?>start=<?php echo $banco_cuenta_list->Pager->FirstButton->Start ?>"><span class="icon-first ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerFirst") ?>"><span class="icon-first ewIcon"></span></a>
 	<?php } ?>
 <!--previous page button-->
-	<?php if ($documento_caja_chica_list->Pager->PrevButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerPrevious") ?>" href="<?php echo $documento_caja_chica_list->PageUrl() ?>start=<?php echo $documento_caja_chica_list->Pager->PrevButton->Start ?>"><span class="icon-prev ewIcon"></span></a>
+	<?php if ($banco_cuenta_list->Pager->PrevButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerPrevious") ?>" href="<?php echo $banco_cuenta_list->PageUrl() ?>start=<?php echo $banco_cuenta_list->Pager->PrevButton->Start ?>"><span class="icon-prev ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerPrevious") ?>"><span class="icon-prev ewIcon"></span></a>
 	<?php } ?>
 </div>
 <!--current page number-->
-	<input class="form-control input-sm" type="text" name="<?php echo EW_TABLE_PAGE_NO ?>" value="<?php echo $documento_caja_chica_list->Pager->CurrentPage ?>">
+	<input class="form-control input-sm" type="text" name="<?php echo EW_TABLE_PAGE_NO ?>" value="<?php echo $banco_cuenta_list->Pager->CurrentPage ?>">
 <div class="input-group-btn">
 <!--next page button-->
-	<?php if ($documento_caja_chica_list->Pager->NextButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerNext") ?>" href="<?php echo $documento_caja_chica_list->PageUrl() ?>start=<?php echo $documento_caja_chica_list->Pager->NextButton->Start ?>"><span class="icon-next ewIcon"></span></a>
+	<?php if ($banco_cuenta_list->Pager->NextButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerNext") ?>" href="<?php echo $banco_cuenta_list->PageUrl() ?>start=<?php echo $banco_cuenta_list->Pager->NextButton->Start ?>"><span class="icon-next ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerNext") ?>"><span class="icon-next ewIcon"></span></a>
 	<?php } ?>
 <!--last page button-->
-	<?php if ($documento_caja_chica_list->Pager->LastButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerLast") ?>" href="<?php echo $documento_caja_chica_list->PageUrl() ?>start=<?php echo $documento_caja_chica_list->Pager->LastButton->Start ?>"><span class="icon-last ewIcon"></span></a>
+	<?php if ($banco_cuenta_list->Pager->LastButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerLast") ?>" href="<?php echo $banco_cuenta_list->PageUrl() ?>start=<?php echo $banco_cuenta_list->Pager->LastButton->Start ?>"><span class="icon-last ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerLast") ?>"><span class="icon-last ewIcon"></span></a>
 	<?php } ?>
 </div>
 </div>
 </div>
-<span>&nbsp;<?php echo $Language->Phrase("of") ?>&nbsp;<?php echo $documento_caja_chica_list->Pager->PageCount ?></span>
+<span>&nbsp;<?php echo $Language->Phrase("of") ?>&nbsp;<?php echo $banco_cuenta_list->Pager->PageCount ?></span>
 </div>
 <div class="ewPager ewRec">
-	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $documento_caja_chica_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $documento_caja_chica_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $documento_caja_chica_list->Pager->RecordCount ?></span>
+	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $banco_cuenta_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $banco_cuenta_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $banco_cuenta_list->Pager->RecordCount ?></span>
 </div>
 <?php } ?>
 </form>
 <?php } ?>
 <div class="ewListOtherOptions">
 <?php
-	foreach ($documento_caja_chica_list->OtherOptions as &$option)
+	foreach ($banco_cuenta_list->OtherOptions as &$option)
 		$option->Render("body", "bottom");
 ?>
 </div>
@@ -2295,10 +2237,10 @@ if ($documento_caja_chica_list->Recordset)
 </div>
 </div>
 <?php } ?>
-<?php if ($documento_caja_chica_list->TotalRecs == 0 && $documento_caja_chica->CurrentAction == "") { // Show other options ?>
+<?php if ($banco_cuenta_list->TotalRecs == 0 && $banco_cuenta->CurrentAction == "") { // Show other options ?>
 <div class="ewListOtherOptions">
 <?php
-	foreach ($documento_caja_chica_list->OtherOptions as &$option) {
+	foreach ($banco_cuenta_list->OtherOptions as &$option) {
 		$option->ButtonClass = "";
 		$option->Render("body", "");
 	}
@@ -2307,12 +2249,12 @@ if ($documento_caja_chica_list->Recordset)
 <div class="clearfix"></div>
 <?php } ?>
 <script type="text/javascript">
-fdocumento_caja_chicalistsrch.Init();
-fdocumento_caja_chicalistsrch.FilterList = <?php echo $documento_caja_chica_list->GetFilterList() ?>;
-fdocumento_caja_chicalist.Init();
+fbanco_cuentalistsrch.Init();
+fbanco_cuentalistsrch.FilterList = <?php echo $banco_cuenta_list->GetFilterList() ?>;
+fbanco_cuentalist.Init();
 </script>
 <?php
-$documento_caja_chica_list->ShowPageFooter();
+$banco_cuenta_list->ShowPageFooter();
 if (EW_DEBUG_ENABLED)
 	echo ew_DebugMsg();
 ?>
@@ -2324,5 +2266,5 @@ if (EW_DEBUG_ENABLED)
 </script>
 <?php include_once "footer.php" ?>
 <?php
-$documento_caja_chica_list->Page_Terminate();
+$banco_cuenta_list->Page_Terminate();
 ?>

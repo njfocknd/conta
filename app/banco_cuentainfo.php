@@ -1,18 +1,17 @@
 <?php
 
 // Global variable for table object
-$caja_chica = NULL;
+$banco_cuenta = NULL;
 
 //
-// Table class for caja_chica
+// Table class for banco_cuenta
 //
-class ccaja_chica extends cTable {
-	var $idcaja_chica;
-	var $nombre;
-	var $saldo;
+class cbanco_cuenta extends cTable {
+	var $idbanco_cuenta;
 	var $idempresa;
-	var $idempleado;
-	var $idcuenta;
+	var $idbanco;
+	var $nombre;
+	var $numero;
 	var $estado;
 	var $fecha_insercion;
 
@@ -24,12 +23,12 @@ class ccaja_chica extends cTable {
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
-		$this->TableVar = 'caja_chica';
-		$this->TableName = 'caja_chica';
+		$this->TableVar = 'banco_cuenta';
+		$this->TableName = 'banco_cuenta';
 		$this->TableType = 'TABLE';
 
 		// Update Table
-		$this->UpdateTable = "`caja_chica`";
+		$this->UpdateTable = "`banco_cuenta`";
 		$this->DBID = 'DB';
 		$this->ExportAll = TRUE;
 		$this->ExportPageBreakCount = 0; // Page break per every n record (PDF only)
@@ -46,42 +45,36 @@ class ccaja_chica extends cTable {
 		$this->UserIDAllowSecurity = 0; // User ID Allow
 		$this->BasicSearch = new cBasicSearch($this->TableVar);
 
-		// idcaja_chica
-		$this->idcaja_chica = new cField('caja_chica', 'caja_chica', 'x_idcaja_chica', 'idcaja_chica', '`idcaja_chica`', '`idcaja_chica`', 3, -1, FALSE, '`idcaja_chica`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'NO');
-		$this->idcaja_chica->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['idcaja_chica'] = &$this->idcaja_chica;
-
-		// nombre
-		$this->nombre = new cField('caja_chica', 'caja_chica', 'x_nombre', 'nombre', '`nombre`', '`nombre`', 200, -1, FALSE, '`nombre`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->fields['nombre'] = &$this->nombre;
-
-		// saldo
-		$this->saldo = new cField('caja_chica', 'caja_chica', 'x_saldo', 'saldo', '`saldo`', '`saldo`', 131, -1, FALSE, '`saldo`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->saldo->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
-		$this->fields['saldo'] = &$this->saldo;
+		// idbanco_cuenta
+		$this->idbanco_cuenta = new cField('banco_cuenta', 'banco_cuenta', 'x_idbanco_cuenta', 'idbanco_cuenta', '`idbanco_cuenta`', '`idbanco_cuenta`', 3, -1, FALSE, '`idbanco_cuenta`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'NO');
+		$this->idbanco_cuenta->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
+		$this->fields['idbanco_cuenta'] = &$this->idbanco_cuenta;
 
 		// idempresa
-		$this->idempresa = new cField('caja_chica', 'caja_chica', 'x_idempresa', 'idempresa', '`idempresa`', '`idempresa`', 3, -1, FALSE, '`idempresa`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
+		$this->idempresa = new cField('banco_cuenta', 'banco_cuenta', 'x_idempresa', 'idempresa', '`idempresa`', '`idempresa`', 3, -1, FALSE, '`idempresa`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
 		$this->idempresa->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idempresa'] = &$this->idempresa;
 
-		// idempleado
-		$this->idempleado = new cField('caja_chica', 'caja_chica', 'x_idempleado', 'idempleado', '`idempleado`', '`idempleado`', 3, -1, FALSE, '`idempleado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
-		$this->idempleado->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['idempleado'] = &$this->idempleado;
+		// idbanco
+		$this->idbanco = new cField('banco_cuenta', 'banco_cuenta', 'x_idbanco', 'idbanco', '`idbanco`', '`idbanco`', 3, -1, FALSE, '`idbanco`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
+		$this->idbanco->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
+		$this->fields['idbanco'] = &$this->idbanco;
 
-		// idcuenta
-		$this->idcuenta = new cField('caja_chica', 'caja_chica', 'x_idcuenta', 'idcuenta', '`idcuenta`', '`idcuenta`', 3, -1, FALSE, '`idcuenta`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
-		$this->idcuenta->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['idcuenta'] = &$this->idcuenta;
+		// nombre
+		$this->nombre = new cField('banco_cuenta', 'banco_cuenta', 'x_nombre', 'nombre', '`nombre`', '`nombre`', 200, -1, FALSE, '`nombre`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->fields['nombre'] = &$this->nombre;
+
+		// numero
+		$this->numero = new cField('banco_cuenta', 'banco_cuenta', 'x_numero', 'numero', '`numero`', '`numero`', 200, -1, FALSE, '`numero`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->fields['numero'] = &$this->numero;
 
 		// estado
-		$this->estado = new cField('caja_chica', 'caja_chica', 'x_estado', 'estado', '`estado`', '`estado`', 202, -1, FALSE, '`estado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'RADIO');
+		$this->estado = new cField('banco_cuenta', 'banco_cuenta', 'x_estado', 'estado', '`estado`', '`estado`', 202, -1, FALSE, '`estado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'RADIO');
 		$this->estado->OptionCount = 2;
 		$this->fields['estado'] = &$this->estado;
 
 		// fecha_insercion
-		$this->fecha_insercion = new cField('caja_chica', 'caja_chica', 'x_fecha_insercion', 'fecha_insercion', '`fecha_insercion`', 'DATE_FORMAT(`fecha_insercion`, \'%d/%m/%Y\')', 135, 7, FALSE, '`fecha_insercion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->fecha_insercion = new cField('banco_cuenta', 'banco_cuenta', 'x_fecha_insercion', 'fecha_insercion', '`fecha_insercion`', 'DATE_FORMAT(`fecha_insercion`, \'%d/%m/%Y\')', 135, 7, FALSE, '`fecha_insercion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->fecha_insercion->FldDefaultErrMsg = str_replace("%s", "/", $Language->Phrase("IncorrectDateDMY"));
 		$this->fields['fecha_insercion'] = &$this->fecha_insercion;
 	}
@@ -103,6 +96,53 @@ class ccaja_chica extends cTable {
 		}
 	}
 
+	// Current master table name
+	function getCurrentMasterTable() {
+		return @$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_MASTER_TABLE];
+	}
+
+	function setCurrentMasterTable($v) {
+		$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_MASTER_TABLE] = $v;
+	}
+
+	// Session master WHERE clause
+	function GetMasterFilter() {
+
+		// Master filter
+		$sMasterFilter = "";
+		if ($this->getCurrentMasterTable() == "banco") {
+			if ($this->idbanco->getSessionValue() <> "")
+				$sMasterFilter .= "`idbanco`=" . ew_QuotedValue($this->idbanco->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
+			else
+				return "";
+		}
+		return $sMasterFilter;
+	}
+
+	// Session detail WHERE clause
+	function GetDetailFilter() {
+
+		// Detail filter
+		$sDetailFilter = "";
+		if ($this->getCurrentMasterTable() == "banco") {
+			if ($this->idbanco->getSessionValue() <> "")
+				$sDetailFilter .= "`idbanco`=" . ew_QuotedValue($this->idbanco->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
+			else
+				return "";
+		}
+		return $sDetailFilter;
+	}
+
+	// Master filter
+	function SqlMasterFilter_banco() {
+		return "`idbanco`=@idbanco@";
+	}
+
+	// Detail filter
+	function SqlDetailFilter_banco() {
+		return "`idbanco`=@idbanco@";
+	}
+
 	// Current detail table name
 	function getCurrentDetailTable() {
 		return @$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_DETAIL_TABLE];
@@ -117,24 +157,12 @@ class ccaja_chica extends cTable {
 
 		// Detail url
 		$sDetailUrl = "";
-		if ($this->getCurrentDetailTable() == "encargado") {
-			$sDetailUrl = $GLOBALS["encargado"]->GetListUrl() . "?" . EW_TABLE_SHOW_MASTER . "=" . $this->TableVar;
-			$sDetailUrl .= "&fk_idcaja_chica=" . urlencode($this->idcaja_chica->CurrentValue);
-		}
-		if ($this->getCurrentDetailTable() == "documento_caja_chica") {
-			$sDetailUrl = $GLOBALS["documento_caja_chica"]->GetListUrl() . "?" . EW_TABLE_SHOW_MASTER . "=" . $this->TableVar;
-			$sDetailUrl .= "&fk_idcaja_chica=" . urlencode($this->idcaja_chica->CurrentValue);
-		}
-		if ($this->getCurrentDetailTable() == "caja_chica_detalle") {
-			$sDetailUrl = $GLOBALS["caja_chica_detalle"]->GetListUrl() . "?" . EW_TABLE_SHOW_MASTER . "=" . $this->TableVar;
-			$sDetailUrl .= "&fk_idcaja_chica=" . urlencode($this->idcaja_chica->CurrentValue);
-		}
 		if ($this->getCurrentDetailTable() == "caja_chica_cheque") {
 			$sDetailUrl = $GLOBALS["caja_chica_cheque"]->GetListUrl() . "?" . EW_TABLE_SHOW_MASTER . "=" . $this->TableVar;
-			$sDetailUrl .= "&fk_idcaja_chica=" . urlencode($this->idcaja_chica->CurrentValue);
+			$sDetailUrl .= "&fk_idbanco_cuenta=" . urlencode($this->idbanco_cuenta->CurrentValue);
 		}
 		if ($sDetailUrl == "") {
-			$sDetailUrl = "caja_chicalist.php";
+			$sDetailUrl = "banco_cuentalist.php";
 		}
 		return $sDetailUrl;
 	}
@@ -143,7 +171,7 @@ class ccaja_chica extends cTable {
 	var $_SqlFrom = "";
 
 	function getSqlFrom() { // From
-		return ($this->_SqlFrom <> "") ? $this->_SqlFrom : "`caja_chica`";
+		return ($this->_SqlFrom <> "") ? $this->_SqlFrom : "`banco_cuenta`";
 	}
 
 	function SqlFrom() { // For backward compatibility
@@ -396,8 +424,8 @@ class ccaja_chica extends cTable {
 		if (is_array($where))
 			$where = $this->ArrayToFilter($where);
 		if ($rs) {
-			if (array_key_exists('idcaja_chica', $rs))
-				ew_AddFilter($where, ew_QuotedName('idcaja_chica', $this->DBID) . '=' . ew_QuotedValue($rs['idcaja_chica'], $this->idcaja_chica->FldDataType, $this->DBID));
+			if (array_key_exists('idbanco_cuenta', $rs))
+				ew_AddFilter($where, ew_QuotedName('idbanco_cuenta', $this->DBID) . '=' . ew_QuotedValue($rs['idbanco_cuenta'], $this->idbanco_cuenta->FldDataType, $this->DBID));
 		}
 		$filter = ($curfilter) ? $this->CurrentFilter : "";
 		ew_AddFilter($filter, $where);
@@ -416,15 +444,15 @@ class ccaja_chica extends cTable {
 
 	// Key filter WHERE clause
 	function SqlKeyFilter() {
-		return "`idcaja_chica` = @idcaja_chica@";
+		return "`idbanco_cuenta` = @idbanco_cuenta@";
 	}
 
 	// Key filter
 	function KeyFilter() {
 		$sKeyFilter = $this->SqlKeyFilter();
-		if (!is_numeric($this->idcaja_chica->CurrentValue))
+		if (!is_numeric($this->idbanco_cuenta->CurrentValue))
 			$sKeyFilter = "0=1"; // Invalid key
-		$sKeyFilter = str_replace("@idcaja_chica@", ew_AdjustSql($this->idcaja_chica->CurrentValue, $this->DBID), $sKeyFilter); // Replace key value
+		$sKeyFilter = str_replace("@idbanco_cuenta@", ew_AdjustSql($this->idbanco_cuenta->CurrentValue, $this->DBID), $sKeyFilter); // Replace key value
 		return $sKeyFilter;
 	}
 
@@ -438,7 +466,7 @@ class ccaja_chica extends cTable {
 		if (@$_SESSION[$name] <> "") {
 			return $_SESSION[$name];
 		} else {
-			return "caja_chicalist.php";
+			return "banco_cuentalist.php";
 		}
 	}
 
@@ -448,33 +476,33 @@ class ccaja_chica extends cTable {
 
 	// List URL
 	function GetListUrl() {
-		return "caja_chicalist.php";
+		return "banco_cuentalist.php";
 	}
 
 	// View URL
 	function GetViewUrl($parm = "") {
 		if ($parm <> "")
-			$url = $this->KeyUrl("caja_chicaview.php", $this->UrlParm($parm));
+			$url = $this->KeyUrl("banco_cuentaview.php", $this->UrlParm($parm));
 		else
-			$url = $this->KeyUrl("caja_chicaview.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+			$url = $this->KeyUrl("banco_cuentaview.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
 		return $this->AddMasterUrl($url);
 	}
 
 	// Add URL
 	function GetAddUrl($parm = "") {
 		if ($parm <> "")
-			$url = "caja_chicaadd.php?" . $this->UrlParm($parm);
+			$url = "banco_cuentaadd.php?" . $this->UrlParm($parm);
 		else
-			$url = "caja_chicaadd.php";
+			$url = "banco_cuentaadd.php";
 		return $this->AddMasterUrl($url);
 	}
 
 	// Edit URL
 	function GetEditUrl($parm = "") {
 		if ($parm <> "")
-			$url = $this->KeyUrl("caja_chicaedit.php", $this->UrlParm($parm));
+			$url = $this->KeyUrl("banco_cuentaedit.php", $this->UrlParm($parm));
 		else
-			$url = $this->KeyUrl("caja_chicaedit.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+			$url = $this->KeyUrl("banco_cuentaedit.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
 		return $this->AddMasterUrl($url);
 	}
 
@@ -487,9 +515,9 @@ class ccaja_chica extends cTable {
 	// Copy URL
 	function GetCopyUrl($parm = "") {
 		if ($parm <> "")
-			$url = $this->KeyUrl("caja_chicaadd.php", $this->UrlParm($parm));
+			$url = $this->KeyUrl("banco_cuentaadd.php", $this->UrlParm($parm));
 		else
-			$url = $this->KeyUrl("caja_chicaadd.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+			$url = $this->KeyUrl("banco_cuentaadd.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
 		return $this->AddMasterUrl($url);
 	}
 
@@ -501,17 +529,21 @@ class ccaja_chica extends cTable {
 
 	// Delete URL
 	function GetDeleteUrl() {
-		return $this->KeyUrl("caja_chicadelete.php", $this->UrlParm());
+		return $this->KeyUrl("banco_cuentadelete.php", $this->UrlParm());
 	}
 
 	// Add master url
 	function AddMasterUrl($url) {
+		if ($this->getCurrentMasterTable() == "banco" && strpos($url, EW_TABLE_SHOW_MASTER . "=") === FALSE) {
+			$url .= (strpos($url, "?") !== FALSE ? "&" : "?") . EW_TABLE_SHOW_MASTER . "=" . $this->getCurrentMasterTable();
+			$url .= "&fk_idbanco=" . urlencode($this->idbanco->CurrentValue);
+		}
 		return $url;
 	}
 
 	function KeyToJson() {
 		$json = "";
-		$json .= "idcaja_chica:" . ew_VarToJson($this->idcaja_chica->CurrentValue, "number", "'");
+		$json .= "idbanco_cuenta:" . ew_VarToJson($this->idbanco_cuenta->CurrentValue, "number", "'");
 		return "{" . $json . "}";
 	}
 
@@ -519,8 +551,8 @@ class ccaja_chica extends cTable {
 	function KeyUrl($url, $parm = "") {
 		$sUrl = $url . "?";
 		if ($parm <> "") $sUrl .= $parm . "&";
-		if (!is_null($this->idcaja_chica->CurrentValue)) {
-			$sUrl .= "idcaja_chica=" . urlencode($this->idcaja_chica->CurrentValue);
+		if (!is_null($this->idbanco_cuenta->CurrentValue)) {
+			$sUrl .= "idbanco_cuenta=" . urlencode($this->idbanco_cuenta->CurrentValue);
 		} else {
 			return "javascript:ew_Alert(ewLanguage.Phrase('InvalidRecord'));";
 		}
@@ -553,10 +585,10 @@ class ccaja_chica extends cTable {
 			$cnt = count($arKeys);
 		} elseif (!empty($_GET) || !empty($_POST)) {
 			$isPost = ew_IsHttpPost();
-			if ($isPost && isset($_POST["idcaja_chica"]))
-				$arKeys[] = ew_StripSlashes($_POST["idcaja_chica"]);
-			elseif (isset($_GET["idcaja_chica"]))
-				$arKeys[] = ew_StripSlashes($_GET["idcaja_chica"]);
+			if ($isPost && isset($_POST["idbanco_cuenta"]))
+				$arKeys[] = ew_StripSlashes($_POST["idbanco_cuenta"]);
+			elseif (isset($_GET["idbanco_cuenta"]))
+				$arKeys[] = ew_StripSlashes($_GET["idbanco_cuenta"]);
 			else
 				$arKeys = NULL; // Do not setup
 
@@ -581,7 +613,7 @@ class ccaja_chica extends cTable {
 		$sKeyFilter = "";
 		foreach ($arKeys as $key) {
 			if ($sKeyFilter <> "") $sKeyFilter .= " OR ";
-			$this->idcaja_chica->CurrentValue = $key;
+			$this->idbanco_cuenta->CurrentValue = $key;
 			$sKeyFilter .= "(" . $this->KeyFilter() . ")";
 		}
 		return $sKeyFilter;
@@ -602,12 +634,11 @@ class ccaja_chica extends cTable {
 
 	// Load row values from recordset
 	function LoadListRowValues(&$rs) {
-		$this->idcaja_chica->setDbValue($rs->fields('idcaja_chica'));
-		$this->nombre->setDbValue($rs->fields('nombre'));
-		$this->saldo->setDbValue($rs->fields('saldo'));
+		$this->idbanco_cuenta->setDbValue($rs->fields('idbanco_cuenta'));
 		$this->idempresa->setDbValue($rs->fields('idempresa'));
-		$this->idempleado->setDbValue($rs->fields('idempleado'));
-		$this->idcuenta->setDbValue($rs->fields('idcuenta'));
+		$this->idbanco->setDbValue($rs->fields('idbanco'));
+		$this->nombre->setDbValue($rs->fields('nombre'));
+		$this->numero->setDbValue($rs->fields('numero'));
 		$this->estado->setDbValue($rs->fields('estado'));
 		$this->fecha_insercion->setDbValue($rs->fields('fecha_insercion'));
 	}
@@ -620,26 +651,17 @@ class ccaja_chica extends cTable {
 		$this->Row_Rendering();
 
    // Common render codes
-		// idcaja_chica
-		// nombre
-		// saldo
+		// idbanco_cuenta
 		// idempresa
-		// idempleado
-		// idcuenta
+		// idbanco
+		// nombre
+		// numero
 		// estado
 		// fecha_insercion
-		// idcaja_chica
+		// idbanco_cuenta
 
-		$this->idcaja_chica->ViewValue = $this->idcaja_chica->CurrentValue;
-		$this->idcaja_chica->ViewCustomAttributes = "";
-
-		// nombre
-		$this->nombre->ViewValue = $this->nombre->CurrentValue;
-		$this->nombre->ViewCustomAttributes = "";
-
-		// saldo
-		$this->saldo->ViewValue = $this->saldo->CurrentValue;
-		$this->saldo->ViewCustomAttributes = "";
+		$this->idbanco_cuenta->ViewValue = $this->idbanco_cuenta->CurrentValue;
+		$this->idbanco_cuenta->ViewCustomAttributes = "";
 
 		// idempresa
 		if (strval($this->idempresa->CurrentValue) <> "") {
@@ -665,53 +687,37 @@ class ccaja_chica extends cTable {
 		}
 		$this->idempresa->ViewCustomAttributes = "";
 
-		// idempleado
-		if (strval($this->idempleado->CurrentValue) <> "") {
-			$sFilterWrk = "`idempleado`" . ew_SearchString("=", $this->idempleado->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `idempleado`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empleado`";
+		// idbanco
+		if (strval($this->idbanco->CurrentValue) <> "") {
+			$sFilterWrk = "`idbanco`" . ew_SearchString("=", $this->idbanco->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idbanco`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `banco`";
 		$sWhereWrk = "";
 		$lookuptblfilter = "`estado` = 'Activo'";
 		ew_AddFilter($sWhereWrk, $lookuptblfilter);
 		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idempleado, $sWhereWrk); // Call Lookup selecting
+		$this->Lookup_Selecting($this->idbanco, $sWhereWrk); // Call Lookup selecting
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 			$rswrk = Conn()->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
 				$arwrk = array();
 				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idempleado->ViewValue = $this->idempleado->DisplayValue($arwrk);
+				$this->idbanco->ViewValue = $this->idbanco->DisplayValue($arwrk);
 				$rswrk->Close();
 			} else {
-				$this->idempleado->ViewValue = $this->idempleado->CurrentValue;
+				$this->idbanco->ViewValue = $this->idbanco->CurrentValue;
 			}
 		} else {
-			$this->idempleado->ViewValue = NULL;
+			$this->idbanco->ViewValue = NULL;
 		}
-		$this->idempleado->ViewCustomAttributes = "";
+		$this->idbanco->ViewCustomAttributes = "";
 
-		// idcuenta
-		if (strval($this->idcuenta->CurrentValue) <> "") {
-			$sFilterWrk = "`idcuenta`" . ew_SearchString("=", $this->idcuenta->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `idcuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta`";
-		$sWhereWrk = "";
-		$lookuptblfilter = "`estado` = 'Activo' ";
-		ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idcuenta, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = Conn()->Execute($sSqlWrk);
-			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$arwrk = array();
-				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idcuenta->ViewValue = $this->idcuenta->DisplayValue($arwrk);
-				$rswrk->Close();
-			} else {
-				$this->idcuenta->ViewValue = $this->idcuenta->CurrentValue;
-			}
-		} else {
-			$this->idcuenta->ViewValue = NULL;
-		}
-		$this->idcuenta->ViewCustomAttributes = "";
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
+
+		// numero
+		$this->numero->ViewValue = $this->numero->CurrentValue;
+		$this->numero->ViewCustomAttributes = "";
 
 		// estado
 		if (strval($this->estado->CurrentValue) <> "") {
@@ -726,35 +732,30 @@ class ccaja_chica extends cTable {
 		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
 		$this->fecha_insercion->ViewCustomAttributes = "";
 
-		// idcaja_chica
-		$this->idcaja_chica->LinkCustomAttributes = "";
-		$this->idcaja_chica->HrefValue = "";
-		$this->idcaja_chica->TooltipValue = "";
-
-		// nombre
-		$this->nombre->LinkCustomAttributes = "";
-		$this->nombre->HrefValue = "";
-		$this->nombre->TooltipValue = "";
-
-		// saldo
-		$this->saldo->LinkCustomAttributes = "";
-		$this->saldo->HrefValue = "";
-		$this->saldo->TooltipValue = "";
+		// idbanco_cuenta
+		$this->idbanco_cuenta->LinkCustomAttributes = "";
+		$this->idbanco_cuenta->HrefValue = "";
+		$this->idbanco_cuenta->TooltipValue = "";
 
 		// idempresa
 		$this->idempresa->LinkCustomAttributes = "";
 		$this->idempresa->HrefValue = "";
 		$this->idempresa->TooltipValue = "";
 
-		// idempleado
-		$this->idempleado->LinkCustomAttributes = "";
-		$this->idempleado->HrefValue = "";
-		$this->idempleado->TooltipValue = "";
+		// idbanco
+		$this->idbanco->LinkCustomAttributes = "";
+		$this->idbanco->HrefValue = "";
+		$this->idbanco->TooltipValue = "";
 
-		// idcuenta
-		$this->idcuenta->LinkCustomAttributes = "";
-		$this->idcuenta->HrefValue = "";
-		$this->idcuenta->TooltipValue = "";
+		// nombre
+		$this->nombre->LinkCustomAttributes = "";
+		$this->nombre->HrefValue = "";
+		$this->nombre->TooltipValue = "";
+
+		// numero
+		$this->numero->LinkCustomAttributes = "";
+		$this->numero->HrefValue = "";
+		$this->numero->TooltipValue = "";
 
 		// estado
 		$this->estado->LinkCustomAttributes = "";
@@ -777,11 +778,45 @@ class ccaja_chica extends cTable {
 		// Call Row Rendering event
 		$this->Row_Rendering();
 
-		// idcaja_chica
-		$this->idcaja_chica->EditAttrs["class"] = "form-control";
-		$this->idcaja_chica->EditCustomAttributes = "";
-		$this->idcaja_chica->EditValue = $this->idcaja_chica->CurrentValue;
-		$this->idcaja_chica->ViewCustomAttributes = "";
+		// idbanco_cuenta
+		$this->idbanco_cuenta->EditAttrs["class"] = "form-control";
+		$this->idbanco_cuenta->EditCustomAttributes = "";
+		$this->idbanco_cuenta->EditValue = $this->idbanco_cuenta->CurrentValue;
+		$this->idbanco_cuenta->ViewCustomAttributes = "";
+
+		// idempresa
+		$this->idempresa->EditAttrs["class"] = "form-control";
+		$this->idempresa->EditCustomAttributes = "";
+
+		// idbanco
+		$this->idbanco->EditAttrs["class"] = "form-control";
+		$this->idbanco->EditCustomAttributes = "";
+		if ($this->idbanco->getSessionValue() <> "") {
+			$this->idbanco->CurrentValue = $this->idbanco->getSessionValue();
+		if (strval($this->idbanco->CurrentValue) <> "") {
+			$sFilterWrk = "`idbanco`" . ew_SearchString("=", $this->idbanco->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idbanco`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `banco`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idbanco, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idbanco->ViewValue = $this->idbanco->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->idbanco->ViewValue = $this->idbanco->CurrentValue;
+			}
+		} else {
+			$this->idbanco->ViewValue = NULL;
+		}
+		$this->idbanco->ViewCustomAttributes = "";
+		} else {
+		}
 
 		// nombre
 		$this->nombre->EditAttrs["class"] = "form-control";
@@ -789,24 +824,11 @@ class ccaja_chica extends cTable {
 		$this->nombre->EditValue = $this->nombre->CurrentValue;
 		$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
 
-		// saldo
-		$this->saldo->EditAttrs["class"] = "form-control";
-		$this->saldo->EditCustomAttributes = "";
-		$this->saldo->EditValue = $this->saldo->CurrentValue;
-		$this->saldo->PlaceHolder = ew_RemoveHtml($this->saldo->FldCaption());
-		if (strval($this->saldo->EditValue) <> "" && is_numeric($this->saldo->EditValue)) $this->saldo->EditValue = ew_FormatNumber($this->saldo->EditValue, -2, -1, -2, 0);
-
-		// idempresa
-		$this->idempresa->EditAttrs["class"] = "form-control";
-		$this->idempresa->EditCustomAttributes = "";
-
-		// idempleado
-		$this->idempleado->EditAttrs["class"] = "form-control";
-		$this->idempleado->EditCustomAttributes = "";
-
-		// idcuenta
-		$this->idcuenta->EditAttrs["class"] = "form-control";
-		$this->idcuenta->EditCustomAttributes = "";
+		// numero
+		$this->numero->EditAttrs["class"] = "form-control";
+		$this->numero->EditCustomAttributes = "";
+		$this->numero->EditValue = $this->numero->CurrentValue;
+		$this->numero->PlaceHolder = ew_RemoveHtml($this->numero->FldCaption());
 
 		// estado
 		$this->estado->EditCustomAttributes = "";
@@ -845,21 +867,16 @@ class ccaja_chica extends cTable {
 			if ($Doc->Horizontal) { // Horizontal format, write header
 				$Doc->BeginExportRow();
 				if ($ExportPageType == "view") {
-					if ($this->idcaja_chica->Exportable) $Doc->ExportCaption($this->idcaja_chica);
-					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
-					if ($this->saldo->Exportable) $Doc->ExportCaption($this->saldo);
 					if ($this->idempresa->Exportable) $Doc->ExportCaption($this->idempresa);
-					if ($this->idempleado->Exportable) $Doc->ExportCaption($this->idempleado);
-					if ($this->idcuenta->Exportable) $Doc->ExportCaption($this->idcuenta);
-					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
-					if ($this->fecha_insercion->Exportable) $Doc->ExportCaption($this->fecha_insercion);
+					if ($this->idbanco->Exportable) $Doc->ExportCaption($this->idbanco);
+					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
+					if ($this->numero->Exportable) $Doc->ExportCaption($this->numero);
 				} else {
-					if ($this->idcaja_chica->Exportable) $Doc->ExportCaption($this->idcaja_chica);
-					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
-					if ($this->saldo->Exportable) $Doc->ExportCaption($this->saldo);
+					if ($this->idbanco_cuenta->Exportable) $Doc->ExportCaption($this->idbanco_cuenta);
 					if ($this->idempresa->Exportable) $Doc->ExportCaption($this->idempresa);
-					if ($this->idempleado->Exportable) $Doc->ExportCaption($this->idempleado);
-					if ($this->idcuenta->Exportable) $Doc->ExportCaption($this->idcuenta);
+					if ($this->idbanco->Exportable) $Doc->ExportCaption($this->idbanco);
+					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
+					if ($this->numero->Exportable) $Doc->ExportCaption($this->numero);
 					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
 					if ($this->fecha_insercion->Exportable) $Doc->ExportCaption($this->fecha_insercion);
 				}
@@ -893,21 +910,16 @@ class ccaja_chica extends cTable {
 				if (!$Doc->ExportCustom) {
 					$Doc->BeginExportRow($RowCnt); // Allow CSS styles if enabled
 					if ($ExportPageType == "view") {
-						if ($this->idcaja_chica->Exportable) $Doc->ExportField($this->idcaja_chica);
-						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
-						if ($this->saldo->Exportable) $Doc->ExportField($this->saldo);
 						if ($this->idempresa->Exportable) $Doc->ExportField($this->idempresa);
-						if ($this->idempleado->Exportable) $Doc->ExportField($this->idempleado);
-						if ($this->idcuenta->Exportable) $Doc->ExportField($this->idcuenta);
-						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
-						if ($this->fecha_insercion->Exportable) $Doc->ExportField($this->fecha_insercion);
+						if ($this->idbanco->Exportable) $Doc->ExportField($this->idbanco);
+						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
+						if ($this->numero->Exportable) $Doc->ExportField($this->numero);
 					} else {
-						if ($this->idcaja_chica->Exportable) $Doc->ExportField($this->idcaja_chica);
-						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
-						if ($this->saldo->Exportable) $Doc->ExportField($this->saldo);
+						if ($this->idbanco_cuenta->Exportable) $Doc->ExportField($this->idbanco_cuenta);
 						if ($this->idempresa->Exportable) $Doc->ExportField($this->idempresa);
-						if ($this->idempleado->Exportable) $Doc->ExportField($this->idempleado);
-						if ($this->idcuenta->Exportable) $Doc->ExportField($this->idcuenta);
+						if ($this->idbanco->Exportable) $Doc->ExportField($this->idbanco);
+						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
+						if ($this->numero->Exportable) $Doc->ExportField($this->numero);
 						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
 						if ($this->fecha_insercion->Exportable) $Doc->ExportField($this->fecha_insercion);
 					}

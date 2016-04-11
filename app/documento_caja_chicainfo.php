@@ -134,6 +134,12 @@ class cdocumento_caja_chica extends cTable {
 			else
 				return "";
 		}
+		if ($this->getCurrentMasterTable() == "caja_chica_aplicacion") {
+			if ($this->iddocumento_caja_chica->getSessionValue() <> "")
+				$sMasterFilter .= "`idreferencia`=" . ew_QuotedValue($this->iddocumento_caja_chica->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
+			else
+				return "";
+		}
 		return $sMasterFilter;
 	}
 
@@ -148,6 +154,12 @@ class cdocumento_caja_chica extends cTable {
 			else
 				return "";
 		}
+		if ($this->getCurrentMasterTable() == "caja_chica_aplicacion") {
+			if ($this->iddocumento_caja_chica->getSessionValue() <> "")
+				$sDetailFilter .= "`iddocumento_caja_chica`=" . ew_QuotedValue($this->iddocumento_caja_chica->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
+			else
+				return "";
+		}
 		return $sDetailFilter;
 	}
 
@@ -159,6 +171,16 @@ class cdocumento_caja_chica extends cTable {
 	// Detail filter
 	function SqlDetailFilter_caja_chica() {
 		return "`idcaja_chica`=@idcaja_chica@";
+	}
+
+	// Master filter
+	function SqlMasterFilter_caja_chica_aplicacion() {
+		return "`idreferencia`=@idreferencia@";
+	}
+
+	// Detail filter
+	function SqlDetailFilter_caja_chica_aplicacion() {
+		return "`iddocumento_caja_chica`=@iddocumento_caja_chica@";
 	}
 
 	// Table level SQL
@@ -525,6 +547,10 @@ class cdocumento_caja_chica extends cTable {
 		if ($this->getCurrentMasterTable() == "caja_chica" && strpos($url, EW_TABLE_SHOW_MASTER . "=") === FALSE) {
 			$url .= (strpos($url, "?") !== FALSE ? "&" : "?") . EW_TABLE_SHOW_MASTER . "=" . $this->getCurrentMasterTable();
 			$url .= "&fk_idcaja_chica=" . urlencode($this->idcaja_chica->CurrentValue);
+		}
+		if ($this->getCurrentMasterTable() == "caja_chica_aplicacion" && strpos($url, EW_TABLE_SHOW_MASTER . "=") === FALSE) {
+			$url .= (strpos($url, "?") !== FALSE ? "&" : "?") . EW_TABLE_SHOW_MASTER . "=" . $this->getCurrentMasterTable();
+			$url .= "&fk_idreferencia=" . urlencode($this->iddocumento_caja_chica->CurrentValue);
 		}
 		return $url;
 	}

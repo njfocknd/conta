@@ -1,13 +1,13 @@
-<?php include_once "documento_caja_chicainfo.php" ?>
+<?php include_once "caja_chica_detalleinfo.php" ?>
 <?php
 
 //
 // Page class
 //
 
-$documento_caja_chica_grid = NULL; // Initialize page object first
+$caja_chica_detalle_grid = NULL; // Initialize page object first
 
-class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
+class ccaja_chica_detalle_grid extends ccaja_chica_detalle {
 
 	// Page ID
 	var $PageID = 'grid';
@@ -16,13 +16,13 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 	var $ProjectID = "{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}";
 
 	// Table name
-	var $TableName = 'documento_caja_chica';
+	var $TableName = 'caja_chica_detalle';
 
 	// Page object name
-	var $PageObjName = 'documento_caja_chica_grid';
+	var $PageObjName = 'caja_chica_detalle_grid';
 
 	// Grid form hidden field names
-	var $FormName = 'fdocumento_caja_chicagrid';
+	var $FormName = 'fcaja_chica_detallegrid';
 	var $FormActionName = 'k_action';
 	var $FormKeyName = 'k_key';
 	var $FormOldKeyName = 'k_oldkey';
@@ -225,12 +225,12 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		// Parent constuctor
 		parent::__construct();
 
-		// Table object (documento_caja_chica)
-		if (!isset($GLOBALS["documento_caja_chica"]) || get_class($GLOBALS["documento_caja_chica"]) == "cdocumento_caja_chica") {
-			$GLOBALS["documento_caja_chica"] = &$this;
+		// Table object (caja_chica_detalle)
+		if (!isset($GLOBALS["caja_chica_detalle"]) || get_class($GLOBALS["caja_chica_detalle"]) == "ccaja_chica_detalle") {
+			$GLOBALS["caja_chica_detalle"] = &$this;
 
 //			$GLOBALS["MasterTable"] = &$GLOBALS["Table"];
-//			if (!isset($GLOBALS["Table"])) $GLOBALS["Table"] = &$GLOBALS["documento_caja_chica"];
+//			if (!isset($GLOBALS["Table"])) $GLOBALS["Table"] = &$GLOBALS["caja_chica_detalle"];
 
 		}
 
@@ -240,7 +240,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 
 		// Table name (for backward compatibility)
 		if (!defined("EW_TABLE_NAME"))
-			define("EW_TABLE_NAME", 'documento_caja_chica', TRUE);
+			define("EW_TABLE_NAME", 'caja_chica_detalle', TRUE);
 
 		// Start timer
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
@@ -287,6 +287,14 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 
 		// Process auto fill
 		if (@$_POST["ajax"] == "autofill") {
+
+			// Process auto fill for detail table 'caja_chica_aplicacion'
+			if (@$_POST["grid"] == "fcaja_chica_aplicaciongrid") {
+				if (!isset($GLOBALS["caja_chica_aplicacion_grid"])) $GLOBALS["caja_chica_aplicacion_grid"] = new ccaja_chica_aplicacion_grid;
+				$GLOBALS["caja_chica_aplicacion_grid"]->Page_Init();
+				$this->Page_Terminate();
+				exit();
+			}
 			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
 			if ($results) {
 
@@ -316,13 +324,13 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		global $gsExportFile, $gTmpImages;
 
 		// Export
-		global $EW_EXPORT, $documento_caja_chica;
+		global $EW_EXPORT, $caja_chica_detalle;
 		if ($this->CustomExport <> "" && $this->CustomExport == $this->Export && array_key_exists($this->CustomExport, $EW_EXPORT)) {
 				$sContent = ob_get_contents();
 			if ($gsExportFile == "") $gsExportFile = $this->TableVar;
 			$class = $EW_EXPORT[$this->CustomExport];
 			if (class_exists($class)) {
-				$doc = new $class($documento_caja_chica);
+				$doc = new $class($caja_chica_detalle);
 				$doc->Text = $sContent;
 				if ($this->Export == "email")
 					echo $this->ExportEmail($doc->Text);
@@ -468,22 +476,6 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			}
 		}
 
-		// Load master record
-		if ($this->CurrentMode <> "add" && $this->GetMasterFilter() <> "" && $this->getCurrentMasterTable() == "caja_chica_aplicacion") {
-			global $caja_chica_aplicacion;
-			$rsmaster = $caja_chica_aplicacion->LoadRs($this->DbMasterFilter);
-			$this->MasterRecordExists = ($rsmaster && !$rsmaster->EOF);
-			if (!$this->MasterRecordExists) {
-				$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record found
-				$this->Page_Terminate("caja_chica_aplicacionlist.php"); // Return to master page
-			} else {
-				$caja_chica_aplicacion->LoadListRowValues($rsmaster);
-				$caja_chica_aplicacion->RowType = EW_ROWTYPE_MASTER; // Master row
-				$caja_chica_aplicacion->RenderListRow();
-				$rsmaster->Close();
-			}
-		}
-
 		// Set up filter in session
 		$this->setSessionWhere($sFilter);
 		$this->CurrentFilter = "";
@@ -503,6 +495,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 	//  Exit inline mode
 	function ClearInlineMode() {
 		$this->monto->FormValue = ""; // Clear form value
+		$this->monto_aplicado->FormValue = ""; // Clear form value
 		$this->LastAction = $this->CurrentAction; // Save last action
 		$this->CurrentAction = ""; // Clear action
 		$_SESSION[EW_SESSION_INLINE_MODE] = ""; // Clear inline mode
@@ -644,8 +637,8 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 	function SetupKeyValues($key) {
 		$arrKeyFlds = explode($GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"], $key);
 		if (count($arrKeyFlds) >= 1) {
-			$this->iddocumento_caja_chica->setFormValue($arrKeyFlds[0]);
-			if (!is_numeric($this->iddocumento_caja_chica->FormValue))
+			$this->idcaja_chica_detalle->setFormValue($arrKeyFlds[0]);
+			if (!is_numeric($this->idcaja_chica_detalle->FormValue))
 				return FALSE;
 		}
 		return TRUE;
@@ -703,7 +696,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 				}
 				if ($bGridInsert) {
 					if ($sKey <> "") $sKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
-					$sKey .= $this->iddocumento_caja_chica->CurrentValue;
+					$sKey .= $this->idcaja_chica_detalle->CurrentValue;
 
 					// Add filter for this record
 					$sFilter = $this->KeyFilter();
@@ -742,17 +735,17 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 	// Check if empty row
 	function EmptyRow() {
 		global $objForm;
+		if ($objForm->HasValue("x_idcaja_chica") && $objForm->HasValue("o_idcaja_chica") && $this->idcaja_chica->CurrentValue <> $this->idcaja_chica->OldValue)
+			return FALSE;
 		if ($objForm->HasValue("x_tipo") && $objForm->HasValue("o_tipo") && $this->tipo->CurrentValue <> $this->tipo->OldValue)
-			return FALSE;
-		if ($objForm->HasValue("x_idtipo_documento") && $objForm->HasValue("o_idtipo_documento") && $this->idtipo_documento->CurrentValue <> $this->idtipo_documento->OldValue)
-			return FALSE;
-		if ($objForm->HasValue("x_serie") && $objForm->HasValue("o_serie") && $this->serie->CurrentValue <> $this->serie->OldValue)
-			return FALSE;
-		if ($objForm->HasValue("x_numero") && $objForm->HasValue("o_numero") && $this->numero->CurrentValue <> $this->numero->OldValue)
 			return FALSE;
 		if ($objForm->HasValue("x_fecha") && $objForm->HasValue("o_fecha") && $this->fecha->CurrentValue <> $this->fecha->OldValue)
 			return FALSE;
 		if ($objForm->HasValue("x_monto") && $objForm->HasValue("o_monto") && $this->monto->CurrentValue <> $this->monto->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_monto_aplicado") && $objForm->HasValue("o_monto_aplicado") && $this->monto_aplicado->CurrentValue <> $this->monto_aplicado->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_descripcion") && $objForm->HasValue("o_descripcion") && $this->descripcion->CurrentValue <> $this->descripcion->OldValue)
 			return FALSE;
 		return TRUE;
 	}
@@ -862,7 +855,6 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 				$this->DbMasterFilter = "";
 				$this->DbDetailFilter = "";
 				$this->idcaja_chica->setSessionValue("");
-				$this->iddocumento_caja_chica->setSessionValue("");
 			}
 
 			// Reset sorting order
@@ -948,7 +940,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			}
 		}
 		if ($this->CurrentMode == "edit" && is_numeric($this->RowIndex)) {
-			$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $KeyName . "\" id=\"" . $KeyName . "\" value=\"" . $this->iddocumento_caja_chica->CurrentValue . "\">";
+			$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $KeyName . "\" id=\"" . $KeyName . "\" value=\"" . $this->idcaja_chica_detalle->CurrentValue . "\">";
 		}
 		$this->RenderListOptionsExt();
 	}
@@ -957,7 +949,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 	function SetRecordKey(&$key, $rs) {
 		$key = "";
 		if ($key <> "") $key .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
-		$key .= $rs->fields('iddocumento_caja_chica');
+		$key .= $rs->fields('idcaja_chica_detalle');
 	}
 
 	// Set up other options
@@ -1039,18 +1031,18 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 
 	// Load default values
 	function LoadDefaultValues() {
+		$this->idcaja_chica->CurrentValue = 1;
+		$this->idcaja_chica->OldValue = $this->idcaja_chica->CurrentValue;
 		$this->tipo->CurrentValue = "Abono";
 		$this->tipo->OldValue = $this->tipo->CurrentValue;
-		$this->idtipo_documento->CurrentValue = 1;
-		$this->idtipo_documento->OldValue = $this->idtipo_documento->CurrentValue;
-		$this->serie->CurrentValue = NULL;
-		$this->serie->OldValue = $this->serie->CurrentValue;
-		$this->numero->CurrentValue = NULL;
-		$this->numero->OldValue = $this->numero->CurrentValue;
 		$this->fecha->CurrentValue = NULL;
 		$this->fecha->OldValue = $this->fecha->CurrentValue;
 		$this->monto->CurrentValue = 0.00;
 		$this->monto->OldValue = $this->monto->CurrentValue;
+		$this->monto_aplicado->CurrentValue = 0.00;
+		$this->monto_aplicado->OldValue = $this->monto_aplicado->CurrentValue;
+		$this->descripcion->CurrentValue = NULL;
+		$this->descripcion->OldValue = $this->descripcion->CurrentValue;
 	}
 
 	// Load form values
@@ -1059,22 +1051,14 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		// Load from form
 		global $objForm;
 		$objForm->FormName = $this->FormName;
+		if (!$this->idcaja_chica->FldIsDetailKey) {
+			$this->idcaja_chica->setFormValue($objForm->GetValue("x_idcaja_chica"));
+		}
+		$this->idcaja_chica->setOldValue($objForm->GetValue("o_idcaja_chica"));
 		if (!$this->tipo->FldIsDetailKey) {
 			$this->tipo->setFormValue($objForm->GetValue("x_tipo"));
 		}
 		$this->tipo->setOldValue($objForm->GetValue("o_tipo"));
-		if (!$this->idtipo_documento->FldIsDetailKey) {
-			$this->idtipo_documento->setFormValue($objForm->GetValue("x_idtipo_documento"));
-		}
-		$this->idtipo_documento->setOldValue($objForm->GetValue("o_idtipo_documento"));
-		if (!$this->serie->FldIsDetailKey) {
-			$this->serie->setFormValue($objForm->GetValue("x_serie"));
-		}
-		$this->serie->setOldValue($objForm->GetValue("o_serie"));
-		if (!$this->numero->FldIsDetailKey) {
-			$this->numero->setFormValue($objForm->GetValue("x_numero"));
-		}
-		$this->numero->setOldValue($objForm->GetValue("o_numero"));
 		if (!$this->fecha->FldIsDetailKey) {
 			$this->fecha->setFormValue($objForm->GetValue("x_fecha"));
 			$this->fecha->CurrentValue = ew_UnFormatDateTime($this->fecha->CurrentValue, 7);
@@ -1084,22 +1068,30 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			$this->monto->setFormValue($objForm->GetValue("x_monto"));
 		}
 		$this->monto->setOldValue($objForm->GetValue("o_monto"));
-		if (!$this->iddocumento_caja_chica->FldIsDetailKey && $this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
-			$this->iddocumento_caja_chica->setFormValue($objForm->GetValue("x_iddocumento_caja_chica"));
+		if (!$this->monto_aplicado->FldIsDetailKey) {
+			$this->monto_aplicado->setFormValue($objForm->GetValue("x_monto_aplicado"));
+		}
+		$this->monto_aplicado->setOldValue($objForm->GetValue("o_monto_aplicado"));
+		if (!$this->descripcion->FldIsDetailKey) {
+			$this->descripcion->setFormValue($objForm->GetValue("x_descripcion"));
+		}
+		$this->descripcion->setOldValue($objForm->GetValue("o_descripcion"));
+		if (!$this->idcaja_chica_detalle->FldIsDetailKey && $this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
+			$this->idcaja_chica_detalle->setFormValue($objForm->GetValue("x_idcaja_chica_detalle"));
 	}
 
 	// Restore form values
 	function RestoreFormValues() {
 		global $objForm;
 		if ($this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
-			$this->iddocumento_caja_chica->CurrentValue = $this->iddocumento_caja_chica->FormValue;
+			$this->idcaja_chica_detalle->CurrentValue = $this->idcaja_chica_detalle->FormValue;
+		$this->idcaja_chica->CurrentValue = $this->idcaja_chica->FormValue;
 		$this->tipo->CurrentValue = $this->tipo->FormValue;
-		$this->idtipo_documento->CurrentValue = $this->idtipo_documento->FormValue;
-		$this->serie->CurrentValue = $this->serie->FormValue;
-		$this->numero->CurrentValue = $this->numero->FormValue;
 		$this->fecha->CurrentValue = $this->fecha->FormValue;
 		$this->fecha->CurrentValue = ew_UnFormatDateTime($this->fecha->CurrentValue, 7);
 		$this->monto->CurrentValue = $this->monto->FormValue;
+		$this->monto_aplicado->CurrentValue = $this->monto_aplicado->FormValue;
+		$this->descripcion->CurrentValue = $this->descripcion->FormValue;
 	}
 
 	// Load recordset
@@ -1157,32 +1149,34 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		// Call Row Selected event
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
-		$this->iddocumento_caja_chica->setDbValue($rs->fields('iddocumento_caja_chica'));
+		$this->idcaja_chica_detalle->setDbValue($rs->fields('idcaja_chica_detalle'));
 		$this->idcaja_chica->setDbValue($rs->fields('idcaja_chica'));
 		$this->tipo->setDbValue($rs->fields('tipo'));
-		$this->idtipo_documento->setDbValue($rs->fields('idtipo_documento'));
-		$this->serie->setDbValue($rs->fields('serie'));
-		$this->numero->setDbValue($rs->fields('numero'));
 		$this->fecha->setDbValue($rs->fields('fecha'));
 		$this->monto->setDbValue($rs->fields('monto'));
-		$this->estado->setDbValue($rs->fields('estado'));
+		$this->monto_aplicado->setDbValue($rs->fields('monto_aplicado'));
 		$this->fecha_insercion->setDbValue($rs->fields('fecha_insercion'));
+		$this->estado->setDbValue($rs->fields('estado'));
+		$this->descripcion->setDbValue($rs->fields('descripcion'));
+		$this->idreferencia->setDbValue($rs->fields('idreferencia'));
+		$this->tabla_referencia->setDbValue($rs->fields('tabla_referencia'));
 	}
 
 	// Load DbValue from recordset
 	function LoadDbValues(&$rs) {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
-		$this->iddocumento_caja_chica->DbValue = $row['iddocumento_caja_chica'];
+		$this->idcaja_chica_detalle->DbValue = $row['idcaja_chica_detalle'];
 		$this->idcaja_chica->DbValue = $row['idcaja_chica'];
 		$this->tipo->DbValue = $row['tipo'];
-		$this->idtipo_documento->DbValue = $row['idtipo_documento'];
-		$this->serie->DbValue = $row['serie'];
-		$this->numero->DbValue = $row['numero'];
 		$this->fecha->DbValue = $row['fecha'];
 		$this->monto->DbValue = $row['monto'];
-		$this->estado->DbValue = $row['estado'];
+		$this->monto_aplicado->DbValue = $row['monto_aplicado'];
 		$this->fecha_insercion->DbValue = $row['fecha_insercion'];
+		$this->estado->DbValue = $row['estado'];
+		$this->descripcion->DbValue = $row['descripcion'];
+		$this->idreferencia->DbValue = $row['idreferencia'];
+		$this->tabla_referencia->DbValue = $row['tabla_referencia'];
 	}
 
 	// Load old record
@@ -1194,7 +1188,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		$cnt = count($arKeys);
 		if ($cnt >= 1) {
 			if (strval($arKeys[0]) <> "")
-				$this->iddocumento_caja_chica->CurrentValue = strval($arKeys[0]); // iddocumento_caja_chica
+				$this->idcaja_chica_detalle->CurrentValue = strval($arKeys[0]); // idcaja_chica_detalle
 			else
 				$bValidKey = FALSE;
 		} else {
@@ -1224,49 +1218,34 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		if ($this->monto->FormValue == $this->monto->CurrentValue && is_numeric(ew_StrToFloat($this->monto->CurrentValue)))
 			$this->monto->CurrentValue = ew_StrToFloat($this->monto->CurrentValue);
 
+		// Convert decimal values if posted back
+		if ($this->monto_aplicado->FormValue == $this->monto_aplicado->CurrentValue && is_numeric(ew_StrToFloat($this->monto_aplicado->CurrentValue)))
+			$this->monto_aplicado->CurrentValue = ew_StrToFloat($this->monto_aplicado->CurrentValue);
+
 		// Call Row_Rendering event
 		$this->Row_Rendering();
 
 		// Common render codes for all row types
-		// iddocumento_caja_chica
+		// idcaja_chica_detalle
 		// idcaja_chica
 		// tipo
-		// idtipo_documento
-		// serie
-		// numero
 		// fecha
 		// monto
-		// estado
+		// monto_aplicado
 		// fecha_insercion
+		// estado
+		// descripcion
+		// idreferencia
+		// tabla_referencia
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-		// iddocumento_caja_chica
-		$this->iddocumento_caja_chica->ViewValue = $this->iddocumento_caja_chica->CurrentValue;
-		$this->iddocumento_caja_chica->ViewCustomAttributes = "";
+		// idcaja_chica_detalle
+		$this->idcaja_chica_detalle->ViewValue = $this->idcaja_chica_detalle->CurrentValue;
+		$this->idcaja_chica_detalle->ViewCustomAttributes = "";
 
 		// idcaja_chica
-		if (strval($this->idcaja_chica->CurrentValue) <> "") {
-			$sFilterWrk = "`idcaja_chica`" . ew_SearchString("=", $this->idcaja_chica->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `idcaja_chica`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `caja_chica`";
-		$sWhereWrk = "";
-		$lookuptblfilter = "`estado` = 'Activo'";
-		ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idcaja_chica, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = Conn()->Execute($sSqlWrk);
-			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$arwrk = array();
-				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idcaja_chica->ViewValue = $this->idcaja_chica->DisplayValue($arwrk);
-				$rswrk->Close();
-			} else {
-				$this->idcaja_chica->ViewValue = $this->idcaja_chica->CurrentValue;
-			}
-		} else {
-			$this->idcaja_chica->ViewValue = NULL;
-		}
+		$this->idcaja_chica->ViewValue = $this->idcaja_chica->CurrentValue;
 		$this->idcaja_chica->ViewCustomAttributes = "";
 
 		// tipo
@@ -1277,38 +1256,6 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		}
 		$this->tipo->ViewCustomAttributes = "";
 
-		// idtipo_documento
-		if (strval($this->idtipo_documento->CurrentValue) <> "") {
-			$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
-		$sWhereWrk = "";
-		$lookuptblfilter = "`estado` = 'Activo'";
-		ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = Conn()->Execute($sSqlWrk);
-			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$arwrk = array();
-				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idtipo_documento->ViewValue = $this->idtipo_documento->DisplayValue($arwrk);
-				$rswrk->Close();
-			} else {
-				$this->idtipo_documento->ViewValue = $this->idtipo_documento->CurrentValue;
-			}
-		} else {
-			$this->idtipo_documento->ViewValue = NULL;
-		}
-		$this->idtipo_documento->ViewCustomAttributes = "";
-
-		// serie
-		$this->serie->ViewValue = $this->serie->CurrentValue;
-		$this->serie->ViewCustomAttributes = "";
-
-		// numero
-		$this->numero->ViewValue = $this->numero->CurrentValue;
-		$this->numero->ViewCustomAttributes = "";
-
 		// fecha
 		$this->fecha->ViewValue = $this->fecha->CurrentValue;
 		$this->fecha->ViewValue = ew_FormatDateTime($this->fecha->ViewValue, 7);
@@ -1318,6 +1265,15 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		$this->monto->ViewValue = $this->monto->CurrentValue;
 		$this->monto->ViewCustomAttributes = "";
 
+		// monto_aplicado
+		$this->monto_aplicado->ViewValue = $this->monto_aplicado->CurrentValue;
+		$this->monto_aplicado->ViewCustomAttributes = "";
+
+		// fecha_insercion
+		$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
+		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
+		$this->fecha_insercion->ViewCustomAttributes = "";
+
 		// estado
 		if (strval($this->estado->CurrentValue) <> "") {
 			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
@@ -1326,30 +1282,27 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		}
 		$this->estado->ViewCustomAttributes = "";
 
-		// fecha_insercion
-		$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
-		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
-		$this->fecha_insercion->ViewCustomAttributes = "";
+		// descripcion
+		$this->descripcion->ViewValue = $this->descripcion->CurrentValue;
+		$this->descripcion->ViewCustomAttributes = "";
+
+		// idreferencia
+		$this->idreferencia->ViewValue = $this->idreferencia->CurrentValue;
+		$this->idreferencia->ViewCustomAttributes = "";
+
+		// tabla_referencia
+		$this->tabla_referencia->ViewValue = $this->tabla_referencia->CurrentValue;
+		$this->tabla_referencia->ViewCustomAttributes = "";
+
+			// idcaja_chica
+			$this->idcaja_chica->LinkCustomAttributes = "";
+			$this->idcaja_chica->HrefValue = "";
+			$this->idcaja_chica->TooltipValue = "";
 
 			// tipo
 			$this->tipo->LinkCustomAttributes = "";
 			$this->tipo->HrefValue = "";
 			$this->tipo->TooltipValue = "";
-
-			// idtipo_documento
-			$this->idtipo_documento->LinkCustomAttributes = "";
-			$this->idtipo_documento->HrefValue = "";
-			$this->idtipo_documento->TooltipValue = "";
-
-			// serie
-			$this->serie->LinkCustomAttributes = "";
-			$this->serie->HrefValue = "";
-			$this->serie->TooltipValue = "";
-
-			// numero
-			$this->numero->LinkCustomAttributes = "";
-			$this->numero->HrefValue = "";
-			$this->numero->TooltipValue = "";
 
 			// fecha
 			$this->fecha->LinkCustomAttributes = "";
@@ -1360,45 +1313,35 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			$this->monto->LinkCustomAttributes = "";
 			$this->monto->HrefValue = "";
 			$this->monto->TooltipValue = "";
+
+			// monto_aplicado
+			$this->monto_aplicado->LinkCustomAttributes = "";
+			$this->monto_aplicado->HrefValue = "";
+			$this->monto_aplicado->TooltipValue = "";
+
+			// descripcion
+			$this->descripcion->LinkCustomAttributes = "";
+			$this->descripcion->HrefValue = "";
+			$this->descripcion->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
 
+			// idcaja_chica
+			$this->idcaja_chica->EditAttrs["class"] = "form-control";
+			$this->idcaja_chica->EditCustomAttributes = "";
+			if ($this->idcaja_chica->getSessionValue() <> "") {
+				$this->idcaja_chica->CurrentValue = $this->idcaja_chica->getSessionValue();
+				$this->idcaja_chica->OldValue = $this->idcaja_chica->CurrentValue;
+			$this->idcaja_chica->ViewValue = $this->idcaja_chica->CurrentValue;
+			$this->idcaja_chica->ViewCustomAttributes = "";
+			} else {
+			$this->idcaja_chica->EditValue = ew_HtmlEncode($this->idcaja_chica->CurrentValue);
+			$this->idcaja_chica->PlaceHolder = ew_RemoveHtml($this->idcaja_chica->FldCaption());
+			}
+
 			// tipo
 			$this->tipo->EditAttrs["class"] = "form-control";
 			$this->tipo->EditCustomAttributes = "";
 			$this->tipo->EditValue = $this->tipo->Options(TRUE);
-
-			// idtipo_documento
-			$this->idtipo_documento->EditAttrs["class"] = "form-control";
-			$this->idtipo_documento->EditCustomAttributes = "";
-			if (trim(strval($this->idtipo_documento->CurrentValue)) == "") {
-				$sFilterWrk = "0=1";
-			} else {
-				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER, "");
-			}
-			$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `tipo_documento`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			ew_AddFilter($sWhereWrk, $sFilterWrk);
-			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk); // Call Lookup selecting
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = Conn()->Execute($sSqlWrk);
-			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
-			if ($rswrk) $rswrk->Close();
-			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
-			$this->idtipo_documento->EditValue = $arwrk;
-
-			// serie
-			$this->serie->EditAttrs["class"] = "form-control";
-			$this->serie->EditCustomAttributes = "";
-			$this->serie->EditValue = ew_HtmlEncode($this->serie->CurrentValue);
-			$this->serie->PlaceHolder = ew_RemoveHtml($this->serie->FldCaption());
-
-			// numero
-			$this->numero->EditAttrs["class"] = "form-control";
-			$this->numero->EditCustomAttributes = "";
-			$this->numero->EditValue = ew_HtmlEncode($this->numero->CurrentValue);
-			$this->numero->PlaceHolder = ew_RemoveHtml($this->numero->FldCaption());
 
 			// fecha
 			$this->fecha->EditAttrs["class"] = "form-control";
@@ -1415,24 +1358,32 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			$this->monto->EditValue = ew_FormatNumber($this->monto->EditValue, -2, -1, -2, 0);
 			$this->monto->OldValue = $this->monto->EditValue;
 			}
+
+			// monto_aplicado
+			$this->monto_aplicado->EditAttrs["class"] = "form-control";
+			$this->monto_aplicado->EditCustomAttributes = "";
+			$this->monto_aplicado->EditValue = ew_HtmlEncode($this->monto_aplicado->CurrentValue);
+			$this->monto_aplicado->PlaceHolder = ew_RemoveHtml($this->monto_aplicado->FldCaption());
+			if (strval($this->monto_aplicado->EditValue) <> "" && is_numeric($this->monto_aplicado->EditValue)) {
+			$this->monto_aplicado->EditValue = ew_FormatNumber($this->monto_aplicado->EditValue, -2, -1, -2, 0);
+			$this->monto_aplicado->OldValue = $this->monto_aplicado->EditValue;
+			}
+
+			// descripcion
+			$this->descripcion->EditAttrs["class"] = "form-control";
+			$this->descripcion->EditCustomAttributes = "";
+			$this->descripcion->EditValue = ew_HtmlEncode($this->descripcion->CurrentValue);
+			$this->descripcion->PlaceHolder = ew_RemoveHtml($this->descripcion->FldCaption());
 
 			// Add refer script
-			// tipo
+			// idcaja_chica
 
+			$this->idcaja_chica->LinkCustomAttributes = "";
+			$this->idcaja_chica->HrefValue = "";
+
+			// tipo
 			$this->tipo->LinkCustomAttributes = "";
 			$this->tipo->HrefValue = "";
-
-			// idtipo_documento
-			$this->idtipo_documento->LinkCustomAttributes = "";
-			$this->idtipo_documento->HrefValue = "";
-
-			// serie
-			$this->serie->LinkCustomAttributes = "";
-			$this->serie->HrefValue = "";
-
-			// numero
-			$this->numero->LinkCustomAttributes = "";
-			$this->numero->HrefValue = "";
 
 			// fecha
 			$this->fecha->LinkCustomAttributes = "";
@@ -1441,45 +1392,33 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			// monto
 			$this->monto->LinkCustomAttributes = "";
 			$this->monto->HrefValue = "";
+
+			// monto_aplicado
+			$this->monto_aplicado->LinkCustomAttributes = "";
+			$this->monto_aplicado->HrefValue = "";
+
+			// descripcion
+			$this->descripcion->LinkCustomAttributes = "";
+			$this->descripcion->HrefValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
+
+			// idcaja_chica
+			$this->idcaja_chica->EditAttrs["class"] = "form-control";
+			$this->idcaja_chica->EditCustomAttributes = "";
+			if ($this->idcaja_chica->getSessionValue() <> "") {
+				$this->idcaja_chica->CurrentValue = $this->idcaja_chica->getSessionValue();
+				$this->idcaja_chica->OldValue = $this->idcaja_chica->CurrentValue;
+			$this->idcaja_chica->ViewValue = $this->idcaja_chica->CurrentValue;
+			$this->idcaja_chica->ViewCustomAttributes = "";
+			} else {
+			$this->idcaja_chica->EditValue = ew_HtmlEncode($this->idcaja_chica->CurrentValue);
+			$this->idcaja_chica->PlaceHolder = ew_RemoveHtml($this->idcaja_chica->FldCaption());
+			}
 
 			// tipo
 			$this->tipo->EditAttrs["class"] = "form-control";
 			$this->tipo->EditCustomAttributes = "";
 			$this->tipo->EditValue = $this->tipo->Options(TRUE);
-
-			// idtipo_documento
-			$this->idtipo_documento->EditAttrs["class"] = "form-control";
-			$this->idtipo_documento->EditCustomAttributes = "";
-			if (trim(strval($this->idtipo_documento->CurrentValue)) == "") {
-				$sFilterWrk = "0=1";
-			} else {
-				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER, "");
-			}
-			$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `tipo_documento`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			ew_AddFilter($sWhereWrk, $sFilterWrk);
-			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk); // Call Lookup selecting
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = Conn()->Execute($sSqlWrk);
-			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
-			if ($rswrk) $rswrk->Close();
-			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
-			$this->idtipo_documento->EditValue = $arwrk;
-
-			// serie
-			$this->serie->EditAttrs["class"] = "form-control";
-			$this->serie->EditCustomAttributes = "";
-			$this->serie->EditValue = ew_HtmlEncode($this->serie->CurrentValue);
-			$this->serie->PlaceHolder = ew_RemoveHtml($this->serie->FldCaption());
-
-			// numero
-			$this->numero->EditAttrs["class"] = "form-control";
-			$this->numero->EditCustomAttributes = "";
-			$this->numero->EditValue = ew_HtmlEncode($this->numero->CurrentValue);
-			$this->numero->PlaceHolder = ew_RemoveHtml($this->numero->FldCaption());
 
 			// fecha
 			$this->fecha->EditAttrs["class"] = "form-control";
@@ -1497,23 +1436,31 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			$this->monto->OldValue = $this->monto->EditValue;
 			}
 
-			// Edit refer script
-			// tipo
+			// monto_aplicado
+			$this->monto_aplicado->EditAttrs["class"] = "form-control";
+			$this->monto_aplicado->EditCustomAttributes = "";
+			$this->monto_aplicado->EditValue = ew_HtmlEncode($this->monto_aplicado->CurrentValue);
+			$this->monto_aplicado->PlaceHolder = ew_RemoveHtml($this->monto_aplicado->FldCaption());
+			if (strval($this->monto_aplicado->EditValue) <> "" && is_numeric($this->monto_aplicado->EditValue)) {
+			$this->monto_aplicado->EditValue = ew_FormatNumber($this->monto_aplicado->EditValue, -2, -1, -2, 0);
+			$this->monto_aplicado->OldValue = $this->monto_aplicado->EditValue;
+			}
 
+			// descripcion
+			$this->descripcion->EditAttrs["class"] = "form-control";
+			$this->descripcion->EditCustomAttributes = "";
+			$this->descripcion->EditValue = ew_HtmlEncode($this->descripcion->CurrentValue);
+			$this->descripcion->PlaceHolder = ew_RemoveHtml($this->descripcion->FldCaption());
+
+			// Edit refer script
+			// idcaja_chica
+
+			$this->idcaja_chica->LinkCustomAttributes = "";
+			$this->idcaja_chica->HrefValue = "";
+
+			// tipo
 			$this->tipo->LinkCustomAttributes = "";
 			$this->tipo->HrefValue = "";
-
-			// idtipo_documento
-			$this->idtipo_documento->LinkCustomAttributes = "";
-			$this->idtipo_documento->HrefValue = "";
-
-			// serie
-			$this->serie->LinkCustomAttributes = "";
-			$this->serie->HrefValue = "";
-
-			// numero
-			$this->numero->LinkCustomAttributes = "";
-			$this->numero->HrefValue = "";
 
 			// fecha
 			$this->fecha->LinkCustomAttributes = "";
@@ -1522,6 +1469,14 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			// monto
 			$this->monto->LinkCustomAttributes = "";
 			$this->monto->HrefValue = "";
+
+			// monto_aplicado
+			$this->monto_aplicado->LinkCustomAttributes = "";
+			$this->monto_aplicado->HrefValue = "";
+
+			// descripcion
+			$this->descripcion->LinkCustomAttributes = "";
+			$this->descripcion->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
 			$this->RowType == EW_ROWTYPE_EDIT ||
@@ -1541,20 +1496,14 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		// Check if validation required
 		if (!EW_SERVER_VALIDATE)
 			return ($gsFormError == "");
+		if (!$this->idcaja_chica->FldIsDetailKey && !is_null($this->idcaja_chica->FormValue) && $this->idcaja_chica->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->idcaja_chica->FldCaption(), $this->idcaja_chica->ReqErrMsg));
+		}
+		if (!ew_CheckInteger($this->idcaja_chica->FormValue)) {
+			ew_AddMessage($gsFormError, $this->idcaja_chica->FldErrMsg());
+		}
 		if (!$this->tipo->FldIsDetailKey && !is_null($this->tipo->FormValue) && $this->tipo->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->tipo->FldCaption(), $this->tipo->ReqErrMsg));
-		}
-		if (!$this->idtipo_documento->FldIsDetailKey && !is_null($this->idtipo_documento->FormValue) && $this->idtipo_documento->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->idtipo_documento->FldCaption(), $this->idtipo_documento->ReqErrMsg));
-		}
-		if (!$this->serie->FldIsDetailKey && !is_null($this->serie->FormValue) && $this->serie->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->serie->FldCaption(), $this->serie->ReqErrMsg));
-		}
-		if (!$this->numero->FldIsDetailKey && !is_null($this->numero->FormValue) && $this->numero->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->numero->FldCaption(), $this->numero->ReqErrMsg));
-		}
-		if (!$this->fecha->FldIsDetailKey && !is_null($this->fecha->FormValue) && $this->fecha->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->fecha->FldCaption(), $this->fecha->ReqErrMsg));
 		}
 		if (!ew_CheckEuroDate($this->fecha->FormValue)) {
 			ew_AddMessage($gsFormError, $this->fecha->FldErrMsg());
@@ -1564,6 +1513,12 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		}
 		if (!ew_CheckNumber($this->monto->FormValue)) {
 			ew_AddMessage($gsFormError, $this->monto->FldErrMsg());
+		}
+		if (!$this->monto_aplicado->FldIsDetailKey && !is_null($this->monto_aplicado->FormValue) && $this->monto_aplicado->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->monto_aplicado->FldCaption(), $this->monto_aplicado->ReqErrMsg));
+		}
+		if (!ew_CheckNumber($this->monto_aplicado->FormValue)) {
+			ew_AddMessage($gsFormError, $this->monto_aplicado->FldErrMsg());
 		}
 
 		// Return validate result
@@ -1619,7 +1574,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			foreach ($rsold as $row) {
 				$sThisKey = "";
 				if ($sThisKey <> "") $sThisKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
-				$sThisKey .= $row['iddocumento_caja_chica'];
+				$sThisKey .= $row['idcaja_chica_detalle'];
 				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 				$DeleteRows = $this->Delete($row); // Delete
 				$conn->raiseErrorFn = '';
@@ -1677,23 +1632,23 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			$this->LoadDbValues($rsold);
 			$rsnew = array();
 
+			// idcaja_chica
+			$this->idcaja_chica->SetDbValueDef($rsnew, $this->idcaja_chica->CurrentValue, 0, $this->idcaja_chica->ReadOnly);
+
 			// tipo
 			$this->tipo->SetDbValueDef($rsnew, $this->tipo->CurrentValue, "", $this->tipo->ReadOnly);
 
-			// idtipo_documento
-			$this->idtipo_documento->SetDbValueDef($rsnew, $this->idtipo_documento->CurrentValue, 0, $this->idtipo_documento->ReadOnly);
-
-			// serie
-			$this->serie->SetDbValueDef($rsnew, $this->serie->CurrentValue, "", $this->serie->ReadOnly);
-
-			// numero
-			$this->numero->SetDbValueDef($rsnew, $this->numero->CurrentValue, "", $this->numero->ReadOnly);
-
 			// fecha
-			$this->fecha->SetDbValueDef($rsnew, ew_UnFormatDateTime($this->fecha->CurrentValue, 7), ew_CurrentDate(), $this->fecha->ReadOnly);
+			$this->fecha->SetDbValueDef($rsnew, ew_UnFormatDateTime($this->fecha->CurrentValue, 7), NULL, $this->fecha->ReadOnly);
 
 			// monto
 			$this->monto->SetDbValueDef($rsnew, $this->monto->CurrentValue, 0, $this->monto->ReadOnly);
+
+			// monto_aplicado
+			$this->monto_aplicado->SetDbValueDef($rsnew, $this->monto_aplicado->CurrentValue, 0, $this->monto_aplicado->ReadOnly);
+
+			// descripcion
+			$this->descripcion->SetDbValueDef($rsnew, $this->descripcion->CurrentValue, NULL, $this->descripcion->ReadOnly);
 
 			// Call Row Updating event
 			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
@@ -1735,9 +1690,6 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			if ($this->getCurrentMasterTable() == "caja_chica") {
 				$this->idcaja_chica->CurrentValue = $this->idcaja_chica->getSessionValue();
 			}
-			if ($this->getCurrentMasterTable() == "caja_chica_aplicacion") {
-				$this->iddocumento_caja_chica->CurrentValue = $this->iddocumento_caja_chica->getSessionValue();
-			}
 		$conn = &$this->Connection();
 
 		// Load db values from rsold
@@ -1746,33 +1698,23 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		}
 		$rsnew = array();
 
+		// idcaja_chica
+		$this->idcaja_chica->SetDbValueDef($rsnew, $this->idcaja_chica->CurrentValue, 0, strval($this->idcaja_chica->CurrentValue) == "");
+
 		// tipo
 		$this->tipo->SetDbValueDef($rsnew, $this->tipo->CurrentValue, "", strval($this->tipo->CurrentValue) == "");
 
-		// idtipo_documento
-		$this->idtipo_documento->SetDbValueDef($rsnew, $this->idtipo_documento->CurrentValue, 0, strval($this->idtipo_documento->CurrentValue) == "");
-
-		// serie
-		$this->serie->SetDbValueDef($rsnew, $this->serie->CurrentValue, "", FALSE);
-
-		// numero
-		$this->numero->SetDbValueDef($rsnew, $this->numero->CurrentValue, "", FALSE);
-
 		// fecha
-		$this->fecha->SetDbValueDef($rsnew, ew_UnFormatDateTime($this->fecha->CurrentValue, 7), ew_CurrentDate(), FALSE);
+		$this->fecha->SetDbValueDef($rsnew, ew_UnFormatDateTime($this->fecha->CurrentValue, 7), NULL, FALSE);
 
 		// monto
 		$this->monto->SetDbValueDef($rsnew, $this->monto->CurrentValue, 0, strval($this->monto->CurrentValue) == "");
 
-		// iddocumento_caja_chica
-		if ($this->iddocumento_caja_chica->getSessionValue() <> "") {
-			$rsnew['iddocumento_caja_chica'] = $this->iddocumento_caja_chica->getSessionValue();
-		}
+		// monto_aplicado
+		$this->monto_aplicado->SetDbValueDef($rsnew, $this->monto_aplicado->CurrentValue, 0, strval($this->monto_aplicado->CurrentValue) == "");
 
-		// idcaja_chica
-		if ($this->idcaja_chica->getSessionValue() <> "") {
-			$rsnew['idcaja_chica'] = $this->idcaja_chica->getSessionValue();
-		}
+		// descripcion
+		$this->descripcion->SetDbValueDef($rsnew, $this->descripcion->CurrentValue, NULL, FALSE);
 
 		// Call Row Inserting event
 		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
@@ -1784,8 +1726,8 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			if ($AddRow) {
 
 				// Get insert id if necessary
-				$this->iddocumento_caja_chica->setDbValue($conn->Insert_ID());
-				$rsnew['iddocumento_caja_chica'] = $this->iddocumento_caja_chica->DbValue;
+				$this->idcaja_chica_detalle->setDbValue($conn->Insert_ID());
+				$rsnew['idcaja_chica_detalle'] = $this->idcaja_chica_detalle->DbValue;
 			}
 		} else {
 			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
@@ -1816,10 +1758,6 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		if ($sMasterTblVar == "caja_chica") {
 			$this->idcaja_chica->Visible = FALSE;
 			if ($GLOBALS["caja_chica"]->EventCancelled) $this->EventCancelled = TRUE;
-		}
-		if ($sMasterTblVar == "caja_chica_aplicacion") {
-			$this->iddocumento_caja_chica->Visible = FALSE;
-			if ($GLOBALS["caja_chica_aplicacion"]->EventCancelled) $this->EventCancelled = TRUE;
 		}
 		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter

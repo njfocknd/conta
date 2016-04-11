@@ -591,14 +591,18 @@
 		<phrase id="and" value=" y "/>
 		<phrase id="or" value=" o "/>
 	</global>
-	<project><phrase id="footertext" value="&amp;copy;2014 e.World Technology Ltd. All rights reserved."/>
+	<project><phrase id="footertext" value="Nexthor"/>
 <menu id="27"><phrase id="menutext" value="caja chica detalle"/>
+</menu>
+<menu id="28"><phrase id="menutext" value="caja chica aplicacion"/>
 </menu>
 <menu id="20"><phrase id="menutext" value="encargado"/>
 </menu>
 <menu id="18"><phrase id="menutext" value="Caja Chica"/>
 </menu>
-<menu id="26"><phrase id="menutext" value="documento caja chica"/>
+<menu id="26"><phrase id="menutext" value="Documentos de Caja Chica"/>
+</menu>
+<menu id="31"><phrase id="menutext" value="Cheque de Caja Chica"/>
 </menu>
 <menu id="7"><phrase id="menutext" value="Partida"/>
 </menu>
@@ -633,6 +637,10 @@
 <menu id="25"><phrase id="menutext" value="Tipo de Documento por Módulo"/>
 </menu>
 <menu id="24"><phrase id="menutext" value="Tipo de Documento"/>
+</menu>
+<menu id="29"><phrase id="menutext" value="Banco"/>
+</menu>
+<menu id="30"><phrase id="menutext" value="Cuenta Bancaria"/>
 </menu>
 <menu id="12"><phrase id="menutext" value="CRM"/>
 </menu>
@@ -1098,28 +1106,130 @@
 <field id="fecha_insercion"><phrase id="fldcaption" value="Fecha de Inserción"/>
 </field>
 </table>
-<table id="caja_chica_detalle"><phrase id="tblcaption" value="caja chica detalle"/>
-<field id="idcaja_chica_detalle"><phrase id="fldcaption" value="idcaja chica detalle"/>
+<table id="caja_chica_detalle"><phrase id="tblcaption" value="Detalle Caja Chica"/>
+<field id="idcaja_chica_detalle"><phrase id="fldcaption" value="ID Detalle Caja Chica"/>
 </field>
-<field id="idcaja_chica"><phrase id="fldcaption" value="idcaja chica"/>
+<field id="idcaja_chica"><phrase id="fldcaption" value="Caja Chica"/>
 </field>
-<field id="fecha"><phrase id="fldcaption" value="fecha"/>
+<field id="fecha"><phrase id="fldcaption" value="Fecha"/>
 </field>
-<field id="monto"><phrase id="fldcaption" value="monto"/>
+<field id="monto"><phrase id="fldcaption" value="Monto"/>
 </field>
-<field id="tipo"><phrase id="fldcaption" value="tipo"/>
+<field id="tipo"><phrase id="fldcaption" value="Tipo"/>
 <phrase id="fldtagvalue1" value="Cargo"/>
 <phrase id="fldtagcaption1" value="Cargo"/>
 <phrase id="fldtagvalue2" value="Abono"/>
 <phrase id="fldtagcaption2" value="Abono"/>
 </field>
-<field id="fecha_insercion"><phrase id="fldcaption" value="fecha insercion"/>
+<field id="fecha_insercion"><phrase id="fldcaption" value="Fecha de Inserción"/>
 </field>
-<field id="estado"><phrase id="fldcaption" value="estado"/>
+<field id="estado"><phrase id="fldcaption" value="Estado"/>
 <phrase id="fldtagvalue1" value="Activo"/>
 <phrase id="fldtagcaption1" value="Activo"/>
 <phrase id="fldtagvalue2" value="Inactivo"/>
 <phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+<field id="monto_aplicado"><phrase id="fldcaption" value="Monto Aplicado"/>
+</field>
+<field id="descripcion"><phrase id="fldcaption" value="descripcion"/>
+</field>
+<field id="idreferencia"><phrase id="fldcaption" value="ID Referencia"/>
+</field>
+<field id="tabla_referencia"><phrase id="fldcaption" value="Tabla Referencia"/>
+</field>
+</table>
+<table id="caja_chica_aplicacion"><phrase id="tblcaption" value="Aplicación de Caja Chica"/>
+<field id="idcaja_chica_aplicacion"><phrase id="fldcaption" value="ID Aplicación de Caja Chica"/>
+</field>
+<field id="idreferencia"><phrase id="fldcaption" value="Referencia"/>
+</field>
+<field id="tabla_referencia"><phrase id="fldcaption" value="Tabla de Referencia"/>
+</field>
+<field id="monto"><phrase id="fldcaption" value="Monto"/>
+</field>
+<field id="fecha"><phrase id="fldcaption" value="Fecha"/>
+</field>
+<field id="fecha_insercion"><phrase id="fldcaption" value="Fecha de Inserción"/>
+</field>
+<field id="estado"><phrase id="fldcaption" value="Estado"/>
+<phrase id="fldtagvalue1" value="Activo"/>
+<phrase id="fldtagcaption1" value="Activo"/>
+<phrase id="fldtagvalue2" value="Inactivo"/>
+<phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+<field id="idcaja_chica_detalle"><phrase id="fldcaption" value="Detalle de Caja Chica"/>
+</field>
+</table>
+<table id="banco"><phrase id="tblcaption" value="Banco"/>
+<field id="idbanco"><phrase id="fldcaption" value="ID Banco"/>
+</field>
+<field id="nombre"><phrase id="fldcaption" value="Nombre"/>
+</field>
+<field id="alias"><phrase id="fldcaption" value="Alías"/>
+</field>
+<field id="fecha_insercion"><phrase id="fldcaption" value="Fecha de Inserción"/>
+</field>
+<field id="estado"><phrase id="fldcaption" value="Estado"/>
+<phrase id="fldtagvalue1" value="Activo"/>
+<phrase id="fldtagcaption1" value="Activo"/>
+<phrase id="fldtagvalue2" value="Inactivo"/>
+<phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+</table>
+<table id="banco_cuenta"><phrase id="tblcaption" value="Cuenta Bancaria"/>
+<field id="idbanco_cuenta"><phrase id="fldcaption" value="ID Cuenta Bancaria"/>
+</field>
+<field id="nombre"><phrase id="fldcaption" value="Nombre"/>
+</field>
+<field id="numero"><phrase id="fldcaption" value="Número"/>
+</field>
+<field id="estado"><phrase id="fldcaption" value="Estado"/>
+<phrase id="fldtagvalue1" value="Activo"/>
+<phrase id="fldtagcaption1" value="Activo"/>
+<phrase id="fldtagvalue2" value="Inactivo"/>
+<phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+<field id="fecha_insercion"><phrase id="fldcaption" value="Fecha de Inserción"/>
+</field>
+<field id="idbanco"><phrase id="fldcaption" value="Banco"/>
+</field>
+<field id="idempresa"><phrase id="fldcaption" value="Empresa"/>
+</field>
+</table>
+<table id="caja_chica_cheque"><phrase id="tblcaption" value="Cheque de Caja Chica"/>
+<field id="idcaja_chica"><phrase id="fldcaption" value="Caja Chica"/>
+</field>
+<field id="fecha"><phrase id="fldcaption" value="Fecha"/>
+</field>
+<field id="monto"><phrase id="fldcaption" value="Monto"/>
+</field>
+<field id="idbanco"><phrase id="fldcaption" value="Banco"/>
+</field>
+<field id="idbanco_cuenta"><phrase id="fldcaption" value="Cuenta Bancaria"/>
+</field>
+<field id="estado"><phrase id="fldcaption" value="Estado"/>
+<phrase id="fldtagvalue1" value="Activo"/>
+<phrase id="fldtagcaption1" value="Activo"/>
+<phrase id="fldtagvalue2" value="Inactivo"/>
+<phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+<field id="fecha_insercion"><phrase id="fldcaption" value="Fecha de Inserción"/>
+</field>
+<field id="numero"><phrase id="fldcaption" value="Número"/>
+</field>
+<field id="idcaja_chica_cheque"><phrase id="fldcaption" value="ID Cheque de Caja Chica"/>
+</field>
+<field id="status"><phrase id="fldcaption" value="Estado del Cheque"/>
+<phrase id="fldtagvalue1" value="Emitido"/>
+<phrase id="fldtagcaption1" value="Emitido"/>
+<phrase id="fldtagvalue2" value="Autorizado"/>
+<phrase id="fldtagcaption2" value="Autorizado"/>
+<phrase id="fldtagvalue3" value="Cobrado"/>
+<phrase id="fldtagcaption3" value="Cobrado"/>
+<phrase id="fldtagvalue4" value="Rechazado"/>
+<phrase id="fldtagcaption4" value="Rechazado"/>
+<phrase id="fldtagvalue5" value="Anulado"/>
+<phrase id="fldtagcaption5" value="Anulado"/>
 </field>
 </table>
 </project>

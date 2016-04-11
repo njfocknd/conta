@@ -8,6 +8,8 @@ ob_start(); // Turn on output buffering
 <?php include_once "caja_chicainfo.php" ?>
 <?php include_once "encargadogridcls.php" ?>
 <?php include_once "documento_caja_chicagridcls.php" ?>
+<?php include_once "caja_chica_detallegridcls.php" ?>
+<?php include_once "caja_chica_chequegridcls.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -504,6 +506,62 @@ class ccaja_chica_view extends ccaja_chica {
 		}
 		if ($this->ShowMultipleDetails) $item->Visible = FALSE;
 
+		// "detail_caja_chica_detalle"
+		$item = &$option->Add("detail_caja_chica_detalle");
+		$body = $Language->Phrase("ViewPageDetailLink") . $Language->TablePhrase("caja_chica_detalle", "TblCaption");
+		$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("caja_chica_detallelist.php?" . EW_TABLE_SHOW_MASTER . "=caja_chica&fk_idcaja_chica=" . urlencode(strval($this->idcaja_chica->CurrentValue)) . "") . "\">" . $body . "</a>";
+		$links = "";
+		if ($GLOBALS["caja_chica_detalle_grid"] && $GLOBALS["caja_chica_detalle_grid"]->DetailView) {
+			$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=caja_chica_detalle")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+			if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
+			$DetailViewTblVar .= "caja_chica_detalle";
+		}
+		if ($GLOBALS["caja_chica_detalle_grid"] && $GLOBALS["caja_chica_detalle_grid"]->DetailEdit) {
+			$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=caja_chica_detalle")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+			if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
+			$DetailEditTblVar .= "caja_chica_detalle";
+		}
+		if ($links <> "") {
+			$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
+			$body .= "<ul class=\"dropdown-menu\">". $links . "</ul>";
+		}
+		$body = "<div class=\"btn-group\">" . $body . "</div>";
+		$item->Body = $body;
+		$item->Visible = TRUE;
+		if ($item->Visible) {
+			if ($DetailTableLink <> "") $DetailTableLink .= ",";
+			$DetailTableLink .= "caja_chica_detalle";
+		}
+		if ($this->ShowMultipleDetails) $item->Visible = FALSE;
+
+		// "detail_caja_chica_cheque"
+		$item = &$option->Add("detail_caja_chica_cheque");
+		$body = $Language->Phrase("ViewPageDetailLink") . $Language->TablePhrase("caja_chica_cheque", "TblCaption");
+		$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("caja_chica_chequelist.php?" . EW_TABLE_SHOW_MASTER . "=caja_chica&fk_idcaja_chica=" . urlencode(strval($this->idcaja_chica->CurrentValue)) . "") . "\">" . $body . "</a>";
+		$links = "";
+		if ($GLOBALS["caja_chica_cheque_grid"] && $GLOBALS["caja_chica_cheque_grid"]->DetailView) {
+			$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=caja_chica_cheque")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+			if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
+			$DetailViewTblVar .= "caja_chica_cheque";
+		}
+		if ($GLOBALS["caja_chica_cheque_grid"] && $GLOBALS["caja_chica_cheque_grid"]->DetailEdit) {
+			$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=caja_chica_cheque")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+			if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
+			$DetailEditTblVar .= "caja_chica_cheque";
+		}
+		if ($links <> "") {
+			$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
+			$body .= "<ul class=\"dropdown-menu\">". $links . "</ul>";
+		}
+		$body = "<div class=\"btn-group\">" . $body . "</div>";
+		$item->Body = $body;
+		$item->Visible = TRUE;
+		if ($item->Visible) {
+			if ($DetailTableLink <> "") $DetailTableLink .= ",";
+			$DetailTableLink .= "caja_chica_cheque";
+		}
+		if ($this->ShowMultipleDetails) $item->Visible = FALSE;
+
 		// Multiple details
 		if ($this->ShowMultipleDetails) {
 			$body = $Language->Phrase("MultipleMasterDetails");
@@ -855,6 +913,34 @@ class ccaja_chica_view extends ccaja_chica {
 					$GLOBALS["documento_caja_chica_grid"]->idcaja_chica->setSessionValue($GLOBALS["documento_caja_chica_grid"]->idcaja_chica->CurrentValue);
 				}
 			}
+			if (in_array("caja_chica_detalle", $DetailTblVar)) {
+				if (!isset($GLOBALS["caja_chica_detalle_grid"]))
+					$GLOBALS["caja_chica_detalle_grid"] = new ccaja_chica_detalle_grid;
+				if ($GLOBALS["caja_chica_detalle_grid"]->DetailView) {
+					$GLOBALS["caja_chica_detalle_grid"]->CurrentMode = "view";
+
+					// Save current master table to detail table
+					$GLOBALS["caja_chica_detalle_grid"]->setCurrentMasterTable($this->TableVar);
+					$GLOBALS["caja_chica_detalle_grid"]->setStartRecordNumber(1);
+					$GLOBALS["caja_chica_detalle_grid"]->idcaja_chica->FldIsDetailKey = TRUE;
+					$GLOBALS["caja_chica_detalle_grid"]->idcaja_chica->CurrentValue = $this->idcaja_chica->CurrentValue;
+					$GLOBALS["caja_chica_detalle_grid"]->idcaja_chica->setSessionValue($GLOBALS["caja_chica_detalle_grid"]->idcaja_chica->CurrentValue);
+				}
+			}
+			if (in_array("caja_chica_cheque", $DetailTblVar)) {
+				if (!isset($GLOBALS["caja_chica_cheque_grid"]))
+					$GLOBALS["caja_chica_cheque_grid"] = new ccaja_chica_cheque_grid;
+				if ($GLOBALS["caja_chica_cheque_grid"]->DetailView) {
+					$GLOBALS["caja_chica_cheque_grid"]->CurrentMode = "view";
+
+					// Save current master table to detail table
+					$GLOBALS["caja_chica_cheque_grid"]->setCurrentMasterTable($this->TableVar);
+					$GLOBALS["caja_chica_cheque_grid"]->setStartRecordNumber(1);
+					$GLOBALS["caja_chica_cheque_grid"]->idcaja_chica->FldIsDetailKey = TRUE;
+					$GLOBALS["caja_chica_cheque_grid"]->idcaja_chica->CurrentValue = $this->idcaja_chica->CurrentValue;
+					$GLOBALS["caja_chica_cheque_grid"]->idcaja_chica->setSessionValue($GLOBALS["caja_chica_cheque_grid"]->idcaja_chica->CurrentValue);
+				}
+			}
 		}
 	}
 
@@ -1132,6 +1218,22 @@ $caja_chica_view->ShowMessage();
 <h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("documento_caja_chica", "TblCaption") ?></h4>
 <?php } ?>
 <?php include_once "documento_caja_chicagrid.php" ?>
+<?php } ?>
+<?php
+	if (in_array("caja_chica_detalle", explode(",", $caja_chica->getCurrentDetailTable())) && $caja_chica_detalle->DetailView) {
+?>
+<?php if ($caja_chica->getCurrentDetailTable() <> "") { ?>
+<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("caja_chica_detalle", "TblCaption") ?></h4>
+<?php } ?>
+<?php include_once "caja_chica_detallegrid.php" ?>
+<?php } ?>
+<?php
+	if (in_array("caja_chica_cheque", explode(",", $caja_chica->getCurrentDetailTable())) && $caja_chica_cheque->DetailView) {
+?>
+<?php if ($caja_chica->getCurrentDetailTable() <> "") { ?>
+<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("caja_chica_cheque", "TblCaption") ?></h4>
+<?php } ?>
+<?php include_once "caja_chica_chequegrid.php" ?>
 <?php } ?>
 </form>
 <script type="text/javascript">

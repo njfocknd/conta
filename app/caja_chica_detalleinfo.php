@@ -1,20 +1,23 @@
 <?php
 
 // Global variable for table object
-$caja_chica = NULL;
+$caja_chica_detalle = NULL;
 
 //
-// Table class for caja_chica
+// Table class for caja_chica_detalle
 //
-class ccaja_chica extends cTable {
+class ccaja_chica_detalle extends cTable {
+	var $idcaja_chica_detalle;
 	var $idcaja_chica;
-	var $nombre;
-	var $saldo;
-	var $idempresa;
-	var $idempleado;
-	var $idcuenta;
-	var $estado;
+	var $tipo;
+	var $fecha;
+	var $monto;
+	var $monto_aplicado;
 	var $fecha_insercion;
+	var $estado;
+	var $descripcion;
+	var $idreferencia;
+	var $tabla_referencia;
 
 	//
 	// Table class constructor
@@ -24,12 +27,12 @@ class ccaja_chica extends cTable {
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
-		$this->TableVar = 'caja_chica';
-		$this->TableName = 'caja_chica';
+		$this->TableVar = 'caja_chica_detalle';
+		$this->TableName = 'caja_chica_detalle';
 		$this->TableType = 'TABLE';
 
 		// Update Table
-		$this->UpdateTable = "`caja_chica`";
+		$this->UpdateTable = "`caja_chica_detalle`";
 		$this->DBID = 'DB';
 		$this->ExportAll = TRUE;
 		$this->ExportPageBreakCount = 0; // Page break per every n record (PDF only)
@@ -46,44 +49,58 @@ class ccaja_chica extends cTable {
 		$this->UserIDAllowSecurity = 0; // User ID Allow
 		$this->BasicSearch = new cBasicSearch($this->TableVar);
 
+		// idcaja_chica_detalle
+		$this->idcaja_chica_detalle = new cField('caja_chica_detalle', 'caja_chica_detalle', 'x_idcaja_chica_detalle', 'idcaja_chica_detalle', '`idcaja_chica_detalle`', '`idcaja_chica_detalle`', 3, -1, FALSE, '`idcaja_chica_detalle`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'NO');
+		$this->idcaja_chica_detalle->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
+		$this->fields['idcaja_chica_detalle'] = &$this->idcaja_chica_detalle;
+
 		// idcaja_chica
-		$this->idcaja_chica = new cField('caja_chica', 'caja_chica', 'x_idcaja_chica', 'idcaja_chica', '`idcaja_chica`', '`idcaja_chica`', 3, -1, FALSE, '`idcaja_chica`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'NO');
+		$this->idcaja_chica = new cField('caja_chica_detalle', 'caja_chica_detalle', 'x_idcaja_chica', 'idcaja_chica', '`idcaja_chica`', '`idcaja_chica`', 3, -1, FALSE, '`idcaja_chica`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->idcaja_chica->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idcaja_chica'] = &$this->idcaja_chica;
 
-		// nombre
-		$this->nombre = new cField('caja_chica', 'caja_chica', 'x_nombre', 'nombre', '`nombre`', '`nombre`', 200, -1, FALSE, '`nombre`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->fields['nombre'] = &$this->nombre;
+		// tipo
+		$this->tipo = new cField('caja_chica_detalle', 'caja_chica_detalle', 'x_tipo', 'tipo', '`tipo`', '`tipo`', 202, -1, FALSE, '`tipo`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
+		$this->tipo->OptionCount = 2;
+		$this->fields['tipo'] = &$this->tipo;
 
-		// saldo
-		$this->saldo = new cField('caja_chica', 'caja_chica', 'x_saldo', 'saldo', '`saldo`', '`saldo`', 131, -1, FALSE, '`saldo`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->saldo->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
-		$this->fields['saldo'] = &$this->saldo;
+		// fecha
+		$this->fecha = new cField('caja_chica_detalle', 'caja_chica_detalle', 'x_fecha', 'fecha', '`fecha`', 'DATE_FORMAT(`fecha`, \'%d/%m/%Y\')', 133, 7, FALSE, '`fecha`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->fecha->FldDefaultErrMsg = str_replace("%s", "/", $Language->Phrase("IncorrectDateDMY"));
+		$this->fields['fecha'] = &$this->fecha;
 
-		// idempresa
-		$this->idempresa = new cField('caja_chica', 'caja_chica', 'x_idempresa', 'idempresa', '`idempresa`', '`idempresa`', 3, -1, FALSE, '`idempresa`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
-		$this->idempresa->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['idempresa'] = &$this->idempresa;
+		// monto
+		$this->monto = new cField('caja_chica_detalle', 'caja_chica_detalle', 'x_monto', 'monto', '`monto`', '`monto`', 131, -1, FALSE, '`monto`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->monto->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
+		$this->fields['monto'] = &$this->monto;
 
-		// idempleado
-		$this->idempleado = new cField('caja_chica', 'caja_chica', 'x_idempleado', 'idempleado', '`idempleado`', '`idempleado`', 3, -1, FALSE, '`idempleado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
-		$this->idempleado->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['idempleado'] = &$this->idempleado;
+		// monto_aplicado
+		$this->monto_aplicado = new cField('caja_chica_detalle', 'caja_chica_detalle', 'x_monto_aplicado', 'monto_aplicado', '`monto_aplicado`', '`monto_aplicado`', 131, -1, FALSE, '`monto_aplicado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->monto_aplicado->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
+		$this->fields['monto_aplicado'] = &$this->monto_aplicado;
 
-		// idcuenta
-		$this->idcuenta = new cField('caja_chica', 'caja_chica', 'x_idcuenta', 'idcuenta', '`idcuenta`', '`idcuenta`', 3, -1, FALSE, '`idcuenta`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
-		$this->idcuenta->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['idcuenta'] = &$this->idcuenta;
+		// fecha_insercion
+		$this->fecha_insercion = new cField('caja_chica_detalle', 'caja_chica_detalle', 'x_fecha_insercion', 'fecha_insercion', '`fecha_insercion`', 'DATE_FORMAT(`fecha_insercion`, \'%d/%m/%Y\')', 135, 7, FALSE, '`fecha_insercion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->fecha_insercion->FldDefaultErrMsg = str_replace("%s", "/", $Language->Phrase("IncorrectDateDMY"));
+		$this->fields['fecha_insercion'] = &$this->fecha_insercion;
 
 		// estado
-		$this->estado = new cField('caja_chica', 'caja_chica', 'x_estado', 'estado', '`estado`', '`estado`', 202, -1, FALSE, '`estado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'RADIO');
+		$this->estado = new cField('caja_chica_detalle', 'caja_chica_detalle', 'x_estado', 'estado', '`estado`', '`estado`', 202, -1, FALSE, '`estado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
 		$this->estado->OptionCount = 2;
 		$this->fields['estado'] = &$this->estado;
 
-		// fecha_insercion
-		$this->fecha_insercion = new cField('caja_chica', 'caja_chica', 'x_fecha_insercion', 'fecha_insercion', '`fecha_insercion`', 'DATE_FORMAT(`fecha_insercion`, \'%d/%m/%Y\')', 135, 7, FALSE, '`fecha_insercion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->fecha_insercion->FldDefaultErrMsg = str_replace("%s", "/", $Language->Phrase("IncorrectDateDMY"));
-		$this->fields['fecha_insercion'] = &$this->fecha_insercion;
+		// descripcion
+		$this->descripcion = new cField('caja_chica_detalle', 'caja_chica_detalle', 'x_descripcion', 'descripcion', '`descripcion`', '`descripcion`', 200, -1, FALSE, '`descripcion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->fields['descripcion'] = &$this->descripcion;
+
+		// idreferencia
+		$this->idreferencia = new cField('caja_chica_detalle', 'caja_chica_detalle', 'x_idreferencia', 'idreferencia', '`idreferencia`', '`idreferencia`', 3, -1, FALSE, '`idreferencia`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->idreferencia->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
+		$this->fields['idreferencia'] = &$this->idreferencia;
+
+		// tabla_referencia
+		$this->tabla_referencia = new cField('caja_chica_detalle', 'caja_chica_detalle', 'x_tabla_referencia', 'tabla_referencia', '`tabla_referencia`', '`tabla_referencia`', 200, -1, FALSE, '`tabla_referencia`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->fields['tabla_referencia'] = &$this->tabla_referencia;
 	}
 
 	// Single column sort
@@ -103,6 +120,53 @@ class ccaja_chica extends cTable {
 		}
 	}
 
+	// Current master table name
+	function getCurrentMasterTable() {
+		return @$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_MASTER_TABLE];
+	}
+
+	function setCurrentMasterTable($v) {
+		$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_MASTER_TABLE] = $v;
+	}
+
+	// Session master WHERE clause
+	function GetMasterFilter() {
+
+		// Master filter
+		$sMasterFilter = "";
+		if ($this->getCurrentMasterTable() == "caja_chica") {
+			if ($this->idcaja_chica->getSessionValue() <> "")
+				$sMasterFilter .= "`idcaja_chica`=" . ew_QuotedValue($this->idcaja_chica->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
+			else
+				return "";
+		}
+		return $sMasterFilter;
+	}
+
+	// Session detail WHERE clause
+	function GetDetailFilter() {
+
+		// Detail filter
+		$sDetailFilter = "";
+		if ($this->getCurrentMasterTable() == "caja_chica") {
+			if ($this->idcaja_chica->getSessionValue() <> "")
+				$sDetailFilter .= "`idcaja_chica`=" . ew_QuotedValue($this->idcaja_chica->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
+			else
+				return "";
+		}
+		return $sDetailFilter;
+	}
+
+	// Master filter
+	function SqlMasterFilter_caja_chica() {
+		return "`idcaja_chica`=@idcaja_chica@";
+	}
+
+	// Detail filter
+	function SqlDetailFilter_caja_chica() {
+		return "`idcaja_chica`=@idcaja_chica@";
+	}
+
 	// Current detail table name
 	function getCurrentDetailTable() {
 		return @$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_DETAIL_TABLE];
@@ -117,24 +181,12 @@ class ccaja_chica extends cTable {
 
 		// Detail url
 		$sDetailUrl = "";
-		if ($this->getCurrentDetailTable() == "encargado") {
-			$sDetailUrl = $GLOBALS["encargado"]->GetListUrl() . "?" . EW_TABLE_SHOW_MASTER . "=" . $this->TableVar;
-			$sDetailUrl .= "&fk_idcaja_chica=" . urlencode($this->idcaja_chica->CurrentValue);
-		}
-		if ($this->getCurrentDetailTable() == "documento_caja_chica") {
-			$sDetailUrl = $GLOBALS["documento_caja_chica"]->GetListUrl() . "?" . EW_TABLE_SHOW_MASTER . "=" . $this->TableVar;
-			$sDetailUrl .= "&fk_idcaja_chica=" . urlencode($this->idcaja_chica->CurrentValue);
-		}
-		if ($this->getCurrentDetailTable() == "caja_chica_detalle") {
-			$sDetailUrl = $GLOBALS["caja_chica_detalle"]->GetListUrl() . "?" . EW_TABLE_SHOW_MASTER . "=" . $this->TableVar;
-			$sDetailUrl .= "&fk_idcaja_chica=" . urlencode($this->idcaja_chica->CurrentValue);
-		}
-		if ($this->getCurrentDetailTable() == "caja_chica_cheque") {
-			$sDetailUrl = $GLOBALS["caja_chica_cheque"]->GetListUrl() . "?" . EW_TABLE_SHOW_MASTER . "=" . $this->TableVar;
-			$sDetailUrl .= "&fk_idcaja_chica=" . urlencode($this->idcaja_chica->CurrentValue);
+		if ($this->getCurrentDetailTable() == "caja_chica_aplicacion") {
+			$sDetailUrl = $GLOBALS["caja_chica_aplicacion"]->GetListUrl() . "?" . EW_TABLE_SHOW_MASTER . "=" . $this->TableVar;
+			$sDetailUrl .= "&fk_idcaja_chica_detalle=" . urlencode($this->idcaja_chica_detalle->CurrentValue);
 		}
 		if ($sDetailUrl == "") {
-			$sDetailUrl = "caja_chicalist.php";
+			$sDetailUrl = "caja_chica_detallelist.php";
 		}
 		return $sDetailUrl;
 	}
@@ -143,7 +195,7 @@ class ccaja_chica extends cTable {
 	var $_SqlFrom = "";
 
 	function getSqlFrom() { // From
-		return ($this->_SqlFrom <> "") ? $this->_SqlFrom : "`caja_chica`";
+		return ($this->_SqlFrom <> "") ? $this->_SqlFrom : "`caja_chica_detalle`";
 	}
 
 	function SqlFrom() { // For backward compatibility
@@ -387,6 +439,22 @@ class ccaja_chica extends cTable {
 	// Update
 	function Update(&$rs, $where = "", $rsold = NULL, $curfilter = TRUE) {
 		$conn = &$this->Connection();
+
+		// Cascade Update detail table 'caja_chica_aplicacion'
+		$bCascadeUpdate = FALSE;
+		$rscascade = array();
+		if (!is_null($rsold) && (isset($rs['idcaja_chica_detalle']) && $rsold['idcaja_chica_detalle'] <> $rs['idcaja_chica_detalle'])) { // Update detail field 'idcaja_chica_detalle'
+			$bCascadeUpdate = TRUE;
+			$rscascade['idcaja_chica_detalle'] = $rs['idcaja_chica_detalle']; 
+		}
+		if ($bCascadeUpdate) {
+			if (!isset($GLOBALS["caja_chica_aplicacion"])) $GLOBALS["caja_chica_aplicacion"] = new ccaja_chica_aplicacion();
+			$rswrk = $GLOBALS["caja_chica_aplicacion"]->LoadRs("`idcaja_chica_detalle` = " . ew_QuotedValue($rsold['idcaja_chica_detalle'], EW_DATATYPE_NUMBER, 'DB')); 
+			while ($rswrk && !$rswrk->EOF) {
+				$GLOBALS["caja_chica_aplicacion"]->Update($rscascade, "`idcaja_chica_detalle` = " . ew_QuotedValue($rsold['idcaja_chica_detalle'], EW_DATATYPE_NUMBER, 'DB'), $rswrk->fields);
+				$rswrk->MoveNext();
+			}
+		}
 		return $conn->Execute($this->UpdateSQL($rs, $where, $curfilter));
 	}
 
@@ -396,8 +464,8 @@ class ccaja_chica extends cTable {
 		if (is_array($where))
 			$where = $this->ArrayToFilter($where);
 		if ($rs) {
-			if (array_key_exists('idcaja_chica', $rs))
-				ew_AddFilter($where, ew_QuotedName('idcaja_chica', $this->DBID) . '=' . ew_QuotedValue($rs['idcaja_chica'], $this->idcaja_chica->FldDataType, $this->DBID));
+			if (array_key_exists('idcaja_chica_detalle', $rs))
+				ew_AddFilter($where, ew_QuotedName('idcaja_chica_detalle', $this->DBID) . '=' . ew_QuotedValue($rs['idcaja_chica_detalle'], $this->idcaja_chica_detalle->FldDataType, $this->DBID));
 		}
 		$filter = ($curfilter) ? $this->CurrentFilter : "";
 		ew_AddFilter($filter, $where);
@@ -411,20 +479,28 @@ class ccaja_chica extends cTable {
 	// Delete
 	function Delete(&$rs, $where = "", $curfilter = TRUE) {
 		$conn = &$this->Connection();
+
+		// Cascade delete detail table 'caja_chica_aplicacion'
+		if (!isset($GLOBALS["caja_chica_aplicacion"])) $GLOBALS["caja_chica_aplicacion"] = new ccaja_chica_aplicacion();
+		$rscascade = $GLOBALS["caja_chica_aplicacion"]->LoadRs("`idcaja_chica_detalle` = " . ew_QuotedValue($rs['idcaja_chica_detalle'], EW_DATATYPE_NUMBER, "DB")); 
+		while ($rscascade && !$rscascade->EOF) {
+			$GLOBALS["caja_chica_aplicacion"]->Delete($rscascade->fields);
+			$rscascade->MoveNext();
+		}
 		return $conn->Execute($this->DeleteSQL($rs, $where, $curfilter));
 	}
 
 	// Key filter WHERE clause
 	function SqlKeyFilter() {
-		return "`idcaja_chica` = @idcaja_chica@";
+		return "`idcaja_chica_detalle` = @idcaja_chica_detalle@";
 	}
 
 	// Key filter
 	function KeyFilter() {
 		$sKeyFilter = $this->SqlKeyFilter();
-		if (!is_numeric($this->idcaja_chica->CurrentValue))
+		if (!is_numeric($this->idcaja_chica_detalle->CurrentValue))
 			$sKeyFilter = "0=1"; // Invalid key
-		$sKeyFilter = str_replace("@idcaja_chica@", ew_AdjustSql($this->idcaja_chica->CurrentValue, $this->DBID), $sKeyFilter); // Replace key value
+		$sKeyFilter = str_replace("@idcaja_chica_detalle@", ew_AdjustSql($this->idcaja_chica_detalle->CurrentValue, $this->DBID), $sKeyFilter); // Replace key value
 		return $sKeyFilter;
 	}
 
@@ -438,7 +514,7 @@ class ccaja_chica extends cTable {
 		if (@$_SESSION[$name] <> "") {
 			return $_SESSION[$name];
 		} else {
-			return "caja_chicalist.php";
+			return "caja_chica_detallelist.php";
 		}
 	}
 
@@ -448,33 +524,33 @@ class ccaja_chica extends cTable {
 
 	// List URL
 	function GetListUrl() {
-		return "caja_chicalist.php";
+		return "caja_chica_detallelist.php";
 	}
 
 	// View URL
 	function GetViewUrl($parm = "") {
 		if ($parm <> "")
-			$url = $this->KeyUrl("caja_chicaview.php", $this->UrlParm($parm));
+			$url = $this->KeyUrl("caja_chica_detalleview.php", $this->UrlParm($parm));
 		else
-			$url = $this->KeyUrl("caja_chicaview.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+			$url = $this->KeyUrl("caja_chica_detalleview.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
 		return $this->AddMasterUrl($url);
 	}
 
 	// Add URL
 	function GetAddUrl($parm = "") {
 		if ($parm <> "")
-			$url = "caja_chicaadd.php?" . $this->UrlParm($parm);
+			$url = "caja_chica_detalleadd.php?" . $this->UrlParm($parm);
 		else
-			$url = "caja_chicaadd.php";
+			$url = "caja_chica_detalleadd.php";
 		return $this->AddMasterUrl($url);
 	}
 
 	// Edit URL
 	function GetEditUrl($parm = "") {
 		if ($parm <> "")
-			$url = $this->KeyUrl("caja_chicaedit.php", $this->UrlParm($parm));
+			$url = $this->KeyUrl("caja_chica_detalleedit.php", $this->UrlParm($parm));
 		else
-			$url = $this->KeyUrl("caja_chicaedit.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+			$url = $this->KeyUrl("caja_chica_detalleedit.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
 		return $this->AddMasterUrl($url);
 	}
 
@@ -487,9 +563,9 @@ class ccaja_chica extends cTable {
 	// Copy URL
 	function GetCopyUrl($parm = "") {
 		if ($parm <> "")
-			$url = $this->KeyUrl("caja_chicaadd.php", $this->UrlParm($parm));
+			$url = $this->KeyUrl("caja_chica_detalleadd.php", $this->UrlParm($parm));
 		else
-			$url = $this->KeyUrl("caja_chicaadd.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+			$url = $this->KeyUrl("caja_chica_detalleadd.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
 		return $this->AddMasterUrl($url);
 	}
 
@@ -501,17 +577,21 @@ class ccaja_chica extends cTable {
 
 	// Delete URL
 	function GetDeleteUrl() {
-		return $this->KeyUrl("caja_chicadelete.php", $this->UrlParm());
+		return $this->KeyUrl("caja_chica_detalledelete.php", $this->UrlParm());
 	}
 
 	// Add master url
 	function AddMasterUrl($url) {
+		if ($this->getCurrentMasterTable() == "caja_chica" && strpos($url, EW_TABLE_SHOW_MASTER . "=") === FALSE) {
+			$url .= (strpos($url, "?") !== FALSE ? "&" : "?") . EW_TABLE_SHOW_MASTER . "=" . $this->getCurrentMasterTable();
+			$url .= "&fk_idcaja_chica=" . urlencode($this->idcaja_chica->CurrentValue);
+		}
 		return $url;
 	}
 
 	function KeyToJson() {
 		$json = "";
-		$json .= "idcaja_chica:" . ew_VarToJson($this->idcaja_chica->CurrentValue, "number", "'");
+		$json .= "idcaja_chica_detalle:" . ew_VarToJson($this->idcaja_chica_detalle->CurrentValue, "number", "'");
 		return "{" . $json . "}";
 	}
 
@@ -519,8 +599,8 @@ class ccaja_chica extends cTable {
 	function KeyUrl($url, $parm = "") {
 		$sUrl = $url . "?";
 		if ($parm <> "") $sUrl .= $parm . "&";
-		if (!is_null($this->idcaja_chica->CurrentValue)) {
-			$sUrl .= "idcaja_chica=" . urlencode($this->idcaja_chica->CurrentValue);
+		if (!is_null($this->idcaja_chica_detalle->CurrentValue)) {
+			$sUrl .= "idcaja_chica_detalle=" . urlencode($this->idcaja_chica_detalle->CurrentValue);
 		} else {
 			return "javascript:ew_Alert(ewLanguage.Phrase('InvalidRecord'));";
 		}
@@ -553,10 +633,10 @@ class ccaja_chica extends cTable {
 			$cnt = count($arKeys);
 		} elseif (!empty($_GET) || !empty($_POST)) {
 			$isPost = ew_IsHttpPost();
-			if ($isPost && isset($_POST["idcaja_chica"]))
-				$arKeys[] = ew_StripSlashes($_POST["idcaja_chica"]);
-			elseif (isset($_GET["idcaja_chica"]))
-				$arKeys[] = ew_StripSlashes($_GET["idcaja_chica"]);
+			if ($isPost && isset($_POST["idcaja_chica_detalle"]))
+				$arKeys[] = ew_StripSlashes($_POST["idcaja_chica_detalle"]);
+			elseif (isset($_GET["idcaja_chica_detalle"]))
+				$arKeys[] = ew_StripSlashes($_GET["idcaja_chica_detalle"]);
 			else
 				$arKeys = NULL; // Do not setup
 
@@ -581,7 +661,7 @@ class ccaja_chica extends cTable {
 		$sKeyFilter = "";
 		foreach ($arKeys as $key) {
 			if ($sKeyFilter <> "") $sKeyFilter .= " OR ";
-			$this->idcaja_chica->CurrentValue = $key;
+			$this->idcaja_chica_detalle->CurrentValue = $key;
 			$sKeyFilter .= "(" . $this->KeyFilter() . ")";
 		}
 		return $sKeyFilter;
@@ -602,14 +682,17 @@ class ccaja_chica extends cTable {
 
 	// Load row values from recordset
 	function LoadListRowValues(&$rs) {
+		$this->idcaja_chica_detalle->setDbValue($rs->fields('idcaja_chica_detalle'));
 		$this->idcaja_chica->setDbValue($rs->fields('idcaja_chica'));
-		$this->nombre->setDbValue($rs->fields('nombre'));
-		$this->saldo->setDbValue($rs->fields('saldo'));
-		$this->idempresa->setDbValue($rs->fields('idempresa'));
-		$this->idempleado->setDbValue($rs->fields('idempleado'));
-		$this->idcuenta->setDbValue($rs->fields('idcuenta'));
-		$this->estado->setDbValue($rs->fields('estado'));
+		$this->tipo->setDbValue($rs->fields('tipo'));
+		$this->fecha->setDbValue($rs->fields('fecha'));
+		$this->monto->setDbValue($rs->fields('monto'));
+		$this->monto_aplicado->setDbValue($rs->fields('monto_aplicado'));
 		$this->fecha_insercion->setDbValue($rs->fields('fecha_insercion'));
+		$this->estado->setDbValue($rs->fields('estado'));
+		$this->descripcion->setDbValue($rs->fields('descripcion'));
+		$this->idreferencia->setDbValue($rs->fields('idreferencia'));
+		$this->tabla_referencia->setDbValue($rs->fields('tabla_referencia'));
 	}
 
 	// Render list row values
@@ -620,98 +703,51 @@ class ccaja_chica extends cTable {
 		$this->Row_Rendering();
 
    // Common render codes
+		// idcaja_chica_detalle
 		// idcaja_chica
-		// nombre
-		// saldo
-		// idempresa
-		// idempleado
-		// idcuenta
-		// estado
+		// tipo
+		// fecha
+		// monto
+		// monto_aplicado
 		// fecha_insercion
-		// idcaja_chica
+		// estado
+		// descripcion
+		// idreferencia
+		// tabla_referencia
+		// idcaja_chica_detalle
 
+		$this->idcaja_chica_detalle->ViewValue = $this->idcaja_chica_detalle->CurrentValue;
+		$this->idcaja_chica_detalle->ViewCustomAttributes = "";
+
+		// idcaja_chica
 		$this->idcaja_chica->ViewValue = $this->idcaja_chica->CurrentValue;
 		$this->idcaja_chica->ViewCustomAttributes = "";
 
-		// nombre
-		$this->nombre->ViewValue = $this->nombre->CurrentValue;
-		$this->nombre->ViewCustomAttributes = "";
-
-		// saldo
-		$this->saldo->ViewValue = $this->saldo->CurrentValue;
-		$this->saldo->ViewCustomAttributes = "";
-
-		// idempresa
-		if (strval($this->idempresa->CurrentValue) <> "") {
-			$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
-		$sWhereWrk = "";
-		$lookuptblfilter = "`estado` = 'Activo'";
-		ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = Conn()->Execute($sSqlWrk);
-			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$arwrk = array();
-				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idempresa->ViewValue = $this->idempresa->DisplayValue($arwrk);
-				$rswrk->Close();
-			} else {
-				$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
-			}
+		// tipo
+		if (strval($this->tipo->CurrentValue) <> "") {
+			$this->tipo->ViewValue = $this->tipo->OptionCaption($this->tipo->CurrentValue);
 		} else {
-			$this->idempresa->ViewValue = NULL;
+			$this->tipo->ViewValue = NULL;
 		}
-		$this->idempresa->ViewCustomAttributes = "";
+		$this->tipo->ViewCustomAttributes = "";
 
-		// idempleado
-		if (strval($this->idempleado->CurrentValue) <> "") {
-			$sFilterWrk = "`idempleado`" . ew_SearchString("=", $this->idempleado->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `idempleado`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empleado`";
-		$sWhereWrk = "";
-		$lookuptblfilter = "`estado` = 'Activo'";
-		ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idempleado, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = Conn()->Execute($sSqlWrk);
-			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$arwrk = array();
-				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idempleado->ViewValue = $this->idempleado->DisplayValue($arwrk);
-				$rswrk->Close();
-			} else {
-				$this->idempleado->ViewValue = $this->idempleado->CurrentValue;
-			}
-		} else {
-			$this->idempleado->ViewValue = NULL;
-		}
-		$this->idempleado->ViewCustomAttributes = "";
+		// fecha
+		$this->fecha->ViewValue = $this->fecha->CurrentValue;
+		$this->fecha->ViewValue = ew_FormatDateTime($this->fecha->ViewValue, 7);
+		$this->fecha->ViewCustomAttributes = "";
 
-		// idcuenta
-		if (strval($this->idcuenta->CurrentValue) <> "") {
-			$sFilterWrk = "`idcuenta`" . ew_SearchString("=", $this->idcuenta->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `idcuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta`";
-		$sWhereWrk = "";
-		$lookuptblfilter = "`estado` = 'Activo' ";
-		ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idcuenta, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = Conn()->Execute($sSqlWrk);
-			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$arwrk = array();
-				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idcuenta->ViewValue = $this->idcuenta->DisplayValue($arwrk);
-				$rswrk->Close();
-			} else {
-				$this->idcuenta->ViewValue = $this->idcuenta->CurrentValue;
-			}
-		} else {
-			$this->idcuenta->ViewValue = NULL;
-		}
-		$this->idcuenta->ViewCustomAttributes = "";
+		// monto
+		$this->monto->ViewValue = $this->monto->CurrentValue;
+		$this->monto->ViewCustomAttributes = "";
+
+		// monto_aplicado
+		$this->monto_aplicado->ViewValue = $this->monto_aplicado->CurrentValue;
+		$this->monto_aplicado->ViewCustomAttributes = "";
+
+		// fecha_insercion
+		$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
+		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
+		$this->fecha_insercion->ViewCustomAttributes = "";
 
 		// estado
 		if (strval($this->estado->CurrentValue) <> "") {
@@ -721,50 +757,72 @@ class ccaja_chica extends cTable {
 		}
 		$this->estado->ViewCustomAttributes = "";
 
-		// fecha_insercion
-		$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
-		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
-		$this->fecha_insercion->ViewCustomAttributes = "";
+		// descripcion
+		$this->descripcion->ViewValue = $this->descripcion->CurrentValue;
+		$this->descripcion->ViewCustomAttributes = "";
+
+		// idreferencia
+		$this->idreferencia->ViewValue = $this->idreferencia->CurrentValue;
+		$this->idreferencia->ViewCustomAttributes = "";
+
+		// tabla_referencia
+		$this->tabla_referencia->ViewValue = $this->tabla_referencia->CurrentValue;
+		$this->tabla_referencia->ViewCustomAttributes = "";
+
+		// idcaja_chica_detalle
+		$this->idcaja_chica_detalle->LinkCustomAttributes = "";
+		$this->idcaja_chica_detalle->HrefValue = "";
+		$this->idcaja_chica_detalle->TooltipValue = "";
 
 		// idcaja_chica
 		$this->idcaja_chica->LinkCustomAttributes = "";
 		$this->idcaja_chica->HrefValue = "";
 		$this->idcaja_chica->TooltipValue = "";
 
-		// nombre
-		$this->nombre->LinkCustomAttributes = "";
-		$this->nombre->HrefValue = "";
-		$this->nombre->TooltipValue = "";
+		// tipo
+		$this->tipo->LinkCustomAttributes = "";
+		$this->tipo->HrefValue = "";
+		$this->tipo->TooltipValue = "";
 
-		// saldo
-		$this->saldo->LinkCustomAttributes = "";
-		$this->saldo->HrefValue = "";
-		$this->saldo->TooltipValue = "";
+		// fecha
+		$this->fecha->LinkCustomAttributes = "";
+		$this->fecha->HrefValue = "";
+		$this->fecha->TooltipValue = "";
 
-		// idempresa
-		$this->idempresa->LinkCustomAttributes = "";
-		$this->idempresa->HrefValue = "";
-		$this->idempresa->TooltipValue = "";
+		// monto
+		$this->monto->LinkCustomAttributes = "";
+		$this->monto->HrefValue = "";
+		$this->monto->TooltipValue = "";
 
-		// idempleado
-		$this->idempleado->LinkCustomAttributes = "";
-		$this->idempleado->HrefValue = "";
-		$this->idempleado->TooltipValue = "";
+		// monto_aplicado
+		$this->monto_aplicado->LinkCustomAttributes = "";
+		$this->monto_aplicado->HrefValue = "";
+		$this->monto_aplicado->TooltipValue = "";
 
-		// idcuenta
-		$this->idcuenta->LinkCustomAttributes = "";
-		$this->idcuenta->HrefValue = "";
-		$this->idcuenta->TooltipValue = "";
+		// fecha_insercion
+		$this->fecha_insercion->LinkCustomAttributes = "";
+		$this->fecha_insercion->HrefValue = "";
+		$this->fecha_insercion->TooltipValue = "";
 
 		// estado
 		$this->estado->LinkCustomAttributes = "";
 		$this->estado->HrefValue = "";
 		$this->estado->TooltipValue = "";
 
-		// fecha_insercion
-		$this->fecha_insercion->LinkCustomAttributes = "";
-		$this->fecha_insercion->HrefValue = "";
-		$this->fecha_insercion->TooltipValue = "";
+		// descripcion
+		$this->descripcion->LinkCustomAttributes = "";
+		$this->descripcion->HrefValue = "";
+		$this->descripcion->TooltipValue = "";
+
+		// idreferencia
+		$this->idreferencia->LinkCustomAttributes = "";
+		$this->idreferencia->HrefValue = "";
+		$this->idreferencia->TooltipValue = "";
+
+		// tabla_referencia
+		$this->tabla_referencia->LinkCustomAttributes = "";
+		$this->tabla_referencia->HrefValue = "";
+		$this->tabla_referencia->TooltipValue = "";
 
 		// Call Row Rendered event
 		$this->Row_Rendered();
@@ -777,46 +835,77 @@ class ccaja_chica extends cTable {
 		// Call Row Rendering event
 		$this->Row_Rendering();
 
+		// idcaja_chica_detalle
+		$this->idcaja_chica_detalle->EditAttrs["class"] = "form-control";
+		$this->idcaja_chica_detalle->EditCustomAttributes = "";
+		$this->idcaja_chica_detalle->EditValue = $this->idcaja_chica_detalle->CurrentValue;
+		$this->idcaja_chica_detalle->ViewCustomAttributes = "";
+
 		// idcaja_chica
 		$this->idcaja_chica->EditAttrs["class"] = "form-control";
 		$this->idcaja_chica->EditCustomAttributes = "";
-		$this->idcaja_chica->EditValue = $this->idcaja_chica->CurrentValue;
+		if ($this->idcaja_chica->getSessionValue() <> "") {
+			$this->idcaja_chica->CurrentValue = $this->idcaja_chica->getSessionValue();
+		$this->idcaja_chica->ViewValue = $this->idcaja_chica->CurrentValue;
 		$this->idcaja_chica->ViewCustomAttributes = "";
+		} else {
+		$this->idcaja_chica->EditValue = $this->idcaja_chica->CurrentValue;
+		$this->idcaja_chica->PlaceHolder = ew_RemoveHtml($this->idcaja_chica->FldCaption());
+		}
 
-		// nombre
-		$this->nombre->EditAttrs["class"] = "form-control";
-		$this->nombre->EditCustomAttributes = "";
-		$this->nombre->EditValue = $this->nombre->CurrentValue;
-		$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
+		// tipo
+		$this->tipo->EditAttrs["class"] = "form-control";
+		$this->tipo->EditCustomAttributes = "";
+		$this->tipo->EditValue = $this->tipo->Options(TRUE);
 
-		// saldo
-		$this->saldo->EditAttrs["class"] = "form-control";
-		$this->saldo->EditCustomAttributes = "";
-		$this->saldo->EditValue = $this->saldo->CurrentValue;
-		$this->saldo->PlaceHolder = ew_RemoveHtml($this->saldo->FldCaption());
-		if (strval($this->saldo->EditValue) <> "" && is_numeric($this->saldo->EditValue)) $this->saldo->EditValue = ew_FormatNumber($this->saldo->EditValue, -2, -1, -2, 0);
+		// fecha
+		$this->fecha->EditAttrs["class"] = "form-control";
+		$this->fecha->EditCustomAttributes = "";
+		$this->fecha->EditValue = ew_FormatDateTime($this->fecha->CurrentValue, 7);
+		$this->fecha->PlaceHolder = ew_RemoveHtml($this->fecha->FldCaption());
 
-		// idempresa
-		$this->idempresa->EditAttrs["class"] = "form-control";
-		$this->idempresa->EditCustomAttributes = "";
+		// monto
+		$this->monto->EditAttrs["class"] = "form-control";
+		$this->monto->EditCustomAttributes = "";
+		$this->monto->EditValue = $this->monto->CurrentValue;
+		$this->monto->PlaceHolder = ew_RemoveHtml($this->monto->FldCaption());
+		if (strval($this->monto->EditValue) <> "" && is_numeric($this->monto->EditValue)) $this->monto->EditValue = ew_FormatNumber($this->monto->EditValue, -2, -1, -2, 0);
 
-		// idempleado
-		$this->idempleado->EditAttrs["class"] = "form-control";
-		$this->idempleado->EditCustomAttributes = "";
-
-		// idcuenta
-		$this->idcuenta->EditAttrs["class"] = "form-control";
-		$this->idcuenta->EditCustomAttributes = "";
-
-		// estado
-		$this->estado->EditCustomAttributes = "";
-		$this->estado->EditValue = $this->estado->Options(FALSE);
+		// monto_aplicado
+		$this->monto_aplicado->EditAttrs["class"] = "form-control";
+		$this->monto_aplicado->EditCustomAttributes = "";
+		$this->monto_aplicado->EditValue = $this->monto_aplicado->CurrentValue;
+		$this->monto_aplicado->PlaceHolder = ew_RemoveHtml($this->monto_aplicado->FldCaption());
+		if (strval($this->monto_aplicado->EditValue) <> "" && is_numeric($this->monto_aplicado->EditValue)) $this->monto_aplicado->EditValue = ew_FormatNumber($this->monto_aplicado->EditValue, -2, -1, -2, 0);
 
 		// fecha_insercion
 		$this->fecha_insercion->EditAttrs["class"] = "form-control";
 		$this->fecha_insercion->EditCustomAttributes = "";
 		$this->fecha_insercion->EditValue = ew_FormatDateTime($this->fecha_insercion->CurrentValue, 7);
 		$this->fecha_insercion->PlaceHolder = ew_RemoveHtml($this->fecha_insercion->FldCaption());
+
+		// estado
+		$this->estado->EditAttrs["class"] = "form-control";
+		$this->estado->EditCustomAttributes = "";
+		$this->estado->EditValue = $this->estado->Options(TRUE);
+
+		// descripcion
+		$this->descripcion->EditAttrs["class"] = "form-control";
+		$this->descripcion->EditCustomAttributes = "";
+		$this->descripcion->EditValue = $this->descripcion->CurrentValue;
+		$this->descripcion->PlaceHolder = ew_RemoveHtml($this->descripcion->FldCaption());
+
+		// idreferencia
+		$this->idreferencia->EditAttrs["class"] = "form-control";
+		$this->idreferencia->EditCustomAttributes = "";
+		$this->idreferencia->EditValue = $this->idreferencia->CurrentValue;
+		$this->idreferencia->PlaceHolder = ew_RemoveHtml($this->idreferencia->FldCaption());
+
+		// tabla_referencia
+		$this->tabla_referencia->EditAttrs["class"] = "form-control";
+		$this->tabla_referencia->EditCustomAttributes = "";
+		$this->tabla_referencia->EditValue = $this->tabla_referencia->CurrentValue;
+		$this->tabla_referencia->PlaceHolder = ew_RemoveHtml($this->tabla_referencia->FldCaption());
 
 		// Call Row Rendered event
 		$this->Row_Rendered();
@@ -845,23 +934,29 @@ class ccaja_chica extends cTable {
 			if ($Doc->Horizontal) { // Horizontal format, write header
 				$Doc->BeginExportRow();
 				if ($ExportPageType == "view") {
+					if ($this->idcaja_chica_detalle->Exportable) $Doc->ExportCaption($this->idcaja_chica_detalle);
 					if ($this->idcaja_chica->Exportable) $Doc->ExportCaption($this->idcaja_chica);
-					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
-					if ($this->saldo->Exportable) $Doc->ExportCaption($this->saldo);
-					if ($this->idempresa->Exportable) $Doc->ExportCaption($this->idempresa);
-					if ($this->idempleado->Exportable) $Doc->ExportCaption($this->idempleado);
-					if ($this->idcuenta->Exportable) $Doc->ExportCaption($this->idcuenta);
-					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
+					if ($this->tipo->Exportable) $Doc->ExportCaption($this->tipo);
+					if ($this->fecha->Exportable) $Doc->ExportCaption($this->fecha);
+					if ($this->monto->Exportable) $Doc->ExportCaption($this->monto);
+					if ($this->monto_aplicado->Exportable) $Doc->ExportCaption($this->monto_aplicado);
 					if ($this->fecha_insercion->Exportable) $Doc->ExportCaption($this->fecha_insercion);
+					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
+					if ($this->descripcion->Exportable) $Doc->ExportCaption($this->descripcion);
+					if ($this->idreferencia->Exportable) $Doc->ExportCaption($this->idreferencia);
+					if ($this->tabla_referencia->Exportable) $Doc->ExportCaption($this->tabla_referencia);
 				} else {
+					if ($this->idcaja_chica_detalle->Exportable) $Doc->ExportCaption($this->idcaja_chica_detalle);
 					if ($this->idcaja_chica->Exportable) $Doc->ExportCaption($this->idcaja_chica);
-					if ($this->nombre->Exportable) $Doc->ExportCaption($this->nombre);
-					if ($this->saldo->Exportable) $Doc->ExportCaption($this->saldo);
-					if ($this->idempresa->Exportable) $Doc->ExportCaption($this->idempresa);
-					if ($this->idempleado->Exportable) $Doc->ExportCaption($this->idempleado);
-					if ($this->idcuenta->Exportable) $Doc->ExportCaption($this->idcuenta);
-					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
+					if ($this->tipo->Exportable) $Doc->ExportCaption($this->tipo);
+					if ($this->fecha->Exportable) $Doc->ExportCaption($this->fecha);
+					if ($this->monto->Exportable) $Doc->ExportCaption($this->monto);
+					if ($this->monto_aplicado->Exportable) $Doc->ExportCaption($this->monto_aplicado);
 					if ($this->fecha_insercion->Exportable) $Doc->ExportCaption($this->fecha_insercion);
+					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
+					if ($this->descripcion->Exportable) $Doc->ExportCaption($this->descripcion);
+					if ($this->idreferencia->Exportable) $Doc->ExportCaption($this->idreferencia);
+					if ($this->tabla_referencia->Exportable) $Doc->ExportCaption($this->tabla_referencia);
 				}
 				$Doc->EndExportRow();
 			}
@@ -893,23 +988,29 @@ class ccaja_chica extends cTable {
 				if (!$Doc->ExportCustom) {
 					$Doc->BeginExportRow($RowCnt); // Allow CSS styles if enabled
 					if ($ExportPageType == "view") {
+						if ($this->idcaja_chica_detalle->Exportable) $Doc->ExportField($this->idcaja_chica_detalle);
 						if ($this->idcaja_chica->Exportable) $Doc->ExportField($this->idcaja_chica);
-						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
-						if ($this->saldo->Exportable) $Doc->ExportField($this->saldo);
-						if ($this->idempresa->Exportable) $Doc->ExportField($this->idempresa);
-						if ($this->idempleado->Exportable) $Doc->ExportField($this->idempleado);
-						if ($this->idcuenta->Exportable) $Doc->ExportField($this->idcuenta);
-						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
+						if ($this->tipo->Exportable) $Doc->ExportField($this->tipo);
+						if ($this->fecha->Exportable) $Doc->ExportField($this->fecha);
+						if ($this->monto->Exportable) $Doc->ExportField($this->monto);
+						if ($this->monto_aplicado->Exportable) $Doc->ExportField($this->monto_aplicado);
 						if ($this->fecha_insercion->Exportable) $Doc->ExportField($this->fecha_insercion);
+						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
+						if ($this->descripcion->Exportable) $Doc->ExportField($this->descripcion);
+						if ($this->idreferencia->Exportable) $Doc->ExportField($this->idreferencia);
+						if ($this->tabla_referencia->Exportable) $Doc->ExportField($this->tabla_referencia);
 					} else {
+						if ($this->idcaja_chica_detalle->Exportable) $Doc->ExportField($this->idcaja_chica_detalle);
 						if ($this->idcaja_chica->Exportable) $Doc->ExportField($this->idcaja_chica);
-						if ($this->nombre->Exportable) $Doc->ExportField($this->nombre);
-						if ($this->saldo->Exportable) $Doc->ExportField($this->saldo);
-						if ($this->idempresa->Exportable) $Doc->ExportField($this->idempresa);
-						if ($this->idempleado->Exportable) $Doc->ExportField($this->idempleado);
-						if ($this->idcuenta->Exportable) $Doc->ExportField($this->idcuenta);
-						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
+						if ($this->tipo->Exportable) $Doc->ExportField($this->tipo);
+						if ($this->fecha->Exportable) $Doc->ExportField($this->fecha);
+						if ($this->monto->Exportable) $Doc->ExportField($this->monto);
+						if ($this->monto_aplicado->Exportable) $Doc->ExportField($this->monto_aplicado);
 						if ($this->fecha_insercion->Exportable) $Doc->ExportField($this->fecha_insercion);
+						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
+						if ($this->descripcion->Exportable) $Doc->ExportField($this->descripcion);
+						if ($this->idreferencia->Exportable) $Doc->ExportField($this->idreferencia);
+						if ($this->tabla_referencia->Exportable) $Doc->ExportField($this->tabla_referencia);
 					}
 					$Doc->EndExportRow();
 				}

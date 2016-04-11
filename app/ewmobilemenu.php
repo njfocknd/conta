@@ -5,6 +5,7 @@
 $RootMenu->IsRoot = TRUE;
 $RootMenu->AddMenuItem(18, "mmi_caja_chica", $Language->MenuPhrase("18", "MenuText"), "caja_chicalist.php", -1, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(26, "mmi_documento_caja_chica", $Language->MenuPhrase("26", "MenuText"), "documento_caja_chicalist.php?cmd=resetall", 18, "", TRUE, FALSE);
+$RootMenu->AddMenuItem(31, "mmi_caja_chica_cheque", $Language->MenuPhrase("31", "MenuText"), "caja_chica_chequelist.php?cmd=resetall", 18, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(11, "mmci_Cate1logo", $Language->MenuPhrase("11", "MenuText"), "", -1, "", TRUE, FALSE, TRUE);
 $RootMenu->AddMenuItem(1, "mmi_clase_cuenta", $Language->MenuPhrase("1", "MenuText"), "clase_cuentalist.php", 11, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(5, "mmi_grupo_cuenta", $Language->MenuPhrase("5", "MenuText"), "grupo_cuentalist.php?cmd=resetall", 1, "", TRUE, FALSE);
@@ -21,6 +22,8 @@ $RootMenu->AddMenuItem(17, "mmi_correlativo", $Language->MenuPhrase("17", "MenuT
 $RootMenu->AddMenuItem(23, "mmi_modulo", $Language->MenuPhrase("23", "MenuText"), "modulolist.php", 11, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(25, "mmi_tipo_documento_modulo", $Language->MenuPhrase("25", "MenuText"), "tipo_documento_modulolist.php?cmd=resetall", 23, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(24, "mmi_tipo_documento", $Language->MenuPhrase("24", "MenuText"), "tipo_documentolist.php", 11, "", TRUE, FALSE);
+$RootMenu->AddMenuItem(29, "mmi_banco", $Language->MenuPhrase("29", "MenuText"), "bancolist.php", 11, "", TRUE, FALSE);
+$RootMenu->AddMenuItem(30, "mmi_banco_cuenta", $Language->MenuPhrase("30", "MenuText"), "banco_cuentalist.php?cmd=resetall", 29, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(12, "mmci_CRM", $Language->MenuPhrase("12", "MenuText"), "", -1, "", TRUE, FALSE, TRUE);
 $RootMenu->AddMenuItem(8, "mmi_persona", $Language->MenuPhrase("8", "MenuText"), "personalist.php?cmd=resetall", 12, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(19, "mmi_empleado", $Language->MenuPhrase("19", "MenuText"), "empleadolist.php?cmd=resetall", 8, "", TRUE, FALSE);

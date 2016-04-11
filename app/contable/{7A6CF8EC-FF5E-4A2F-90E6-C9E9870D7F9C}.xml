@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <configuration date="2016/04/11" author="e.World Technology Ltd.">
-<project id="{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}" file="E:\wamp\www\conta\pmp\contable.pmp" name="contable" product="PHPMaker" version="12.0" datetime="2016/04/11 09:04:29" languagefolder="phplang" userlevel="-2,&quot;Anonymous&quot;,0;">
+<project id="{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}" file="E:\wamp\www\conta\pmp\contable.pmp" name="contable" product="PHPMaker" version="12.0" datetime="2016/04/11 15:10:21" languagefolder="phplang" userlevel="-2,&quot;Anonymous&quot;,0;">
 <table id="clase_cuenta" name="clase_cuenta" caption="Clase de Cuenta" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
 <table id="cuenta" name="cuenta" caption="Cuenta" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
 <table id="cuenta_mayor_auxiliar" name="cuenta_mayor_auxiliar" caption="Cuenta Mayor Auxiliar" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
@@ -24,5 +24,9 @@
 <table id="tipo_documento" name="tipo_documento" caption="Tipo de Documento" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
 <table id="tipo_documento_modulo" name="tipo_documento_modulo" caption="Tipo de Documento por Módulo" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
 <table id="documento_caja_chica" name="documento_caja_chica" caption="Documento de Caja Chica" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
-<table id="caja_chica_detalle" name="caja_chica_detalle" caption="caja chica detalle" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
+<table id="caja_chica_detalle" name="caja_chica_detalle" caption="Detalle Caja Chica" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
+<table id="caja_chica_aplicacion" name="caja_chica_aplicacion" caption="Aplicación de Caja Chica" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
+<table id="banco" name="banco" caption="Banco" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
+<table id="banco_cuenta" name="banco_cuenta" caption="Cuenta Bancaria" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
+<table id="caja_chica_cheque" name="caja_chica_cheque" caption="Cheque de Caja Chica" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
 </project></configuration>
