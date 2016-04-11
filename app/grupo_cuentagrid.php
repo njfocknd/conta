@@ -18,13 +18,8 @@ $grupo_cuenta_grid->Page_Render();
 <?php if ($grupo_cuenta->Export == "") { ?>
 <script type="text/javascript">
 
-// Page object
-var grupo_cuenta_grid = new ew_Page("grupo_cuenta_grid");
-grupo_cuenta_grid.PageID = "grid"; // Page ID
-var EW_PAGE_ID = grupo_cuenta_grid.PageID; // For backward compatibility
-
 // Form object
-var fgrupo_cuentagrid = new ew_Form("fgrupo_cuentagrid");
+var fgrupo_cuentagrid = new ew_Form("fgrupo_cuentagrid", "grid");
 fgrupo_cuentagrid.FormKeyCountName = '<?php echo $grupo_cuenta_grid->FormKeyCountName ?>';
 
 // Validate form
@@ -32,7 +27,6 @@ fgrupo_cuentagrid.Validate = function() {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
-	this.PostAutoSuggest();
 	if ($fobj.find("#a_confirm").val() == "F")
 		return true;
 	var elm, felm, uelm, addcnt = 0;
@@ -55,9 +49,6 @@ fgrupo_cuentagrid.Validate = function() {
 			elm = this.GetElements("x" + infix + "_idclase_cuenta");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $grupo_cuenta->idclase_cuenta->FldCaption(), $grupo_cuenta->idclase_cuenta->ReqErrMsg)) ?>");
-
-			// Set up row object
-			ew_ElementsToRow(fobj);
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -92,7 +83,7 @@ fgrupo_cuentagrid.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-fgrupo_cuentagrid.Lists["x_idclase_cuenta"] = {"LinkField":"x_idclase_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+fgrupo_cuentagrid.Lists["x_idclase_cuenta"] = {"LinkField":"x_idclase_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
 // Form object for search
 </script>
@@ -100,7 +91,7 @@ fgrupo_cuentagrid.Lists["x_idclase_cuenta"] = {"LinkField":"x_idclase_cuenta","A
 <?php
 if ($grupo_cuenta->CurrentAction == "gridadd") {
 	if ($grupo_cuenta->CurrentMode == "copy") {
-		$bSelectLimit = EW_SELECT_LIMIT;
+		$bSelectLimit = $grupo_cuenta_grid->UseSelectLimit;
 		if ($bSelectLimit) {
 			$grupo_cuenta_grid->TotalRecs = $grupo_cuenta->SelectRecordCount();
 			$grupo_cuenta_grid->Recordset = $grupo_cuenta_grid->LoadRecordset($grupo_cuenta_grid->StartRec-1, $grupo_cuenta_grid->DisplayRecs);
@@ -118,11 +109,12 @@ if ($grupo_cuenta->CurrentAction == "gridadd") {
 	$grupo_cuenta_grid->TotalRecs = $grupo_cuenta_grid->DisplayRecs;
 	$grupo_cuenta_grid->StopRec = $grupo_cuenta_grid->DisplayRecs;
 } else {
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $grupo_cuenta_grid->UseSelectLimit;
 	if ($bSelectLimit) {
-		$grupo_cuenta_grid->TotalRecs = $grupo_cuenta->SelectRecordCount();
+		if ($grupo_cuenta_grid->TotalRecs <= 0)
+			$grupo_cuenta_grid->TotalRecs = $grupo_cuenta->SelectRecordCount();
 	} else {
-		if ($grupo_cuenta_grid->Recordset = $grupo_cuenta_grid->LoadRecordset())
+		if (!$grupo_cuenta_grid->Recordset && ($grupo_cuenta_grid->Recordset = $grupo_cuenta_grid->LoadRecordset()))
 			$grupo_cuenta_grid->TotalRecs = $grupo_cuenta_grid->Recordset->RecordCount();
 	}
 	$grupo_cuenta_grid->StartRec = 1;
@@ -145,7 +137,7 @@ $grupo_cuenta_grid->RenderOtherOptions();
 $grupo_cuenta_grid->ShowMessage();
 ?>
 <?php if ($grupo_cuenta_grid->TotalRecs > 0 || $grupo_cuenta->CurrentAction <> "") { ?>
-<div class="ewGrid">
+<div class="panel panel-default ewGrid">
 <div id="fgrupo_cuentagrid" class="ewForm form-inline">
 <div id="gmp_grupo_cuenta" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
 <table id="tbl_grupo_cuentagrid" class="table ewTable">
@@ -153,6 +145,9 @@ $grupo_cuenta_grid->ShowMessage();
 <thead><!-- Table header -->
 	<tr class="ewTableHeader">
 <?php
+
+// Header row
+$grupo_cuenta_grid->RowType = EW_ROWTYPE_HEADER;
 
 // Render list options
 $grupo_cuenta_grid->RenderListOptions();
@@ -210,7 +205,7 @@ if ($objForm) {
 $grupo_cuenta_grid->RecCnt = $grupo_cuenta_grid->StartRec - 1;
 if ($grupo_cuenta_grid->Recordset && !$grupo_cuenta_grid->Recordset->EOF) {
 	$grupo_cuenta_grid->Recordset->MoveFirst();
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $grupo_cuenta_grid->UseSelectLimit;
 	if (!$bSelectLimit && $grupo_cuenta_grid->StartRec > 1)
 		$grupo_cuenta_grid->Recordset->Move($grupo_cuenta_grid->StartRec - 1);
 } elseif (!$grupo_cuenta->AllowAddDeleteRow && $grupo_cuenta_grid->StopRec == 0) {
@@ -300,48 +295,52 @@ $grupo_cuenta_grid->ListOptions->Render("body", "left", $grupo_cuenta_grid->RowC
 		<td data-name="nomenclatura"<?php echo $grupo_cuenta->nomenclatura->CellAttributes() ?>>
 <?php if ($grupo_cuenta->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $grupo_cuenta_grid->RowCnt ?>_grupo_cuenta_nomenclatura" class="form-group grupo_cuenta_nomenclatura">
-<input type="text" data-field="x_nomenclatura" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $grupo_cuenta->nomenclatura->EditValue ?>"<?php echo $grupo_cuenta->nomenclatura->EditAttributes() ?>>
+<input type="text" data-table="grupo_cuenta" data-field="x_nomenclatura" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->getPlaceHolder()) ?>" value="<?php echo $grupo_cuenta->nomenclatura->EditValue ?>"<?php echo $grupo_cuenta->nomenclatura->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->OldValue) ?>">
+<input type="hidden" data-table="grupo_cuenta" data-field="x_nomenclatura" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->OldValue) ?>">
 <?php } ?>
 <?php if ($grupo_cuenta->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $grupo_cuenta_grid->RowCnt ?>_grupo_cuenta_nomenclatura" class="form-group grupo_cuenta_nomenclatura">
-<input type="text" data-field="x_nomenclatura" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $grupo_cuenta->nomenclatura->EditValue ?>"<?php echo $grupo_cuenta->nomenclatura->EditAttributes() ?>>
+<input type="text" data-table="grupo_cuenta" data-field="x_nomenclatura" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->getPlaceHolder()) ?>" value="<?php echo $grupo_cuenta->nomenclatura->EditValue ?>"<?php echo $grupo_cuenta->nomenclatura->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($grupo_cuenta->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $grupo_cuenta_grid->RowCnt ?>_grupo_cuenta_nomenclatura" class="grupo_cuenta_nomenclatura">
 <span<?php echo $grupo_cuenta->nomenclatura->ViewAttributes() ?>>
 <?php echo $grupo_cuenta->nomenclatura->ListViewValue() ?></span>
-<input type="hidden" data-field="x_nomenclatura" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->FormValue) ?>">
-<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->OldValue) ?>">
+</span>
+<input type="hidden" data-table="grupo_cuenta" data-field="x_nomenclatura" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->FormValue) ?>">
+<input type="hidden" data-table="grupo_cuenta" data-field="x_nomenclatura" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->OldValue) ?>">
 <?php } ?>
 <a id="<?php echo $grupo_cuenta_grid->PageObjName . "_row_" . $grupo_cuenta_grid->RowCnt ?>"></a></td>
 	<?php } ?>
 <?php if ($grupo_cuenta->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<input type="hidden" data-field="x_idgrupo_cuenta" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idgrupo_cuenta" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idgrupo_cuenta" value="<?php echo ew_HtmlEncode($grupo_cuenta->idgrupo_cuenta->CurrentValue) ?>">
-<input type="hidden" data-field="x_idgrupo_cuenta" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_idgrupo_cuenta" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_idgrupo_cuenta" value="<?php echo ew_HtmlEncode($grupo_cuenta->idgrupo_cuenta->OldValue) ?>">
+<input type="hidden" data-table="grupo_cuenta" data-field="x_idgrupo_cuenta" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idgrupo_cuenta" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idgrupo_cuenta" value="<?php echo ew_HtmlEncode($grupo_cuenta->idgrupo_cuenta->CurrentValue) ?>">
+<input type="hidden" data-table="grupo_cuenta" data-field="x_idgrupo_cuenta" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_idgrupo_cuenta" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_idgrupo_cuenta" value="<?php echo ew_HtmlEncode($grupo_cuenta->idgrupo_cuenta->OldValue) ?>">
 <?php } ?>
 <?php if ($grupo_cuenta->RowType == EW_ROWTYPE_EDIT || $grupo_cuenta->CurrentMode == "edit") { ?>
-<input type="hidden" data-field="x_idgrupo_cuenta" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idgrupo_cuenta" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idgrupo_cuenta" value="<?php echo ew_HtmlEncode($grupo_cuenta->idgrupo_cuenta->CurrentValue) ?>">
+<input type="hidden" data-table="grupo_cuenta" data-field="x_idgrupo_cuenta" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idgrupo_cuenta" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idgrupo_cuenta" value="<?php echo ew_HtmlEncode($grupo_cuenta->idgrupo_cuenta->CurrentValue) ?>">
 <?php } ?>
 	<?php if ($grupo_cuenta->nombre->Visible) { // nombre ?>
 		<td data-name="nombre"<?php echo $grupo_cuenta->nombre->CellAttributes() ?>>
 <?php if ($grupo_cuenta->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $grupo_cuenta_grid->RowCnt ?>_grupo_cuenta_nombre" class="form-group grupo_cuenta_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nombre->PlaceHolder) ?>" value="<?php echo $grupo_cuenta->nombre->EditValue ?>"<?php echo $grupo_cuenta->nombre->EditAttributes() ?>>
+<input type="text" data-table="grupo_cuenta" data-field="x_nombre" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nombre->getPlaceHolder()) ?>" value="<?php echo $grupo_cuenta->nombre->EditValue ?>"<?php echo $grupo_cuenta->nombre->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_nombre" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($grupo_cuenta->nombre->OldValue) ?>">
+<input type="hidden" data-table="grupo_cuenta" data-field="x_nombre" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($grupo_cuenta->nombre->OldValue) ?>">
 <?php } ?>
 <?php if ($grupo_cuenta->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $grupo_cuenta_grid->RowCnt ?>_grupo_cuenta_nombre" class="form-group grupo_cuenta_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nombre->PlaceHolder) ?>" value="<?php echo $grupo_cuenta->nombre->EditValue ?>"<?php echo $grupo_cuenta->nombre->EditAttributes() ?>>
+<input type="text" data-table="grupo_cuenta" data-field="x_nombre" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nombre->getPlaceHolder()) ?>" value="<?php echo $grupo_cuenta->nombre->EditValue ?>"<?php echo $grupo_cuenta->nombre->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($grupo_cuenta->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $grupo_cuenta_grid->RowCnt ?>_grupo_cuenta_nombre" class="grupo_cuenta_nombre">
 <span<?php echo $grupo_cuenta->nombre->ViewAttributes() ?>>
 <?php echo $grupo_cuenta->nombre->ListViewValue() ?></span>
-<input type="hidden" data-field="x_nombre" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($grupo_cuenta->nombre->FormValue) ?>">
-<input type="hidden" data-field="x_nombre" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($grupo_cuenta->nombre->OldValue) ?>">
+</span>
+<input type="hidden" data-table="grupo_cuenta" data-field="x_nombre" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($grupo_cuenta->nombre->FormValue) ?>">
+<input type="hidden" data-table="grupo_cuenta" data-field="x_nombre" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($grupo_cuenta->nombre->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -356,41 +355,46 @@ $grupo_cuenta_grid->ListOptions->Render("body", "left", $grupo_cuenta_grid->RowC
 <input type="hidden" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" value="<?php echo ew_HtmlEncode($grupo_cuenta->idclase_cuenta->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el<?php echo $grupo_cuenta_grid->RowCnt ?>_grupo_cuenta_idclase_cuenta" class="form-group grupo_cuenta_idclase_cuenta">
-<select data-field="x_idclase_cuenta" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta"<?php echo $grupo_cuenta->idclase_cuenta->EditAttributes() ?>>
+<select data-table="grupo_cuenta" data-field="x_idclase_cuenta" data-value-separator="<?php echo ew_HtmlEncode(is_array($grupo_cuenta->idclase_cuenta->DisplayValueSeparator) ? json_encode($grupo_cuenta->idclase_cuenta->DisplayValueSeparator) : $grupo_cuenta->idclase_cuenta->DisplayValueSeparator) ?>" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta"<?php echo $grupo_cuenta->idclase_cuenta->EditAttributes() ?>>
 <?php
 if (is_array($grupo_cuenta->idclase_cuenta->EditValue)) {
 	$arwrk = $grupo_cuenta->idclase_cuenta->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($grupo_cuenta->idclase_cuenta->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($grupo_cuenta->idclase_cuenta->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $grupo_cuenta->idclase_cuenta->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($grupo_cuenta->idclase_cuenta->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($grupo_cuenta->idclase_cuenta->CurrentValue) ?>" selected><?php echo $grupo_cuenta->idclase_cuenta->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $grupo_cuenta->idclase_cuenta->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idclase_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `clase_cuenta`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $grupo_cuenta->Lookup_Selecting($grupo_cuenta->idclase_cuenta, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idclase_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `clase_cuenta`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$grupo_cuenta->idclase_cuenta->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$grupo_cuenta->idclase_cuenta->LookupFilters += array("f0" => "`idclase_cuenta` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$grupo_cuenta->Lookup_Selecting($grupo_cuenta->idclase_cuenta, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $grupo_cuenta->idclase_cuenta->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" id="s_x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idclase_cuenta` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" id="s_x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" value="<?php echo $grupo_cuenta->idclase_cuenta->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
-<input type="hidden" data-field="x_idclase_cuenta" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" value="<?php echo ew_HtmlEncode($grupo_cuenta->idclase_cuenta->OldValue) ?>">
+<input type="hidden" data-table="grupo_cuenta" data-field="x_idclase_cuenta" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" value="<?php echo ew_HtmlEncode($grupo_cuenta->idclase_cuenta->OldValue) ?>">
 <?php } ?>
 <?php if ($grupo_cuenta->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <?php if ($grupo_cuenta->idclase_cuenta->getSessionValue() <> "") { ?>
@@ -401,46 +405,53 @@ if (@$emptywrk) $grupo_cuenta->idclase_cuenta->OldValue = "";
 <input type="hidden" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" value="<?php echo ew_HtmlEncode($grupo_cuenta->idclase_cuenta->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el<?php echo $grupo_cuenta_grid->RowCnt ?>_grupo_cuenta_idclase_cuenta" class="form-group grupo_cuenta_idclase_cuenta">
-<select data-field="x_idclase_cuenta" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta"<?php echo $grupo_cuenta->idclase_cuenta->EditAttributes() ?>>
+<select data-table="grupo_cuenta" data-field="x_idclase_cuenta" data-value-separator="<?php echo ew_HtmlEncode(is_array($grupo_cuenta->idclase_cuenta->DisplayValueSeparator) ? json_encode($grupo_cuenta->idclase_cuenta->DisplayValueSeparator) : $grupo_cuenta->idclase_cuenta->DisplayValueSeparator) ?>" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta"<?php echo $grupo_cuenta->idclase_cuenta->EditAttributes() ?>>
 <?php
 if (is_array($grupo_cuenta->idclase_cuenta->EditValue)) {
 	$arwrk = $grupo_cuenta->idclase_cuenta->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($grupo_cuenta->idclase_cuenta->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($grupo_cuenta->idclase_cuenta->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $grupo_cuenta->idclase_cuenta->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($grupo_cuenta->idclase_cuenta->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($grupo_cuenta->idclase_cuenta->CurrentValue) ?>" selected><?php echo $grupo_cuenta->idclase_cuenta->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $grupo_cuenta->idclase_cuenta->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idclase_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `clase_cuenta`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $grupo_cuenta->Lookup_Selecting($grupo_cuenta->idclase_cuenta, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idclase_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `clase_cuenta`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$grupo_cuenta->idclase_cuenta->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$grupo_cuenta->idclase_cuenta->LookupFilters += array("f0" => "`idclase_cuenta` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$grupo_cuenta->Lookup_Selecting($grupo_cuenta->idclase_cuenta, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $grupo_cuenta->idclase_cuenta->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" id="s_x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idclase_cuenta` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" id="s_x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" value="<?php echo $grupo_cuenta->idclase_cuenta->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php } ?>
 <?php if ($grupo_cuenta->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $grupo_cuenta_grid->RowCnt ?>_grupo_cuenta_idclase_cuenta" class="grupo_cuenta_idclase_cuenta">
 <span<?php echo $grupo_cuenta->idclase_cuenta->ViewAttributes() ?>>
 <?php echo $grupo_cuenta->idclase_cuenta->ListViewValue() ?></span>
-<input type="hidden" data-field="x_idclase_cuenta" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" value="<?php echo ew_HtmlEncode($grupo_cuenta->idclase_cuenta->FormValue) ?>">
-<input type="hidden" data-field="x_idclase_cuenta" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" value="<?php echo ew_HtmlEncode($grupo_cuenta->idclase_cuenta->OldValue) ?>">
+</span>
+<input type="hidden" data-table="grupo_cuenta" data-field="x_idclase_cuenta" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" value="<?php echo ew_HtmlEncode($grupo_cuenta->idclase_cuenta->FormValue) ?>">
+<input type="hidden" data-table="grupo_cuenta" data-field="x_idclase_cuenta" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" value="<?php echo ew_HtmlEncode($grupo_cuenta->idclase_cuenta->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -487,39 +498,39 @@ fgrupo_cuentagrid.UpdateOpts(<?php echo $grupo_cuenta_grid->RowIndex ?>);
 $grupo_cuenta_grid->ListOptions->Render("body", "left", $grupo_cuenta_grid->RowIndex);
 ?>
 	<?php if ($grupo_cuenta->nomenclatura->Visible) { // nomenclatura ?>
-		<td>
+		<td data-name="nomenclatura">
 <?php if ($grupo_cuenta->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_grupo_cuenta_nomenclatura" class="form-group grupo_cuenta_nomenclatura">
-<input type="text" data-field="x_nomenclatura" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $grupo_cuenta->nomenclatura->EditValue ?>"<?php echo $grupo_cuenta->nomenclatura->EditAttributes() ?>>
+<input type="text" data-table="grupo_cuenta" data-field="x_nomenclatura" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->getPlaceHolder()) ?>" value="<?php echo $grupo_cuenta->nomenclatura->EditValue ?>"<?php echo $grupo_cuenta->nomenclatura->EditAttributes() ?>>
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_grupo_cuenta_nomenclatura" class="form-group grupo_cuenta_nomenclatura">
 <span<?php echo $grupo_cuenta->nomenclatura->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $grupo_cuenta->nomenclatura->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_nomenclatura" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->FormValue) ?>">
+<input type="hidden" data-table="grupo_cuenta" data-field="x_nomenclatura" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->OldValue) ?>">
+<input type="hidden" data-table="grupo_cuenta" data-field="x_nomenclatura" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($grupo_cuenta->nomenclatura->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($grupo_cuenta->nombre->Visible) { // nombre ?>
-		<td>
+		<td data-name="nombre">
 <?php if ($grupo_cuenta->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_grupo_cuenta_nombre" class="form-group grupo_cuenta_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nombre->PlaceHolder) ?>" value="<?php echo $grupo_cuenta->nombre->EditValue ?>"<?php echo $grupo_cuenta->nombre->EditAttributes() ?>>
+<input type="text" data-table="grupo_cuenta" data-field="x_nombre" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($grupo_cuenta->nombre->getPlaceHolder()) ?>" value="<?php echo $grupo_cuenta->nombre->EditValue ?>"<?php echo $grupo_cuenta->nombre->EditAttributes() ?>>
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_grupo_cuenta_nombre" class="form-group grupo_cuenta_nombre">
 <span<?php echo $grupo_cuenta->nombre->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $grupo_cuenta->nombre->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_nombre" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($grupo_cuenta->nombre->FormValue) ?>">
+<input type="hidden" data-table="grupo_cuenta" data-field="x_nombre" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($grupo_cuenta->nombre->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_nombre" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($grupo_cuenta->nombre->OldValue) ?>">
+<input type="hidden" data-table="grupo_cuenta" data-field="x_nombre" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($grupo_cuenta->nombre->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($grupo_cuenta->idclase_cuenta->Visible) { // idclase_cuenta ?>
-		<td>
+		<td data-name="idclase_cuenta">
 <?php if ($grupo_cuenta->CurrentAction <> "F") { ?>
 <?php if ($grupo_cuenta->idclase_cuenta->getSessionValue() <> "") { ?>
 <span id="el$rowindex$_grupo_cuenta_idclase_cuenta" class="form-group grupo_cuenta_idclase_cuenta">
@@ -529,38 +540,43 @@ $grupo_cuenta_grid->ListOptions->Render("body", "left", $grupo_cuenta_grid->RowI
 <input type="hidden" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" value="<?php echo ew_HtmlEncode($grupo_cuenta->idclase_cuenta->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el$rowindex$_grupo_cuenta_idclase_cuenta" class="form-group grupo_cuenta_idclase_cuenta">
-<select data-field="x_idclase_cuenta" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta"<?php echo $grupo_cuenta->idclase_cuenta->EditAttributes() ?>>
+<select data-table="grupo_cuenta" data-field="x_idclase_cuenta" data-value-separator="<?php echo ew_HtmlEncode(is_array($grupo_cuenta->idclase_cuenta->DisplayValueSeparator) ? json_encode($grupo_cuenta->idclase_cuenta->DisplayValueSeparator) : $grupo_cuenta->idclase_cuenta->DisplayValueSeparator) ?>" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta"<?php echo $grupo_cuenta->idclase_cuenta->EditAttributes() ?>>
 <?php
 if (is_array($grupo_cuenta->idclase_cuenta->EditValue)) {
 	$arwrk = $grupo_cuenta->idclase_cuenta->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($grupo_cuenta->idclase_cuenta->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($grupo_cuenta->idclase_cuenta->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $grupo_cuenta->idclase_cuenta->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($grupo_cuenta->idclase_cuenta->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($grupo_cuenta->idclase_cuenta->CurrentValue) ?>" selected><?php echo $grupo_cuenta->idclase_cuenta->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $grupo_cuenta->idclase_cuenta->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idclase_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `clase_cuenta`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $grupo_cuenta->Lookup_Selecting($grupo_cuenta->idclase_cuenta, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idclase_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `clase_cuenta`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$grupo_cuenta->idclase_cuenta->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$grupo_cuenta->idclase_cuenta->LookupFilters += array("f0" => "`idclase_cuenta` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$grupo_cuenta->Lookup_Selecting($grupo_cuenta->idclase_cuenta, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $grupo_cuenta->idclase_cuenta->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" id="s_x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idclase_cuenta` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" id="s_x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" value="<?php echo $grupo_cuenta->idclase_cuenta->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php } else { ?>
@@ -568,9 +584,9 @@ if (@$emptywrk) $grupo_cuenta->idclase_cuenta->OldValue = "";
 <span<?php echo $grupo_cuenta->idclase_cuenta->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $grupo_cuenta->idclase_cuenta->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_idclase_cuenta" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" value="<?php echo ew_HtmlEncode($grupo_cuenta->idclase_cuenta->FormValue) ?>">
+<input type="hidden" data-table="grupo_cuenta" data-field="x_idclase_cuenta" name="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" id="x<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" value="<?php echo ew_HtmlEncode($grupo_cuenta->idclase_cuenta->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_idclase_cuenta" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" value="<?php echo ew_HtmlEncode($grupo_cuenta->idclase_cuenta->OldValue) ?>">
+<input type="hidden" data-table="grupo_cuenta" data-field="x_idclase_cuenta" name="o<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" id="o<?php echo $grupo_cuenta_grid->RowIndex ?>_idclase_cuenta" value="<?php echo ew_HtmlEncode($grupo_cuenta->idclase_cuenta->OldValue) ?>">
 </td>
 	<?php } ?>
 <?php
@@ -609,7 +625,7 @@ if ($grupo_cuenta_grid->Recordset)
 	$grupo_cuenta_grid->Recordset->Close();
 ?>
 <?php if ($grupo_cuenta_grid->ShowOtherOptions) { ?>
-<div class="ewGridLowerPanel">
+<div class="panel-footer ewGridLowerPanel">
 <?php
 	foreach ($grupo_cuenta_grid->OtherOptions as &$option)
 		$option->Render("body", "bottom");

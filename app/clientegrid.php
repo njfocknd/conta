@@ -18,13 +18,8 @@ $cliente_grid->Page_Render();
 <?php if ($cliente->Export == "") { ?>
 <script type="text/javascript">
 
-// Page object
-var cliente_grid = new ew_Page("cliente_grid");
-cliente_grid.PageID = "grid"; // Page ID
-var EW_PAGE_ID = cliente_grid.PageID; // For backward compatibility
-
 // Form object
-var fclientegrid = new ew_Form("fclientegrid");
+var fclientegrid = new ew_Form("fclientegrid", "grid");
 fclientegrid.FormKeyCountName = '<?php echo $cliente_grid->FormKeyCountName ?>';
 
 // Validate form
@@ -32,7 +27,6 @@ fclientegrid.Validate = function() {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
-	this.PostAutoSuggest();
 	if ($fobj.find("#a_confirm").val() == "F")
 		return true;
 	var elm, felm, uelm, addcnt = 0;
@@ -49,9 +43,6 @@ fclientegrid.Validate = function() {
 			elm = this.GetElements("x" + infix + "_idempresa");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $cliente->idempresa->FldCaption(), $cliente->idempresa->ReqErrMsg)) ?>");
-
-			// Set up row object
-			ew_ElementsToRow(fobj);
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -87,7 +78,7 @@ fclientegrid.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-fclientegrid.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+fclientegrid.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
 // Form object for search
 </script>
@@ -95,7 +86,7 @@ fclientegrid.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"Auto
 <?php
 if ($cliente->CurrentAction == "gridadd") {
 	if ($cliente->CurrentMode == "copy") {
-		$bSelectLimit = EW_SELECT_LIMIT;
+		$bSelectLimit = $cliente_grid->UseSelectLimit;
 		if ($bSelectLimit) {
 			$cliente_grid->TotalRecs = $cliente->SelectRecordCount();
 			$cliente_grid->Recordset = $cliente_grid->LoadRecordset($cliente_grid->StartRec-1, $cliente_grid->DisplayRecs);
@@ -113,11 +104,12 @@ if ($cliente->CurrentAction == "gridadd") {
 	$cliente_grid->TotalRecs = $cliente_grid->DisplayRecs;
 	$cliente_grid->StopRec = $cliente_grid->DisplayRecs;
 } else {
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $cliente_grid->UseSelectLimit;
 	if ($bSelectLimit) {
-		$cliente_grid->TotalRecs = $cliente->SelectRecordCount();
+		if ($cliente_grid->TotalRecs <= 0)
+			$cliente_grid->TotalRecs = $cliente->SelectRecordCount();
 	} else {
-		if ($cliente_grid->Recordset = $cliente_grid->LoadRecordset())
+		if (!$cliente_grid->Recordset && ($cliente_grid->Recordset = $cliente_grid->LoadRecordset()))
 			$cliente_grid->TotalRecs = $cliente_grid->Recordset->RecordCount();
 	}
 	$cliente_grid->StartRec = 1;
@@ -140,7 +132,7 @@ $cliente_grid->RenderOtherOptions();
 $cliente_grid->ShowMessage();
 ?>
 <?php if ($cliente_grid->TotalRecs > 0 || $cliente->CurrentAction <> "") { ?>
-<div class="ewGrid">
+<div class="panel panel-default ewGrid">
 <div id="fclientegrid" class="ewForm form-inline">
 <div id="gmp_cliente" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
 <table id="tbl_clientegrid" class="table ewTable">
@@ -148,6 +140,9 @@ $cliente_grid->ShowMessage();
 <thead><!-- Table header -->
 	<tr class="ewTableHeader">
 <?php
+
+// Header row
+$cliente_grid->RowType = EW_ROWTYPE_HEADER;
 
 // Render list options
 $cliente_grid->RenderListOptions();
@@ -214,7 +209,7 @@ if ($objForm) {
 $cliente_grid->RecCnt = $cliente_grid->StartRec - 1;
 if ($cliente_grid->Recordset && !$cliente_grid->Recordset->EOF) {
 	$cliente_grid->Recordset->MoveFirst();
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $cliente_grid->UseSelectLimit;
 	if (!$bSelectLimit && $cliente_grid->StartRec > 1)
 		$cliente_grid->Recordset->Move($cliente_grid->StartRec - 1);
 } elseif (!$cliente->AllowAddDeleteRow && $cliente_grid->StopRec == 0) {
@@ -304,48 +299,52 @@ $cliente_grid->ListOptions->Render("body", "left", $cliente_grid->RowCnt);
 		<td data-name="codigo"<?php echo $cliente->codigo->CellAttributes() ?>>
 <?php if ($cliente->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $cliente_grid->RowCnt ?>_cliente_codigo" class="form-group cliente_codigo">
-<input type="text" data-field="x_codigo" name="x<?php echo $cliente_grid->RowIndex ?>_codigo" id="x<?php echo $cliente_grid->RowIndex ?>_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cliente->codigo->PlaceHolder) ?>" value="<?php echo $cliente->codigo->EditValue ?>"<?php echo $cliente->codigo->EditAttributes() ?>>
+<input type="text" data-table="cliente" data-field="x_codigo" name="x<?php echo $cliente_grid->RowIndex ?>_codigo" id="x<?php echo $cliente_grid->RowIndex ?>_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cliente->codigo->getPlaceHolder()) ?>" value="<?php echo $cliente->codigo->EditValue ?>"<?php echo $cliente->codigo->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_codigo" name="o<?php echo $cliente_grid->RowIndex ?>_codigo" id="o<?php echo $cliente_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($cliente->codigo->OldValue) ?>">
+<input type="hidden" data-table="cliente" data-field="x_codigo" name="o<?php echo $cliente_grid->RowIndex ?>_codigo" id="o<?php echo $cliente_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($cliente->codigo->OldValue) ?>">
 <?php } ?>
 <?php if ($cliente->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $cliente_grid->RowCnt ?>_cliente_codigo" class="form-group cliente_codigo">
-<input type="text" data-field="x_codigo" name="x<?php echo $cliente_grid->RowIndex ?>_codigo" id="x<?php echo $cliente_grid->RowIndex ?>_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cliente->codigo->PlaceHolder) ?>" value="<?php echo $cliente->codigo->EditValue ?>"<?php echo $cliente->codigo->EditAttributes() ?>>
+<input type="text" data-table="cliente" data-field="x_codigo" name="x<?php echo $cliente_grid->RowIndex ?>_codigo" id="x<?php echo $cliente_grid->RowIndex ?>_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cliente->codigo->getPlaceHolder()) ?>" value="<?php echo $cliente->codigo->EditValue ?>"<?php echo $cliente->codigo->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($cliente->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $cliente_grid->RowCnt ?>_cliente_codigo" class="cliente_codigo">
 <span<?php echo $cliente->codigo->ViewAttributes() ?>>
 <?php echo $cliente->codigo->ListViewValue() ?></span>
-<input type="hidden" data-field="x_codigo" name="x<?php echo $cliente_grid->RowIndex ?>_codigo" id="x<?php echo $cliente_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($cliente->codigo->FormValue) ?>">
-<input type="hidden" data-field="x_codigo" name="o<?php echo $cliente_grid->RowIndex ?>_codigo" id="o<?php echo $cliente_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($cliente->codigo->OldValue) ?>">
+</span>
+<input type="hidden" data-table="cliente" data-field="x_codigo" name="x<?php echo $cliente_grid->RowIndex ?>_codigo" id="x<?php echo $cliente_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($cliente->codigo->FormValue) ?>">
+<input type="hidden" data-table="cliente" data-field="x_codigo" name="o<?php echo $cliente_grid->RowIndex ?>_codigo" id="o<?php echo $cliente_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($cliente->codigo->OldValue) ?>">
 <?php } ?>
 <a id="<?php echo $cliente_grid->PageObjName . "_row_" . $cliente_grid->RowCnt ?>"></a></td>
 	<?php } ?>
 <?php if ($cliente->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<input type="hidden" data-field="x_idcliente" name="x<?php echo $cliente_grid->RowIndex ?>_idcliente" id="x<?php echo $cliente_grid->RowIndex ?>_idcliente" value="<?php echo ew_HtmlEncode($cliente->idcliente->CurrentValue) ?>">
-<input type="hidden" data-field="x_idcliente" name="o<?php echo $cliente_grid->RowIndex ?>_idcliente" id="o<?php echo $cliente_grid->RowIndex ?>_idcliente" value="<?php echo ew_HtmlEncode($cliente->idcliente->OldValue) ?>">
+<input type="hidden" data-table="cliente" data-field="x_idcliente" name="x<?php echo $cliente_grid->RowIndex ?>_idcliente" id="x<?php echo $cliente_grid->RowIndex ?>_idcliente" value="<?php echo ew_HtmlEncode($cliente->idcliente->CurrentValue) ?>">
+<input type="hidden" data-table="cliente" data-field="x_idcliente" name="o<?php echo $cliente_grid->RowIndex ?>_idcliente" id="o<?php echo $cliente_grid->RowIndex ?>_idcliente" value="<?php echo ew_HtmlEncode($cliente->idcliente->OldValue) ?>">
 <?php } ?>
 <?php if ($cliente->RowType == EW_ROWTYPE_EDIT || $cliente->CurrentMode == "edit") { ?>
-<input type="hidden" data-field="x_idcliente" name="x<?php echo $cliente_grid->RowIndex ?>_idcliente" id="x<?php echo $cliente_grid->RowIndex ?>_idcliente" value="<?php echo ew_HtmlEncode($cliente->idcliente->CurrentValue) ?>">
+<input type="hidden" data-table="cliente" data-field="x_idcliente" name="x<?php echo $cliente_grid->RowIndex ?>_idcliente" id="x<?php echo $cliente_grid->RowIndex ?>_idcliente" value="<?php echo ew_HtmlEncode($cliente->idcliente->CurrentValue) ?>">
 <?php } ?>
 	<?php if ($cliente->nombre->Visible) { // nombre ?>
 		<td data-name="nombre"<?php echo $cliente->nombre->CellAttributes() ?>>
 <?php if ($cliente->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $cliente_grid->RowCnt ?>_cliente_nombre" class="form-group cliente_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $cliente_grid->RowIndex ?>_nombre" id="x<?php echo $cliente_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cliente->nombre->PlaceHolder) ?>" value="<?php echo $cliente->nombre->EditValue ?>"<?php echo $cliente->nombre->EditAttributes() ?>>
+<input type="text" data-table="cliente" data-field="x_nombre" name="x<?php echo $cliente_grid->RowIndex ?>_nombre" id="x<?php echo $cliente_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cliente->nombre->getPlaceHolder()) ?>" value="<?php echo $cliente->nombre->EditValue ?>"<?php echo $cliente->nombre->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_nombre" name="o<?php echo $cliente_grid->RowIndex ?>_nombre" id="o<?php echo $cliente_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cliente->nombre->OldValue) ?>">
+<input type="hidden" data-table="cliente" data-field="x_nombre" name="o<?php echo $cliente_grid->RowIndex ?>_nombre" id="o<?php echo $cliente_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cliente->nombre->OldValue) ?>">
 <?php } ?>
 <?php if ($cliente->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $cliente_grid->RowCnt ?>_cliente_nombre" class="form-group cliente_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $cliente_grid->RowIndex ?>_nombre" id="x<?php echo $cliente_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cliente->nombre->PlaceHolder) ?>" value="<?php echo $cliente->nombre->EditValue ?>"<?php echo $cliente->nombre->EditAttributes() ?>>
+<input type="text" data-table="cliente" data-field="x_nombre" name="x<?php echo $cliente_grid->RowIndex ?>_nombre" id="x<?php echo $cliente_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cliente->nombre->getPlaceHolder()) ?>" value="<?php echo $cliente->nombre->EditValue ?>"<?php echo $cliente->nombre->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($cliente->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $cliente_grid->RowCnt ?>_cliente_nombre" class="cliente_nombre">
 <span<?php echo $cliente->nombre->ViewAttributes() ?>>
 <?php echo $cliente->nombre->ListViewValue() ?></span>
-<input type="hidden" data-field="x_nombre" name="x<?php echo $cliente_grid->RowIndex ?>_nombre" id="x<?php echo $cliente_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cliente->nombre->FormValue) ?>">
-<input type="hidden" data-field="x_nombre" name="o<?php echo $cliente_grid->RowIndex ?>_nombre" id="o<?php echo $cliente_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cliente->nombre->OldValue) ?>">
+</span>
+<input type="hidden" data-table="cliente" data-field="x_nombre" name="x<?php echo $cliente_grid->RowIndex ?>_nombre" id="x<?php echo $cliente_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cliente->nombre->FormValue) ?>">
+<input type="hidden" data-table="cliente" data-field="x_nombre" name="o<?php echo $cliente_grid->RowIndex ?>_nombre" id="o<?php echo $cliente_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cliente->nombre->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -353,20 +352,22 @@ $cliente_grid->ListOptions->Render("body", "left", $cliente_grid->RowCnt);
 		<td data-name="nit"<?php echo $cliente->nit->CellAttributes() ?>>
 <?php if ($cliente->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $cliente_grid->RowCnt ?>_cliente_nit" class="form-group cliente_nit">
-<input type="text" data-field="x_nit" name="x<?php echo $cliente_grid->RowIndex ?>_nit" id="x<?php echo $cliente_grid->RowIndex ?>_nit" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cliente->nit->PlaceHolder) ?>" value="<?php echo $cliente->nit->EditValue ?>"<?php echo $cliente->nit->EditAttributes() ?>>
+<input type="text" data-table="cliente" data-field="x_nit" name="x<?php echo $cliente_grid->RowIndex ?>_nit" id="x<?php echo $cliente_grid->RowIndex ?>_nit" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cliente->nit->getPlaceHolder()) ?>" value="<?php echo $cliente->nit->EditValue ?>"<?php echo $cliente->nit->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_nit" name="o<?php echo $cliente_grid->RowIndex ?>_nit" id="o<?php echo $cliente_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($cliente->nit->OldValue) ?>">
+<input type="hidden" data-table="cliente" data-field="x_nit" name="o<?php echo $cliente_grid->RowIndex ?>_nit" id="o<?php echo $cliente_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($cliente->nit->OldValue) ?>">
 <?php } ?>
 <?php if ($cliente->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $cliente_grid->RowCnt ?>_cliente_nit" class="form-group cliente_nit">
-<input type="text" data-field="x_nit" name="x<?php echo $cliente_grid->RowIndex ?>_nit" id="x<?php echo $cliente_grid->RowIndex ?>_nit" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cliente->nit->PlaceHolder) ?>" value="<?php echo $cliente->nit->EditValue ?>"<?php echo $cliente->nit->EditAttributes() ?>>
+<input type="text" data-table="cliente" data-field="x_nit" name="x<?php echo $cliente_grid->RowIndex ?>_nit" id="x<?php echo $cliente_grid->RowIndex ?>_nit" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cliente->nit->getPlaceHolder()) ?>" value="<?php echo $cliente->nit->EditValue ?>"<?php echo $cliente->nit->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($cliente->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $cliente_grid->RowCnt ?>_cliente_nit" class="cliente_nit">
 <span<?php echo $cliente->nit->ViewAttributes() ?>>
 <?php echo $cliente->nit->ListViewValue() ?></span>
-<input type="hidden" data-field="x_nit" name="x<?php echo $cliente_grid->RowIndex ?>_nit" id="x<?php echo $cliente_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($cliente->nit->FormValue) ?>">
-<input type="hidden" data-field="x_nit" name="o<?php echo $cliente_grid->RowIndex ?>_nit" id="o<?php echo $cliente_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($cliente->nit->OldValue) ?>">
+</span>
+<input type="hidden" data-table="cliente" data-field="x_nit" name="x<?php echo $cliente_grid->RowIndex ?>_nit" id="x<?php echo $cliente_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($cliente->nit->FormValue) ?>">
+<input type="hidden" data-table="cliente" data-field="x_nit" name="o<?php echo $cliente_grid->RowIndex ?>_nit" id="o<?php echo $cliente_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($cliente->nit->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -374,82 +375,94 @@ $cliente_grid->ListOptions->Render("body", "left", $cliente_grid->RowCnt);
 		<td data-name="idempresa"<?php echo $cliente->idempresa->CellAttributes() ?>>
 <?php if ($cliente->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $cliente_grid->RowCnt ?>_cliente_idempresa" class="form-group cliente_idempresa">
-<select data-field="x_idempresa" id="x<?php echo $cliente_grid->RowIndex ?>_idempresa" name="x<?php echo $cliente_grid->RowIndex ?>_idempresa"<?php echo $cliente->idempresa->EditAttributes() ?>>
+<select data-table="cliente" data-field="x_idempresa" data-value-separator="<?php echo ew_HtmlEncode(is_array($cliente->idempresa->DisplayValueSeparator) ? json_encode($cliente->idempresa->DisplayValueSeparator) : $cliente->idempresa->DisplayValueSeparator) ?>" id="x<?php echo $cliente_grid->RowIndex ?>_idempresa" name="x<?php echo $cliente_grid->RowIndex ?>_idempresa"<?php echo $cliente->idempresa->EditAttributes() ?>>
 <?php
 if (is_array($cliente->idempresa->EditValue)) {
 	$arwrk = $cliente->idempresa->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($cliente->idempresa->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($cliente->idempresa->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $cliente->idempresa->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($cliente->idempresa->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($cliente->idempresa->CurrentValue) ?>" selected><?php echo $cliente->idempresa->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $cliente->idempresa->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado`= 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $cliente->Lookup_Selecting($cliente->idempresa, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado`= 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$cliente->idempresa->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$cliente->idempresa->LookupFilters += array("f0" => "`idempresa` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$cliente->Lookup_Selecting($cliente->idempresa, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $cliente->idempresa->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $cliente_grid->RowIndex ?>_idempresa" id="s_x<?php echo $cliente_grid->RowIndex ?>_idempresa" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idempresa` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $cliente_grid->RowIndex ?>_idempresa" id="s_x<?php echo $cliente_grid->RowIndex ?>_idempresa" value="<?php echo $cliente->idempresa->LookupFilterQuery() ?>">
 </span>
-<input type="hidden" data-field="x_idempresa" name="o<?php echo $cliente_grid->RowIndex ?>_idempresa" id="o<?php echo $cliente_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($cliente->idempresa->OldValue) ?>">
+<input type="hidden" data-table="cliente" data-field="x_idempresa" name="o<?php echo $cliente_grid->RowIndex ?>_idempresa" id="o<?php echo $cliente_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($cliente->idempresa->OldValue) ?>">
 <?php } ?>
 <?php if ($cliente->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $cliente_grid->RowCnt ?>_cliente_idempresa" class="form-group cliente_idempresa">
-<select data-field="x_idempresa" id="x<?php echo $cliente_grid->RowIndex ?>_idempresa" name="x<?php echo $cliente_grid->RowIndex ?>_idempresa"<?php echo $cliente->idempresa->EditAttributes() ?>>
+<select data-table="cliente" data-field="x_idempresa" data-value-separator="<?php echo ew_HtmlEncode(is_array($cliente->idempresa->DisplayValueSeparator) ? json_encode($cliente->idempresa->DisplayValueSeparator) : $cliente->idempresa->DisplayValueSeparator) ?>" id="x<?php echo $cliente_grid->RowIndex ?>_idempresa" name="x<?php echo $cliente_grid->RowIndex ?>_idempresa"<?php echo $cliente->idempresa->EditAttributes() ?>>
 <?php
 if (is_array($cliente->idempresa->EditValue)) {
 	$arwrk = $cliente->idempresa->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($cliente->idempresa->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($cliente->idempresa->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $cliente->idempresa->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($cliente->idempresa->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($cliente->idempresa->CurrentValue) ?>" selected><?php echo $cliente->idempresa->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $cliente->idempresa->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado`= 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $cliente->Lookup_Selecting($cliente->idempresa, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado`= 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$cliente->idempresa->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$cliente->idempresa->LookupFilters += array("f0" => "`idempresa` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$cliente->Lookup_Selecting($cliente->idempresa, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $cliente->idempresa->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $cliente_grid->RowIndex ?>_idempresa" id="s_x<?php echo $cliente_grid->RowIndex ?>_idempresa" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idempresa` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $cliente_grid->RowIndex ?>_idempresa" id="s_x<?php echo $cliente_grid->RowIndex ?>_idempresa" value="<?php echo $cliente->idempresa->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php if ($cliente->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $cliente_grid->RowCnt ?>_cliente_idempresa" class="cliente_idempresa">
 <span<?php echo $cliente->idempresa->ViewAttributes() ?>>
 <?php echo $cliente->idempresa->ListViewValue() ?></span>
-<input type="hidden" data-field="x_idempresa" name="x<?php echo $cliente_grid->RowIndex ?>_idempresa" id="x<?php echo $cliente_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($cliente->idempresa->FormValue) ?>">
-<input type="hidden" data-field="x_idempresa" name="o<?php echo $cliente_grid->RowIndex ?>_idempresa" id="o<?php echo $cliente_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($cliente->idempresa->OldValue) ?>">
+</span>
+<input type="hidden" data-table="cliente" data-field="x_idempresa" name="x<?php echo $cliente_grid->RowIndex ?>_idempresa" id="x<?php echo $cliente_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($cliente->idempresa->FormValue) ?>">
+<input type="hidden" data-table="cliente" data-field="x_idempresa" name="o<?php echo $cliente_grid->RowIndex ?>_idempresa" id="o<?php echo $cliente_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($cliente->idempresa->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -496,98 +509,103 @@ fclientegrid.UpdateOpts(<?php echo $cliente_grid->RowIndex ?>);
 $cliente_grid->ListOptions->Render("body", "left", $cliente_grid->RowIndex);
 ?>
 	<?php if ($cliente->codigo->Visible) { // codigo ?>
-		<td>
+		<td data-name="codigo">
 <?php if ($cliente->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_cliente_codigo" class="form-group cliente_codigo">
-<input type="text" data-field="x_codigo" name="x<?php echo $cliente_grid->RowIndex ?>_codigo" id="x<?php echo $cliente_grid->RowIndex ?>_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cliente->codigo->PlaceHolder) ?>" value="<?php echo $cliente->codigo->EditValue ?>"<?php echo $cliente->codigo->EditAttributes() ?>>
+<input type="text" data-table="cliente" data-field="x_codigo" name="x<?php echo $cliente_grid->RowIndex ?>_codigo" id="x<?php echo $cliente_grid->RowIndex ?>_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cliente->codigo->getPlaceHolder()) ?>" value="<?php echo $cliente->codigo->EditValue ?>"<?php echo $cliente->codigo->EditAttributes() ?>>
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_cliente_codigo" class="form-group cliente_codigo">
 <span<?php echo $cliente->codigo->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $cliente->codigo->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_codigo" name="x<?php echo $cliente_grid->RowIndex ?>_codigo" id="x<?php echo $cliente_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($cliente->codigo->FormValue) ?>">
+<input type="hidden" data-table="cliente" data-field="x_codigo" name="x<?php echo $cliente_grid->RowIndex ?>_codigo" id="x<?php echo $cliente_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($cliente->codigo->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_codigo" name="o<?php echo $cliente_grid->RowIndex ?>_codigo" id="o<?php echo $cliente_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($cliente->codigo->OldValue) ?>">
+<input type="hidden" data-table="cliente" data-field="x_codigo" name="o<?php echo $cliente_grid->RowIndex ?>_codigo" id="o<?php echo $cliente_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($cliente->codigo->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($cliente->nombre->Visible) { // nombre ?>
-		<td>
+		<td data-name="nombre">
 <?php if ($cliente->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_cliente_nombre" class="form-group cliente_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $cliente_grid->RowIndex ?>_nombre" id="x<?php echo $cliente_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cliente->nombre->PlaceHolder) ?>" value="<?php echo $cliente->nombre->EditValue ?>"<?php echo $cliente->nombre->EditAttributes() ?>>
+<input type="text" data-table="cliente" data-field="x_nombre" name="x<?php echo $cliente_grid->RowIndex ?>_nombre" id="x<?php echo $cliente_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cliente->nombre->getPlaceHolder()) ?>" value="<?php echo $cliente->nombre->EditValue ?>"<?php echo $cliente->nombre->EditAttributes() ?>>
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_cliente_nombre" class="form-group cliente_nombre">
 <span<?php echo $cliente->nombre->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $cliente->nombre->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_nombre" name="x<?php echo $cliente_grid->RowIndex ?>_nombre" id="x<?php echo $cliente_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cliente->nombre->FormValue) ?>">
+<input type="hidden" data-table="cliente" data-field="x_nombre" name="x<?php echo $cliente_grid->RowIndex ?>_nombre" id="x<?php echo $cliente_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cliente->nombre->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_nombre" name="o<?php echo $cliente_grid->RowIndex ?>_nombre" id="o<?php echo $cliente_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cliente->nombre->OldValue) ?>">
+<input type="hidden" data-table="cliente" data-field="x_nombre" name="o<?php echo $cliente_grid->RowIndex ?>_nombre" id="o<?php echo $cliente_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($cliente->nombre->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($cliente->nit->Visible) { // nit ?>
-		<td>
+		<td data-name="nit">
 <?php if ($cliente->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_cliente_nit" class="form-group cliente_nit">
-<input type="text" data-field="x_nit" name="x<?php echo $cliente_grid->RowIndex ?>_nit" id="x<?php echo $cliente_grid->RowIndex ?>_nit" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cliente->nit->PlaceHolder) ?>" value="<?php echo $cliente->nit->EditValue ?>"<?php echo $cliente->nit->EditAttributes() ?>>
+<input type="text" data-table="cliente" data-field="x_nit" name="x<?php echo $cliente_grid->RowIndex ?>_nit" id="x<?php echo $cliente_grid->RowIndex ?>_nit" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cliente->nit->getPlaceHolder()) ?>" value="<?php echo $cliente->nit->EditValue ?>"<?php echo $cliente->nit->EditAttributes() ?>>
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_cliente_nit" class="form-group cliente_nit">
 <span<?php echo $cliente->nit->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $cliente->nit->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_nit" name="x<?php echo $cliente_grid->RowIndex ?>_nit" id="x<?php echo $cliente_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($cliente->nit->FormValue) ?>">
+<input type="hidden" data-table="cliente" data-field="x_nit" name="x<?php echo $cliente_grid->RowIndex ?>_nit" id="x<?php echo $cliente_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($cliente->nit->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_nit" name="o<?php echo $cliente_grid->RowIndex ?>_nit" id="o<?php echo $cliente_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($cliente->nit->OldValue) ?>">
+<input type="hidden" data-table="cliente" data-field="x_nit" name="o<?php echo $cliente_grid->RowIndex ?>_nit" id="o<?php echo $cliente_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($cliente->nit->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($cliente->idempresa->Visible) { // idempresa ?>
-		<td>
+		<td data-name="idempresa">
 <?php if ($cliente->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_cliente_idempresa" class="form-group cliente_idempresa">
-<select data-field="x_idempresa" id="x<?php echo $cliente_grid->RowIndex ?>_idempresa" name="x<?php echo $cliente_grid->RowIndex ?>_idempresa"<?php echo $cliente->idempresa->EditAttributes() ?>>
+<select data-table="cliente" data-field="x_idempresa" data-value-separator="<?php echo ew_HtmlEncode(is_array($cliente->idempresa->DisplayValueSeparator) ? json_encode($cliente->idempresa->DisplayValueSeparator) : $cliente->idempresa->DisplayValueSeparator) ?>" id="x<?php echo $cliente_grid->RowIndex ?>_idempresa" name="x<?php echo $cliente_grid->RowIndex ?>_idempresa"<?php echo $cliente->idempresa->EditAttributes() ?>>
 <?php
 if (is_array($cliente->idempresa->EditValue)) {
 	$arwrk = $cliente->idempresa->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($cliente->idempresa->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($cliente->idempresa->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $cliente->idempresa->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($cliente->idempresa->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($cliente->idempresa->CurrentValue) ?>" selected><?php echo $cliente->idempresa->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $cliente->idempresa->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado`= 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $cliente->Lookup_Selecting($cliente->idempresa, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado`= 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$cliente->idempresa->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$cliente->idempresa->LookupFilters += array("f0" => "`idempresa` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$cliente->Lookup_Selecting($cliente->idempresa, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $cliente->idempresa->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $cliente_grid->RowIndex ?>_idempresa" id="s_x<?php echo $cliente_grid->RowIndex ?>_idempresa" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idempresa` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $cliente_grid->RowIndex ?>_idempresa" id="s_x<?php echo $cliente_grid->RowIndex ?>_idempresa" value="<?php echo $cliente->idempresa->LookupFilterQuery() ?>">
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_cliente_idempresa" class="form-group cliente_idempresa">
 <span<?php echo $cliente->idempresa->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $cliente->idempresa->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_idempresa" name="x<?php echo $cliente_grid->RowIndex ?>_idempresa" id="x<?php echo $cliente_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($cliente->idempresa->FormValue) ?>">
+<input type="hidden" data-table="cliente" data-field="x_idempresa" name="x<?php echo $cliente_grid->RowIndex ?>_idempresa" id="x<?php echo $cliente_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($cliente->idempresa->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_idempresa" name="o<?php echo $cliente_grid->RowIndex ?>_idempresa" id="o<?php echo $cliente_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($cliente->idempresa->OldValue) ?>">
+<input type="hidden" data-table="cliente" data-field="x_idempresa" name="o<?php echo $cliente_grid->RowIndex ?>_idempresa" id="o<?php echo $cliente_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($cliente->idempresa->OldValue) ?>">
 </td>
 	<?php } ?>
 <?php
@@ -626,7 +644,7 @@ if ($cliente_grid->Recordset)
 	$cliente_grid->Recordset->Close();
 ?>
 <?php if ($cliente_grid->ShowOtherOptions) { ?>
-<div class="ewGridLowerPanel">
+<div class="panel-footer ewGridLowerPanel">
 <?php
 	foreach ($cliente_grid->OtherOptions as &$option)
 		$option->Render("body", "bottom");

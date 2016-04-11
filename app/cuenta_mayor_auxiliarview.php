@@ -1,15 +1,14 @@
 <?php
 if (session_id() == "") session_start(); // Initialize Session data
 ob_start(); // Turn on output buffering
-$EW_RELATIVE_PATH = "";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "cuenta_mayor_auxiliarinfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "cuenta_mayor_principalinfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "subcuentagridcls.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
+<?php include_once "ewcfg12.php" ?>
+<?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
+<?php include_once "phpfn12.php" ?>
+<?php include_once "cuenta_mayor_auxiliarinfo.php" ?>
+<?php include_once "cuenta_mayor_principalinfo.php" ?>
+<?php include_once "subcuentagridcls.php" ?>
+<?php include_once "userfn12.php" ?>
 <?php
 
 //
@@ -109,6 +108,30 @@ class ccuenta_mayor_auxiliar_view extends ccuenta_mayor_auxiliar {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
 	}
 
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
 	// Show message
 	function ShowMessage() {
 		$hidden = FALSE;
@@ -189,6 +212,7 @@ class ccuenta_mayor_auxiliar_view extends ccuenta_mayor_auxiliar {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -201,7 +225,7 @@ class ccuenta_mayor_auxiliar_view extends ccuenta_mayor_auxiliar {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -222,6 +246,7 @@ class ccuenta_mayor_auxiliar_view extends ccuenta_mayor_auxiliar {
 	function __construct() {
 		global $conn, $Language;
 		$GLOBALS["Page"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -262,7 +287,7 @@ class ccuenta_mayor_auxiliar_view extends ccuenta_mayor_auxiliar {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 
 		// Export options
 		$this->ExportOptions = new cListOptions();
@@ -299,28 +324,6 @@ class ccuenta_mayor_auxiliar_view extends ccuenta_mayor_auxiliar {
 			exit();
 		}
 
-		// Process auto fill
-		if (@$_POST["ajax"] == "autofill") {
-
-			// Process auto fill for detail table 'subcuenta'
-			if (@$_POST["grid"] == "fsubcuentagrid") {
-				if (!isset($GLOBALS["subcuenta_grid"])) $GLOBALS["subcuenta_grid"] = new csubcuenta_grid;
-				$GLOBALS["subcuenta_grid"]->Page_Init();
-				$this->Page_Terminate();
-				exit();
-			}
-			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
-			if ($results) {
-
-				// Clean output buffer
-				if (!EW_DEBUG_ENABLED && ob_get_length())
-					ob_end_clean();
-				echo $results;
-				$this->Page_Terminate();
-				exit();
-			}
-		}
-
 		// Create Token
 		$this->CreateToken();
 	}
@@ -329,7 +332,7 @@ class ccuenta_mayor_auxiliar_view extends ccuenta_mayor_auxiliar {
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Page Unload event
 		$this->Page_Unload();
@@ -357,7 +360,7 @@ class ccuenta_mayor_auxiliar_view extends ccuenta_mayor_auxiliar {
 		$this->Page_Redirecting($url);
 
 		 // Close connection
-		$conn->Close();
+		ew_CloseConn();
 
 		// Go to URL if specified
 		if ($url <> "") {
@@ -398,6 +401,9 @@ class ccuenta_mayor_auxiliar_view extends ccuenta_mayor_auxiliar {
 			if (@$_GET["idcuenta_mayor_auxiliar"] <> "") {
 				$this->idcuenta_mayor_auxiliar->setQueryStringValue($_GET["idcuenta_mayor_auxiliar"]);
 				$this->RecKey["idcuenta_mayor_auxiliar"] = $this->idcuenta_mayor_auxiliar->QueryStringValue;
+			} elseif (@$_POST["idcuenta_mayor_auxiliar"] <> "") {
+				$this->idcuenta_mayor_auxiliar->setFormValue($_POST["idcuenta_mayor_auxiliar"]);
+				$this->RecKey["idcuenta_mayor_auxiliar"] = $this->idcuenta_mayor_auxiliar->FormValue;
 			} else {
 				$sReturnUrl = "cuenta_mayor_auxiliarlist.php"; // Return to list
 			}
@@ -442,15 +448,6 @@ class ccuenta_mayor_auxiliar_view extends ccuenta_mayor_auxiliar {
 		$item = &$option->Add("edit");
 		$item->Body = "<a class=\"ewAction ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("ViewPageEditLink") . "</a>";
 		$item->Visible = ($this->EditUrl <> "");
-
-		// Show detail edit/copy
-		if ($this->getCurrentDetailTable() <> "") {
-
-			// Detail Edit
-			$item = &$option->Add("detailedit");
-			$item->Body = "<a class=\"ewAction ewDetailEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=" . $this->getCurrentDetailTable())) . "\">" . $Language->Phrase("MasterDetailEditLink") . "</a>";
-			$item->Visible = (TRUE);
-		}
 		$option = &$options["detail"];
 		$DetailTableLink = "";
 		$DetailViewTblVar = "";
@@ -459,8 +456,8 @@ class ccuenta_mayor_auxiliar_view extends ccuenta_mayor_auxiliar {
 
 		// "detail_subcuenta"
 		$item = &$option->Add("detail_subcuenta");
-		$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("subcuenta", "TblCaption");
-		$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("subcuentalist.php?" . EW_TABLE_SHOW_MASTER . "=cuenta_mayor_auxiliar&fk_idcuenta_mayor_auxiliar=" . strval($this->idcuenta_mayor_auxiliar->CurrentValue) . "") . "\">" . $body . "</a>";
+		$body = $Language->Phrase("ViewPageDetailLink") . $Language->TablePhrase("subcuenta", "TblCaption");
+		$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("subcuentalist.php?" . EW_TABLE_SHOW_MASTER . "=cuenta_mayor_auxiliar&fk_idcuenta_mayor_auxiliar=" . urlencode(strval($this->idcuenta_mayor_auxiliar->CurrentValue)) . "") . "\">" . $body . "</a>";
 		$links = "";
 		if ($GLOBALS["subcuenta_grid"] && $GLOBALS["subcuenta_grid"]->DetailView) {
 			$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=subcuenta")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
@@ -571,7 +568,7 @@ class ccuenta_mayor_auxiliar_view extends ccuenta_mayor_auxiliar {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -580,8 +577,9 @@ class ccuenta_mayor_auxiliar_view extends ccuenta_mayor_auxiliar {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -592,7 +590,6 @@ class ccuenta_mayor_auxiliar_view extends ccuenta_mayor_auxiliar {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -620,8 +617,7 @@ class ccuenta_mayor_auxiliar_view extends ccuenta_mayor_auxiliar {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		$this->AddUrl = $this->GetAddUrl();
@@ -644,66 +640,53 @@ class ccuenta_mayor_auxiliar_view extends ccuenta_mayor_auxiliar {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idcuenta_mayor_auxiliar
-			$this->idcuenta_mayor_auxiliar->ViewValue = $this->idcuenta_mayor_auxiliar->CurrentValue;
-			$this->idcuenta_mayor_auxiliar->ViewCustomAttributes = "";
+		// idcuenta_mayor_auxiliar
+		$this->idcuenta_mayor_auxiliar->ViewValue = $this->idcuenta_mayor_auxiliar->CurrentValue;
+		$this->idcuenta_mayor_auxiliar->ViewCustomAttributes = "";
 
-			// nomenclatura
-			$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
-			$this->nomenclatura->ViewCustomAttributes = "";
+		// nomenclatura
+		$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
+		$this->nomenclatura->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
 
-			// idcuenta_mayor_principal
-			if (strval($this->idcuenta_mayor_principal->CurrentValue) <> "") {
-				$sFilterWrk = "`idcuenta_mayor_principal`" . ew_SearchString("=", $this->idcuenta_mayor_principal->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idcuenta_mayor_principal`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta_mayor_principal`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idcuenta_mayor_principal, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idcuenta_mayor_principal->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idcuenta_mayor_principal->ViewValue = $this->idcuenta_mayor_principal->CurrentValue;
-				}
+		// idcuenta_mayor_principal
+		if (strval($this->idcuenta_mayor_principal->CurrentValue) <> "") {
+			$sFilterWrk = "`idcuenta_mayor_principal`" . ew_SearchString("=", $this->idcuenta_mayor_principal->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idcuenta_mayor_principal`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta_mayor_principal`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idcuenta_mayor_principal, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idcuenta_mayor_principal->ViewValue = $this->idcuenta_mayor_principal->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idcuenta_mayor_principal->ViewValue = NULL;
+				$this->idcuenta_mayor_principal->ViewValue = $this->idcuenta_mayor_principal->CurrentValue;
 			}
-			$this->idcuenta_mayor_principal->ViewCustomAttributes = "";
+		} else {
+			$this->idcuenta_mayor_principal->ViewValue = NULL;
+		}
+		$this->idcuenta_mayor_principal->ViewCustomAttributes = "";
 
-			// definicion
-			$this->definicion->ViewValue = $this->definicion->CurrentValue;
-			$this->definicion->ViewCustomAttributes = "";
+		// definicion
+		$this->definicion->ViewValue = $this->definicion->CurrentValue;
+		$this->definicion->ViewCustomAttributes = "";
 
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
-			} else {
-				$this->estado->ViewValue = NULL;
-			}
-			$this->estado->ViewCustomAttributes = "";
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
 			// idcuenta_mayor_auxiliar
 			$this->idcuenta_mayor_auxiliar->LinkCustomAttributes = "";
@@ -764,6 +747,24 @@ class ccuenta_mayor_auxiliar_view extends ccuenta_mayor_auxiliar {
 					$bValidMaster = FALSE;
 				}
 			}
+		} elseif (isset($_POST[EW_TABLE_SHOW_MASTER])) {
+			$sMasterTblVar = $_POST[EW_TABLE_SHOW_MASTER];
+			if ($sMasterTblVar == "") {
+				$bValidMaster = TRUE;
+				$this->DbMasterFilter = "";
+				$this->DbDetailFilter = "";
+			}
+			if ($sMasterTblVar == "cuenta_mayor_principal") {
+				$bValidMaster = TRUE;
+				if (@$_POST["fk_idcuenta_mayor_principal"] <> "") {
+					$GLOBALS["cuenta_mayor_principal"]->idcuenta_mayor_principal->setFormValue($_POST["fk_idcuenta_mayor_principal"]);
+					$this->idcuenta_mayor_principal->setFormValue($GLOBALS["cuenta_mayor_principal"]->idcuenta_mayor_principal->FormValue);
+					$this->idcuenta_mayor_principal->setSessionValue($this->idcuenta_mayor_principal->FormValue);
+					if (!is_numeric($GLOBALS["cuenta_mayor_principal"]->idcuenta_mayor_principal->FormValue)) $bValidMaster = FALSE;
+				} else {
+					$bValidMaster = FALSE;
+				}
+			}
 		}
 		if ($bValidMaster) {
 
@@ -777,10 +778,10 @@ class ccuenta_mayor_auxiliar_view extends ccuenta_mayor_auxiliar {
 
 			// Clear previous master key from Session
 			if ($sMasterTblVar <> "cuenta_mayor_principal") {
-				if ($this->idcuenta_mayor_principal->QueryStringValue == "") $this->idcuenta_mayor_principal->setSessionValue("");
+				if ($this->idcuenta_mayor_principal->CurrentValue == "") $this->idcuenta_mayor_principal->setSessionValue("");
 			}
 		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 
@@ -817,9 +818,10 @@ class ccuenta_mayor_auxiliar_view extends ccuenta_mayor_auxiliar {
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$Breadcrumb->Add("list", $this->TableVar, "cuenta_mayor_auxiliarlist.php", "", $this->TableVar, TRUE);
+		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("cuenta_mayor_auxiliarlist.php"), "", $this->TableVar, TRUE);
 		$PageId = "view";
-		$Breadcrumb->Add("view", $PageId, ew_CurrentUrl());
+		$Breadcrumb->Add("view", $PageId, $url);
 	}
 
 	// Page Load event
@@ -927,16 +929,12 @@ Page_Rendering();
 // Page Rendering event
 $cuenta_mayor_auxiliar_view->Page_Render();
 ?>
-<?php include_once $EW_RELATIVE_PATH . "header.php" ?>
+<?php include_once "header.php" ?>
 <script type="text/javascript">
 
-// Page object
-var cuenta_mayor_auxiliar_view = new ew_Page("cuenta_mayor_auxiliar_view");
-cuenta_mayor_auxiliar_view.PageID = "view"; // Page ID
-var EW_PAGE_ID = cuenta_mayor_auxiliar_view.PageID; // For backward compatibility
-
 // Form object
-var fcuenta_mayor_auxiliarview = new ew_Form("fcuenta_mayor_auxiliarview");
+var CurrentPageID = EW_PAGE_ID = "view";
+var CurrentForm = fcuenta_mayor_auxiliarview = new ew_Form("fcuenta_mayor_auxiliarview", "view");
 
 // Form_CustomValidate event
 fcuenta_mayor_auxiliarview.Form_CustomValidate = 
@@ -954,7 +952,9 @@ fcuenta_mayor_auxiliarview.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-fcuenta_mayor_auxiliarview.Lists["x_idcuenta_mayor_principal"] = {"LinkField":"x_idcuenta_mayor_principal","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+fcuenta_mayor_auxiliarview.Lists["x_idcuenta_mayor_principal"] = {"LinkField":"x_idcuenta_mayor_principal","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fcuenta_mayor_auxiliarview.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fcuenta_mayor_auxiliarview.Lists["x_estado"].Options = <?php echo json_encode($cuenta_mayor_auxiliar->estado->Options()) ?>;
 
 // Form object for search
 </script>
@@ -985,8 +985,8 @@ $cuenta_mayor_auxiliar_view->ShowMessage();
 <?php if ($cuenta_mayor_auxiliar->idcuenta_mayor_auxiliar->Visible) { // idcuenta_mayor_auxiliar ?>
 	<tr id="r_idcuenta_mayor_auxiliar">
 		<td><span id="elh_cuenta_mayor_auxiliar_idcuenta_mayor_auxiliar"><?php echo $cuenta_mayor_auxiliar->idcuenta_mayor_auxiliar->FldCaption() ?></span></td>
-		<td<?php echo $cuenta_mayor_auxiliar->idcuenta_mayor_auxiliar->CellAttributes() ?>>
-<span id="el_cuenta_mayor_auxiliar_idcuenta_mayor_auxiliar" class="form-group">
+		<td data-name="idcuenta_mayor_auxiliar"<?php echo $cuenta_mayor_auxiliar->idcuenta_mayor_auxiliar->CellAttributes() ?>>
+<span id="el_cuenta_mayor_auxiliar_idcuenta_mayor_auxiliar">
 <span<?php echo $cuenta_mayor_auxiliar->idcuenta_mayor_auxiliar->ViewAttributes() ?>>
 <?php echo $cuenta_mayor_auxiliar->idcuenta_mayor_auxiliar->ViewValue ?></span>
 </span>
@@ -996,8 +996,8 @@ $cuenta_mayor_auxiliar_view->ShowMessage();
 <?php if ($cuenta_mayor_auxiliar->nomenclatura->Visible) { // nomenclatura ?>
 	<tr id="r_nomenclatura">
 		<td><span id="elh_cuenta_mayor_auxiliar_nomenclatura"><?php echo $cuenta_mayor_auxiliar->nomenclatura->FldCaption() ?></span></td>
-		<td<?php echo $cuenta_mayor_auxiliar->nomenclatura->CellAttributes() ?>>
-<span id="el_cuenta_mayor_auxiliar_nomenclatura" class="form-group">
+		<td data-name="nomenclatura"<?php echo $cuenta_mayor_auxiliar->nomenclatura->CellAttributes() ?>>
+<span id="el_cuenta_mayor_auxiliar_nomenclatura">
 <span<?php echo $cuenta_mayor_auxiliar->nomenclatura->ViewAttributes() ?>>
 <?php echo $cuenta_mayor_auxiliar->nomenclatura->ViewValue ?></span>
 </span>
@@ -1007,8 +1007,8 @@ $cuenta_mayor_auxiliar_view->ShowMessage();
 <?php if ($cuenta_mayor_auxiliar->nombre->Visible) { // nombre ?>
 	<tr id="r_nombre">
 		<td><span id="elh_cuenta_mayor_auxiliar_nombre"><?php echo $cuenta_mayor_auxiliar->nombre->FldCaption() ?></span></td>
-		<td<?php echo $cuenta_mayor_auxiliar->nombre->CellAttributes() ?>>
-<span id="el_cuenta_mayor_auxiliar_nombre" class="form-group">
+		<td data-name="nombre"<?php echo $cuenta_mayor_auxiliar->nombre->CellAttributes() ?>>
+<span id="el_cuenta_mayor_auxiliar_nombre">
 <span<?php echo $cuenta_mayor_auxiliar->nombre->ViewAttributes() ?>>
 <?php echo $cuenta_mayor_auxiliar->nombre->ViewValue ?></span>
 </span>
@@ -1018,8 +1018,8 @@ $cuenta_mayor_auxiliar_view->ShowMessage();
 <?php if ($cuenta_mayor_auxiliar->idcuenta_mayor_principal->Visible) { // idcuenta_mayor_principal ?>
 	<tr id="r_idcuenta_mayor_principal">
 		<td><span id="elh_cuenta_mayor_auxiliar_idcuenta_mayor_principal"><?php echo $cuenta_mayor_auxiliar->idcuenta_mayor_principal->FldCaption() ?></span></td>
-		<td<?php echo $cuenta_mayor_auxiliar->idcuenta_mayor_principal->CellAttributes() ?>>
-<span id="el_cuenta_mayor_auxiliar_idcuenta_mayor_principal" class="form-group">
+		<td data-name="idcuenta_mayor_principal"<?php echo $cuenta_mayor_auxiliar->idcuenta_mayor_principal->CellAttributes() ?>>
+<span id="el_cuenta_mayor_auxiliar_idcuenta_mayor_principal">
 <span<?php echo $cuenta_mayor_auxiliar->idcuenta_mayor_principal->ViewAttributes() ?>>
 <?php echo $cuenta_mayor_auxiliar->idcuenta_mayor_principal->ViewValue ?></span>
 </span>
@@ -1029,8 +1029,8 @@ $cuenta_mayor_auxiliar_view->ShowMessage();
 <?php if ($cuenta_mayor_auxiliar->definicion->Visible) { // definicion ?>
 	<tr id="r_definicion">
 		<td><span id="elh_cuenta_mayor_auxiliar_definicion"><?php echo $cuenta_mayor_auxiliar->definicion->FldCaption() ?></span></td>
-		<td<?php echo $cuenta_mayor_auxiliar->definicion->CellAttributes() ?>>
-<span id="el_cuenta_mayor_auxiliar_definicion" class="form-group">
+		<td data-name="definicion"<?php echo $cuenta_mayor_auxiliar->definicion->CellAttributes() ?>>
+<span id="el_cuenta_mayor_auxiliar_definicion">
 <span<?php echo $cuenta_mayor_auxiliar->definicion->ViewAttributes() ?>>
 <?php echo $cuenta_mayor_auxiliar->definicion->ViewValue ?></span>
 </span>
@@ -1040,8 +1040,8 @@ $cuenta_mayor_auxiliar_view->ShowMessage();
 <?php if ($cuenta_mayor_auxiliar->estado->Visible) { // estado ?>
 	<tr id="r_estado">
 		<td><span id="elh_cuenta_mayor_auxiliar_estado"><?php echo $cuenta_mayor_auxiliar->estado->FldCaption() ?></span></td>
-		<td<?php echo $cuenta_mayor_auxiliar->estado->CellAttributes() ?>>
-<span id="el_cuenta_mayor_auxiliar_estado" class="form-group">
+		<td data-name="estado"<?php echo $cuenta_mayor_auxiliar->estado->CellAttributes() ?>>
+<span id="el_cuenta_mayor_auxiliar_estado">
 <span<?php echo $cuenta_mayor_auxiliar->estado->ViewAttributes() ?>>
 <?php echo $cuenta_mayor_auxiliar->estado->ViewValue ?></span>
 </span>
@@ -1072,7 +1072,7 @@ if (EW_DEBUG_ENABLED)
 // document.write("page loaded");
 
 </script>
-<?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
+<?php include_once "footer.php" ?>
 <?php
 $cuenta_mayor_auxiliar_view->Page_Terminate();
 ?>

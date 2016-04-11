@@ -1,14 +1,13 @@
 <?php
 if (session_id() == "") session_start(); // Initialize Session data
 ob_start(); // Turn on output buffering
-$EW_RELATIVE_PATH = "";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "clienteinfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "personainfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
+<?php include_once "ewcfg12.php" ?>
+<?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
+<?php include_once "phpfn12.php" ?>
+<?php include_once "clienteinfo.php" ?>
+<?php include_once "personainfo.php" ?>
+<?php include_once "userfn12.php" ?>
 <?php
 
 //
@@ -108,6 +107,30 @@ class ccliente_view extends ccliente {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
 	}
 
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
 	// Show message
 	function ShowMessage() {
 		$hidden = FALSE;
@@ -188,6 +211,7 @@ class ccliente_view extends ccliente {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -200,7 +224,7 @@ class ccliente_view extends ccliente {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -221,6 +245,7 @@ class ccliente_view extends ccliente {
 	function __construct() {
 		global $conn, $Language;
 		$GLOBALS["Page"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -261,7 +286,7 @@ class ccliente_view extends ccliente {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 
 		// Export options
 		$this->ExportOptions = new cListOptions();
@@ -298,20 +323,6 @@ class ccliente_view extends ccliente {
 			exit();
 		}
 
-		// Process auto fill
-		if (@$_POST["ajax"] == "autofill") {
-			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
-			if ($results) {
-
-				// Clean output buffer
-				if (!EW_DEBUG_ENABLED && ob_get_length())
-					ob_end_clean();
-				echo $results;
-				$this->Page_Terminate();
-				exit();
-			}
-		}
-
 		// Create Token
 		$this->CreateToken();
 	}
@@ -320,7 +331,7 @@ class ccliente_view extends ccliente {
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Page Unload event
 		$this->Page_Unload();
@@ -348,7 +359,7 @@ class ccliente_view extends ccliente {
 		$this->Page_Redirecting($url);
 
 		 // Close connection
-		$conn->Close();
+		ew_CloseConn();
 
 		// Go to URL if specified
 		if ($url <> "") {
@@ -389,6 +400,9 @@ class ccliente_view extends ccliente {
 			if (@$_GET["idcliente"] <> "") {
 				$this->idcliente->setQueryStringValue($_GET["idcliente"]);
 				$this->RecKey["idcliente"] = $this->idcliente->QueryStringValue;
+			} elseif (@$_POST["idcliente"] <> "") {
+				$this->idcliente->setFormValue($_POST["idcliente"]);
+				$this->RecKey["idcliente"] = $this->idcliente->FormValue;
 			} else {
 				$sReturnUrl = "clientelist.php"; // Return to list
 			}
@@ -485,7 +499,7 @@ class ccliente_view extends ccliente {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -494,8 +508,9 @@ class ccliente_view extends ccliente {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -506,7 +521,6 @@ class ccliente_view extends ccliente {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -538,8 +552,7 @@ class ccliente_view extends ccliente {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		$this->AddUrl = $this->GetAddUrl();
@@ -564,99 +577,82 @@ class ccliente_view extends ccliente {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idcliente
-			$this->idcliente->ViewValue = $this->idcliente->CurrentValue;
-			$this->idcliente->ViewCustomAttributes = "";
+		// idcliente
+		$this->idcliente->ViewValue = $this->idcliente->CurrentValue;
+		$this->idcliente->ViewCustomAttributes = "";
 
-			// codigo
-			$this->codigo->ViewValue = $this->codigo->CurrentValue;
-			$this->codigo->ViewCustomAttributes = "";
+		// codigo
+		$this->codigo->ViewValue = $this->codigo->CurrentValue;
+		$this->codigo->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
 
-			// nit
-			$this->nit->ViewValue = $this->nit->CurrentValue;
-			$this->nit->ViewCustomAttributes = "";
+		// nit
+		$this->nit->ViewValue = $this->nit->CurrentValue;
+		$this->nit->ViewCustomAttributes = "";
 
-			// direccion
-			$this->direccion->ViewValue = $this->direccion->CurrentValue;
-			$this->direccion->ViewCustomAttributes = "";
+		// direccion
+		$this->direccion->ViewValue = $this->direccion->CurrentValue;
+		$this->direccion->ViewCustomAttributes = "";
 
-			// idpersona
-			if (strval($this->idpersona->CurrentValue) <> "") {
-				$sFilterWrk = "`idpersona`" . ew_SearchString("=", $this->idpersona->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idpersona`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `persona`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idpersona, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$sSqlWrk .= " ORDER BY `nombre`";
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idpersona->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idpersona->ViewValue = $this->idpersona->CurrentValue;
-				}
+		// idpersona
+		if (strval($this->idpersona->CurrentValue) <> "") {
+			$sFilterWrk = "`idpersona`" . ew_SearchString("=", $this->idpersona->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idpersona`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `persona`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idpersona, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+		$sSqlWrk .= " ORDER BY `nombre`";
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idpersona->ViewValue = $this->idpersona->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idpersona->ViewValue = NULL;
+				$this->idpersona->ViewValue = $this->idpersona->CurrentValue;
 			}
-			$this->idpersona->ViewCustomAttributes = "";
+		} else {
+			$this->idpersona->ViewValue = NULL;
+		}
+		$this->idpersona->ViewCustomAttributes = "";
 
-			// idempresa
-			if (strval($this->idempresa->CurrentValue) <> "") {
-				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado`= 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idempresa->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
-				}
+		// idempresa
+		if (strval($this->idempresa->CurrentValue) <> "") {
+			$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado`= 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idempresa->ViewValue = $this->idempresa->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idempresa->ViewValue = NULL;
+				$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
 			}
-			$this->idempresa->ViewCustomAttributes = "";
+		} else {
+			$this->idempresa->ViewValue = NULL;
+		}
+		$this->idempresa->ViewCustomAttributes = "";
 
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
-			} else {
-				$this->estado->ViewValue = NULL;
-			}
-			$this->estado->ViewCustomAttributes = "";
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
 			// idcliente
 			$this->idcliente->LinkCustomAttributes = "";
@@ -727,6 +723,24 @@ class ccliente_view extends ccliente {
 					$bValidMaster = FALSE;
 				}
 			}
+		} elseif (isset($_POST[EW_TABLE_SHOW_MASTER])) {
+			$sMasterTblVar = $_POST[EW_TABLE_SHOW_MASTER];
+			if ($sMasterTblVar == "") {
+				$bValidMaster = TRUE;
+				$this->DbMasterFilter = "";
+				$this->DbDetailFilter = "";
+			}
+			if ($sMasterTblVar == "persona") {
+				$bValidMaster = TRUE;
+				if (@$_POST["fk_idpersona"] <> "") {
+					$GLOBALS["persona"]->idpersona->setFormValue($_POST["fk_idpersona"]);
+					$this->idpersona->setFormValue($GLOBALS["persona"]->idpersona->FormValue);
+					$this->idpersona->setSessionValue($this->idpersona->FormValue);
+					if (!is_numeric($GLOBALS["persona"]->idpersona->FormValue)) $bValidMaster = FALSE;
+				} else {
+					$bValidMaster = FALSE;
+				}
+			}
 		}
 		if ($bValidMaster) {
 
@@ -740,10 +754,10 @@ class ccliente_view extends ccliente {
 
 			// Clear previous master key from Session
 			if ($sMasterTblVar <> "persona") {
-				if ($this->idpersona->QueryStringValue == "") $this->idpersona->setSessionValue("");
+				if ($this->idpersona->CurrentValue == "") $this->idpersona->setSessionValue("");
 			}
 		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 
@@ -751,9 +765,10 @@ class ccliente_view extends ccliente {
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$Breadcrumb->Add("list", $this->TableVar, "clientelist.php", "", $this->TableVar, TRUE);
+		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("clientelist.php"), "", $this->TableVar, TRUE);
 		$PageId = "view";
-		$Breadcrumb->Add("view", $PageId, ew_CurrentUrl());
+		$Breadcrumb->Add("view", $PageId, $url);
 	}
 
 	// Page Load event
@@ -861,16 +876,12 @@ Page_Rendering();
 // Page Rendering event
 $cliente_view->Page_Render();
 ?>
-<?php include_once $EW_RELATIVE_PATH . "header.php" ?>
+<?php include_once "header.php" ?>
 <script type="text/javascript">
 
-// Page object
-var cliente_view = new ew_Page("cliente_view");
-cliente_view.PageID = "view"; // Page ID
-var EW_PAGE_ID = cliente_view.PageID; // For backward compatibility
-
 // Form object
-var fclienteview = new ew_Form("fclienteview");
+var CurrentPageID = EW_PAGE_ID = "view";
+var CurrentForm = fclienteview = new ew_Form("fclienteview", "view");
 
 // Form_CustomValidate event
 fclienteview.Form_CustomValidate = 
@@ -888,8 +899,10 @@ fclienteview.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-fclienteview.Lists["x_idpersona"] = {"LinkField":"x_idpersona","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
-fclienteview.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+fclienteview.Lists["x_idpersona"] = {"LinkField":"x_idpersona","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fclienteview.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fclienteview.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fclienteview.Lists["x_estado"].Options = <?php echo json_encode($cliente->estado->Options()) ?>;
 
 // Form object for search
 </script>
@@ -920,8 +933,8 @@ $cliente_view->ShowMessage();
 <?php if ($cliente->idcliente->Visible) { // idcliente ?>
 	<tr id="r_idcliente">
 		<td><span id="elh_cliente_idcliente"><?php echo $cliente->idcliente->FldCaption() ?></span></td>
-		<td<?php echo $cliente->idcliente->CellAttributes() ?>>
-<span id="el_cliente_idcliente" class="form-group">
+		<td data-name="idcliente"<?php echo $cliente->idcliente->CellAttributes() ?>>
+<span id="el_cliente_idcliente">
 <span<?php echo $cliente->idcliente->ViewAttributes() ?>>
 <?php echo $cliente->idcliente->ViewValue ?></span>
 </span>
@@ -931,8 +944,8 @@ $cliente_view->ShowMessage();
 <?php if ($cliente->codigo->Visible) { // codigo ?>
 	<tr id="r_codigo">
 		<td><span id="elh_cliente_codigo"><?php echo $cliente->codigo->FldCaption() ?></span></td>
-		<td<?php echo $cliente->codigo->CellAttributes() ?>>
-<span id="el_cliente_codigo" class="form-group">
+		<td data-name="codigo"<?php echo $cliente->codigo->CellAttributes() ?>>
+<span id="el_cliente_codigo">
 <span<?php echo $cliente->codigo->ViewAttributes() ?>>
 <?php echo $cliente->codigo->ViewValue ?></span>
 </span>
@@ -942,8 +955,8 @@ $cliente_view->ShowMessage();
 <?php if ($cliente->nombre->Visible) { // nombre ?>
 	<tr id="r_nombre">
 		<td><span id="elh_cliente_nombre"><?php echo $cliente->nombre->FldCaption() ?></span></td>
-		<td<?php echo $cliente->nombre->CellAttributes() ?>>
-<span id="el_cliente_nombre" class="form-group">
+		<td data-name="nombre"<?php echo $cliente->nombre->CellAttributes() ?>>
+<span id="el_cliente_nombre">
 <span<?php echo $cliente->nombre->ViewAttributes() ?>>
 <?php echo $cliente->nombre->ViewValue ?></span>
 </span>
@@ -953,8 +966,8 @@ $cliente_view->ShowMessage();
 <?php if ($cliente->nit->Visible) { // nit ?>
 	<tr id="r_nit">
 		<td><span id="elh_cliente_nit"><?php echo $cliente->nit->FldCaption() ?></span></td>
-		<td<?php echo $cliente->nit->CellAttributes() ?>>
-<span id="el_cliente_nit" class="form-group">
+		<td data-name="nit"<?php echo $cliente->nit->CellAttributes() ?>>
+<span id="el_cliente_nit">
 <span<?php echo $cliente->nit->ViewAttributes() ?>>
 <?php echo $cliente->nit->ViewValue ?></span>
 </span>
@@ -964,8 +977,8 @@ $cliente_view->ShowMessage();
 <?php if ($cliente->direccion->Visible) { // direccion ?>
 	<tr id="r_direccion">
 		<td><span id="elh_cliente_direccion"><?php echo $cliente->direccion->FldCaption() ?></span></td>
-		<td<?php echo $cliente->direccion->CellAttributes() ?>>
-<span id="el_cliente_direccion" class="form-group">
+		<td data-name="direccion"<?php echo $cliente->direccion->CellAttributes() ?>>
+<span id="el_cliente_direccion">
 <span<?php echo $cliente->direccion->ViewAttributes() ?>>
 <?php echo $cliente->direccion->ViewValue ?></span>
 </span>
@@ -975,8 +988,8 @@ $cliente_view->ShowMessage();
 <?php if ($cliente->idpersona->Visible) { // idpersona ?>
 	<tr id="r_idpersona">
 		<td><span id="elh_cliente_idpersona"><?php echo $cliente->idpersona->FldCaption() ?></span></td>
-		<td<?php echo $cliente->idpersona->CellAttributes() ?>>
-<span id="el_cliente_idpersona" class="form-group">
+		<td data-name="idpersona"<?php echo $cliente->idpersona->CellAttributes() ?>>
+<span id="el_cliente_idpersona">
 <span<?php echo $cliente->idpersona->ViewAttributes() ?>>
 <?php echo $cliente->idpersona->ViewValue ?></span>
 </span>
@@ -986,8 +999,8 @@ $cliente_view->ShowMessage();
 <?php if ($cliente->idempresa->Visible) { // idempresa ?>
 	<tr id="r_idempresa">
 		<td><span id="elh_cliente_idempresa"><?php echo $cliente->idempresa->FldCaption() ?></span></td>
-		<td<?php echo $cliente->idempresa->CellAttributes() ?>>
-<span id="el_cliente_idempresa" class="form-group">
+		<td data-name="idempresa"<?php echo $cliente->idempresa->CellAttributes() ?>>
+<span id="el_cliente_idempresa">
 <span<?php echo $cliente->idempresa->ViewAttributes() ?>>
 <?php echo $cliente->idempresa->ViewValue ?></span>
 </span>
@@ -997,8 +1010,8 @@ $cliente_view->ShowMessage();
 <?php if ($cliente->estado->Visible) { // estado ?>
 	<tr id="r_estado">
 		<td><span id="elh_cliente_estado"><?php echo $cliente->estado->FldCaption() ?></span></td>
-		<td<?php echo $cliente->estado->CellAttributes() ?>>
-<span id="el_cliente_estado" class="form-group">
+		<td data-name="estado"<?php echo $cliente->estado->CellAttributes() ?>>
+<span id="el_cliente_estado">
 <span<?php echo $cliente->estado->ViewAttributes() ?>>
 <?php echo $cliente->estado->ViewValue ?></span>
 </span>
@@ -1021,7 +1034,7 @@ if (EW_DEBUG_ENABLED)
 // document.write("page loaded");
 
 </script>
-<?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
+<?php include_once "footer.php" ?>
 <?php
 $cliente_view->Page_Terminate();
 ?>

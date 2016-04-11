@@ -1,4 +1,4 @@
-<?php include_once $EW_RELATIVE_PATH . "sucursalinfo.php" ?>
+<?php include_once "sucursalinfo.php" ?>
 <?php
 
 //
@@ -72,6 +72,30 @@ class csucursal_grid extends csucursal {
 
 	function setWarningMessage($v) {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
+	}
+
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
 	}
 
 	// Show message
@@ -154,6 +178,7 @@ class csucursal_grid extends csucursal {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -166,7 +191,7 @@ class csucursal_grid extends csucursal {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -192,6 +217,7 @@ class csucursal_grid extends csucursal {
 		$this->FormBlankRowName .= '_' . $this->FormName;
 		$this->FormKeyCountName .= '_' . $this->FormName;
 		$GLOBALS["Grid"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -220,7 +246,7 @@ class csucursal_grid extends csucursal {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 
 		// List options
 		$this->ListOptions = new cListOptions();
@@ -276,6 +302,9 @@ class csucursal_grid extends csucursal {
 		// Create Token
 		$this->CreateToken();
 
+		// Set up master detail parameters
+		$this->SetUpMasterParms();
+
 		// Setup other options
 		$this->SetupOtherOptions();
 	}
@@ -284,7 +313,7 @@ class csucursal_grid extends csucursal {
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Export
 		global $EW_EXPORT, $sucursal;
@@ -324,6 +353,10 @@ class csucursal_grid extends csucursal {
 	var $ExportOptions; // Export options
 	var $SearchOptions; // Search options
 	var $OtherOptions = array(); // Other options
+	var $FilterOptions; // Filter options
+	var $ListActions; // List actions
+	var $SelectedCount = 0;
+	var $SelectedIndex = 0;
 	var $ShowOtherOptions = FALSE;
 	var $DisplayRecs = 20;
 	var $StartRec;
@@ -355,6 +388,7 @@ class csucursal_grid extends csucursal {
 	var $MultiSelectKey;
 	var $Command;
 	var $RestoreSearch = FALSE;
+	var $DetailPages;
 	var $Recordset;
 	var $OldRecordset;
 
@@ -375,9 +409,6 @@ class csucursal_grid extends csucursal {
 
 			// Handle reset command
 			$this->ResetCmd();
-
-			// Set up master detail parameters
-			$this->SetUpMasterParms();
 
 			// Hide list options
 			if ($this->Export <> "") {
@@ -442,12 +473,14 @@ class csucursal_grid extends csucursal {
 		$this->CurrentFilter = "";
 
 		// Load record count first
-		$bSelectLimit = EW_SELECT_LIMIT;
-		if ($bSelectLimit) {
-			$this->TotalRecs = $this->SelectRecordCount();
-		} else {
-			if ($this->Recordset = $this->LoadRecordset())
-				$this->TotalRecs = $this->Recordset->RecordCount();
+		if (!$this->IsAddOrEdit()) {
+			$bSelectLimit = $this->UseSelectLimit;
+			if ($bSelectLimit) {
+				$this->TotalRecs = $this->SelectRecordCount();
+			} else {
+				if ($this->Recordset = $this->LoadRecordset())
+					$this->TotalRecs = $this->Recordset->RecordCount();
+			}
 		}
 	}
 
@@ -470,7 +503,7 @@ class csucursal_grid extends csucursal {
 
 	// Perform update to grid
 	function GridUpdate() {
-		global $conn, $Language, $objForm, $gsFormError;
+		global $Language, $objForm, $gsFormError;
 		$bGridUpdate = TRUE;
 
 		// Get old recordset
@@ -478,6 +511,7 @@ class csucursal_grid extends csucursal {
 		if ($this->CurrentFilter == "")
 			$this->CurrentFilter = "0=1";
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		if ($rs = $conn->Execute($sSql)) {
 			$rsold = $rs->GetRows();
 			$rs->Close();
@@ -602,9 +636,10 @@ class csucursal_grid extends csucursal {
 
 	// Perform Grid Add
 	function GridInsert() {
-		global $conn, $Language, $objForm, $gsFormError;
+		global $Language, $objForm, $gsFormError;
 		$rowindex = 1;
 		$bGridInsert = FALSE;
+		$conn = &$this->Connection();
 
 		// Call Grid Inserting event
 		if (!$this->Grid_Inserting()) {
@@ -886,7 +921,7 @@ class csucursal_grid extends csucursal {
 				if (is_numeric($this->RowIndex) && ($this->RowAction == "" || $this->RowAction == "edit")) { // Do not allow delete existing record
 					$oListOpt->Body = "&nbsp;";
 				} else {
-					$oListOpt->Body = "<a class=\"ewGridLink ewGridDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" href=\"javascript:void(0);\" onclick=\"ew_DeleteGridRow(this, " . $this->RowIndex . ");\">" . $Language->Phrase("DeleteLink") . "</a>";
+					$oListOpt->Body = "<a class=\"ewGridLink ewGridDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" onclick=\"return ew_DeleteGridRow(this, " . $this->RowIndex . ");\">" . $Language->Phrase("DeleteLink") . "</a>";
 				}
 			}
 		}
@@ -1031,15 +1066,24 @@ class csucursal_grid extends csucursal {
 
 	// Load recordset
 	function LoadRecordset($offset = -1, $rowcnt = -1) {
-		global $conn;
 
 		// Load List page SQL
 		$sSql = $this->SelectSQL();
+		$conn = &$this->Connection();
 
 		// Load recordset
-		$conn->raiseErrorFn = 'ew_ErrorFn';
-		$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
-		$conn->raiseErrorFn = '';
+		$dbtype = ew_GetConnectionType($this->DBID);
+		if ($this->UseSelectLimit) {
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+			if ($dbtype == "MSSQL") {
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset, array("_hasOrderBy" => trim($this->getOrderBy()) || trim($this->getSessionOrderBy())));
+			} else {
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
+			}
+			$conn->raiseErrorFn = '';
+		} else {
+			$rs = ew_LoadRecordset($sSql, $conn);
+		}
 
 		// Call Recordset Selected event
 		$this->Recordset_Selected($rs);
@@ -1048,7 +1092,7 @@ class csucursal_grid extends csucursal {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -1057,8 +1101,9 @@ class csucursal_grid extends csucursal {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -1069,7 +1114,6 @@ class csucursal_grid extends csucursal {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -1117,7 +1161,8 @@ class csucursal_grid extends csucursal {
 		if ($bValidKey) {
 			$this->CurrentFilter = $this->KeyFilter();
 			$sSql = $this->SQL();
-			$this->OldRecordset = ew_LoadRecordset($sSql);
+			$conn = &$this->Connection();
+			$this->OldRecordset = ew_LoadRecordset($sSql, $conn);
 			$this->LoadRowValues($this->OldRecordset); // Load row values
 		} else {
 			$this->OldRecordset = NULL;
@@ -1127,8 +1172,7 @@ class csucursal_grid extends csucursal {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		// Call Row_Rendering event
@@ -1146,109 +1190,83 @@ class csucursal_grid extends csucursal {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idsucursal
-			$this->idsucursal->ViewValue = $this->idsucursal->CurrentValue;
-			$this->idsucursal->ViewCustomAttributes = "";
+		// idsucursal
+		$this->idsucursal->ViewValue = $this->idsucursal->CurrentValue;
+		$this->idsucursal->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
 
-			// casa_matriz
-			if (strval($this->casa_matriz->CurrentValue) <> "") {
-				switch ($this->casa_matriz->CurrentValue) {
-					case $this->casa_matriz->FldTagValue(1):
-						$this->casa_matriz->ViewValue = $this->casa_matriz->FldTagCaption(1) <> "" ? $this->casa_matriz->FldTagCaption(1) : $this->casa_matriz->CurrentValue;
-						break;
-					case $this->casa_matriz->FldTagValue(2):
-						$this->casa_matriz->ViewValue = $this->casa_matriz->FldTagCaption(2) <> "" ? $this->casa_matriz->FldTagCaption(2) : $this->casa_matriz->CurrentValue;
-						break;
-					default:
-						$this->casa_matriz->ViewValue = $this->casa_matriz->CurrentValue;
-				}
+		// casa_matriz
+		if (strval($this->casa_matriz->CurrentValue) <> "") {
+			$this->casa_matriz->ViewValue = $this->casa_matriz->OptionCaption($this->casa_matriz->CurrentValue);
+		} else {
+			$this->casa_matriz->ViewValue = NULL;
+		}
+		$this->casa_matriz->ViewCustomAttributes = "";
+
+		// direccion
+		$this->direccion->ViewValue = $this->direccion->CurrentValue;
+		$this->direccion->ViewCustomAttributes = "";
+
+		// idempresa
+		if (strval($this->idempresa->CurrentValue) <> "") {
+			$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+		$sSqlWrk .= " ORDER BY `nombre`";
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idempresa->ViewValue = $this->idempresa->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->casa_matriz->ViewValue = NULL;
+				$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
 			}
-			$this->casa_matriz->ViewCustomAttributes = "";
+		} else {
+			$this->idempresa->ViewValue = NULL;
+		}
+		$this->idempresa->ViewCustomAttributes = "";
 
-			// direccion
-			$this->direccion->ViewValue = $this->direccion->CurrentValue;
-			$this->direccion->ViewCustomAttributes = "";
-
-			// idempresa
-			if (strval($this->idempresa->CurrentValue) <> "") {
-				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$sSqlWrk .= " ORDER BY `nombre`";
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idempresa->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
-				}
+		// idpais
+		if (strval($this->idpais->CurrentValue) <> "") {
+			$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idpais, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+		$sSqlWrk .= " ORDER BY `nombre`";
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idpais->ViewValue = $this->idpais->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idempresa->ViewValue = NULL;
+				$this->idpais->ViewValue = $this->idpais->CurrentValue;
 			}
-			$this->idempresa->ViewCustomAttributes = "";
+		} else {
+			$this->idpais->ViewValue = NULL;
+		}
+		$this->idpais->ViewCustomAttributes = "";
 
-			// idpais
-			if (strval($this->idpais->CurrentValue) <> "") {
-				$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idpais, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$sSqlWrk .= " ORDER BY `nombre`";
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idpais->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idpais->ViewValue = $this->idpais->CurrentValue;
-				}
-			} else {
-				$this->idpais->ViewValue = NULL;
-			}
-			$this->idpais->ViewCustomAttributes = "";
-
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
-			} else {
-				$this->estado->ViewValue = NULL;
-			}
-			$this->estado->ViewCustomAttributes = "";
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
 			// nombre
 			$this->nombre->LinkCustomAttributes = "";
@@ -1280,11 +1298,7 @@ class csucursal_grid extends csucursal {
 			// casa_matriz
 			$this->casa_matriz->EditAttrs["class"] = "form-control";
 			$this->casa_matriz->EditCustomAttributes = "";
-			$arwrk = array();
-			$arwrk[] = array($this->casa_matriz->FldTagValue(1), $this->casa_matriz->FldTagCaption(1) <> "" ? $this->casa_matriz->FldTagCaption(1) : $this->casa_matriz->FldTagValue(1));
-			$arwrk[] = array($this->casa_matriz->FldTagValue(2), $this->casa_matriz->FldTagCaption(2) <> "" ? $this->casa_matriz->FldTagCaption(2) : $this->casa_matriz->FldTagValue(2));
-			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
-			$this->casa_matriz->EditValue = $arwrk;
+			$this->casa_matriz->EditValue = $this->casa_matriz->Options(TRUE);
 
 			// idempresa
 			$this->idempresa->EditAttrs["class"] = "form-control";
@@ -1293,24 +1307,20 @@ class csucursal_grid extends csucursal {
 				$this->idempresa->CurrentValue = $this->idempresa->getSessionValue();
 				$this->idempresa->OldValue = $this->idempresa->CurrentValue;
 			if (strval($this->idempresa->CurrentValue) <> "") {
-				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
 			$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 			$sSqlWrk .= " ORDER BY `nombre`";
-				$rswrk = $conn->Execute($sSqlWrk);
+				$rswrk = Conn()->Execute($sSqlWrk);
 				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idempresa->ViewValue = $rswrk->fields('DispFld');
+					$arwrk = array();
+					$arwrk[1] = $rswrk->fields('DispFld');
+					$this->idempresa->ViewValue = $this->idempresa->DisplayValue($arwrk);
 					$rswrk->Close();
 				} else {
 					$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
@@ -1323,23 +1333,17 @@ class csucursal_grid extends csucursal {
 			if (trim(strval($this->idempresa->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `empresa`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 			$sSqlWrk .= " ORDER BY `nombre`";
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
@@ -1352,40 +1356,38 @@ class csucursal_grid extends csucursal {
 			if (trim(strval($this->idpais->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `pais`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idpais, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idpais, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 			$sSqlWrk .= " ORDER BY `nombre`";
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
 			$this->idpais->EditValue = $arwrk;
 
-			// Edit refer script
+			// Add refer script
 			// nombre
 
+			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
 
 			// casa_matriz
+			$this->casa_matriz->LinkCustomAttributes = "";
 			$this->casa_matriz->HrefValue = "";
 
 			// idempresa
+			$this->idempresa->LinkCustomAttributes = "";
 			$this->idempresa->HrefValue = "";
 
 			// idpais
+			$this->idpais->LinkCustomAttributes = "";
 			$this->idpais->HrefValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
 
@@ -1398,11 +1400,7 @@ class csucursal_grid extends csucursal {
 			// casa_matriz
 			$this->casa_matriz->EditAttrs["class"] = "form-control";
 			$this->casa_matriz->EditCustomAttributes = "";
-			$arwrk = array();
-			$arwrk[] = array($this->casa_matriz->FldTagValue(1), $this->casa_matriz->FldTagCaption(1) <> "" ? $this->casa_matriz->FldTagCaption(1) : $this->casa_matriz->FldTagValue(1));
-			$arwrk[] = array($this->casa_matriz->FldTagValue(2), $this->casa_matriz->FldTagCaption(2) <> "" ? $this->casa_matriz->FldTagCaption(2) : $this->casa_matriz->FldTagValue(2));
-			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
-			$this->casa_matriz->EditValue = $arwrk;
+			$this->casa_matriz->EditValue = $this->casa_matriz->Options(TRUE);
 
 			// idempresa
 			$this->idempresa->EditAttrs["class"] = "form-control";
@@ -1411,24 +1409,20 @@ class csucursal_grid extends csucursal {
 				$this->idempresa->CurrentValue = $this->idempresa->getSessionValue();
 				$this->idempresa->OldValue = $this->idempresa->CurrentValue;
 			if (strval($this->idempresa->CurrentValue) <> "") {
-				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
 			$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 			$sSqlWrk .= " ORDER BY `nombre`";
-				$rswrk = $conn->Execute($sSqlWrk);
+				$rswrk = Conn()->Execute($sSqlWrk);
 				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idempresa->ViewValue = $rswrk->fields('DispFld');
+					$arwrk = array();
+					$arwrk[1] = $rswrk->fields('DispFld');
+					$this->idempresa->ViewValue = $this->idempresa->DisplayValue($arwrk);
 					$rswrk->Close();
 				} else {
 					$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
@@ -1441,23 +1435,17 @@ class csucursal_grid extends csucursal {
 			if (trim(strval($this->idempresa->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `empresa`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 			$sSqlWrk .= " ORDER BY `nombre`";
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
@@ -1470,23 +1458,17 @@ class csucursal_grid extends csucursal {
 			if (trim(strval($this->idpais->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `pais`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idpais, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idpais, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 			$sSqlWrk .= " ORDER BY `nombre`";
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
@@ -1495,15 +1477,19 @@ class csucursal_grid extends csucursal {
 			// Edit refer script
 			// nombre
 
+			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
 
 			// casa_matriz
+			$this->casa_matriz->LinkCustomAttributes = "";
 			$this->casa_matriz->HrefValue = "";
 
 			// idempresa
+			$this->idempresa->LinkCustomAttributes = "";
 			$this->idempresa->HrefValue = "";
 
 			// idpais
+			$this->idpais->LinkCustomAttributes = "";
 			$this->idpais->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
@@ -1550,10 +1536,11 @@ class csucursal_grid extends csucursal {
 	// Delete records based on current filter
 	//
 	function DeleteRows() {
-		global $conn, $Language, $Security;
+		global $Language, $Security;
 		$DeleteRows = TRUE;
 		$sSql = $this->SQL();
-		$conn->raiseErrorFn = 'ew_ErrorFn';
+		$conn = &$this->Connection();
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 		$rs = $conn->Execute($sSql);
 		$conn->raiseErrorFn = '';
 		if ($rs === FALSE) {
@@ -1587,7 +1574,7 @@ class csucursal_grid extends csucursal {
 				$sThisKey = "";
 				if ($sThisKey <> "") $sThisKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
 				$sThisKey .= $row['idsucursal'];
-				$conn->raiseErrorFn = 'ew_ErrorFn';
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 				$DeleteRows = $this->Delete($row); // Delete
 				$conn->raiseErrorFn = '';
 				if ($DeleteRows === FALSE)
@@ -1623,16 +1610,19 @@ class csucursal_grid extends csucursal {
 
 	// Update record based on key values
 	function EditRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
+		$sFilter = $this->ApplyUserIDFilters($sFilter);
+		$conn = &$this->Connection();
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
-		$conn->raiseErrorFn = 'ew_ErrorFn';
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 		$rs = $conn->Execute($sSql);
 		$conn->raiseErrorFn = '';
 		if ($rs === FALSE)
 			return FALSE;
 		if ($rs->EOF) {
+			$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record message
 			$EditRow = FALSE; // Update Failed
 		} else {
 
@@ -1656,7 +1646,7 @@ class csucursal_grid extends csucursal {
 			// Call Row Updating event
 			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
 			if ($bUpdateRow) {
-				$conn->raiseErrorFn = 'ew_ErrorFn';
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 				if (count($rsnew) > 0)
 					$EditRow = $this->Update($rsnew, "", $rsold);
 				else
@@ -1687,12 +1677,13 @@ class csucursal_grid extends csucursal {
 
 	// Add record
 	function AddRow($rsold = NULL) {
-		global $conn, $Language, $Security;
+		global $Language, $Security;
 
 		// Set up foreign key field value from Session
 			if ($this->getCurrentMasterTable() == "empresa") {
 				$this->idempresa->CurrentValue = $this->idempresa->getSessionValue();
 			}
+		$conn = &$this->Connection();
 
 		// Load db values from rsold
 		if ($rsold) {
@@ -1716,10 +1707,14 @@ class csucursal_grid extends csucursal {
 		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
 		$bInsertRow = $this->Row_Inserting($rs, $rsnew);
 		if ($bInsertRow) {
-			$conn->raiseErrorFn = 'ew_ErrorFn';
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 			$AddRow = $this->Insert($rsnew);
 			$conn->raiseErrorFn = '';
 			if ($AddRow) {
+
+				// Get insert id if necessary
+				$this->idsucursal->setDbValue($conn->Insert_ID());
+				$rsnew['idsucursal'] = $this->idsucursal->DbValue;
 			}
 		} else {
 			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
@@ -1732,12 +1727,6 @@ class csucursal_grid extends csucursal {
 				$this->setFailureMessage($Language->Phrase("InsertCancelled"));
 			}
 			$AddRow = FALSE;
-		}
-
-		// Get insert id if necessary
-		if ($AddRow) {
-			$this->idsucursal->setDbValue($conn->Insert_ID());
-			$rsnew['idsucursal'] = $this->idsucursal->DbValue;
 		}
 		if ($AddRow) {
 
@@ -1757,7 +1746,7 @@ class csucursal_grid extends csucursal {
 			$this->idempresa->Visible = FALSE;
 			if ($GLOBALS["empresa"]->EventCancelled) $this->EventCancelled = TRUE;
 		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 

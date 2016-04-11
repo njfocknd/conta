@@ -1,4 +1,4 @@
-<?php include_once $EW_RELATIVE_PATH . "documento_caja_chicainfo.php" ?>
+<?php include_once "documento_caja_chicainfo.php" ?>
 <?php
 
 //
@@ -72,6 +72,30 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 
 	function setWarningMessage($v) {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
+	}
+
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
 	}
 
 	// Show message
@@ -154,6 +178,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -166,7 +191,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -192,6 +217,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		$this->FormBlankRowName .= '_' . $this->FormName;
 		$this->FormKeyCountName .= '_' . $this->FormName;
 		$GLOBALS["Grid"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -220,7 +246,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 
 		// List options
 		$this->ListOptions = new cListOptions();
@@ -276,6 +302,9 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		// Create Token
 		$this->CreateToken();
 
+		// Set up master detail parameters
+		$this->SetUpMasterParms();
+
 		// Setup other options
 		$this->SetupOtherOptions();
 	}
@@ -284,7 +313,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Export
 		global $EW_EXPORT, $documento_caja_chica;
@@ -324,6 +353,10 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 	var $ExportOptions; // Export options
 	var $SearchOptions; // Search options
 	var $OtherOptions = array(); // Other options
+	var $FilterOptions; // Filter options
+	var $ListActions; // List actions
+	var $SelectedCount = 0;
+	var $SelectedIndex = 0;
 	var $ShowOtherOptions = FALSE;
 	var $DisplayRecs = 20;
 	var $StartRec;
@@ -355,6 +388,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 	var $MultiSelectKey;
 	var $Command;
 	var $RestoreSearch = FALSE;
+	var $DetailPages;
 	var $Recordset;
 	var $OldRecordset;
 
@@ -375,9 +409,6 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 
 			// Handle reset command
 			$this->ResetCmd();
-
-			// Set up master detail parameters
-			$this->SetUpMasterParms();
 
 			// Hide list options
 			if ($this->Export <> "") {
@@ -442,12 +473,14 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		$this->CurrentFilter = "";
 
 		// Load record count first
-		$bSelectLimit = EW_SELECT_LIMIT;
-		if ($bSelectLimit) {
-			$this->TotalRecs = $this->SelectRecordCount();
-		} else {
-			if ($this->Recordset = $this->LoadRecordset())
-				$this->TotalRecs = $this->Recordset->RecordCount();
+		if (!$this->IsAddOrEdit()) {
+			$bSelectLimit = $this->UseSelectLimit;
+			if ($bSelectLimit) {
+				$this->TotalRecs = $this->SelectRecordCount();
+			} else {
+				if ($this->Recordset = $this->LoadRecordset())
+					$this->TotalRecs = $this->Recordset->RecordCount();
+			}
 		}
 	}
 
@@ -471,7 +504,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 
 	// Perform update to grid
 	function GridUpdate() {
-		global $conn, $Language, $objForm, $gsFormError;
+		global $Language, $objForm, $gsFormError;
 		$bGridUpdate = TRUE;
 
 		// Get old recordset
@@ -479,6 +512,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		if ($this->CurrentFilter == "")
 			$this->CurrentFilter = "0=1";
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		if ($rs = $conn->Execute($sSql)) {
 			$rsold = $rs->GetRows();
 			$rs->Close();
@@ -603,9 +637,10 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 
 	// Perform Grid Add
 	function GridInsert() {
-		global $conn, $Language, $objForm, $gsFormError;
+		global $Language, $objForm, $gsFormError;
 		$rowindex = 1;
 		$bGridInsert = FALSE;
+		$conn = &$this->Connection();
 
 		// Call Grid Inserting event
 		if (!$this->Grid_Inserting()) {
@@ -891,7 +926,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 				if (is_numeric($this->RowIndex) && ($this->RowAction == "" || $this->RowAction == "edit")) { // Do not allow delete existing record
 					$oListOpt->Body = "&nbsp;";
 				} else {
-					$oListOpt->Body = "<a class=\"ewGridLink ewGridDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" href=\"javascript:void(0);\" onclick=\"ew_DeleteGridRow(this, " . $this->RowIndex . ");\">" . $Language->Phrase("DeleteLink") . "</a>";
+					$oListOpt->Body = "<a class=\"ewGridLink ewGridDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" onclick=\"return ew_DeleteGridRow(this, " . $this->RowIndex . ");\">" . $Language->Phrase("DeleteLink") . "</a>";
 				}
 			}
 		}
@@ -1052,15 +1087,24 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 
 	// Load recordset
 	function LoadRecordset($offset = -1, $rowcnt = -1) {
-		global $conn;
 
 		// Load List page SQL
 		$sSql = $this->SelectSQL();
+		$conn = &$this->Connection();
 
 		// Load recordset
-		$conn->raiseErrorFn = 'ew_ErrorFn';
-		$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
-		$conn->raiseErrorFn = '';
+		$dbtype = ew_GetConnectionType($this->DBID);
+		if ($this->UseSelectLimit) {
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+			if ($dbtype == "MSSQL") {
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset, array("_hasOrderBy" => trim($this->getOrderBy()) || trim($this->getSessionOrderBy())));
+			} else {
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
+			}
+			$conn->raiseErrorFn = '';
+		} else {
+			$rs = ew_LoadRecordset($sSql, $conn);
+		}
 
 		// Call Recordset Selected event
 		$this->Recordset_Selected($rs);
@@ -1069,7 +1113,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -1078,8 +1122,9 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -1090,7 +1135,6 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -1144,7 +1188,8 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		if ($bValidKey) {
 			$this->CurrentFilter = $this->KeyFilter();
 			$sSql = $this->SQL();
-			$this->OldRecordset = ew_LoadRecordset($sSql);
+			$conn = &$this->Connection();
+			$this->OldRecordset = ew_LoadRecordset($sSql, $conn);
 			$this->LoadRowValues($this->OldRecordset); // Load row values
 		} else {
 			$this->OldRecordset = NULL;
@@ -1154,8 +1199,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		// Convert decimal values if posted back
@@ -1180,121 +1224,95 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// iddocumento_caja_chica
-			$this->iddocumento_caja_chica->ViewValue = $this->iddocumento_caja_chica->CurrentValue;
-			$this->iddocumento_caja_chica->ViewCustomAttributes = "";
+		// iddocumento_caja_chica
+		$this->iddocumento_caja_chica->ViewValue = $this->iddocumento_caja_chica->CurrentValue;
+		$this->iddocumento_caja_chica->ViewCustomAttributes = "";
 
-			// idcaja_chica
-			if (strval($this->idcaja_chica->CurrentValue) <> "") {
-				$sFilterWrk = "`idcaja_chica`" . ew_SearchString("=", $this->idcaja_chica->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idcaja_chica`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `caja_chica`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idcaja_chica, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idcaja_chica->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idcaja_chica->ViewValue = $this->idcaja_chica->CurrentValue;
-				}
+		// idcaja_chica
+		if (strval($this->idcaja_chica->CurrentValue) <> "") {
+			$sFilterWrk = "`idcaja_chica`" . ew_SearchString("=", $this->idcaja_chica->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idcaja_chica`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `caja_chica`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idcaja_chica, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idcaja_chica->ViewValue = $this->idcaja_chica->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idcaja_chica->ViewValue = NULL;
+				$this->idcaja_chica->ViewValue = $this->idcaja_chica->CurrentValue;
 			}
-			$this->idcaja_chica->ViewCustomAttributes = "";
+		} else {
+			$this->idcaja_chica->ViewValue = NULL;
+		}
+		$this->idcaja_chica->ViewCustomAttributes = "";
 
-			// tipo
-			if (strval($this->tipo->CurrentValue) <> "") {
-				switch ($this->tipo->CurrentValue) {
-					case $this->tipo->FldTagValue(1):
-						$this->tipo->ViewValue = $this->tipo->FldTagCaption(1) <> "" ? $this->tipo->FldTagCaption(1) : $this->tipo->CurrentValue;
-						break;
-					case $this->tipo->FldTagValue(2):
-						$this->tipo->ViewValue = $this->tipo->FldTagCaption(2) <> "" ? $this->tipo->FldTagCaption(2) : $this->tipo->CurrentValue;
-						break;
-					default:
-						$this->tipo->ViewValue = $this->tipo->CurrentValue;
-				}
+		// tipo
+		if (strval($this->tipo->CurrentValue) <> "") {
+			$this->tipo->ViewValue = $this->tipo->OptionCaption($this->tipo->CurrentValue);
+		} else {
+			$this->tipo->ViewValue = NULL;
+		}
+		$this->tipo->ViewCustomAttributes = "";
+
+		// idtipo_documento
+		if (strval($this->idtipo_documento->CurrentValue) <> "") {
+			$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idtipo_documento->ViewValue = $this->idtipo_documento->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->tipo->ViewValue = NULL;
+				$this->idtipo_documento->ViewValue = $this->idtipo_documento->CurrentValue;
 			}
-			$this->tipo->ViewCustomAttributes = "";
+		} else {
+			$this->idtipo_documento->ViewValue = NULL;
+		}
+		$this->idtipo_documento->ViewCustomAttributes = "";
 
-			// idtipo_documento
-			if (strval($this->idtipo_documento->CurrentValue) <> "") {
-				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
+		// serie
+		$this->serie->ViewValue = $this->serie->CurrentValue;
+		$this->serie->ViewCustomAttributes = "";
 
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idtipo_documento->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idtipo_documento->ViewValue = $this->idtipo_documento->CurrentValue;
-				}
-			} else {
-				$this->idtipo_documento->ViewValue = NULL;
-			}
-			$this->idtipo_documento->ViewCustomAttributes = "";
+		// numero
+		$this->numero->ViewValue = $this->numero->CurrentValue;
+		$this->numero->ViewCustomAttributes = "";
 
-			// serie
-			$this->serie->ViewValue = $this->serie->CurrentValue;
-			$this->serie->ViewCustomAttributes = "";
+		// fecha
+		$this->fecha->ViewValue = $this->fecha->CurrentValue;
+		$this->fecha->ViewValue = ew_FormatDateTime($this->fecha->ViewValue, 7);
+		$this->fecha->ViewCustomAttributes = "";
 
-			// numero
-			$this->numero->ViewValue = $this->numero->CurrentValue;
-			$this->numero->ViewCustomAttributes = "";
+		// monto
+		$this->monto->ViewValue = $this->monto->CurrentValue;
+		$this->monto->ViewCustomAttributes = "";
 
-			// fecha
-			$this->fecha->ViewValue = $this->fecha->CurrentValue;
-			$this->fecha->ViewValue = ew_FormatDateTime($this->fecha->ViewValue, 7);
-			$this->fecha->ViewCustomAttributes = "";
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
-			// monto
-			$this->monto->ViewValue = $this->monto->CurrentValue;
-			$this->monto->ViewCustomAttributes = "";
-
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
-			} else {
-				$this->estado->ViewValue = NULL;
-			}
-			$this->estado->ViewCustomAttributes = "";
-
-			// fecha_insercion
-			$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
-			$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
-			$this->fecha_insercion->ViewCustomAttributes = "";
+		// fecha_insercion
+		$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
+		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
+		$this->fecha_insercion->ViewCustomAttributes = "";
 
 			// tipo
 			$this->tipo->LinkCustomAttributes = "";
@@ -1330,11 +1348,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			// tipo
 			$this->tipo->EditAttrs["class"] = "form-control";
 			$this->tipo->EditCustomAttributes = "";
-			$arwrk = array();
-			$arwrk[] = array($this->tipo->FldTagValue(1), $this->tipo->FldTagCaption(1) <> "" ? $this->tipo->FldTagCaption(1) : $this->tipo->FldTagValue(1));
-			$arwrk[] = array($this->tipo->FldTagValue(2), $this->tipo->FldTagCaption(2) <> "" ? $this->tipo->FldTagCaption(2) : $this->tipo->FldTagValue(2));
-			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
-			$this->tipo->EditValue = $arwrk;
+			$this->tipo->EditValue = $this->tipo->Options(TRUE);
 
 			// idtipo_documento
 			$this->idtipo_documento->EditAttrs["class"] = "form-control";
@@ -1342,22 +1356,16 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			if (trim(strval($this->idtipo_documento->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `tipo_documento`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
@@ -1391,35 +1399,37 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			$this->monto->OldValue = $this->monto->EditValue;
 			}
 
-			// Edit refer script
+			// Add refer script
 			// tipo
 
+			$this->tipo->LinkCustomAttributes = "";
 			$this->tipo->HrefValue = "";
 
 			// idtipo_documento
+			$this->idtipo_documento->LinkCustomAttributes = "";
 			$this->idtipo_documento->HrefValue = "";
 
 			// serie
+			$this->serie->LinkCustomAttributes = "";
 			$this->serie->HrefValue = "";
 
 			// numero
+			$this->numero->LinkCustomAttributes = "";
 			$this->numero->HrefValue = "";
 
 			// fecha
+			$this->fecha->LinkCustomAttributes = "";
 			$this->fecha->HrefValue = "";
 
 			// monto
+			$this->monto->LinkCustomAttributes = "";
 			$this->monto->HrefValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
 
 			// tipo
 			$this->tipo->EditAttrs["class"] = "form-control";
 			$this->tipo->EditCustomAttributes = "";
-			$arwrk = array();
-			$arwrk[] = array($this->tipo->FldTagValue(1), $this->tipo->FldTagCaption(1) <> "" ? $this->tipo->FldTagCaption(1) : $this->tipo->FldTagValue(1));
-			$arwrk[] = array($this->tipo->FldTagValue(2), $this->tipo->FldTagCaption(2) <> "" ? $this->tipo->FldTagCaption(2) : $this->tipo->FldTagValue(2));
-			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
-			$this->tipo->EditValue = $arwrk;
+			$this->tipo->EditValue = $this->tipo->Options(TRUE);
 
 			// idtipo_documento
 			$this->idtipo_documento->EditAttrs["class"] = "form-control";
@@ -1427,22 +1437,16 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			if (trim(strval($this->idtipo_documento->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `tipo_documento`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
@@ -1479,21 +1483,27 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			// Edit refer script
 			// tipo
 
+			$this->tipo->LinkCustomAttributes = "";
 			$this->tipo->HrefValue = "";
 
 			// idtipo_documento
+			$this->idtipo_documento->LinkCustomAttributes = "";
 			$this->idtipo_documento->HrefValue = "";
 
 			// serie
+			$this->serie->LinkCustomAttributes = "";
 			$this->serie->HrefValue = "";
 
 			// numero
+			$this->numero->LinkCustomAttributes = "";
 			$this->numero->HrefValue = "";
 
 			// fecha
+			$this->fecha->LinkCustomAttributes = "";
 			$this->fecha->HrefValue = "";
 
 			// monto
+			$this->monto->LinkCustomAttributes = "";
 			$this->monto->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
@@ -1555,10 +1565,11 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 	// Delete records based on current filter
 	//
 	function DeleteRows() {
-		global $conn, $Language, $Security;
+		global $Language, $Security;
 		$DeleteRows = TRUE;
 		$sSql = $this->SQL();
-		$conn->raiseErrorFn = 'ew_ErrorFn';
+		$conn = &$this->Connection();
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 		$rs = $conn->Execute($sSql);
 		$conn->raiseErrorFn = '';
 		if ($rs === FALSE) {
@@ -1592,7 +1603,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 				$sThisKey = "";
 				if ($sThisKey <> "") $sThisKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
 				$sThisKey .= $row['iddocumento_caja_chica'];
-				$conn->raiseErrorFn = 'ew_ErrorFn';
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 				$DeleteRows = $this->Delete($row); // Delete
 				$conn->raiseErrorFn = '';
 				if ($DeleteRows === FALSE)
@@ -1628,16 +1639,19 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 
 	// Update record based on key values
 	function EditRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
+		$sFilter = $this->ApplyUserIDFilters($sFilter);
+		$conn = &$this->Connection();
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
-		$conn->raiseErrorFn = 'ew_ErrorFn';
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 		$rs = $conn->Execute($sSql);
 		$conn->raiseErrorFn = '';
 		if ($rs === FALSE)
 			return FALSE;
 		if ($rs->EOF) {
+			$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record message
 			$EditRow = FALSE; // Update Failed
 		} else {
 
@@ -1667,7 +1681,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			// Call Row Updating event
 			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
 			if ($bUpdateRow) {
-				$conn->raiseErrorFn = 'ew_ErrorFn';
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 				if (count($rsnew) > 0)
 					$EditRow = $this->Update($rsnew, "", $rsold);
 				else
@@ -1698,12 +1712,13 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 
 	// Add record
 	function AddRow($rsold = NULL) {
-		global $conn, $Language, $Security;
+		global $Language, $Security;
 
 		// Set up foreign key field value from Session
 			if ($this->getCurrentMasterTable() == "caja_chica") {
 				$this->idcaja_chica->CurrentValue = $this->idcaja_chica->getSessionValue();
 			}
+		$conn = &$this->Connection();
 
 		// Load db values from rsold
 		if ($rsold) {
@@ -1738,10 +1753,14 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
 		$bInsertRow = $this->Row_Inserting($rs, $rsnew);
 		if ($bInsertRow) {
-			$conn->raiseErrorFn = 'ew_ErrorFn';
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 			$AddRow = $this->Insert($rsnew);
 			$conn->raiseErrorFn = '';
 			if ($AddRow) {
+
+				// Get insert id if necessary
+				$this->iddocumento_caja_chica->setDbValue($conn->Insert_ID());
+				$rsnew['iddocumento_caja_chica'] = $this->iddocumento_caja_chica->DbValue;
 			}
 		} else {
 			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
@@ -1754,12 +1773,6 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 				$this->setFailureMessage($Language->Phrase("InsertCancelled"));
 			}
 			$AddRow = FALSE;
-		}
-
-		// Get insert id if necessary
-		if ($AddRow) {
-			$this->iddocumento_caja_chica->setDbValue($conn->Insert_ID());
-			$rsnew['iddocumento_caja_chica'] = $this->iddocumento_caja_chica->DbValue;
 		}
 		if ($AddRow) {
 
@@ -1779,7 +1792,7 @@ class cdocumento_caja_chica_grid extends cdocumento_caja_chica {
 			$this->idcaja_chica->Visible = FALSE;
 			if ($GLOBALS["caja_chica"]->EventCancelled) $this->EventCancelled = TRUE;
 		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 

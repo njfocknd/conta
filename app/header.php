@@ -2,8 +2,8 @@
 
 // Compatibility with PHP Report Maker
 if (!isset($Language)) {
-	include_once "ewcfg11.php";
-	include_once "ewshared11.php";
+	include_once "ewcfg12.php";
+	include_once "ewshared12.php";
 	$Language = new cLanguage();
 }
 
@@ -26,6 +26,7 @@ if (ew_IsResponsiveLayout()) {
 <link rel="stylesheet" type="text/css" href="<?php echo $EW_RELATIVE_PATH ?>bootstrap3/css/<?php echo ew_CssFile("bootstrap.css") ?>">
 <!-- Optional theme -->
 <link rel="stylesheet" type="text/css" href="<?php echo $EW_RELATIVE_PATH ?>bootstrap3/css/<?php echo ew_CssFile("bootstrap-theme.css") ?>">
+<link rel="stylesheet" type="text/css" href="<?php echo $EW_RELATIVE_PATH ?>phpcss/jquery.fileupload.css">
 <link rel="stylesheet" type="text/css" href="<?php echo $EW_RELATIVE_PATH ?>phpcss/jquery.fileupload-ui.css">
 <link rel="stylesheet" type="text/css" href="<?php echo $EW_RELATIVE_PATH ?>colorbox/colorbox.css">
 <?php if (ew_IsResponsiveLayout()) { ?>
@@ -35,58 +36,77 @@ if (ew_IsResponsiveLayout()) {
 <?php if (@$gsCustomExport == "pdf" && EW_PDF_STYLESHEET_FILENAME <> "") { ?>
 <link rel="stylesheet" type="text/css" href="<?php echo $EW_RELATIVE_PATH ?><?php echo EW_PDF_STYLESHEET_FILENAME ?>">
 <?php } ?>
-<script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?><?php echo ew_jQueryFile("jquery-%v.min.js") ?>"></script>
+<script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>jquery/jquery-1.12.0.min.js"></script>
+<script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>jquery/jquery.storageapi.min.js"></script>
+<script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>jquery/pStrength.jquery.js"></script>
+<script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>jquery/pGenerator.jquery.js"></script>
 <script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>bootstrap3/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>phpjs/typeahead.bundle.min.js"></script>
 <script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>jqueryfileupload/jquery.ui.widget.js"></script>
-<script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>jqueryfileupload/load-image.min.js"></script>
+<script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>jqueryfileupload/load-image.all.min.js"></script>
 <script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>jqueryfileupload/jqueryfileupload.min.js"></script>
 <script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>colorbox/jquery.colorbox-min.js"></script>
-<link href="calendar/calendar.css" rel="stylesheet" type="text/css">
-<script type="text/javascript" src="calendar/calendar.min.js"></script>
-<script type="text/javascript" src="calendar/lang/calendar-en.js"></script>
-<script type="text/javascript" src="calendar/calendar-setup.js"></script>
-<script type="text/javascript" src="phpjs/ewcalendar.js"></script>
+<script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>phpjs/mobile-detect.min.js"></script>
+<script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>phpjs/moment.min.js"></script>
+<link href="<?php echo $EW_RELATIVE_PATH ?>calendar/calendar.css" rel="stylesheet" type="text/css">
+<script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>calendar/calendar.min.js"></script>
+<script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>calendar/calendar-setup.js"></script>
+<script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>phpjs/ewcalendar.js"></script>
 <script type="text/javascript">
 var EW_LANGUAGE_ID = "<?php echo $gsLanguage ?>";
-var EW_DATE_SEPARATOR = "/" || "/"; // Default date separator
+var EW_DATE_SEPARATOR = "/"; // Default date separator
+var EW_DEFAULT_DATE_FORMAT = "<?php echo EW_DEFAULT_DATE_FORMAT ?>"; // Default date format
 var EW_DECIMAL_POINT = "<?php echo $DEFAULT_DECIMAL_POINT ?>";
 var EW_THOUSANDS_SEP = "<?php echo $DEFAULT_THOUSANDS_SEP ?>";
-
-// Ajax settings
-var EW_LOOKUP_FILE_NAME = "ewlookup11.php"; // Lookup file name
+var EW_MIN_PASSWORD_STRENGTH = 60;
+var EW_GENERATE_PASSWORD_LENGTH = 16;
+var EW_GENERATE_PASSWORD_UPPERCASE = true;
+var EW_GENERATE_PASSWORD_LOWERCASE = true;
+var EW_GENERATE_PASSWORD_NUMBER = true;
+var EW_GENERATE_PASSWORD_SPECIALCHARS = false;
+var EW_SESSION_TIMEOUT = <?php echo (EW_SESSION_TIMEOUT > 0) ? ew_SessionTimeoutTime() : 0 ?>; // Session timeout time (seconds)
+var EW_SESSION_TIMEOUT_COUNTDOWN = <?php echo EW_SESSION_TIMEOUT_COUNTDOWN ?>; // Count down time to session timeout (seconds)
+var EW_SESSION_KEEP_ALIVE_INTERVAL = <?php echo EW_SESSION_KEEP_ALIVE_INTERVAL ?>; // Keep alive interval (seconds)
+var EW_RELATIVE_PATH = "<?php echo $EW_RELATIVE_PATH ?>"; // Relative path
+var EW_SESSION_URL = EW_RELATIVE_PATH + "ewsession12.php"; // Session URL
+var EW_IS_LOGGEDIN = <?php echo IsLoggedIn() ? "true" : "false" ?>; // Is logged in
+var EW_IS_AUTOLOGIN = <?php echo IsAutoLogin() ? "true" : "false" ?>; // Is logged in with option "Auto login until I logout explicitly"
+var EW_LOGOUT_URL = EW_RELATIVE_PATH + "logout.php"; // Logout URL
+var EW_LOOKUP_FILE_NAME = "ewlookup12.php"; // Lookup file name
 var EW_AUTO_SUGGEST_MAX_ENTRIES = <?php echo EW_AUTO_SUGGEST_MAX_ENTRIES ?>; // Auto-Suggest max entries
-
-// Common JavaScript messages
 var EW_DISABLE_BUTTON_ON_SUBMIT = true;
 var EW_IMAGE_FOLDER = "phpimages/"; // Image folder
-var EW_UPLOAD_URL = "<?php echo EW_UPLOAD_URL ?>"; // Upload url
+var EW_UPLOAD_URL = "<?php echo EW_UPLOAD_URL ?>"; // Upload URL
 var EW_UPLOAD_THUMBNAIL_WIDTH = <?php echo EW_UPLOAD_THUMBNAIL_WIDTH ?>; // Upload thumbnail width
 var EW_UPLOAD_THUMBNAIL_HEIGHT = <?php echo EW_UPLOAD_THUMBNAIL_HEIGHT ?>; // Upload thumbnail height
 var EW_MULTIPLE_UPLOAD_SEPARATOR = "<?php echo EW_MULTIPLE_UPLOAD_SEPARATOR ?>"; // Upload multiple separator
+var EW_USE_COLORBOX = <?php echo (EW_USE_COLORBOX) ? "true" : "false" ?>;
 var EW_USE_JAVASCRIPT_MESSAGE = false;
-var EW_IS_MOBILE = <?php echo (ew_IsMobile()) ? "true" : "false" ?>;
+var EW_MOBILE_DETECT = new MobileDetect(window.navigator.userAgent);
+var EW_IS_MOBILE = EW_MOBILE_DETECT.mobile() ? true : false;
 var EW_PROJECT_STYLESHEET_FILENAME = "<?php echo EW_PROJECT_STYLESHEET_FILENAME ?>"; // Project style sheet
 var EW_PDF_STYLESHEET_FILENAME = "<?php echo EW_PDF_STYLESHEET_FILENAME ?>"; // Pdf style sheet
 var EW_TOKEN = "<?php echo @$gsToken ?>";
-var EW_CSS_FLIP = <?php echo (EW_CSS_FLIP) ? "true" : "false" ?>;
+var EW_CSS_FLIP = <?php echo ($EW_CSS_FLIP) ? "true" : "false" ?>;
+var EW_CONFIRM_CANCEL = true;
 </script>
 <script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>phpjs/jsrender.min.js"></script>
-<script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>phpjs/ewp11.js"></script>
-<script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>phpjs/userfn11.js"></script>
+<script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>phpjs/ewp12.js"></script>
 <script type="text/javascript">
+var ewVar = <?php echo json_encode($EW_CLIENT_VAR); ?>;
 <?php echo $Language->ToJSON() ?>
 </script>
+<script type="text/javascript" src="<?php echo $EW_RELATIVE_PATH ?>phpjs/userfn12.js"></script>
 <script type="text/javascript">
 
 // Write your client script here, no need to add script tags.
 </script>
-<meta name="generator" content="PHPMaker v11.0.3">
+<meta name="generator" content="PHPMaker v12.0.7">
 </head>
 <body>
 <?php if (@!$gbSkipHeaderFooter) { ?>
 <div class="ewLayout">
-	<!-- header (begin) --><!-- *** Note: Only licensed users are allowed to change the logo *** -->
+	<!-- header (begin) --><!-- ** Note: Only licensed users are allowed to change the logo ** -->
 	<div id="ewHeaderRow" class="<?php echo $gsHeaderRowClass ?>"><img src="<?php echo $EW_RELATIVE_PATH ?>phpimages/phpmkrlogo11.png" alt=""></div>
 <?php if (ew_IsResponsiveLayout()) { ?>
 <nav id="ewMobileMenu" role="navigation" class="navbar navbar-default visible-xs hidden-print">
@@ -117,7 +137,7 @@ var EW_CSS_FLIP = <?php echo (EW_CSS_FLIP) ? "true" : "false" ?>;
 	$RootMenu->MenuLinkDropdownClass = "ewDropdown";
 	$RootMenu->MenuLinkClassName = "icon-arrow-right";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmobilemenu.php" ?>
+<?php include_once "ewmobilemenu.php" ?>
 		</div><!-- /.navbar-collapse -->
 	</div><!-- /.container-fluid -->
 </nav>
@@ -125,7 +145,7 @@ var EW_CSS_FLIP = <?php echo (EW_CSS_FLIP) ? "true" : "false" ?>;
 	<!-- header (end) -->
 	<div id="ewMenuRow"<?php if (ew_IsResponsiveLayout()) { ?> class="hidden-xs"<?php } ?>>
 		<div class="ewMenu">
-<?php include_once $EW_RELATIVE_PATH . "ewmenu.php" ?>
+<?php include_once "ewmenu.php" ?>
 		</div>
 	</div>
 	<!-- content (begin) -->

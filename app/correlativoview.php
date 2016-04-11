@@ -1,14 +1,13 @@
 <?php
 if (session_id() == "") session_start(); // Initialize Session data
 ob_start(); // Turn on output buffering
-$EW_RELATIVE_PATH = "";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "correlativoinfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "empresainfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
+<?php include_once "ewcfg12.php" ?>
+<?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
+<?php include_once "phpfn12.php" ?>
+<?php include_once "correlativoinfo.php" ?>
+<?php include_once "empresainfo.php" ?>
+<?php include_once "userfn12.php" ?>
 <?php
 
 //
@@ -108,6 +107,30 @@ class ccorrelativo_view extends ccorrelativo {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
 	}
 
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
 	// Show message
 	function ShowMessage() {
 		$hidden = FALSE;
@@ -188,6 +211,7 @@ class ccorrelativo_view extends ccorrelativo {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -200,7 +224,7 @@ class ccorrelativo_view extends ccorrelativo {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -221,6 +245,7 @@ class ccorrelativo_view extends ccorrelativo {
 	function __construct() {
 		global $conn, $Language;
 		$GLOBALS["Page"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -261,7 +286,7 @@ class ccorrelativo_view extends ccorrelativo {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 
 		// Export options
 		$this->ExportOptions = new cListOptions();
@@ -298,20 +323,6 @@ class ccorrelativo_view extends ccorrelativo {
 			exit();
 		}
 
-		// Process auto fill
-		if (@$_POST["ajax"] == "autofill") {
-			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
-			if ($results) {
-
-				// Clean output buffer
-				if (!EW_DEBUG_ENABLED && ob_get_length())
-					ob_end_clean();
-				echo $results;
-				$this->Page_Terminate();
-				exit();
-			}
-		}
-
 		// Create Token
 		$this->CreateToken();
 	}
@@ -320,7 +331,7 @@ class ccorrelativo_view extends ccorrelativo {
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Page Unload event
 		$this->Page_Unload();
@@ -348,7 +359,7 @@ class ccorrelativo_view extends ccorrelativo {
 		$this->Page_Redirecting($url);
 
 		 // Close connection
-		$conn->Close();
+		ew_CloseConn();
 
 		// Go to URL if specified
 		if ($url <> "") {
@@ -389,6 +400,9 @@ class ccorrelativo_view extends ccorrelativo {
 			if (@$_GET["idcorrelativo"] <> "") {
 				$this->idcorrelativo->setQueryStringValue($_GET["idcorrelativo"]);
 				$this->RecKey["idcorrelativo"] = $this->idcorrelativo->QueryStringValue;
+			} elseif (@$_POST["idcorrelativo"] <> "") {
+				$this->idcorrelativo->setFormValue($_POST["idcorrelativo"]);
+				$this->RecKey["idcorrelativo"] = $this->idcorrelativo->FormValue;
 			} else {
 				$sReturnUrl = "correlativolist.php"; // Return to list
 			}
@@ -480,7 +494,7 @@ class ccorrelativo_view extends ccorrelativo {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -489,8 +503,9 @@ class ccorrelativo_view extends ccorrelativo {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -501,7 +516,6 @@ class ccorrelativo_view extends ccorrelativo {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -525,8 +539,7 @@ class ccorrelativo_view extends ccorrelativo {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		$this->AddUrl = $this->GetAddUrl();
@@ -547,45 +560,41 @@ class ccorrelativo_view extends ccorrelativo {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idcorrelativo
-			$this->idcorrelativo->ViewValue = $this->idcorrelativo->CurrentValue;
-			$this->idcorrelativo->ViewCustomAttributes = "";
+		// idcorrelativo
+		$this->idcorrelativo->ViewValue = $this->idcorrelativo->CurrentValue;
+		$this->idcorrelativo->ViewCustomAttributes = "";
 
-			// codigo
-			$this->codigo->ViewValue = $this->codigo->CurrentValue;
-			$this->codigo->ViewCustomAttributes = "";
+		// codigo
+		$this->codigo->ViewValue = $this->codigo->CurrentValue;
+		$this->codigo->ViewCustomAttributes = "";
 
-			// valor
-			$this->valor->ViewValue = $this->valor->CurrentValue;
-			$this->valor->ViewCustomAttributes = "";
+		// valor
+		$this->valor->ViewValue = $this->valor->CurrentValue;
+		$this->valor->ViewCustomAttributes = "";
 
-			// idempresa
-			if (strval($this->idempresa->CurrentValue) <> "") {
-				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idempresa->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
-				}
+		// idempresa
+		if (strval($this->idempresa->CurrentValue) <> "") {
+			$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idempresa->ViewValue = $this->idempresa->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idempresa->ViewValue = NULL;
+				$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
 			}
-			$this->idempresa->ViewCustomAttributes = "";
+		} else {
+			$this->idempresa->ViewValue = NULL;
+		}
+		$this->idempresa->ViewCustomAttributes = "";
 
 			// idcorrelativo
 			$this->idcorrelativo->LinkCustomAttributes = "";
@@ -636,6 +645,24 @@ class ccorrelativo_view extends ccorrelativo {
 					$bValidMaster = FALSE;
 				}
 			}
+		} elseif (isset($_POST[EW_TABLE_SHOW_MASTER])) {
+			$sMasterTblVar = $_POST[EW_TABLE_SHOW_MASTER];
+			if ($sMasterTblVar == "") {
+				$bValidMaster = TRUE;
+				$this->DbMasterFilter = "";
+				$this->DbDetailFilter = "";
+			}
+			if ($sMasterTblVar == "empresa") {
+				$bValidMaster = TRUE;
+				if (@$_POST["fk_idempresa"] <> "") {
+					$GLOBALS["empresa"]->idempresa->setFormValue($_POST["fk_idempresa"]);
+					$this->idempresa->setFormValue($GLOBALS["empresa"]->idempresa->FormValue);
+					$this->idempresa->setSessionValue($this->idempresa->FormValue);
+					if (!is_numeric($GLOBALS["empresa"]->idempresa->FormValue)) $bValidMaster = FALSE;
+				} else {
+					$bValidMaster = FALSE;
+				}
+			}
 		}
 		if ($bValidMaster) {
 
@@ -649,10 +676,10 @@ class ccorrelativo_view extends ccorrelativo {
 
 			// Clear previous master key from Session
 			if ($sMasterTblVar <> "empresa") {
-				if ($this->idempresa->QueryStringValue == "") $this->idempresa->setSessionValue("");
+				if ($this->idempresa->CurrentValue == "") $this->idempresa->setSessionValue("");
 			}
 		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 
@@ -660,9 +687,10 @@ class ccorrelativo_view extends ccorrelativo {
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$Breadcrumb->Add("list", $this->TableVar, "correlativolist.php", "", $this->TableVar, TRUE);
+		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("correlativolist.php"), "", $this->TableVar, TRUE);
 		$PageId = "view";
-		$Breadcrumb->Add("view", $PageId, ew_CurrentUrl());
+		$Breadcrumb->Add("view", $PageId, $url);
 	}
 
 	// Page Load event
@@ -770,16 +798,12 @@ Page_Rendering();
 // Page Rendering event
 $correlativo_view->Page_Render();
 ?>
-<?php include_once $EW_RELATIVE_PATH . "header.php" ?>
+<?php include_once "header.php" ?>
 <script type="text/javascript">
 
-// Page object
-var correlativo_view = new ew_Page("correlativo_view");
-correlativo_view.PageID = "view"; // Page ID
-var EW_PAGE_ID = correlativo_view.PageID; // For backward compatibility
-
 // Form object
-var fcorrelativoview = new ew_Form("fcorrelativoview");
+var CurrentPageID = EW_PAGE_ID = "view";
+var CurrentForm = fcorrelativoview = new ew_Form("fcorrelativoview", "view");
 
 // Form_CustomValidate event
 fcorrelativoview.Form_CustomValidate = 
@@ -797,7 +821,7 @@ fcorrelativoview.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-fcorrelativoview.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+fcorrelativoview.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
 // Form object for search
 </script>
@@ -828,8 +852,8 @@ $correlativo_view->ShowMessage();
 <?php if ($correlativo->idcorrelativo->Visible) { // idcorrelativo ?>
 	<tr id="r_idcorrelativo">
 		<td><span id="elh_correlativo_idcorrelativo"><?php echo $correlativo->idcorrelativo->FldCaption() ?></span></td>
-		<td<?php echo $correlativo->idcorrelativo->CellAttributes() ?>>
-<span id="el_correlativo_idcorrelativo" class="form-group">
+		<td data-name="idcorrelativo"<?php echo $correlativo->idcorrelativo->CellAttributes() ?>>
+<span id="el_correlativo_idcorrelativo">
 <span<?php echo $correlativo->idcorrelativo->ViewAttributes() ?>>
 <?php echo $correlativo->idcorrelativo->ViewValue ?></span>
 </span>
@@ -839,8 +863,8 @@ $correlativo_view->ShowMessage();
 <?php if ($correlativo->codigo->Visible) { // codigo ?>
 	<tr id="r_codigo">
 		<td><span id="elh_correlativo_codigo"><?php echo $correlativo->codigo->FldCaption() ?></span></td>
-		<td<?php echo $correlativo->codigo->CellAttributes() ?>>
-<span id="el_correlativo_codigo" class="form-group">
+		<td data-name="codigo"<?php echo $correlativo->codigo->CellAttributes() ?>>
+<span id="el_correlativo_codigo">
 <span<?php echo $correlativo->codigo->ViewAttributes() ?>>
 <?php echo $correlativo->codigo->ViewValue ?></span>
 </span>
@@ -850,8 +874,8 @@ $correlativo_view->ShowMessage();
 <?php if ($correlativo->valor->Visible) { // valor ?>
 	<tr id="r_valor">
 		<td><span id="elh_correlativo_valor"><?php echo $correlativo->valor->FldCaption() ?></span></td>
-		<td<?php echo $correlativo->valor->CellAttributes() ?>>
-<span id="el_correlativo_valor" class="form-group">
+		<td data-name="valor"<?php echo $correlativo->valor->CellAttributes() ?>>
+<span id="el_correlativo_valor">
 <span<?php echo $correlativo->valor->ViewAttributes() ?>>
 <?php echo $correlativo->valor->ViewValue ?></span>
 </span>
@@ -861,8 +885,8 @@ $correlativo_view->ShowMessage();
 <?php if ($correlativo->idempresa->Visible) { // idempresa ?>
 	<tr id="r_idempresa">
 		<td><span id="elh_correlativo_idempresa"><?php echo $correlativo->idempresa->FldCaption() ?></span></td>
-		<td<?php echo $correlativo->idempresa->CellAttributes() ?>>
-<span id="el_correlativo_idempresa" class="form-group">
+		<td data-name="idempresa"<?php echo $correlativo->idempresa->CellAttributes() ?>>
+<span id="el_correlativo_idempresa">
 <span<?php echo $correlativo->idempresa->ViewAttributes() ?>>
 <?php echo $correlativo->idempresa->ViewValue ?></span>
 </span>
@@ -885,7 +909,7 @@ if (EW_DEBUG_ENABLED)
 // document.write("page loaded");
 
 </script>
-<?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
+<?php include_once "footer.php" ?>
 <?php
 $correlativo_view->Page_Terminate();
 ?>

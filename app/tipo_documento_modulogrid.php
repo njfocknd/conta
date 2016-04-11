@@ -18,13 +18,8 @@ $tipo_documento_modulo_grid->Page_Render();
 <?php if ($tipo_documento_modulo->Export == "") { ?>
 <script type="text/javascript">
 
-// Page object
-var tipo_documento_modulo_grid = new ew_Page("tipo_documento_modulo_grid");
-tipo_documento_modulo_grid.PageID = "grid"; // Page ID
-var EW_PAGE_ID = tipo_documento_modulo_grid.PageID; // For backward compatibility
-
 // Form object
-var ftipo_documento_modulogrid = new ew_Form("ftipo_documento_modulogrid");
+var ftipo_documento_modulogrid = new ew_Form("ftipo_documento_modulogrid", "grid");
 ftipo_documento_modulogrid.FormKeyCountName = '<?php echo $tipo_documento_modulo_grid->FormKeyCountName ?>';
 
 // Validate form
@@ -32,7 +27,6 @@ ftipo_documento_modulogrid.Validate = function() {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
-	this.PostAutoSuggest();
 	if ($fobj.find("#a_confirm").val() == "F")
 		return true;
 	var elm, felm, uelm, addcnt = 0;
@@ -52,9 +46,6 @@ ftipo_documento_modulogrid.Validate = function() {
 			elm = this.GetElements("x" + infix + "_idmodulo");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $tipo_documento_modulo->idmodulo->FldCaption(), $tipo_documento_modulo->idmodulo->ReqErrMsg)) ?>");
-
-			// Set up row object
-			ew_ElementsToRow(fobj);
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -88,8 +79,8 @@ ftipo_documento_modulogrid.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-ftipo_documento_modulogrid.Lists["x_idtipo_documento"] = {"LinkField":"x_idtipo_documento","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
-ftipo_documento_modulogrid.Lists["x_idmodulo"] = {"LinkField":"x_idmodulo","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+ftipo_documento_modulogrid.Lists["x_idtipo_documento"] = {"LinkField":"x_idtipo_documento","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+ftipo_documento_modulogrid.Lists["x_idmodulo"] = {"LinkField":"x_idmodulo","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
 // Form object for search
 </script>
@@ -97,7 +88,7 @@ ftipo_documento_modulogrid.Lists["x_idmodulo"] = {"LinkField":"x_idmodulo","Ajax
 <?php
 if ($tipo_documento_modulo->CurrentAction == "gridadd") {
 	if ($tipo_documento_modulo->CurrentMode == "copy") {
-		$bSelectLimit = EW_SELECT_LIMIT;
+		$bSelectLimit = $tipo_documento_modulo_grid->UseSelectLimit;
 		if ($bSelectLimit) {
 			$tipo_documento_modulo_grid->TotalRecs = $tipo_documento_modulo->SelectRecordCount();
 			$tipo_documento_modulo_grid->Recordset = $tipo_documento_modulo_grid->LoadRecordset($tipo_documento_modulo_grid->StartRec-1, $tipo_documento_modulo_grid->DisplayRecs);
@@ -115,11 +106,12 @@ if ($tipo_documento_modulo->CurrentAction == "gridadd") {
 	$tipo_documento_modulo_grid->TotalRecs = $tipo_documento_modulo_grid->DisplayRecs;
 	$tipo_documento_modulo_grid->StopRec = $tipo_documento_modulo_grid->DisplayRecs;
 } else {
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $tipo_documento_modulo_grid->UseSelectLimit;
 	if ($bSelectLimit) {
-		$tipo_documento_modulo_grid->TotalRecs = $tipo_documento_modulo->SelectRecordCount();
+		if ($tipo_documento_modulo_grid->TotalRecs <= 0)
+			$tipo_documento_modulo_grid->TotalRecs = $tipo_documento_modulo->SelectRecordCount();
 	} else {
-		if ($tipo_documento_modulo_grid->Recordset = $tipo_documento_modulo_grid->LoadRecordset())
+		if (!$tipo_documento_modulo_grid->Recordset && ($tipo_documento_modulo_grid->Recordset = $tipo_documento_modulo_grid->LoadRecordset()))
 			$tipo_documento_modulo_grid->TotalRecs = $tipo_documento_modulo_grid->Recordset->RecordCount();
 	}
 	$tipo_documento_modulo_grid->StartRec = 1;
@@ -142,7 +134,7 @@ $tipo_documento_modulo_grid->RenderOtherOptions();
 $tipo_documento_modulo_grid->ShowMessage();
 ?>
 <?php if ($tipo_documento_modulo_grid->TotalRecs > 0 || $tipo_documento_modulo->CurrentAction <> "") { ?>
-<div class="ewGrid">
+<div class="panel panel-default ewGrid">
 <div id="ftipo_documento_modulogrid" class="ewForm form-inline">
 <div id="gmp_tipo_documento_modulo" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
 <table id="tbl_tipo_documento_modulogrid" class="table ewTable">
@@ -150,6 +142,9 @@ $tipo_documento_modulo_grid->ShowMessage();
 <thead><!-- Table header -->
 	<tr class="ewTableHeader">
 <?php
+
+// Header row
+$tipo_documento_modulo_grid->RowType = EW_ROWTYPE_HEADER;
 
 // Render list options
 $tipo_documento_modulo_grid->RenderListOptions();
@@ -198,7 +193,7 @@ if ($objForm) {
 $tipo_documento_modulo_grid->RecCnt = $tipo_documento_modulo_grid->StartRec - 1;
 if ($tipo_documento_modulo_grid->Recordset && !$tipo_documento_modulo_grid->Recordset->EOF) {
 	$tipo_documento_modulo_grid->Recordset->MoveFirst();
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $tipo_documento_modulo_grid->UseSelectLimit;
 	if (!$bSelectLimit && $tipo_documento_modulo_grid->StartRec > 1)
 		$tipo_documento_modulo_grid->Recordset->Move($tipo_documento_modulo_grid->StartRec - 1);
 } elseif (!$tipo_documento_modulo->AllowAddDeleteRow && $tipo_documento_modulo_grid->StopRec == 0) {
@@ -295,41 +290,46 @@ $tipo_documento_modulo_grid->ListOptions->Render("body", "left", $tipo_documento
 <input type="hidden" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el<?php echo $tipo_documento_modulo_grid->RowCnt ?>_tipo_documento_modulo_idtipo_documento" class="form-group tipo_documento_modulo_idtipo_documento">
-<select data-field="x_idtipo_documento" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento"<?php echo $tipo_documento_modulo->idtipo_documento->EditAttributes() ?>>
+<select data-table="tipo_documento_modulo" data-field="x_idtipo_documento" data-value-separator="<?php echo ew_HtmlEncode(is_array($tipo_documento_modulo->idtipo_documento->DisplayValueSeparator) ? json_encode($tipo_documento_modulo->idtipo_documento->DisplayValueSeparator) : $tipo_documento_modulo->idtipo_documento->DisplayValueSeparator) ?>" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento"<?php echo $tipo_documento_modulo->idtipo_documento->EditAttributes() ?>>
 <?php
 if (is_array($tipo_documento_modulo->idtipo_documento->EditValue)) {
 	$arwrk = $tipo_documento_modulo->idtipo_documento->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($tipo_documento_modulo->idtipo_documento->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($tipo_documento_modulo->idtipo_documento->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $tipo_documento_modulo->idtipo_documento->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($tipo_documento_modulo->idtipo_documento->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento->CurrentValue) ?>" selected><?php echo $tipo_documento_modulo->idtipo_documento->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $tipo_documento_modulo->idtipo_documento->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $tipo_documento_modulo->Lookup_Selecting($tipo_documento_modulo->idtipo_documento, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$tipo_documento_modulo->idtipo_documento->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$tipo_documento_modulo->idtipo_documento->LookupFilters += array("f0" => "`idtipo_documento` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$tipo_documento_modulo->Lookup_Selecting($tipo_documento_modulo->idtipo_documento, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $tipo_documento_modulo->idtipo_documento->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" id="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idtipo_documento` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" id="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" value="<?php echo $tipo_documento_modulo->idtipo_documento->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
-<input type="hidden" data-field="x_idtipo_documento" name="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" id="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento->OldValue) ?>">
+<input type="hidden" data-table="tipo_documento_modulo" data-field="x_idtipo_documento" name="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" id="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento->OldValue) ?>">
 <?php } ?>
 <?php if ($tipo_documento_modulo->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <?php if ($tipo_documento_modulo->idtipo_documento->getSessionValue() <> "") { ?>
@@ -340,55 +340,62 @@ if (@$emptywrk) $tipo_documento_modulo->idtipo_documento->OldValue = "";
 <input type="hidden" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el<?php echo $tipo_documento_modulo_grid->RowCnt ?>_tipo_documento_modulo_idtipo_documento" class="form-group tipo_documento_modulo_idtipo_documento">
-<select data-field="x_idtipo_documento" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento"<?php echo $tipo_documento_modulo->idtipo_documento->EditAttributes() ?>>
+<select data-table="tipo_documento_modulo" data-field="x_idtipo_documento" data-value-separator="<?php echo ew_HtmlEncode(is_array($tipo_documento_modulo->idtipo_documento->DisplayValueSeparator) ? json_encode($tipo_documento_modulo->idtipo_documento->DisplayValueSeparator) : $tipo_documento_modulo->idtipo_documento->DisplayValueSeparator) ?>" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento"<?php echo $tipo_documento_modulo->idtipo_documento->EditAttributes() ?>>
 <?php
 if (is_array($tipo_documento_modulo->idtipo_documento->EditValue)) {
 	$arwrk = $tipo_documento_modulo->idtipo_documento->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($tipo_documento_modulo->idtipo_documento->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($tipo_documento_modulo->idtipo_documento->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $tipo_documento_modulo->idtipo_documento->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($tipo_documento_modulo->idtipo_documento->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento->CurrentValue) ?>" selected><?php echo $tipo_documento_modulo->idtipo_documento->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $tipo_documento_modulo->idtipo_documento->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $tipo_documento_modulo->Lookup_Selecting($tipo_documento_modulo->idtipo_documento, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$tipo_documento_modulo->idtipo_documento->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$tipo_documento_modulo->idtipo_documento->LookupFilters += array("f0" => "`idtipo_documento` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$tipo_documento_modulo->Lookup_Selecting($tipo_documento_modulo->idtipo_documento, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $tipo_documento_modulo->idtipo_documento->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" id="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idtipo_documento` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" id="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" value="<?php echo $tipo_documento_modulo->idtipo_documento->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php } ?>
 <?php if ($tipo_documento_modulo->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $tipo_documento_modulo_grid->RowCnt ?>_tipo_documento_modulo_idtipo_documento" class="tipo_documento_modulo_idtipo_documento">
 <span<?php echo $tipo_documento_modulo->idtipo_documento->ViewAttributes() ?>>
 <?php echo $tipo_documento_modulo->idtipo_documento->ListViewValue() ?></span>
-<input type="hidden" data-field="x_idtipo_documento" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento->FormValue) ?>">
-<input type="hidden" data-field="x_idtipo_documento" name="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" id="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento->OldValue) ?>">
+</span>
+<input type="hidden" data-table="tipo_documento_modulo" data-field="x_idtipo_documento" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento->FormValue) ?>">
+<input type="hidden" data-table="tipo_documento_modulo" data-field="x_idtipo_documento" name="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" id="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento->OldValue) ?>">
 <?php } ?>
 <a id="<?php echo $tipo_documento_modulo_grid->PageObjName . "_row_" . $tipo_documento_modulo_grid->RowCnt ?>"></a></td>
 	<?php } ?>
 <?php if ($tipo_documento_modulo->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<input type="hidden" data-field="x_idtipo_documento_modulo" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento_modulo" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento_modulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento_modulo->CurrentValue) ?>">
-<input type="hidden" data-field="x_idtipo_documento_modulo" name="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento_modulo" id="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento_modulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento_modulo->OldValue) ?>">
+<input type="hidden" data-table="tipo_documento_modulo" data-field="x_idtipo_documento_modulo" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento_modulo" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento_modulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento_modulo->CurrentValue) ?>">
+<input type="hidden" data-table="tipo_documento_modulo" data-field="x_idtipo_documento_modulo" name="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento_modulo" id="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento_modulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento_modulo->OldValue) ?>">
 <?php } ?>
 <?php if ($tipo_documento_modulo->RowType == EW_ROWTYPE_EDIT || $tipo_documento_modulo->CurrentMode == "edit") { ?>
-<input type="hidden" data-field="x_idtipo_documento_modulo" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento_modulo" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento_modulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento_modulo->CurrentValue) ?>">
+<input type="hidden" data-table="tipo_documento_modulo" data-field="x_idtipo_documento_modulo" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento_modulo" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento_modulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento_modulo->CurrentValue) ?>">
 <?php } ?>
 	<?php if ($tipo_documento_modulo->idmodulo->Visible) { // idmodulo ?>
 		<td data-name="idmodulo"<?php echo $tipo_documento_modulo->idmodulo->CellAttributes() ?>>
@@ -401,41 +408,46 @@ if (@$emptywrk) $tipo_documento_modulo->idtipo_documento->OldValue = "";
 <input type="hidden" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idmodulo->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el<?php echo $tipo_documento_modulo_grid->RowCnt ?>_tipo_documento_modulo_idmodulo" class="form-group tipo_documento_modulo_idmodulo">
-<select data-field="x_idmodulo" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo"<?php echo $tipo_documento_modulo->idmodulo->EditAttributes() ?>>
+<select data-table="tipo_documento_modulo" data-field="x_idmodulo" data-value-separator="<?php echo ew_HtmlEncode(is_array($tipo_documento_modulo->idmodulo->DisplayValueSeparator) ? json_encode($tipo_documento_modulo->idmodulo->DisplayValueSeparator) : $tipo_documento_modulo->idmodulo->DisplayValueSeparator) ?>" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo"<?php echo $tipo_documento_modulo->idmodulo->EditAttributes() ?>>
 <?php
 if (is_array($tipo_documento_modulo->idmodulo->EditValue)) {
 	$arwrk = $tipo_documento_modulo->idmodulo->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($tipo_documento_modulo->idmodulo->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($tipo_documento_modulo->idmodulo->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $tipo_documento_modulo->idmodulo->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($tipo_documento_modulo->idmodulo->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idmodulo->CurrentValue) ?>" selected><?php echo $tipo_documento_modulo->idmodulo->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $tipo_documento_modulo->idmodulo->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `modulo`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $tipo_documento_modulo->Lookup_Selecting($tipo_documento_modulo->idmodulo, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `modulo`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$tipo_documento_modulo->idmodulo->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$tipo_documento_modulo->idmodulo->LookupFilters += array("f0" => "`idmodulo` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$tipo_documento_modulo->Lookup_Selecting($tipo_documento_modulo->idmodulo, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $tipo_documento_modulo->idmodulo->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" id="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idmodulo` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" id="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" value="<?php echo $tipo_documento_modulo->idmodulo->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
-<input type="hidden" data-field="x_idmodulo" name="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" id="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idmodulo->OldValue) ?>">
+<input type="hidden" data-table="tipo_documento_modulo" data-field="x_idmodulo" name="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" id="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idmodulo->OldValue) ?>">
 <?php } ?>
 <?php if ($tipo_documento_modulo->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <?php if ($tipo_documento_modulo->idmodulo->getSessionValue() <> "") { ?>
@@ -446,46 +458,53 @@ if (@$emptywrk) $tipo_documento_modulo->idmodulo->OldValue = "";
 <input type="hidden" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idmodulo->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el<?php echo $tipo_documento_modulo_grid->RowCnt ?>_tipo_documento_modulo_idmodulo" class="form-group tipo_documento_modulo_idmodulo">
-<select data-field="x_idmodulo" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo"<?php echo $tipo_documento_modulo->idmodulo->EditAttributes() ?>>
+<select data-table="tipo_documento_modulo" data-field="x_idmodulo" data-value-separator="<?php echo ew_HtmlEncode(is_array($tipo_documento_modulo->idmodulo->DisplayValueSeparator) ? json_encode($tipo_documento_modulo->idmodulo->DisplayValueSeparator) : $tipo_documento_modulo->idmodulo->DisplayValueSeparator) ?>" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo"<?php echo $tipo_documento_modulo->idmodulo->EditAttributes() ?>>
 <?php
 if (is_array($tipo_documento_modulo->idmodulo->EditValue)) {
 	$arwrk = $tipo_documento_modulo->idmodulo->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($tipo_documento_modulo->idmodulo->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($tipo_documento_modulo->idmodulo->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $tipo_documento_modulo->idmodulo->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($tipo_documento_modulo->idmodulo->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idmodulo->CurrentValue) ?>" selected><?php echo $tipo_documento_modulo->idmodulo->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $tipo_documento_modulo->idmodulo->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `modulo`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $tipo_documento_modulo->Lookup_Selecting($tipo_documento_modulo->idmodulo, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `modulo`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$tipo_documento_modulo->idmodulo->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$tipo_documento_modulo->idmodulo->LookupFilters += array("f0" => "`idmodulo` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$tipo_documento_modulo->Lookup_Selecting($tipo_documento_modulo->idmodulo, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $tipo_documento_modulo->idmodulo->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" id="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idmodulo` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" id="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" value="<?php echo $tipo_documento_modulo->idmodulo->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php } ?>
 <?php if ($tipo_documento_modulo->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $tipo_documento_modulo_grid->RowCnt ?>_tipo_documento_modulo_idmodulo" class="tipo_documento_modulo_idmodulo">
 <span<?php echo $tipo_documento_modulo->idmodulo->ViewAttributes() ?>>
 <?php echo $tipo_documento_modulo->idmodulo->ListViewValue() ?></span>
-<input type="hidden" data-field="x_idmodulo" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idmodulo->FormValue) ?>">
-<input type="hidden" data-field="x_idmodulo" name="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" id="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idmodulo->OldValue) ?>">
+</span>
+<input type="hidden" data-table="tipo_documento_modulo" data-field="x_idmodulo" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idmodulo->FormValue) ?>">
+<input type="hidden" data-table="tipo_documento_modulo" data-field="x_idmodulo" name="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" id="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idmodulo->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -532,7 +551,7 @@ ftipo_documento_modulogrid.UpdateOpts(<?php echo $tipo_documento_modulo_grid->Ro
 $tipo_documento_modulo_grid->ListOptions->Render("body", "left", $tipo_documento_modulo_grid->RowIndex);
 ?>
 	<?php if ($tipo_documento_modulo->idtipo_documento->Visible) { // idtipo_documento ?>
-		<td>
+		<td data-name="idtipo_documento">
 <?php if ($tipo_documento_modulo->CurrentAction <> "F") { ?>
 <?php if ($tipo_documento_modulo->idtipo_documento->getSessionValue() <> "") { ?>
 <span id="el$rowindex$_tipo_documento_modulo_idtipo_documento" class="form-group tipo_documento_modulo_idtipo_documento">
@@ -542,38 +561,43 @@ $tipo_documento_modulo_grid->ListOptions->Render("body", "left", $tipo_documento
 <input type="hidden" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el$rowindex$_tipo_documento_modulo_idtipo_documento" class="form-group tipo_documento_modulo_idtipo_documento">
-<select data-field="x_idtipo_documento" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento"<?php echo $tipo_documento_modulo->idtipo_documento->EditAttributes() ?>>
+<select data-table="tipo_documento_modulo" data-field="x_idtipo_documento" data-value-separator="<?php echo ew_HtmlEncode(is_array($tipo_documento_modulo->idtipo_documento->DisplayValueSeparator) ? json_encode($tipo_documento_modulo->idtipo_documento->DisplayValueSeparator) : $tipo_documento_modulo->idtipo_documento->DisplayValueSeparator) ?>" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento"<?php echo $tipo_documento_modulo->idtipo_documento->EditAttributes() ?>>
 <?php
 if (is_array($tipo_documento_modulo->idtipo_documento->EditValue)) {
 	$arwrk = $tipo_documento_modulo->idtipo_documento->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($tipo_documento_modulo->idtipo_documento->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($tipo_documento_modulo->idtipo_documento->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $tipo_documento_modulo->idtipo_documento->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($tipo_documento_modulo->idtipo_documento->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento->CurrentValue) ?>" selected><?php echo $tipo_documento_modulo->idtipo_documento->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $tipo_documento_modulo->idtipo_documento->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $tipo_documento_modulo->Lookup_Selecting($tipo_documento_modulo->idtipo_documento, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$tipo_documento_modulo->idtipo_documento->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$tipo_documento_modulo->idtipo_documento->LookupFilters += array("f0" => "`idtipo_documento` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$tipo_documento_modulo->Lookup_Selecting($tipo_documento_modulo->idtipo_documento, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $tipo_documento_modulo->idtipo_documento->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" id="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idtipo_documento` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" id="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" value="<?php echo $tipo_documento_modulo->idtipo_documento->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php } else { ?>
@@ -581,13 +605,13 @@ if (@$emptywrk) $tipo_documento_modulo->idtipo_documento->OldValue = "";
 <span<?php echo $tipo_documento_modulo->idtipo_documento->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $tipo_documento_modulo->idtipo_documento->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_idtipo_documento" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento->FormValue) ?>">
+<input type="hidden" data-table="tipo_documento_modulo" data-field="x_idtipo_documento" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_idtipo_documento" name="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" id="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento->OldValue) ?>">
+<input type="hidden" data-table="tipo_documento_modulo" data-field="x_idtipo_documento" name="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" id="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($tipo_documento_modulo->idmodulo->Visible) { // idmodulo ?>
-		<td>
+		<td data-name="idmodulo">
 <?php if ($tipo_documento_modulo->CurrentAction <> "F") { ?>
 <?php if ($tipo_documento_modulo->idmodulo->getSessionValue() <> "") { ?>
 <span id="el$rowindex$_tipo_documento_modulo_idmodulo" class="form-group tipo_documento_modulo_idmodulo">
@@ -597,38 +621,43 @@ if (@$emptywrk) $tipo_documento_modulo->idtipo_documento->OldValue = "";
 <input type="hidden" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idmodulo->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el$rowindex$_tipo_documento_modulo_idmodulo" class="form-group tipo_documento_modulo_idmodulo">
-<select data-field="x_idmodulo" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo"<?php echo $tipo_documento_modulo->idmodulo->EditAttributes() ?>>
+<select data-table="tipo_documento_modulo" data-field="x_idmodulo" data-value-separator="<?php echo ew_HtmlEncode(is_array($tipo_documento_modulo->idmodulo->DisplayValueSeparator) ? json_encode($tipo_documento_modulo->idmodulo->DisplayValueSeparator) : $tipo_documento_modulo->idmodulo->DisplayValueSeparator) ?>" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo"<?php echo $tipo_documento_modulo->idmodulo->EditAttributes() ?>>
 <?php
 if (is_array($tipo_documento_modulo->idmodulo->EditValue)) {
 	$arwrk = $tipo_documento_modulo->idmodulo->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($tipo_documento_modulo->idmodulo->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($tipo_documento_modulo->idmodulo->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $tipo_documento_modulo->idmodulo->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($tipo_documento_modulo->idmodulo->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idmodulo->CurrentValue) ?>" selected><?php echo $tipo_documento_modulo->idmodulo->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $tipo_documento_modulo->idmodulo->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `modulo`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $tipo_documento_modulo->Lookup_Selecting($tipo_documento_modulo->idmodulo, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `modulo`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$tipo_documento_modulo->idmodulo->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$tipo_documento_modulo->idmodulo->LookupFilters += array("f0" => "`idmodulo` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$tipo_documento_modulo->Lookup_Selecting($tipo_documento_modulo->idmodulo, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $tipo_documento_modulo->idmodulo->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" id="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idmodulo` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" id="s_x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" value="<?php echo $tipo_documento_modulo->idmodulo->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php } else { ?>
@@ -636,9 +665,9 @@ if (@$emptywrk) $tipo_documento_modulo->idmodulo->OldValue = "";
 <span<?php echo $tipo_documento_modulo->idmodulo->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $tipo_documento_modulo->idmodulo->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_idmodulo" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idmodulo->FormValue) ?>">
+<input type="hidden" data-table="tipo_documento_modulo" data-field="x_idmodulo" name="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" id="x<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idmodulo->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_idmodulo" name="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" id="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idmodulo->OldValue) ?>">
+<input type="hidden" data-table="tipo_documento_modulo" data-field="x_idmodulo" name="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" id="o<?php echo $tipo_documento_modulo_grid->RowIndex ?>_idmodulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idmodulo->OldValue) ?>">
 </td>
 	<?php } ?>
 <?php
@@ -677,7 +706,7 @@ if ($tipo_documento_modulo_grid->Recordset)
 	$tipo_documento_modulo_grid->Recordset->Close();
 ?>
 <?php if ($tipo_documento_modulo_grid->ShowOtherOptions) { ?>
-<div class="ewGridLowerPanel">
+<div class="panel-footer ewGridLowerPanel">
 <?php
 	foreach ($tipo_documento_modulo_grid->OtherOptions as &$option)
 		$option->Render("body", "bottom");

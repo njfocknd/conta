@@ -18,13 +18,8 @@ $documento_caja_chica_grid->Page_Render();
 <?php if ($documento_caja_chica->Export == "") { ?>
 <script type="text/javascript">
 
-// Page object
-var documento_caja_chica_grid = new ew_Page("documento_caja_chica_grid");
-documento_caja_chica_grid.PageID = "grid"; // Page ID
-var EW_PAGE_ID = documento_caja_chica_grid.PageID; // For backward compatibility
-
 // Form object
-var fdocumento_caja_chicagrid = new ew_Form("fdocumento_caja_chicagrid");
+var fdocumento_caja_chicagrid = new ew_Form("fdocumento_caja_chicagrid", "grid");
 fdocumento_caja_chicagrid.FormKeyCountName = '<?php echo $documento_caja_chica_grid->FormKeyCountName ?>';
 
 // Validate form
@@ -32,7 +27,6 @@ fdocumento_caja_chicagrid.Validate = function() {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
-	this.PostAutoSuggest();
 	if ($fobj.find("#a_confirm").val() == "F")
 		return true;
 	var elm, felm, uelm, addcnt = 0;
@@ -71,9 +65,6 @@ fdocumento_caja_chicagrid.Validate = function() {
 			if (elm && !ew_CheckNumber(elm.value))
 				return this.OnError(elm, "<?php echo ew_JsEncode2($documento_caja_chica->monto->FldErrMsg()) ?>");
 
-			// Set up row object
-			ew_ElementsToRow(fobj);
-
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
 				return false;
@@ -110,7 +101,9 @@ fdocumento_caja_chicagrid.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-fdocumento_caja_chicagrid.Lists["x_idtipo_documento"] = {"LinkField":"x_idtipo_documento","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+fdocumento_caja_chicagrid.Lists["x_tipo"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fdocumento_caja_chicagrid.Lists["x_tipo"].Options = <?php echo json_encode($documento_caja_chica->tipo->Options()) ?>;
+fdocumento_caja_chicagrid.Lists["x_idtipo_documento"] = {"LinkField":"x_idtipo_documento","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
 // Form object for search
 </script>
@@ -118,7 +111,7 @@ fdocumento_caja_chicagrid.Lists["x_idtipo_documento"] = {"LinkField":"x_idtipo_d
 <?php
 if ($documento_caja_chica->CurrentAction == "gridadd") {
 	if ($documento_caja_chica->CurrentMode == "copy") {
-		$bSelectLimit = EW_SELECT_LIMIT;
+		$bSelectLimit = $documento_caja_chica_grid->UseSelectLimit;
 		if ($bSelectLimit) {
 			$documento_caja_chica_grid->TotalRecs = $documento_caja_chica->SelectRecordCount();
 			$documento_caja_chica_grid->Recordset = $documento_caja_chica_grid->LoadRecordset($documento_caja_chica_grid->StartRec-1, $documento_caja_chica_grid->DisplayRecs);
@@ -136,11 +129,12 @@ if ($documento_caja_chica->CurrentAction == "gridadd") {
 	$documento_caja_chica_grid->TotalRecs = $documento_caja_chica_grid->DisplayRecs;
 	$documento_caja_chica_grid->StopRec = $documento_caja_chica_grid->DisplayRecs;
 } else {
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $documento_caja_chica_grid->UseSelectLimit;
 	if ($bSelectLimit) {
-		$documento_caja_chica_grid->TotalRecs = $documento_caja_chica->SelectRecordCount();
+		if ($documento_caja_chica_grid->TotalRecs <= 0)
+			$documento_caja_chica_grid->TotalRecs = $documento_caja_chica->SelectRecordCount();
 	} else {
-		if ($documento_caja_chica_grid->Recordset = $documento_caja_chica_grid->LoadRecordset())
+		if (!$documento_caja_chica_grid->Recordset && ($documento_caja_chica_grid->Recordset = $documento_caja_chica_grid->LoadRecordset()))
 			$documento_caja_chica_grid->TotalRecs = $documento_caja_chica_grid->Recordset->RecordCount();
 	}
 	$documento_caja_chica_grid->StartRec = 1;
@@ -163,7 +157,7 @@ $documento_caja_chica_grid->RenderOtherOptions();
 $documento_caja_chica_grid->ShowMessage();
 ?>
 <?php if ($documento_caja_chica_grid->TotalRecs > 0 || $documento_caja_chica->CurrentAction <> "") { ?>
-<div class="ewGrid">
+<div class="panel panel-default ewGrid">
 <div id="fdocumento_caja_chicagrid" class="ewForm form-inline">
 <div id="gmp_documento_caja_chica" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
 <table id="tbl_documento_caja_chicagrid" class="table ewTable">
@@ -171,6 +165,9 @@ $documento_caja_chica_grid->ShowMessage();
 <thead><!-- Table header -->
 	<tr class="ewTableHeader">
 <?php
+
+// Header row
+$documento_caja_chica_grid->RowType = EW_ROWTYPE_HEADER;
 
 // Render list options
 $documento_caja_chica_grid->RenderListOptions();
@@ -255,7 +252,7 @@ if ($objForm) {
 $documento_caja_chica_grid->RecCnt = $documento_caja_chica_grid->StartRec - 1;
 if ($documento_caja_chica_grid->Recordset && !$documento_caja_chica_grid->Recordset->EOF) {
 	$documento_caja_chica_grid->Recordset->MoveFirst();
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $documento_caja_chica_grid->UseSelectLimit;
 	if (!$bSelectLimit && $documento_caja_chica_grid->StartRec > 1)
 		$documento_caja_chica_grid->Recordset->Move($documento_caja_chica_grid->StartRec - 1);
 } elseif (!$documento_caja_chica->AllowAddDeleteRow && $documento_caja_chica_grid->StopRec == 0) {
@@ -345,45 +342,55 @@ $documento_caja_chica_grid->ListOptions->Render("body", "left", $documento_caja_
 		<td data-name="tipo"<?php echo $documento_caja_chica->tipo->CellAttributes() ?>>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $documento_caja_chica_grid->RowCnt ?>_documento_caja_chica_tipo" class="form-group documento_caja_chica_tipo">
-<select data-field="x_tipo" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo"<?php echo $documento_caja_chica->tipo->EditAttributes() ?>>
+<select data-table="documento_caja_chica" data-field="x_tipo" data-value-separator="<?php echo ew_HtmlEncode(is_array($documento_caja_chica->tipo->DisplayValueSeparator) ? json_encode($documento_caja_chica->tipo->DisplayValueSeparator) : $documento_caja_chica->tipo->DisplayValueSeparator) ?>" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo"<?php echo $documento_caja_chica->tipo->EditAttributes() ?>>
 <?php
 if (is_array($documento_caja_chica->tipo->EditValue)) {
 	$arwrk = $documento_caja_chica->tipo->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($documento_caja_chica->tipo->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($documento_caja_chica->tipo->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $documento_caja_chica->tipo->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($documento_caja_chica->tipo->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($documento_caja_chica->tipo->CurrentValue) ?>" selected><?php echo $documento_caja_chica->tipo->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $documento_caja_chica->tipo->OldValue = "";
 ?>
 </select>
 </span>
-<input type="hidden" data-field="x_tipo" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" value="<?php echo ew_HtmlEncode($documento_caja_chica->tipo->OldValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_tipo" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" value="<?php echo ew_HtmlEncode($documento_caja_chica->tipo->OldValue) ?>">
 <?php } ?>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $documento_caja_chica_grid->RowCnt ?>_documento_caja_chica_tipo" class="form-group documento_caja_chica_tipo">
-<select data-field="x_tipo" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo"<?php echo $documento_caja_chica->tipo->EditAttributes() ?>>
+<select data-table="documento_caja_chica" data-field="x_tipo" data-value-separator="<?php echo ew_HtmlEncode(is_array($documento_caja_chica->tipo->DisplayValueSeparator) ? json_encode($documento_caja_chica->tipo->DisplayValueSeparator) : $documento_caja_chica->tipo->DisplayValueSeparator) ?>" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo"<?php echo $documento_caja_chica->tipo->EditAttributes() ?>>
 <?php
 if (is_array($documento_caja_chica->tipo->EditValue)) {
 	$arwrk = $documento_caja_chica->tipo->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($documento_caja_chica->tipo->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($documento_caja_chica->tipo->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $documento_caja_chica->tipo->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($documento_caja_chica->tipo->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($documento_caja_chica->tipo->CurrentValue) ?>" selected><?php echo $documento_caja_chica->tipo->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $documento_caja_chica->tipo->OldValue = "";
 ?>
@@ -391,100 +398,114 @@ if (@$emptywrk) $documento_caja_chica->tipo->OldValue = "";
 </span>
 <?php } ?>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $documento_caja_chica_grid->RowCnt ?>_documento_caja_chica_tipo" class="documento_caja_chica_tipo">
 <span<?php echo $documento_caja_chica->tipo->ViewAttributes() ?>>
 <?php echo $documento_caja_chica->tipo->ListViewValue() ?></span>
-<input type="hidden" data-field="x_tipo" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" value="<?php echo ew_HtmlEncode($documento_caja_chica->tipo->FormValue) ?>">
-<input type="hidden" data-field="x_tipo" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" value="<?php echo ew_HtmlEncode($documento_caja_chica->tipo->OldValue) ?>">
+</span>
+<input type="hidden" data-table="documento_caja_chica" data-field="x_tipo" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" value="<?php echo ew_HtmlEncode($documento_caja_chica->tipo->FormValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_tipo" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" value="<?php echo ew_HtmlEncode($documento_caja_chica->tipo->OldValue) ?>">
 <?php } ?>
 <a id="<?php echo $documento_caja_chica_grid->PageObjName . "_row_" . $documento_caja_chica_grid->RowCnt ?>"></a></td>
 	<?php } ?>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<input type="hidden" data-field="x_iddocumento_caja_chica" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_iddocumento_caja_chica" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_iddocumento_caja_chica" value="<?php echo ew_HtmlEncode($documento_caja_chica->iddocumento_caja_chica->CurrentValue) ?>">
-<input type="hidden" data-field="x_iddocumento_caja_chica" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_iddocumento_caja_chica" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_iddocumento_caja_chica" value="<?php echo ew_HtmlEncode($documento_caja_chica->iddocumento_caja_chica->OldValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_iddocumento_caja_chica" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_iddocumento_caja_chica" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_iddocumento_caja_chica" value="<?php echo ew_HtmlEncode($documento_caja_chica->iddocumento_caja_chica->CurrentValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_iddocumento_caja_chica" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_iddocumento_caja_chica" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_iddocumento_caja_chica" value="<?php echo ew_HtmlEncode($documento_caja_chica->iddocumento_caja_chica->OldValue) ?>">
 <?php } ?>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_EDIT || $documento_caja_chica->CurrentMode == "edit") { ?>
-<input type="hidden" data-field="x_iddocumento_caja_chica" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_iddocumento_caja_chica" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_iddocumento_caja_chica" value="<?php echo ew_HtmlEncode($documento_caja_chica->iddocumento_caja_chica->CurrentValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_iddocumento_caja_chica" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_iddocumento_caja_chica" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_iddocumento_caja_chica" value="<?php echo ew_HtmlEncode($documento_caja_chica->iddocumento_caja_chica->CurrentValue) ?>">
 <?php } ?>
 	<?php if ($documento_caja_chica->idtipo_documento->Visible) { // idtipo_documento ?>
 		<td data-name="idtipo_documento"<?php echo $documento_caja_chica->idtipo_documento->CellAttributes() ?>>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $documento_caja_chica_grid->RowCnt ?>_documento_caja_chica_idtipo_documento" class="form-group documento_caja_chica_idtipo_documento">
-<select data-field="x_idtipo_documento" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento"<?php echo $documento_caja_chica->idtipo_documento->EditAttributes() ?>>
+<select data-table="documento_caja_chica" data-field="x_idtipo_documento" data-value-separator="<?php echo ew_HtmlEncode(is_array($documento_caja_chica->idtipo_documento->DisplayValueSeparator) ? json_encode($documento_caja_chica->idtipo_documento->DisplayValueSeparator) : $documento_caja_chica->idtipo_documento->DisplayValueSeparator) ?>" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento"<?php echo $documento_caja_chica->idtipo_documento->EditAttributes() ?>>
 <?php
 if (is_array($documento_caja_chica->idtipo_documento->EditValue)) {
 	$arwrk = $documento_caja_chica->idtipo_documento->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($documento_caja_chica->idtipo_documento->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($documento_caja_chica->idtipo_documento->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $documento_caja_chica->idtipo_documento->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($documento_caja_chica->idtipo_documento->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($documento_caja_chica->idtipo_documento->CurrentValue) ?>" selected><?php echo $documento_caja_chica->idtipo_documento->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $documento_caja_chica->idtipo_documento->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $documento_caja_chica->Lookup_Selecting($documento_caja_chica->idtipo_documento, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$documento_caja_chica->idtipo_documento->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$documento_caja_chica->idtipo_documento->LookupFilters += array("f0" => "`idtipo_documento` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$documento_caja_chica->Lookup_Selecting($documento_caja_chica->idtipo_documento, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $documento_caja_chica->idtipo_documento->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" id="s_x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idtipo_documento` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" id="s_x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" value="<?php echo $documento_caja_chica->idtipo_documento->LookupFilterQuery() ?>">
 </span>
-<input type="hidden" data-field="x_idtipo_documento" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($documento_caja_chica->idtipo_documento->OldValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_idtipo_documento" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($documento_caja_chica->idtipo_documento->OldValue) ?>">
 <?php } ?>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $documento_caja_chica_grid->RowCnt ?>_documento_caja_chica_idtipo_documento" class="form-group documento_caja_chica_idtipo_documento">
-<select data-field="x_idtipo_documento" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento"<?php echo $documento_caja_chica->idtipo_documento->EditAttributes() ?>>
+<select data-table="documento_caja_chica" data-field="x_idtipo_documento" data-value-separator="<?php echo ew_HtmlEncode(is_array($documento_caja_chica->idtipo_documento->DisplayValueSeparator) ? json_encode($documento_caja_chica->idtipo_documento->DisplayValueSeparator) : $documento_caja_chica->idtipo_documento->DisplayValueSeparator) ?>" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento"<?php echo $documento_caja_chica->idtipo_documento->EditAttributes() ?>>
 <?php
 if (is_array($documento_caja_chica->idtipo_documento->EditValue)) {
 	$arwrk = $documento_caja_chica->idtipo_documento->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($documento_caja_chica->idtipo_documento->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($documento_caja_chica->idtipo_documento->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $documento_caja_chica->idtipo_documento->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($documento_caja_chica->idtipo_documento->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($documento_caja_chica->idtipo_documento->CurrentValue) ?>" selected><?php echo $documento_caja_chica->idtipo_documento->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $documento_caja_chica->idtipo_documento->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $documento_caja_chica->Lookup_Selecting($documento_caja_chica->idtipo_documento, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$documento_caja_chica->idtipo_documento->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$documento_caja_chica->idtipo_documento->LookupFilters += array("f0" => "`idtipo_documento` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$documento_caja_chica->Lookup_Selecting($documento_caja_chica->idtipo_documento, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $documento_caja_chica->idtipo_documento->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" id="s_x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idtipo_documento` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" id="s_x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" value="<?php echo $documento_caja_chica->idtipo_documento->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $documento_caja_chica_grid->RowCnt ?>_documento_caja_chica_idtipo_documento" class="documento_caja_chica_idtipo_documento">
 <span<?php echo $documento_caja_chica->idtipo_documento->ViewAttributes() ?>>
 <?php echo $documento_caja_chica->idtipo_documento->ListViewValue() ?></span>
-<input type="hidden" data-field="x_idtipo_documento" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($documento_caja_chica->idtipo_documento->FormValue) ?>">
-<input type="hidden" data-field="x_idtipo_documento" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($documento_caja_chica->idtipo_documento->OldValue) ?>">
+</span>
+<input type="hidden" data-table="documento_caja_chica" data-field="x_idtipo_documento" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($documento_caja_chica->idtipo_documento->FormValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_idtipo_documento" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($documento_caja_chica->idtipo_documento->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -492,20 +513,22 @@ if (@$emptywrk) $documento_caja_chica->idtipo_documento->OldValue = "";
 		<td data-name="serie"<?php echo $documento_caja_chica->serie->CellAttributes() ?>>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $documento_caja_chica_grid->RowCnt ?>_documento_caja_chica_serie" class="form-group documento_caja_chica_serie">
-<input type="text" data-field="x_serie" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" size="30" maxlength="64" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->serie->PlaceHolder) ?>" value="<?php echo $documento_caja_chica->serie->EditValue ?>"<?php echo $documento_caja_chica->serie->EditAttributes() ?>>
+<input type="text" data-table="documento_caja_chica" data-field="x_serie" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" size="30" maxlength="64" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->serie->getPlaceHolder()) ?>" value="<?php echo $documento_caja_chica->serie->EditValue ?>"<?php echo $documento_caja_chica->serie->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_serie" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" value="<?php echo ew_HtmlEncode($documento_caja_chica->serie->OldValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_serie" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" value="<?php echo ew_HtmlEncode($documento_caja_chica->serie->OldValue) ?>">
 <?php } ?>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $documento_caja_chica_grid->RowCnt ?>_documento_caja_chica_serie" class="form-group documento_caja_chica_serie">
-<input type="text" data-field="x_serie" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" size="30" maxlength="64" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->serie->PlaceHolder) ?>" value="<?php echo $documento_caja_chica->serie->EditValue ?>"<?php echo $documento_caja_chica->serie->EditAttributes() ?>>
+<input type="text" data-table="documento_caja_chica" data-field="x_serie" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" size="30" maxlength="64" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->serie->getPlaceHolder()) ?>" value="<?php echo $documento_caja_chica->serie->EditValue ?>"<?php echo $documento_caja_chica->serie->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $documento_caja_chica_grid->RowCnt ?>_documento_caja_chica_serie" class="documento_caja_chica_serie">
 <span<?php echo $documento_caja_chica->serie->ViewAttributes() ?>>
 <?php echo $documento_caja_chica->serie->ListViewValue() ?></span>
-<input type="hidden" data-field="x_serie" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" value="<?php echo ew_HtmlEncode($documento_caja_chica->serie->FormValue) ?>">
-<input type="hidden" data-field="x_serie" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" value="<?php echo ew_HtmlEncode($documento_caja_chica->serie->OldValue) ?>">
+</span>
+<input type="hidden" data-table="documento_caja_chica" data-field="x_serie" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" value="<?php echo ew_HtmlEncode($documento_caja_chica->serie->FormValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_serie" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" value="<?php echo ew_HtmlEncode($documento_caja_chica->serie->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -513,20 +536,22 @@ if (@$emptywrk) $documento_caja_chica->idtipo_documento->OldValue = "";
 		<td data-name="numero"<?php echo $documento_caja_chica->numero->CellAttributes() ?>>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $documento_caja_chica_grid->RowCnt ?>_documento_caja_chica_numero" class="form-group documento_caja_chica_numero">
-<input type="text" data-field="x_numero" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" size="30" maxlength="64" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->numero->PlaceHolder) ?>" value="<?php echo $documento_caja_chica->numero->EditValue ?>"<?php echo $documento_caja_chica->numero->EditAttributes() ?>>
+<input type="text" data-table="documento_caja_chica" data-field="x_numero" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" size="30" maxlength="64" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->numero->getPlaceHolder()) ?>" value="<?php echo $documento_caja_chica->numero->EditValue ?>"<?php echo $documento_caja_chica->numero->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_numero" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" value="<?php echo ew_HtmlEncode($documento_caja_chica->numero->OldValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_numero" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" value="<?php echo ew_HtmlEncode($documento_caja_chica->numero->OldValue) ?>">
 <?php } ?>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $documento_caja_chica_grid->RowCnt ?>_documento_caja_chica_numero" class="form-group documento_caja_chica_numero">
-<input type="text" data-field="x_numero" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" size="30" maxlength="64" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->numero->PlaceHolder) ?>" value="<?php echo $documento_caja_chica->numero->EditValue ?>"<?php echo $documento_caja_chica->numero->EditAttributes() ?>>
+<input type="text" data-table="documento_caja_chica" data-field="x_numero" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" size="30" maxlength="64" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->numero->getPlaceHolder()) ?>" value="<?php echo $documento_caja_chica->numero->EditValue ?>"<?php echo $documento_caja_chica->numero->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $documento_caja_chica_grid->RowCnt ?>_documento_caja_chica_numero" class="documento_caja_chica_numero">
 <span<?php echo $documento_caja_chica->numero->ViewAttributes() ?>>
 <?php echo $documento_caja_chica->numero->ListViewValue() ?></span>
-<input type="hidden" data-field="x_numero" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" value="<?php echo ew_HtmlEncode($documento_caja_chica->numero->FormValue) ?>">
-<input type="hidden" data-field="x_numero" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" value="<?php echo ew_HtmlEncode($documento_caja_chica->numero->OldValue) ?>">
+</span>
+<input type="hidden" data-table="documento_caja_chica" data-field="x_numero" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" value="<?php echo ew_HtmlEncode($documento_caja_chica->numero->FormValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_numero" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" value="<?php echo ew_HtmlEncode($documento_caja_chica->numero->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -534,19 +559,19 @@ if (@$emptywrk) $documento_caja_chica->idtipo_documento->OldValue = "";
 		<td data-name="fecha"<?php echo $documento_caja_chica->fecha->CellAttributes() ?>>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $documento_caja_chica_grid->RowCnt ?>_documento_caja_chica_fecha" class="form-group documento_caja_chica_fecha">
-<input type="text" data-field="x_fecha" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->fecha->PlaceHolder) ?>" value="<?php echo $documento_caja_chica->fecha->EditValue ?>"<?php echo $documento_caja_chica->fecha->EditAttributes() ?>>
-<?php if (!$documento_caja_chica->fecha->ReadOnly && !$documento_caja_chica->fecha->Disabled && @$documento_caja_chica->fecha->EditAttrs["readonly"] == "" && @$documento_caja_chica->fecha->EditAttrs["disabled"] == "") { ?>
+<input type="text" data-table="documento_caja_chica" data-field="x_fecha" data-format="7" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->fecha->getPlaceHolder()) ?>" value="<?php echo $documento_caja_chica->fecha->EditValue ?>"<?php echo $documento_caja_chica->fecha->EditAttributes() ?>>
+<?php if (!$documento_caja_chica->fecha->ReadOnly && !$documento_caja_chica->fecha->Disabled && !isset($documento_caja_chica->fecha->EditAttrs["readonly"]) && !isset($documento_caja_chica->fecha->EditAttrs["disabled"])) { ?>
 <script type="text/javascript">
 ew_CreateCalendar("fdocumento_caja_chicagrid", "x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha", "%d/%m/%Y");
 </script>
 <?php } ?>
 </span>
-<input type="hidden" data-field="x_fecha" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" value="<?php echo ew_HtmlEncode($documento_caja_chica->fecha->OldValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_fecha" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" value="<?php echo ew_HtmlEncode($documento_caja_chica->fecha->OldValue) ?>">
 <?php } ?>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $documento_caja_chica_grid->RowCnt ?>_documento_caja_chica_fecha" class="form-group documento_caja_chica_fecha">
-<input type="text" data-field="x_fecha" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->fecha->PlaceHolder) ?>" value="<?php echo $documento_caja_chica->fecha->EditValue ?>"<?php echo $documento_caja_chica->fecha->EditAttributes() ?>>
-<?php if (!$documento_caja_chica->fecha->ReadOnly && !$documento_caja_chica->fecha->Disabled && @$documento_caja_chica->fecha->EditAttrs["readonly"] == "" && @$documento_caja_chica->fecha->EditAttrs["disabled"] == "") { ?>
+<input type="text" data-table="documento_caja_chica" data-field="x_fecha" data-format="7" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->fecha->getPlaceHolder()) ?>" value="<?php echo $documento_caja_chica->fecha->EditValue ?>"<?php echo $documento_caja_chica->fecha->EditAttributes() ?>>
+<?php if (!$documento_caja_chica->fecha->ReadOnly && !$documento_caja_chica->fecha->Disabled && !isset($documento_caja_chica->fecha->EditAttrs["readonly"]) && !isset($documento_caja_chica->fecha->EditAttrs["disabled"])) { ?>
 <script type="text/javascript">
 ew_CreateCalendar("fdocumento_caja_chicagrid", "x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha", "%d/%m/%Y");
 </script>
@@ -554,10 +579,12 @@ ew_CreateCalendar("fdocumento_caja_chicagrid", "x<?php echo $documento_caja_chic
 </span>
 <?php } ?>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $documento_caja_chica_grid->RowCnt ?>_documento_caja_chica_fecha" class="documento_caja_chica_fecha">
 <span<?php echo $documento_caja_chica->fecha->ViewAttributes() ?>>
 <?php echo $documento_caja_chica->fecha->ListViewValue() ?></span>
-<input type="hidden" data-field="x_fecha" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" value="<?php echo ew_HtmlEncode($documento_caja_chica->fecha->FormValue) ?>">
-<input type="hidden" data-field="x_fecha" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" value="<?php echo ew_HtmlEncode($documento_caja_chica->fecha->OldValue) ?>">
+</span>
+<input type="hidden" data-table="documento_caja_chica" data-field="x_fecha" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" value="<?php echo ew_HtmlEncode($documento_caja_chica->fecha->FormValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_fecha" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" value="<?php echo ew_HtmlEncode($documento_caja_chica->fecha->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -565,20 +592,22 @@ ew_CreateCalendar("fdocumento_caja_chicagrid", "x<?php echo $documento_caja_chic
 		<td data-name="monto"<?php echo $documento_caja_chica->monto->CellAttributes() ?>>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $documento_caja_chica_grid->RowCnt ?>_documento_caja_chica_monto" class="form-group documento_caja_chica_monto">
-<input type="text" data-field="x_monto" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" size="30" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->monto->PlaceHolder) ?>" value="<?php echo $documento_caja_chica->monto->EditValue ?>"<?php echo $documento_caja_chica->monto->EditAttributes() ?>>
+<input type="text" data-table="documento_caja_chica" data-field="x_monto" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" size="30" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->monto->getPlaceHolder()) ?>" value="<?php echo $documento_caja_chica->monto->EditValue ?>"<?php echo $documento_caja_chica->monto->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_monto" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" value="<?php echo ew_HtmlEncode($documento_caja_chica->monto->OldValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_monto" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" value="<?php echo ew_HtmlEncode($documento_caja_chica->monto->OldValue) ?>">
 <?php } ?>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $documento_caja_chica_grid->RowCnt ?>_documento_caja_chica_monto" class="form-group documento_caja_chica_monto">
-<input type="text" data-field="x_monto" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" size="30" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->monto->PlaceHolder) ?>" value="<?php echo $documento_caja_chica->monto->EditValue ?>"<?php echo $documento_caja_chica->monto->EditAttributes() ?>>
+<input type="text" data-table="documento_caja_chica" data-field="x_monto" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" size="30" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->monto->getPlaceHolder()) ?>" value="<?php echo $documento_caja_chica->monto->EditValue ?>"<?php echo $documento_caja_chica->monto->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($documento_caja_chica->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $documento_caja_chica_grid->RowCnt ?>_documento_caja_chica_monto" class="documento_caja_chica_monto">
 <span<?php echo $documento_caja_chica->monto->ViewAttributes() ?>>
 <?php echo $documento_caja_chica->monto->ListViewValue() ?></span>
-<input type="hidden" data-field="x_monto" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" value="<?php echo ew_HtmlEncode($documento_caja_chica->monto->FormValue) ?>">
-<input type="hidden" data-field="x_monto" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" value="<?php echo ew_HtmlEncode($documento_caja_chica->monto->OldValue) ?>">
+</span>
+<input type="hidden" data-table="documento_caja_chica" data-field="x_monto" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" value="<?php echo ew_HtmlEncode($documento_caja_chica->monto->FormValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_monto" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" value="<?php echo ew_HtmlEncode($documento_caja_chica->monto->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -625,24 +654,29 @@ fdocumento_caja_chicagrid.UpdateOpts(<?php echo $documento_caja_chica_grid->RowI
 $documento_caja_chica_grid->ListOptions->Render("body", "left", $documento_caja_chica_grid->RowIndex);
 ?>
 	<?php if ($documento_caja_chica->tipo->Visible) { // tipo ?>
-		<td>
+		<td data-name="tipo">
 <?php if ($documento_caja_chica->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_documento_caja_chica_tipo" class="form-group documento_caja_chica_tipo">
-<select data-field="x_tipo" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo"<?php echo $documento_caja_chica->tipo->EditAttributes() ?>>
+<select data-table="documento_caja_chica" data-field="x_tipo" data-value-separator="<?php echo ew_HtmlEncode(is_array($documento_caja_chica->tipo->DisplayValueSeparator) ? json_encode($documento_caja_chica->tipo->DisplayValueSeparator) : $documento_caja_chica->tipo->DisplayValueSeparator) ?>" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo"<?php echo $documento_caja_chica->tipo->EditAttributes() ?>>
 <?php
 if (is_array($documento_caja_chica->tipo->EditValue)) {
 	$arwrk = $documento_caja_chica->tipo->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($documento_caja_chica->tipo->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($documento_caja_chica->tipo->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $documento_caja_chica->tipo->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($documento_caja_chica->tipo->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($documento_caja_chica->tipo->CurrentValue) ?>" selected><?php echo $documento_caja_chica->tipo->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $documento_caja_chica->tipo->OldValue = "";
 ?>
@@ -653,96 +687,101 @@ if (@$emptywrk) $documento_caja_chica->tipo->OldValue = "";
 <span<?php echo $documento_caja_chica->tipo->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $documento_caja_chica->tipo->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_tipo" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" value="<?php echo ew_HtmlEncode($documento_caja_chica->tipo->FormValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_tipo" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" value="<?php echo ew_HtmlEncode($documento_caja_chica->tipo->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_tipo" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" value="<?php echo ew_HtmlEncode($documento_caja_chica->tipo->OldValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_tipo" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_tipo" value="<?php echo ew_HtmlEncode($documento_caja_chica->tipo->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($documento_caja_chica->idtipo_documento->Visible) { // idtipo_documento ?>
-		<td>
+		<td data-name="idtipo_documento">
 <?php if ($documento_caja_chica->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_documento_caja_chica_idtipo_documento" class="form-group documento_caja_chica_idtipo_documento">
-<select data-field="x_idtipo_documento" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento"<?php echo $documento_caja_chica->idtipo_documento->EditAttributes() ?>>
+<select data-table="documento_caja_chica" data-field="x_idtipo_documento" data-value-separator="<?php echo ew_HtmlEncode(is_array($documento_caja_chica->idtipo_documento->DisplayValueSeparator) ? json_encode($documento_caja_chica->idtipo_documento->DisplayValueSeparator) : $documento_caja_chica->idtipo_documento->DisplayValueSeparator) ?>" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento"<?php echo $documento_caja_chica->idtipo_documento->EditAttributes() ?>>
 <?php
 if (is_array($documento_caja_chica->idtipo_documento->EditValue)) {
 	$arwrk = $documento_caja_chica->idtipo_documento->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($documento_caja_chica->idtipo_documento->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($documento_caja_chica->idtipo_documento->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $documento_caja_chica->idtipo_documento->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($documento_caja_chica->idtipo_documento->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($documento_caja_chica->idtipo_documento->CurrentValue) ?>" selected><?php echo $documento_caja_chica->idtipo_documento->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $documento_caja_chica->idtipo_documento->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $documento_caja_chica->Lookup_Selecting($documento_caja_chica->idtipo_documento, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$documento_caja_chica->idtipo_documento->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$documento_caja_chica->idtipo_documento->LookupFilters += array("f0" => "`idtipo_documento` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$documento_caja_chica->Lookup_Selecting($documento_caja_chica->idtipo_documento, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $documento_caja_chica->idtipo_documento->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" id="s_x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idtipo_documento` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" id="s_x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" value="<?php echo $documento_caja_chica->idtipo_documento->LookupFilterQuery() ?>">
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_documento_caja_chica_idtipo_documento" class="form-group documento_caja_chica_idtipo_documento">
 <span<?php echo $documento_caja_chica->idtipo_documento->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $documento_caja_chica->idtipo_documento->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_idtipo_documento" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($documento_caja_chica->idtipo_documento->FormValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_idtipo_documento" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($documento_caja_chica->idtipo_documento->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_idtipo_documento" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($documento_caja_chica->idtipo_documento->OldValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_idtipo_documento" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_idtipo_documento" value="<?php echo ew_HtmlEncode($documento_caja_chica->idtipo_documento->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($documento_caja_chica->serie->Visible) { // serie ?>
-		<td>
+		<td data-name="serie">
 <?php if ($documento_caja_chica->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_documento_caja_chica_serie" class="form-group documento_caja_chica_serie">
-<input type="text" data-field="x_serie" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" size="30" maxlength="64" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->serie->PlaceHolder) ?>" value="<?php echo $documento_caja_chica->serie->EditValue ?>"<?php echo $documento_caja_chica->serie->EditAttributes() ?>>
+<input type="text" data-table="documento_caja_chica" data-field="x_serie" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" size="30" maxlength="64" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->serie->getPlaceHolder()) ?>" value="<?php echo $documento_caja_chica->serie->EditValue ?>"<?php echo $documento_caja_chica->serie->EditAttributes() ?>>
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_documento_caja_chica_serie" class="form-group documento_caja_chica_serie">
 <span<?php echo $documento_caja_chica->serie->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $documento_caja_chica->serie->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_serie" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" value="<?php echo ew_HtmlEncode($documento_caja_chica->serie->FormValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_serie" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" value="<?php echo ew_HtmlEncode($documento_caja_chica->serie->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_serie" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" value="<?php echo ew_HtmlEncode($documento_caja_chica->serie->OldValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_serie" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_serie" value="<?php echo ew_HtmlEncode($documento_caja_chica->serie->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($documento_caja_chica->numero->Visible) { // numero ?>
-		<td>
+		<td data-name="numero">
 <?php if ($documento_caja_chica->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_documento_caja_chica_numero" class="form-group documento_caja_chica_numero">
-<input type="text" data-field="x_numero" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" size="30" maxlength="64" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->numero->PlaceHolder) ?>" value="<?php echo $documento_caja_chica->numero->EditValue ?>"<?php echo $documento_caja_chica->numero->EditAttributes() ?>>
+<input type="text" data-table="documento_caja_chica" data-field="x_numero" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" size="30" maxlength="64" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->numero->getPlaceHolder()) ?>" value="<?php echo $documento_caja_chica->numero->EditValue ?>"<?php echo $documento_caja_chica->numero->EditAttributes() ?>>
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_documento_caja_chica_numero" class="form-group documento_caja_chica_numero">
 <span<?php echo $documento_caja_chica->numero->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $documento_caja_chica->numero->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_numero" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" value="<?php echo ew_HtmlEncode($documento_caja_chica->numero->FormValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_numero" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" value="<?php echo ew_HtmlEncode($documento_caja_chica->numero->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_numero" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" value="<?php echo ew_HtmlEncode($documento_caja_chica->numero->OldValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_numero" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_numero" value="<?php echo ew_HtmlEncode($documento_caja_chica->numero->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($documento_caja_chica->fecha->Visible) { // fecha ?>
-		<td>
+		<td data-name="fecha">
 <?php if ($documento_caja_chica->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_documento_caja_chica_fecha" class="form-group documento_caja_chica_fecha">
-<input type="text" data-field="x_fecha" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->fecha->PlaceHolder) ?>" value="<?php echo $documento_caja_chica->fecha->EditValue ?>"<?php echo $documento_caja_chica->fecha->EditAttributes() ?>>
-<?php if (!$documento_caja_chica->fecha->ReadOnly && !$documento_caja_chica->fecha->Disabled && @$documento_caja_chica->fecha->EditAttrs["readonly"] == "" && @$documento_caja_chica->fecha->EditAttrs["disabled"] == "") { ?>
+<input type="text" data-table="documento_caja_chica" data-field="x_fecha" data-format="7" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->fecha->getPlaceHolder()) ?>" value="<?php echo $documento_caja_chica->fecha->EditValue ?>"<?php echo $documento_caja_chica->fecha->EditAttributes() ?>>
+<?php if (!$documento_caja_chica->fecha->ReadOnly && !$documento_caja_chica->fecha->Disabled && !isset($documento_caja_chica->fecha->EditAttrs["readonly"]) && !isset($documento_caja_chica->fecha->EditAttrs["disabled"])) { ?>
 <script type="text/javascript">
 ew_CreateCalendar("fdocumento_caja_chicagrid", "x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha", "%d/%m/%Y");
 </script>
@@ -753,25 +792,25 @@ ew_CreateCalendar("fdocumento_caja_chicagrid", "x<?php echo $documento_caja_chic
 <span<?php echo $documento_caja_chica->fecha->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $documento_caja_chica->fecha->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_fecha" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" value="<?php echo ew_HtmlEncode($documento_caja_chica->fecha->FormValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_fecha" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" value="<?php echo ew_HtmlEncode($documento_caja_chica->fecha->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_fecha" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" value="<?php echo ew_HtmlEncode($documento_caja_chica->fecha->OldValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_fecha" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_fecha" value="<?php echo ew_HtmlEncode($documento_caja_chica->fecha->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($documento_caja_chica->monto->Visible) { // monto ?>
-		<td>
+		<td data-name="monto">
 <?php if ($documento_caja_chica->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_documento_caja_chica_monto" class="form-group documento_caja_chica_monto">
-<input type="text" data-field="x_monto" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" size="30" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->monto->PlaceHolder) ?>" value="<?php echo $documento_caja_chica->monto->EditValue ?>"<?php echo $documento_caja_chica->monto->EditAttributes() ?>>
+<input type="text" data-table="documento_caja_chica" data-field="x_monto" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" size="30" placeholder="<?php echo ew_HtmlEncode($documento_caja_chica->monto->getPlaceHolder()) ?>" value="<?php echo $documento_caja_chica->monto->EditValue ?>"<?php echo $documento_caja_chica->monto->EditAttributes() ?>>
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_documento_caja_chica_monto" class="form-group documento_caja_chica_monto">
 <span<?php echo $documento_caja_chica->monto->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $documento_caja_chica->monto->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_monto" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" value="<?php echo ew_HtmlEncode($documento_caja_chica->monto->FormValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_monto" name="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" id="x<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" value="<?php echo ew_HtmlEncode($documento_caja_chica->monto->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_monto" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" value="<?php echo ew_HtmlEncode($documento_caja_chica->monto->OldValue) ?>">
+<input type="hidden" data-table="documento_caja_chica" data-field="x_monto" name="o<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" id="o<?php echo $documento_caja_chica_grid->RowIndex ?>_monto" value="<?php echo ew_HtmlEncode($documento_caja_chica->monto->OldValue) ?>">
 </td>
 	<?php } ?>
 <?php
@@ -810,7 +849,7 @@ if ($documento_caja_chica_grid->Recordset)
 	$documento_caja_chica_grid->Recordset->Close();
 ?>
 <?php if ($documento_caja_chica_grid->ShowOtherOptions) { ?>
-<div class="ewGridLowerPanel">
+<div class="panel-footer ewGridLowerPanel">
 <?php
 	foreach ($documento_caja_chica_grid->OtherOptions as &$option)
 		$option->Render("body", "bottom");

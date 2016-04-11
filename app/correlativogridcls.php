@@ -1,4 +1,4 @@
-<?php include_once $EW_RELATIVE_PATH . "correlativoinfo.php" ?>
+<?php include_once "correlativoinfo.php" ?>
 <?php
 
 //
@@ -72,6 +72,30 @@ class ccorrelativo_grid extends ccorrelativo {
 
 	function setWarningMessage($v) {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
+	}
+
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
 	}
 
 	// Show message
@@ -154,6 +178,7 @@ class ccorrelativo_grid extends ccorrelativo {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -166,7 +191,7 @@ class ccorrelativo_grid extends ccorrelativo {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -192,6 +217,7 @@ class ccorrelativo_grid extends ccorrelativo {
 		$this->FormBlankRowName .= '_' . $this->FormName;
 		$this->FormKeyCountName .= '_' . $this->FormName;
 		$GLOBALS["Grid"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -220,7 +246,7 @@ class ccorrelativo_grid extends ccorrelativo {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 
 		// List options
 		$this->ListOptions = new cListOptions();
@@ -276,6 +302,9 @@ class ccorrelativo_grid extends ccorrelativo {
 		// Create Token
 		$this->CreateToken();
 
+		// Set up master detail parameters
+		$this->SetUpMasterParms();
+
 		// Setup other options
 		$this->SetupOtherOptions();
 	}
@@ -284,7 +313,7 @@ class ccorrelativo_grid extends ccorrelativo {
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Export
 		global $EW_EXPORT, $correlativo;
@@ -324,6 +353,10 @@ class ccorrelativo_grid extends ccorrelativo {
 	var $ExportOptions; // Export options
 	var $SearchOptions; // Search options
 	var $OtherOptions = array(); // Other options
+	var $FilterOptions; // Filter options
+	var $ListActions; // List actions
+	var $SelectedCount = 0;
+	var $SelectedIndex = 0;
 	var $ShowOtherOptions = FALSE;
 	var $DisplayRecs = 20;
 	var $StartRec;
@@ -355,6 +388,7 @@ class ccorrelativo_grid extends ccorrelativo {
 	var $MultiSelectKey;
 	var $Command;
 	var $RestoreSearch = FALSE;
+	var $DetailPages;
 	var $Recordset;
 	var $OldRecordset;
 
@@ -375,9 +409,6 @@ class ccorrelativo_grid extends ccorrelativo {
 
 			// Handle reset command
 			$this->ResetCmd();
-
-			// Set up master detail parameters
-			$this->SetUpMasterParms();
 
 			// Hide list options
 			if ($this->Export <> "") {
@@ -442,12 +473,14 @@ class ccorrelativo_grid extends ccorrelativo {
 		$this->CurrentFilter = "";
 
 		// Load record count first
-		$bSelectLimit = EW_SELECT_LIMIT;
-		if ($bSelectLimit) {
-			$this->TotalRecs = $this->SelectRecordCount();
-		} else {
-			if ($this->Recordset = $this->LoadRecordset())
-				$this->TotalRecs = $this->Recordset->RecordCount();
+		if (!$this->IsAddOrEdit()) {
+			$bSelectLimit = $this->UseSelectLimit;
+			if ($bSelectLimit) {
+				$this->TotalRecs = $this->SelectRecordCount();
+			} else {
+				if ($this->Recordset = $this->LoadRecordset())
+					$this->TotalRecs = $this->Recordset->RecordCount();
+			}
 		}
 	}
 
@@ -470,7 +503,7 @@ class ccorrelativo_grid extends ccorrelativo {
 
 	// Perform update to grid
 	function GridUpdate() {
-		global $conn, $Language, $objForm, $gsFormError;
+		global $Language, $objForm, $gsFormError;
 		$bGridUpdate = TRUE;
 
 		// Get old recordset
@@ -478,6 +511,7 @@ class ccorrelativo_grid extends ccorrelativo {
 		if ($this->CurrentFilter == "")
 			$this->CurrentFilter = "0=1";
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		if ($rs = $conn->Execute($sSql)) {
 			$rsold = $rs->GetRows();
 			$rs->Close();
@@ -602,9 +636,10 @@ class ccorrelativo_grid extends ccorrelativo {
 
 	// Perform Grid Add
 	function GridInsert() {
-		global $conn, $Language, $objForm, $gsFormError;
+		global $Language, $objForm, $gsFormError;
 		$rowindex = 1;
 		$bGridInsert = FALSE;
+		$conn = &$this->Connection();
 
 		// Call Grid Inserting event
 		if (!$this->Grid_Inserting()) {
@@ -884,7 +919,7 @@ class ccorrelativo_grid extends ccorrelativo {
 				if (is_numeric($this->RowIndex) && ($this->RowAction == "" || $this->RowAction == "edit")) { // Do not allow delete existing record
 					$oListOpt->Body = "&nbsp;";
 				} else {
-					$oListOpt->Body = "<a class=\"ewGridLink ewGridDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" href=\"javascript:void(0);\" onclick=\"ew_DeleteGridRow(this, " . $this->RowIndex . ");\">" . $Language->Phrase("DeleteLink") . "</a>";
+					$oListOpt->Body = "<a class=\"ewGridLink ewGridDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" onclick=\"return ew_DeleteGridRow(this, " . $this->RowIndex . ");\">" . $Language->Phrase("DeleteLink") . "</a>";
 				}
 			}
 		}
@@ -1022,15 +1057,24 @@ class ccorrelativo_grid extends ccorrelativo {
 
 	// Load recordset
 	function LoadRecordset($offset = -1, $rowcnt = -1) {
-		global $conn;
 
 		// Load List page SQL
 		$sSql = $this->SelectSQL();
+		$conn = &$this->Connection();
 
 		// Load recordset
-		$conn->raiseErrorFn = 'ew_ErrorFn';
-		$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
-		$conn->raiseErrorFn = '';
+		$dbtype = ew_GetConnectionType($this->DBID);
+		if ($this->UseSelectLimit) {
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+			if ($dbtype == "MSSQL") {
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset, array("_hasOrderBy" => trim($this->getOrderBy()) || trim($this->getSessionOrderBy())));
+			} else {
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
+			}
+			$conn->raiseErrorFn = '';
+		} else {
+			$rs = ew_LoadRecordset($sSql, $conn);
+		}
 
 		// Call Recordset Selected event
 		$this->Recordset_Selected($rs);
@@ -1039,7 +1083,7 @@ class ccorrelativo_grid extends ccorrelativo {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -1048,8 +1092,9 @@ class ccorrelativo_grid extends ccorrelativo {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -1060,7 +1105,6 @@ class ccorrelativo_grid extends ccorrelativo {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -1102,7 +1146,8 @@ class ccorrelativo_grid extends ccorrelativo {
 		if ($bValidKey) {
 			$this->CurrentFilter = $this->KeyFilter();
 			$sSql = $this->SQL();
-			$this->OldRecordset = ew_LoadRecordset($sSql);
+			$conn = &$this->Connection();
+			$this->OldRecordset = ew_LoadRecordset($sSql, $conn);
 			$this->LoadRowValues($this->OldRecordset); // Load row values
 		} else {
 			$this->OldRecordset = NULL;
@@ -1112,8 +1157,7 @@ class ccorrelativo_grid extends ccorrelativo {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		// Call Row_Rendering event
@@ -1128,45 +1172,41 @@ class ccorrelativo_grid extends ccorrelativo {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idcorrelativo
-			$this->idcorrelativo->ViewValue = $this->idcorrelativo->CurrentValue;
-			$this->idcorrelativo->ViewCustomAttributes = "";
+		// idcorrelativo
+		$this->idcorrelativo->ViewValue = $this->idcorrelativo->CurrentValue;
+		$this->idcorrelativo->ViewCustomAttributes = "";
 
-			// codigo
-			$this->codigo->ViewValue = $this->codigo->CurrentValue;
-			$this->codigo->ViewCustomAttributes = "";
+		// codigo
+		$this->codigo->ViewValue = $this->codigo->CurrentValue;
+		$this->codigo->ViewCustomAttributes = "";
 
-			// valor
-			$this->valor->ViewValue = $this->valor->CurrentValue;
-			$this->valor->ViewCustomAttributes = "";
+		// valor
+		$this->valor->ViewValue = $this->valor->CurrentValue;
+		$this->valor->ViewCustomAttributes = "";
 
-			// idempresa
-			if (strval($this->idempresa->CurrentValue) <> "") {
-				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idempresa->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
-				}
+		// idempresa
+		if (strval($this->idempresa->CurrentValue) <> "") {
+			$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idempresa->ViewValue = $this->idempresa->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idempresa->ViewValue = NULL;
+				$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
 			}
-			$this->idempresa->ViewCustomAttributes = "";
+		} else {
+			$this->idempresa->ViewValue = NULL;
+		}
+		$this->idempresa->ViewCustomAttributes = "";
 
 			// codigo
 			$this->codigo->LinkCustomAttributes = "";
@@ -1203,23 +1243,19 @@ class ccorrelativo_grid extends ccorrelativo {
 				$this->idempresa->CurrentValue = $this->idempresa->getSessionValue();
 				$this->idempresa->OldValue = $this->idempresa->CurrentValue;
 			if (strval($this->idempresa->CurrentValue) <> "") {
-				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
 			$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
+				$rswrk = Conn()->Execute($sSqlWrk);
 				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idempresa->ViewValue = $rswrk->fields('DispFld');
+					$arwrk = array();
+					$arwrk[1] = $rswrk->fields('DispFld');
+					$this->idempresa->ViewValue = $this->idempresa->DisplayValue($arwrk);
 					$rswrk->Close();
 				} else {
 					$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
@@ -1232,37 +1268,34 @@ class ccorrelativo_grid extends ccorrelativo {
 			if (trim(strval($this->idempresa->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `empresa`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
 			$this->idempresa->EditValue = $arwrk;
 			}
 
-			// Edit refer script
+			// Add refer script
 			// codigo
 
+			$this->codigo->LinkCustomAttributes = "";
 			$this->codigo->HrefValue = "";
 
 			// valor
+			$this->valor->LinkCustomAttributes = "";
 			$this->valor->HrefValue = "";
 
 			// idempresa
+			$this->idempresa->LinkCustomAttributes = "";
 			$this->idempresa->HrefValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
 
@@ -1285,23 +1318,19 @@ class ccorrelativo_grid extends ccorrelativo {
 				$this->idempresa->CurrentValue = $this->idempresa->getSessionValue();
 				$this->idempresa->OldValue = $this->idempresa->CurrentValue;
 			if (strval($this->idempresa->CurrentValue) <> "") {
-				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
 			$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
+				$rswrk = Conn()->Execute($sSqlWrk);
 				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idempresa->ViewValue = $rswrk->fields('DispFld');
+					$arwrk = array();
+					$arwrk[1] = $rswrk->fields('DispFld');
+					$this->idempresa->ViewValue = $this->idempresa->DisplayValue($arwrk);
 					$rswrk->Close();
 				} else {
 					$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
@@ -1314,22 +1343,16 @@ class ccorrelativo_grid extends ccorrelativo {
 			if (trim(strval($this->idempresa->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `empresa`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
@@ -1339,12 +1362,15 @@ class ccorrelativo_grid extends ccorrelativo {
 			// Edit refer script
 			// codigo
 
+			$this->codigo->LinkCustomAttributes = "";
 			$this->codigo->HrefValue = "";
 
 			// valor
+			$this->valor->LinkCustomAttributes = "";
 			$this->valor->HrefValue = "";
 
 			// idempresa
+			$this->idempresa->LinkCustomAttributes = "";
 			$this->idempresa->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
@@ -1394,10 +1420,11 @@ class ccorrelativo_grid extends ccorrelativo {
 	// Delete records based on current filter
 	//
 	function DeleteRows() {
-		global $conn, $Language, $Security;
+		global $Language, $Security;
 		$DeleteRows = TRUE;
 		$sSql = $this->SQL();
-		$conn->raiseErrorFn = 'ew_ErrorFn';
+		$conn = &$this->Connection();
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 		$rs = $conn->Execute($sSql);
 		$conn->raiseErrorFn = '';
 		if ($rs === FALSE) {
@@ -1431,7 +1458,7 @@ class ccorrelativo_grid extends ccorrelativo {
 				$sThisKey = "";
 				if ($sThisKey <> "") $sThisKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
 				$sThisKey .= $row['idcorrelativo'];
-				$conn->raiseErrorFn = 'ew_ErrorFn';
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 				$DeleteRows = $this->Delete($row); // Delete
 				$conn->raiseErrorFn = '';
 				if ($DeleteRows === FALSE)
@@ -1467,14 +1494,16 @@ class ccorrelativo_grid extends ccorrelativo {
 
 	// Update record based on key values
 	function EditRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
+		$sFilter = $this->ApplyUserIDFilters($sFilter);
+		$conn = &$this->Connection();
 		if ($this->codigo->CurrentValue <> "") { // Check field with unique index
-			$sFilterChk = "(`codigo` = '" . ew_AdjustSql($this->codigo->CurrentValue) . "')";
+			$sFilterChk = "(`codigo` = '" . ew_AdjustSql($this->codigo->CurrentValue, $this->DBID) . "')";
 			$sFilterChk .= " AND NOT (" . $sFilter . ")";
 			$this->CurrentFilter = $sFilterChk;
 			$sSqlChk = $this->SQL();
-			$conn->raiseErrorFn = 'ew_ErrorFn';
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 			$rsChk = $conn->Execute($sSqlChk);
 			$conn->raiseErrorFn = '';
 			if ($rsChk === FALSE) {
@@ -1490,12 +1519,13 @@ class ccorrelativo_grid extends ccorrelativo {
 		}
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
-		$conn->raiseErrorFn = 'ew_ErrorFn';
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 		$rs = $conn->Execute($sSql);
 		$conn->raiseErrorFn = '';
 		if ($rs === FALSE)
 			return FALSE;
 		if ($rs->EOF) {
+			$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record message
 			$EditRow = FALSE; // Update Failed
 		} else {
 
@@ -1516,7 +1546,7 @@ class ccorrelativo_grid extends ccorrelativo {
 			// Call Row Updating event
 			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
 			if ($bUpdateRow) {
-				$conn->raiseErrorFn = 'ew_ErrorFn';
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 				if (count($rsnew) > 0)
 					$EditRow = $this->Update($rsnew, "", $rsold);
 				else
@@ -1547,14 +1577,14 @@ class ccorrelativo_grid extends ccorrelativo {
 
 	// Add record
 	function AddRow($rsold = NULL) {
-		global $conn, $Language, $Security;
+		global $Language, $Security;
 
 		// Set up foreign key field value from Session
 			if ($this->getCurrentMasterTable() == "empresa") {
 				$this->idempresa->CurrentValue = $this->idempresa->getSessionValue();
 			}
 		if ($this->codigo->CurrentValue <> "") { // Check field with unique index
-			$sFilter = "(codigo = '" . ew_AdjustSql($this->codigo->CurrentValue) . "')";
+			$sFilter = "(codigo = '" . ew_AdjustSql($this->codigo->CurrentValue, $this->DBID) . "')";
 			$rsChk = $this->LoadRs($sFilter);
 			if ($rsChk && !$rsChk->EOF) {
 				$sIdxErrMsg = str_replace("%f", $this->codigo->FldCaption(), $Language->Phrase("DupIndex"));
@@ -1564,6 +1594,7 @@ class ccorrelativo_grid extends ccorrelativo {
 				return FALSE;
 			}
 		}
+		$conn = &$this->Connection();
 
 		// Load db values from rsold
 		if ($rsold) {
@@ -1584,10 +1615,14 @@ class ccorrelativo_grid extends ccorrelativo {
 		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
 		$bInsertRow = $this->Row_Inserting($rs, $rsnew);
 		if ($bInsertRow) {
-			$conn->raiseErrorFn = 'ew_ErrorFn';
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 			$AddRow = $this->Insert($rsnew);
 			$conn->raiseErrorFn = '';
 			if ($AddRow) {
+
+				// Get insert id if necessary
+				$this->idcorrelativo->setDbValue($conn->Insert_ID());
+				$rsnew['idcorrelativo'] = $this->idcorrelativo->DbValue;
 			}
 		} else {
 			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
@@ -1600,12 +1635,6 @@ class ccorrelativo_grid extends ccorrelativo {
 				$this->setFailureMessage($Language->Phrase("InsertCancelled"));
 			}
 			$AddRow = FALSE;
-		}
-
-		// Get insert id if necessary
-		if ($AddRow) {
-			$this->idcorrelativo->setDbValue($conn->Insert_ID());
-			$rsnew['idcorrelativo'] = $this->idcorrelativo->DbValue;
 		}
 		if ($AddRow) {
 
@@ -1625,7 +1654,7 @@ class ccorrelativo_grid extends ccorrelativo {
 			$this->idempresa->Visible = FALSE;
 			if ($GLOBALS["empresa"]->EventCancelled) $this->EventCancelled = TRUE;
 		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 

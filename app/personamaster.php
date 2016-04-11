@@ -8,12 +8,13 @@
 <?php if ($persona->Visible) { ?>
 <!-- <h4 class="ewMasterCaption"><?php echo $persona->TableCaption() ?></h4> -->
 <table id="tbl_personamaster" class="table table-bordered table-striped ewViewTable">
+<?php echo $persona->TableCustomInnerHtml ?>
 	<tbody>
 <?php if ($persona->tipo_persona->Visible) { // tipo_persona ?>
 		<tr id="r_tipo_persona">
 			<td><?php echo $persona->tipo_persona->FldCaption() ?></td>
 			<td<?php echo $persona->tipo_persona->CellAttributes() ?>>
-<span id="el_persona_tipo_persona" class="form-group">
+<span id="el_persona_tipo_persona">
 <span<?php echo $persona->tipo_persona->ViewAttributes() ?>>
 <?php echo $persona->tipo_persona->ListViewValue() ?></span>
 </span>
@@ -24,7 +25,7 @@
 		<tr id="r_nombre">
 			<td><?php echo $persona->nombre->FldCaption() ?></td>
 			<td<?php echo $persona->nombre->CellAttributes() ?>>
-<span id="el_persona_nombre" class="form-group">
+<span id="el_persona_nombre">
 <span<?php echo $persona->nombre->ViewAttributes() ?>>
 <?php echo $persona->nombre->ListViewValue() ?></span>
 </span>
@@ -35,7 +36,7 @@
 		<tr id="r_apellido">
 			<td><?php echo $persona->apellido->FldCaption() ?></td>
 			<td<?php echo $persona->apellido->CellAttributes() ?>>
-<span id="el_persona_apellido" class="form-group">
+<span id="el_persona_apellido">
 <span<?php echo $persona->apellido->ViewAttributes() ?>>
 <?php echo $persona->apellido->ListViewValue() ?></span>
 </span>

@@ -26,10 +26,16 @@ class csucursal extends cTable {
 		$this->TableVar = 'sucursal';
 		$this->TableName = 'sucursal';
 		$this->TableType = 'TABLE';
+
+		// Update Table
+		$this->UpdateTable = "`sucursal`";
+		$this->DBID = 'DB';
 		$this->ExportAll = TRUE;
 		$this->ExportPageBreakCount = 0; // Page break per every n record (PDF only)
 		$this->ExportPageOrientation = "portrait"; // Page orientation (PDF only)
 		$this->ExportPageSize = "a4"; // Page size (PDF only)
+		$this->ExportExcelPageOrientation = ""; // Page orientation (PHPExcel only)
+		$this->ExportExcelPageSize = ""; // Page size (PHPExcel only)
 		$this->DetailAdd = FALSE; // Allow detail add
 		$this->DetailEdit = FALSE; // Allow detail edit
 		$this->DetailView = FALSE; // Allow detail view
@@ -40,34 +46,36 @@ class csucursal extends cTable {
 		$this->BasicSearch = new cBasicSearch($this->TableVar);
 
 		// idsucursal
-		$this->idsucursal = new cField('sucursal', 'sucursal', 'x_idsucursal', 'idsucursal', '`idsucursal`', '`idsucursal`', 3, -1, FALSE, '`idsucursal`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->idsucursal = new cField('sucursal', 'sucursal', 'x_idsucursal', 'idsucursal', '`idsucursal`', '`idsucursal`', 3, -1, FALSE, '`idsucursal`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'NO');
 		$this->idsucursal->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idsucursal'] = &$this->idsucursal;
 
 		// nombre
-		$this->nombre = new cField('sucursal', 'sucursal', 'x_nombre', 'nombre', '`nombre`', '`nombre`', 200, -1, FALSE, '`nombre`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->nombre = new cField('sucursal', 'sucursal', 'x_nombre', 'nombre', '`nombre`', '`nombre`', 200, -1, FALSE, '`nombre`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->fields['nombre'] = &$this->nombre;
 
 		// casa_matriz
-		$this->casa_matriz = new cField('sucursal', 'sucursal', 'x_casa_matriz', 'casa_matriz', '`casa_matriz`', '`casa_matriz`', 202, -1, FALSE, '`casa_matriz`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->casa_matriz = new cField('sucursal', 'sucursal', 'x_casa_matriz', 'casa_matriz', '`casa_matriz`', '`casa_matriz`', 202, -1, FALSE, '`casa_matriz`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
+		$this->casa_matriz->OptionCount = 2;
 		$this->fields['casa_matriz'] = &$this->casa_matriz;
 
 		// direccion
-		$this->direccion = new cField('sucursal', 'sucursal', 'x_direccion', 'direccion', '`direccion`', '`direccion`', 200, -1, FALSE, '`direccion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->direccion = new cField('sucursal', 'sucursal', 'x_direccion', 'direccion', '`direccion`', '`direccion`', 200, -1, FALSE, '`direccion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->fields['direccion'] = &$this->direccion;
 
 		// idempresa
-		$this->idempresa = new cField('sucursal', 'sucursal', 'x_idempresa', 'idempresa', '`idempresa`', '`idempresa`', 3, -1, FALSE, '`idempresa`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->idempresa = new cField('sucursal', 'sucursal', 'x_idempresa', 'idempresa', '`idempresa`', '`idempresa`', 3, -1, FALSE, '`idempresa`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
 		$this->idempresa->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idempresa'] = &$this->idempresa;
 
 		// idpais
-		$this->idpais = new cField('sucursal', 'sucursal', 'x_idpais', 'idpais', '`idpais`', '`idpais`', 3, -1, FALSE, '`idpais`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->idpais = new cField('sucursal', 'sucursal', 'x_idpais', 'idpais', '`idpais`', '`idpais`', 3, -1, FALSE, '`idpais`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
 		$this->idpais->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idpais'] = &$this->idpais;
 
 		// estado
-		$this->estado = new cField('sucursal', 'sucursal', 'x_estado', 'estado', '`estado`', '`estado`', 202, -1, FALSE, '`estado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->estado = new cField('sucursal', 'sucursal', 'x_estado', 'estado', '`estado`', '`estado`', 202, -1, FALSE, '`estado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
+		$this->estado->OptionCount = 2;
 		$this->fields['estado'] = &$this->estado;
 	}
 
@@ -104,7 +112,7 @@ class csucursal extends cTable {
 		$sMasterFilter = "";
 		if ($this->getCurrentMasterTable() == "empresa") {
 			if ($this->idempresa->getSessionValue() <> "")
-				$sMasterFilter .= "`idempresa`=" . ew_QuotedValue($this->idempresa->getSessionValue(), EW_DATATYPE_NUMBER);
+				$sMasterFilter .= "`idempresa`=" . ew_QuotedValue($this->idempresa->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
 			else
 				return "";
 		}
@@ -118,7 +126,7 @@ class csucursal extends cTable {
 		$sDetailFilter = "";
 		if ($this->getCurrentMasterTable() == "empresa") {
 			if ($this->idempresa->getSessionValue() <> "")
-				$sDetailFilter .= "`idempresa`=" . ew_QuotedValue($this->idempresa->getSessionValue(), EW_DATATYPE_NUMBER);
+				$sDetailFilter .= "`idempresa`=" . ew_QuotedValue($this->idempresa->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
 			else
 				return "";
 		}
@@ -218,29 +226,6 @@ class csucursal extends cTable {
     	$this->_SqlOrderBy = $v;
 	}
 
-	// Check if Anonymous User is allowed
-	function AllowAnonymousUser() {
-		switch (@$this->PageID) {
-			case "add":
-			case "register":
-			case "addopt":
-				return FALSE;
-			case "edit":
-			case "update":
-			case "changepwd":
-			case "forgotpwd":
-				return FALSE;
-			case "delete":
-				return FALSE;
-			case "view":
-				return FALSE;
-			case "search":
-				return FALSE;
-			default:
-				return FALSE;
-		}
-	}
-
 	// Apply User ID filters
 	function ApplyUserIDFilters($sFilter) {
 		return $sFilter;
@@ -309,9 +294,8 @@ class csucursal extends cTable {
 
 	// Try to get record count
 	function TryGetRecordCount($sSql) {
-		global $conn;
 		$cnt = -1;
-		if ($this->TableType == 'TABLE' || $this->TableType == 'VIEW') {
+		if (($this->TableType == 'TABLE' || $this->TableType == 'VIEW' || $this->TableType == 'LINKTABLE') && preg_match("/^SELECT \* FROM/i", $sSql)) {
 			$sSql = "SELECT COUNT(*) FROM" . preg_replace('/^SELECT\s([\s\S]+)?\*\sFROM/i', "", $sSql);
 			$sOrderBy = $this->GetOrderBy();
 			if (substr($sSql, strlen($sOrderBy) * -1) == $sOrderBy)
@@ -319,6 +303,7 @@ class csucursal extends cTable {
 		} else {
 			$sSql = "SELECT COUNT(*) FROM (" . $sSql . ") EW_COUNT_TABLE";
 		}
+		$conn = &$this->Connection();
 		if ($rs = $conn->Execute($sSql)) {
 			if (!$rs->EOF && $rs->FieldCount() > 0) {
 				$cnt = $rs->fields[0];
@@ -349,10 +334,10 @@ class csucursal extends cTable {
 
 	// Get record count (for current List page)
 	function SelectRecordCount() {
-		global $conn;
 		$sSql = $this->SelectSQL();
 		$cnt = $this->TryGetRecordCount($sSql);
 		if ($cnt == -1) {
+			$conn = &$this->Connection();
 			if ($rs = $conn->Execute($sSql)) {
 				$cnt = $rs->RecordCount();
 				$rs->Close();
@@ -361,19 +346,15 @@ class csucursal extends cTable {
 		return intval($cnt);
 	}
 
-	// Update Table
-	var $UpdateTable = "`sucursal`";
-
 	// INSERT statement
 	function InsertSQL(&$rs) {
-		global $conn;
 		$names = "";
 		$values = "";
 		foreach ($rs as $name => $value) {
-			if (!isset($this->fields[$name]))
+			if (!isset($this->fields[$name]) || $this->fields[$name]->FldIsCustom)
 				continue;
 			$names .= $this->fields[$name]->FldExpression . ",";
-			$values .= ew_QuotedValue($value, $this->fields[$name]->FldDataType) . ",";
+			$values .= ew_QuotedValue($value, $this->fields[$name]->FldDataType, $this->DBID) . ",";
 		}
 		while (substr($names, -1) == ",")
 			$names = substr($names, 0, -1);
@@ -384,41 +365,45 @@ class csucursal extends cTable {
 
 	// Insert
 	function Insert(&$rs) {
-		global $conn;
+		$conn = &$this->Connection();
 		return $conn->Execute($this->InsertSQL($rs));
 	}
 
 	// UPDATE statement
-	function UpdateSQL(&$rs, $where = "") {
+	function UpdateSQL(&$rs, $where = "", $curfilter = TRUE) {
 		$sql = "UPDATE " . $this->UpdateTable . " SET ";
 		foreach ($rs as $name => $value) {
-			if (!isset($this->fields[$name]))
+			if (!isset($this->fields[$name]) || $this->fields[$name]->FldIsCustom)
 				continue;
 			$sql .= $this->fields[$name]->FldExpression . "=";
-			$sql .= ew_QuotedValue($value, $this->fields[$name]->FldDataType) . ",";
+			$sql .= ew_QuotedValue($value, $this->fields[$name]->FldDataType, $this->DBID) . ",";
 		}
 		while (substr($sql, -1) == ",")
 			$sql = substr($sql, 0, -1);
-		$filter = $this->CurrentFilter;
+		$filter = ($curfilter) ? $this->CurrentFilter : "";
+		if (is_array($where))
+			$where = $this->ArrayToFilter($where);
 		ew_AddFilter($filter, $where);
 		if ($filter <> "")	$sql .= " WHERE " . $filter;
 		return $sql;
 	}
 
 	// Update
-	function Update(&$rs, $where = "", $rsold = NULL) {
-		global $conn;
-		return $conn->Execute($this->UpdateSQL($rs, $where));
+	function Update(&$rs, $where = "", $rsold = NULL, $curfilter = TRUE) {
+		$conn = &$this->Connection();
+		return $conn->Execute($this->UpdateSQL($rs, $where, $curfilter));
 	}
 
 	// DELETE statement
-	function DeleteSQL(&$rs, $where = "") {
+	function DeleteSQL(&$rs, $where = "", $curfilter = TRUE) {
 		$sql = "DELETE FROM " . $this->UpdateTable . " WHERE ";
+		if (is_array($where))
+			$where = $this->ArrayToFilter($where);
 		if ($rs) {
 			if (array_key_exists('idsucursal', $rs))
-				ew_AddFilter($where, ew_QuotedName('idsucursal') . '=' . ew_QuotedValue($rs['idsucursal'], $this->idsucursal->FldDataType));
+				ew_AddFilter($where, ew_QuotedName('idsucursal', $this->DBID) . '=' . ew_QuotedValue($rs['idsucursal'], $this->idsucursal->FldDataType, $this->DBID));
 		}
-		$filter = $this->CurrentFilter;
+		$filter = ($curfilter) ? $this->CurrentFilter : "";
 		ew_AddFilter($filter, $where);
 		if ($filter <> "")
 			$sql .= $filter;
@@ -428,9 +413,9 @@ class csucursal extends cTable {
 	}
 
 	// Delete
-	function Delete(&$rs, $where = "") {
-		global $conn;
-		return $conn->Execute($this->DeleteSQL($rs, $where));
+	function Delete(&$rs, $where = "", $curfilter = TRUE) {
+		$conn = &$this->Connection();
+		return $conn->Execute($this->DeleteSQL($rs, $where, $curfilter));
 	}
 
 	// Key filter WHERE clause
@@ -443,7 +428,7 @@ class csucursal extends cTable {
 		$sKeyFilter = $this->SqlKeyFilter();
 		if (!is_numeric($this->idsucursal->CurrentValue))
 			$sKeyFilter = "0=1"; // Invalid key
-		$sKeyFilter = str_replace("@idsucursal@", ew_AdjustSql($this->idsucursal->CurrentValue), $sKeyFilter); // Replace key value
+		$sKeyFilter = str_replace("@idsucursal@", ew_AdjustSql($this->idsucursal->CurrentValue, $this->DBID), $sKeyFilter); // Replace key value
 		return $sKeyFilter;
 	}
 
@@ -473,42 +458,63 @@ class csucursal extends cTable {
 	// View URL
 	function GetViewUrl($parm = "") {
 		if ($parm <> "")
-			return $this->KeyUrl("sucursalview.php", $this->UrlParm($parm));
+			$url = $this->KeyUrl("sucursalview.php", $this->UrlParm($parm));
 		else
-			return $this->KeyUrl("sucursalview.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+			$url = $this->KeyUrl("sucursalview.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Add URL
 	function GetAddUrl($parm = "") {
 		if ($parm <> "")
-			return "sucursaladd.php?" . $this->UrlParm($parm);
+			$url = "sucursaladd.php?" . $this->UrlParm($parm);
 		else
-			return "sucursaladd.php";
+			$url = "sucursaladd.php";
+		return $this->AddMasterUrl($url);
 	}
 
 	// Edit URL
 	function GetEditUrl($parm = "") {
-		return $this->KeyUrl("sucursaledit.php", $this->UrlParm($parm));
+		$url = $this->KeyUrl("sucursaledit.php", $this->UrlParm($parm));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Inline edit URL
 	function GetInlineEditUrl() {
-		return $this->KeyUrl(ew_CurrentPage(), $this->UrlParm("a=edit"));
+		$url = $this->KeyUrl(ew_CurrentPage(), $this->UrlParm("a=edit"));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Copy URL
 	function GetCopyUrl($parm = "") {
-		return $this->KeyUrl("sucursaladd.php", $this->UrlParm($parm));
+		$url = $this->KeyUrl("sucursaladd.php", $this->UrlParm($parm));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Inline copy URL
 	function GetInlineCopyUrl() {
-		return $this->KeyUrl(ew_CurrentPage(), $this->UrlParm("a=copy"));
+		$url = $this->KeyUrl(ew_CurrentPage(), $this->UrlParm("a=copy"));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Delete URL
 	function GetDeleteUrl() {
 		return $this->KeyUrl("sucursaldelete.php", $this->UrlParm());
+	}
+
+	// Add master url
+	function AddMasterUrl($url) {
+		if ($this->getCurrentMasterTable() == "empresa" && strpos($url, EW_TABLE_SHOW_MASTER . "=") === FALSE) {
+			$url .= (strpos($url, "?") !== FALSE ? "&" : "?") . EW_TABLE_SHOW_MASTER . "=" . $this->getCurrentMasterTable();
+			$url .= "&fk_idempresa=" . urlencode($this->idempresa->CurrentValue);
+		}
+		return $url;
+	}
+
+	function KeyToJson() {
+		$json = "";
+		$json .= "idsucursal:" . ew_VarToJson($this->idsucursal->CurrentValue, "number", "'");
+		return "{" . $json . "}";
 	}
 
 	// Add key value to URL
@@ -518,7 +524,7 @@ class csucursal extends cTable {
 		if (!is_null($this->idsucursal->CurrentValue)) {
 			$sUrl .= "idsucursal=" . urlencode($this->idsucursal->CurrentValue);
 		} else {
-			return "javascript:alert(ewLanguage.Phrase('InvalidRecord'));";
+			return "javascript:ew_Alert(ewLanguage.Phrase('InvalidRecord'));";
 		}
 		return $sUrl;
 	}
@@ -547,18 +553,26 @@ class csucursal extends cTable {
 		} elseif (isset($_GET["key_m"])) {
 			$arKeys = ew_StripSlashes($_GET["key_m"]);
 			$cnt = count($arKeys);
-		} elseif (isset($_GET)) {
-			$arKeys[] = @$_GET["idsucursal"]; // idsucursal
+		} elseif (!empty($_GET) || !empty($_POST)) {
+			$isPost = ew_IsHttpPost();
+			if ($isPost && isset($_POST["idsucursal"]))
+				$arKeys[] = ew_StripSlashes($_POST["idsucursal"]);
+			elseif (isset($_GET["idsucursal"]))
+				$arKeys[] = ew_StripSlashes($_GET["idsucursal"]);
+			else
+				$arKeys = NULL; // Do not setup
 
 			//return $arKeys; // Do not return yet, so the values will also be checked by the following code
 		}
 
 		// Check keys
 		$ar = array();
-		foreach ($arKeys as $key) {
-			if (!is_numeric($key))
-				continue;
-			$ar[] = $key;
+		if (is_array($arKeys)) {
+			foreach ($arKeys as $key) {
+				if (!is_numeric($key))
+					continue;
+				$ar[] = $key;
+			}
 		}
 		return $ar;
 	}
@@ -577,13 +591,13 @@ class csucursal extends cTable {
 
 	// Load rows based on filter
 	function &LoadRs($sFilter) {
-		global $conn;
 
 		// Set up filter (SQL WHERE clause) and get return SQL
 		//$this->CurrentFilter = $sFilter;
 		//$sSql = $this->SQL();
 
 		$sSql = $this->GetSQL($sFilter, "");
+		$conn = &$this->Connection();
 		$rs = $conn->Execute($sSql);
 		return $rs;
 	}
@@ -601,7 +615,7 @@ class csucursal extends cTable {
 
 	// Render list row values
 	function RenderListRow() {
-		global $conn, $Security, $gsLanguage, $Language;
+		global $Security, $gsLanguage, $Language;
 
 		// Call Row Rendering event
 		$this->Row_Rendering();
@@ -625,16 +639,7 @@ class csucursal extends cTable {
 
 		// casa_matriz
 		if (strval($this->casa_matriz->CurrentValue) <> "") {
-			switch ($this->casa_matriz->CurrentValue) {
-				case $this->casa_matriz->FldTagValue(1):
-					$this->casa_matriz->ViewValue = $this->casa_matriz->FldTagCaption(1) <> "" ? $this->casa_matriz->FldTagCaption(1) : $this->casa_matriz->CurrentValue;
-					break;
-				case $this->casa_matriz->FldTagValue(2):
-					$this->casa_matriz->ViewValue = $this->casa_matriz->FldTagCaption(2) <> "" ? $this->casa_matriz->FldTagCaption(2) : $this->casa_matriz->CurrentValue;
-					break;
-				default:
-					$this->casa_matriz->ViewValue = $this->casa_matriz->CurrentValue;
-			}
+			$this->casa_matriz->ViewValue = $this->casa_matriz->OptionCaption($this->casa_matriz->CurrentValue);
 		} else {
 			$this->casa_matriz->ViewValue = NULL;
 		}
@@ -646,24 +651,20 @@ class csucursal extends cTable {
 
 		// idempresa
 		if (strval($this->idempresa->CurrentValue) <> "") {
-			$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
+			$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
 		$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
 		$sWhereWrk = "";
 		$lookuptblfilter = "`estado` = 'Activo'";
-		if (strval($lookuptblfilter) <> "") {
-			ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		}
-		if ($sFilterWrk <> "") {
-			ew_AddFilter($sWhereWrk, $sFilterWrk);
-		}
-
-		// Call Lookup selecting
-		$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 		$sSqlWrk .= " ORDER BY `nombre`";
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$this->idempresa->ViewValue = $rswrk->fields('DispFld');
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idempresa->ViewValue = $this->idempresa->DisplayValue($arwrk);
 				$rswrk->Close();
 			} else {
 				$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
@@ -675,24 +676,20 @@ class csucursal extends cTable {
 
 		// idpais
 		if (strval($this->idpais->CurrentValue) <> "") {
-			$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER);
+			$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER, "");
 		$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
 		$sWhereWrk = "";
 		$lookuptblfilter = "`estado` = 'Activo'";
-		if (strval($lookuptblfilter) <> "") {
-			ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		}
-		if ($sFilterWrk <> "") {
-			ew_AddFilter($sWhereWrk, $sFilterWrk);
-		}
-
-		// Call Lookup selecting
-		$this->Lookup_Selecting($this->idpais, $sWhereWrk);
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idpais, $sWhereWrk); // Call Lookup selecting
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 		$sSqlWrk .= " ORDER BY `nombre`";
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$this->idpais->ViewValue = $rswrk->fields('DispFld');
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idpais->ViewValue = $this->idpais->DisplayValue($arwrk);
 				$rswrk->Close();
 			} else {
 				$this->idpais->ViewValue = $this->idpais->CurrentValue;
@@ -704,16 +701,7 @@ class csucursal extends cTable {
 
 		// estado
 		if (strval($this->estado->CurrentValue) <> "") {
-			switch ($this->estado->CurrentValue) {
-				case $this->estado->FldTagValue(1):
-					$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-					break;
-				case $this->estado->FldTagValue(2):
-					$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-					break;
-				default:
-					$this->estado->ViewValue = $this->estado->CurrentValue;
-			}
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
 		} else {
 			$this->estado->ViewValue = NULL;
 		}
@@ -760,7 +748,7 @@ class csucursal extends cTable {
 
 	// Render edit row values
 	function RenderEditRow() {
-		global $conn, $Security, $gsLanguage, $Language;
+		global $Security, $gsLanguage, $Language;
 
 		// Call Row Rendering event
 		$this->Row_Rendering();
@@ -774,22 +762,18 @@ class csucursal extends cTable {
 		// nombre
 		$this->nombre->EditAttrs["class"] = "form-control";
 		$this->nombre->EditCustomAttributes = "";
-		$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
+		$this->nombre->EditValue = $this->nombre->CurrentValue;
 		$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
 
 		// casa_matriz
 		$this->casa_matriz->EditAttrs["class"] = "form-control";
 		$this->casa_matriz->EditCustomAttributes = "";
-		$arwrk = array();
-		$arwrk[] = array($this->casa_matriz->FldTagValue(1), $this->casa_matriz->FldTagCaption(1) <> "" ? $this->casa_matriz->FldTagCaption(1) : $this->casa_matriz->FldTagValue(1));
-		$arwrk[] = array($this->casa_matriz->FldTagValue(2), $this->casa_matriz->FldTagCaption(2) <> "" ? $this->casa_matriz->FldTagCaption(2) : $this->casa_matriz->FldTagValue(2));
-		array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
-		$this->casa_matriz->EditValue = $arwrk;
+		$this->casa_matriz->EditValue = $this->casa_matriz->Options(TRUE);
 
 		// direccion
 		$this->direccion->EditAttrs["class"] = "form-control";
 		$this->direccion->EditCustomAttributes = "";
-		$this->direccion->EditValue = ew_HtmlEncode($this->direccion->CurrentValue);
+		$this->direccion->EditValue = $this->direccion->CurrentValue;
 		$this->direccion->PlaceHolder = ew_RemoveHtml($this->direccion->FldCaption());
 
 		// idempresa
@@ -798,24 +782,20 @@ class csucursal extends cTable {
 		if ($this->idempresa->getSessionValue() <> "") {
 			$this->idempresa->CurrentValue = $this->idempresa->getSessionValue();
 		if (strval($this->idempresa->CurrentValue) <> "") {
-			$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
+			$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
 		$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
 		$sWhereWrk = "";
 		$lookuptblfilter = "`estado` = 'Activo'";
-		if (strval($lookuptblfilter) <> "") {
-			ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		}
-		if ($sFilterWrk <> "") {
-			ew_AddFilter($sWhereWrk, $sFilterWrk);
-		}
-
-		// Call Lookup selecting
-		$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 		$sSqlWrk .= " ORDER BY `nombre`";
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$this->idempresa->ViewValue = $rswrk->fields('DispFld');
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idempresa->ViewValue = $this->idempresa->DisplayValue($arwrk);
 				$rswrk->Close();
 			} else {
 				$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
@@ -834,11 +814,7 @@ class csucursal extends cTable {
 		// estado
 		$this->estado->EditAttrs["class"] = "form-control";
 		$this->estado->EditCustomAttributes = "";
-		$arwrk = array();
-		$arwrk[] = array($this->estado->FldTagValue(1), $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->FldTagValue(1));
-		$arwrk[] = array($this->estado->FldTagValue(2), $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->FldTagValue(2));
-		array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
-		$this->estado->EditValue = $arwrk;
+		$this->estado->EditValue = $this->estado->Options(TRUE);
 
 		// Call Row Rendered event
 		$this->Row_Rendered();
@@ -850,6 +826,9 @@ class csucursal extends cTable {
 
 	// Aggregate list row (for rendering)
 	function AggregateListRow() {
+
+		// Call Row Rendered event
+		$this->Row_Rendered();
 	}
 	var $ExportDoc;
 
@@ -1099,7 +1078,9 @@ class csucursal extends cTable {
 	// Lookup Selecting event
 	function Lookup_Selecting($fld, &$filter) {
 
+		//var_dump($fld->FldName, $fld->LookupFilters, $filter); // Uncomment to view the filter
 		// Enter your code here
+
 	}
 
 	// Row Rendering event

@@ -1,4 +1,4 @@
-<?php include_once $EW_RELATIVE_PATH . "tipo_documento_moduloinfo.php" ?>
+<?php include_once "tipo_documento_moduloinfo.php" ?>
 <?php
 
 //
@@ -72,6 +72,30 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 
 	function setWarningMessage($v) {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
+	}
+
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
 	}
 
 	// Show message
@@ -154,6 +178,7 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -166,7 +191,7 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -192,6 +217,7 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 		$this->FormBlankRowName .= '_' . $this->FormName;
 		$this->FormKeyCountName .= '_' . $this->FormName;
 		$GLOBALS["Grid"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -220,7 +246,7 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 
 		// List options
 		$this->ListOptions = new cListOptions();
@@ -276,6 +302,9 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 		// Create Token
 		$this->CreateToken();
 
+		// Set up master detail parameters
+		$this->SetUpMasterParms();
+
 		// Setup other options
 		$this->SetupOtherOptions();
 	}
@@ -284,7 +313,7 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Export
 		global $EW_EXPORT, $tipo_documento_modulo;
@@ -324,6 +353,10 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 	var $ExportOptions; // Export options
 	var $SearchOptions; // Search options
 	var $OtherOptions = array(); // Other options
+	var $FilterOptions; // Filter options
+	var $ListActions; // List actions
+	var $SelectedCount = 0;
+	var $SelectedIndex = 0;
 	var $ShowOtherOptions = FALSE;
 	var $DisplayRecs = 20;
 	var $StartRec;
@@ -355,6 +388,7 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 	var $MultiSelectKey;
 	var $Command;
 	var $RestoreSearch = FALSE;
+	var $DetailPages;
 	var $Recordset;
 	var $OldRecordset;
 
@@ -375,9 +409,6 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 
 			// Handle reset command
 			$this->ResetCmd();
-
-			// Set up master detail parameters
-			$this->SetUpMasterParms();
 
 			// Hide list options
 			if ($this->Export <> "") {
@@ -458,12 +489,14 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 		$this->CurrentFilter = "";
 
 		// Load record count first
-		$bSelectLimit = EW_SELECT_LIMIT;
-		if ($bSelectLimit) {
-			$this->TotalRecs = $this->SelectRecordCount();
-		} else {
-			if ($this->Recordset = $this->LoadRecordset())
-				$this->TotalRecs = $this->Recordset->RecordCount();
+		if (!$this->IsAddOrEdit()) {
+			$bSelectLimit = $this->UseSelectLimit;
+			if ($bSelectLimit) {
+				$this->TotalRecs = $this->SelectRecordCount();
+			} else {
+				if ($this->Recordset = $this->LoadRecordset())
+					$this->TotalRecs = $this->Recordset->RecordCount();
+			}
 		}
 	}
 
@@ -486,7 +519,7 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 
 	// Perform update to grid
 	function GridUpdate() {
-		global $conn, $Language, $objForm, $gsFormError;
+		global $Language, $objForm, $gsFormError;
 		$bGridUpdate = TRUE;
 
 		// Get old recordset
@@ -494,6 +527,7 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 		if ($this->CurrentFilter == "")
 			$this->CurrentFilter = "0=1";
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		if ($rs = $conn->Execute($sSql)) {
 			$rsold = $rs->GetRows();
 			$rs->Close();
@@ -618,9 +652,10 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 
 	// Perform Grid Add
 	function GridInsert() {
-		global $conn, $Language, $objForm, $gsFormError;
+		global $Language, $objForm, $gsFormError;
 		$rowindex = 1;
 		$bGridInsert = FALSE;
+		$conn = &$this->Connection();
 
 		// Call Grid Inserting event
 		if (!$this->Grid_Inserting()) {
@@ -899,7 +934,7 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 				if (is_numeric($this->RowIndex) && ($this->RowAction == "" || $this->RowAction == "edit")) { // Do not allow delete existing record
 					$oListOpt->Body = "&nbsp;";
 				} else {
-					$oListOpt->Body = "<a class=\"ewGridLink ewGridDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" href=\"javascript:void(0);\" onclick=\"ew_DeleteGridRow(this, " . $this->RowIndex . ");\">" . $Language->Phrase("DeleteLink") . "</a>";
+					$oListOpt->Body = "<a class=\"ewGridLink ewGridDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" onclick=\"return ew_DeleteGridRow(this, " . $this->RowIndex . ");\">" . $Language->Phrase("DeleteLink") . "</a>";
 				}
 			}
 		}
@@ -1030,15 +1065,24 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 
 	// Load recordset
 	function LoadRecordset($offset = -1, $rowcnt = -1) {
-		global $conn;
 
 		// Load List page SQL
 		$sSql = $this->SelectSQL();
+		$conn = &$this->Connection();
 
 		// Load recordset
-		$conn->raiseErrorFn = 'ew_ErrorFn';
-		$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
-		$conn->raiseErrorFn = '';
+		$dbtype = ew_GetConnectionType($this->DBID);
+		if ($this->UseSelectLimit) {
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+			if ($dbtype == "MSSQL") {
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset, array("_hasOrderBy" => trim($this->getOrderBy()) || trim($this->getSessionOrderBy())));
+			} else {
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
+			}
+			$conn->raiseErrorFn = '';
+		} else {
+			$rs = ew_LoadRecordset($sSql, $conn);
+		}
 
 		// Call Recordset Selected event
 		$this->Recordset_Selected($rs);
@@ -1047,7 +1091,7 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -1056,8 +1100,9 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -1068,7 +1113,6 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -1112,7 +1156,8 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 		if ($bValidKey) {
 			$this->CurrentFilter = $this->KeyFilter();
 			$sSql = $this->SQL();
-			$this->OldRecordset = ew_LoadRecordset($sSql);
+			$conn = &$this->Connection();
+			$this->OldRecordset = ew_LoadRecordset($sSql, $conn);
 			$this->LoadRowValues($this->OldRecordset); // Load row values
 		} else {
 			$this->OldRecordset = NULL;
@@ -1122,8 +1167,7 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		// Call Row_Rendering event
@@ -1139,87 +1183,70 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idtipo_documento_modulo
-			$this->idtipo_documento_modulo->ViewValue = $this->idtipo_documento_modulo->CurrentValue;
-			$this->idtipo_documento_modulo->ViewCustomAttributes = "";
+		// idtipo_documento_modulo
+		$this->idtipo_documento_modulo->ViewValue = $this->idtipo_documento_modulo->CurrentValue;
+		$this->idtipo_documento_modulo->ViewCustomAttributes = "";
 
-			// idtipo_documento
-			if (strval($this->idtipo_documento->CurrentValue) <> "") {
-				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idtipo_documento->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idtipo_documento->ViewValue = $this->idtipo_documento->CurrentValue;
-				}
+		// idtipo_documento
+		if (strval($this->idtipo_documento->CurrentValue) <> "") {
+			$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idtipo_documento->ViewValue = $this->idtipo_documento->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idtipo_documento->ViewValue = NULL;
+				$this->idtipo_documento->ViewValue = $this->idtipo_documento->CurrentValue;
 			}
-			$this->idtipo_documento->ViewCustomAttributes = "";
+		} else {
+			$this->idtipo_documento->ViewValue = NULL;
+		}
+		$this->idtipo_documento->ViewCustomAttributes = "";
 
-			// idmodulo
-			if (strval($this->idmodulo->CurrentValue) <> "") {
-				$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `modulo`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idmodulo, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idmodulo->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idmodulo->ViewValue = $this->idmodulo->CurrentValue;
-				}
+		// idmodulo
+		if (strval($this->idmodulo->CurrentValue) <> "") {
+			$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `modulo`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idmodulo, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idmodulo->ViewValue = $this->idmodulo->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idmodulo->ViewValue = NULL;
+				$this->idmodulo->ViewValue = $this->idmodulo->CurrentValue;
 			}
-			$this->idmodulo->ViewCustomAttributes = "";
+		} else {
+			$this->idmodulo->ViewValue = NULL;
+		}
+		$this->idmodulo->ViewCustomAttributes = "";
 
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
-			} else {
-				$this->estado->ViewValue = NULL;
-			}
-			$this->estado->ViewCustomAttributes = "";
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
-			// fecha_insercion
-			$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
-			$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
-			$this->fecha_insercion->ViewCustomAttributes = "";
+		// fecha_insercion
+		$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
+		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
+		$this->fecha_insercion->ViewCustomAttributes = "";
 
 			// idtipo_documento
 			$this->idtipo_documento->LinkCustomAttributes = "";
@@ -1239,23 +1266,19 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 				$this->idtipo_documento->CurrentValue = $this->idtipo_documento->getSessionValue();
 				$this->idtipo_documento->OldValue = $this->idtipo_documento->CurrentValue;
 			if (strval($this->idtipo_documento->CurrentValue) <> "") {
-				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER, "");
 			$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
+				$rswrk = Conn()->Execute($sSqlWrk);
 				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idtipo_documento->ViewValue = $rswrk->fields('DispFld');
+					$arwrk = array();
+					$arwrk[1] = $rswrk->fields('DispFld');
+					$this->idtipo_documento->ViewValue = $this->idtipo_documento->DisplayValue($arwrk);
 					$rswrk->Close();
 				} else {
 					$this->idtipo_documento->ViewValue = $this->idtipo_documento->CurrentValue;
@@ -1268,22 +1291,16 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 			if (trim(strval($this->idtipo_documento->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `tipo_documento`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
@@ -1297,23 +1314,19 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 				$this->idmodulo->CurrentValue = $this->idmodulo->getSessionValue();
 				$this->idmodulo->OldValue = $this->idmodulo->CurrentValue;
 			if (strval($this->idmodulo->CurrentValue) <> "") {
-				$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER, "");
 			$sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `modulo`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idmodulo, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idmodulo, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
+				$rswrk = Conn()->Execute($sSqlWrk);
 				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idmodulo->ViewValue = $rswrk->fields('DispFld');
+					$arwrk = array();
+					$arwrk[1] = $rswrk->fields('DispFld');
+					$this->idmodulo->ViewValue = $this->idmodulo->DisplayValue($arwrk);
 					$rswrk->Close();
 				} else {
 					$this->idmodulo->ViewValue = $this->idmodulo->CurrentValue;
@@ -1326,34 +1339,30 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 			if (trim(strval($this->idmodulo->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `modulo`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idmodulo, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idmodulo, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
 			$this->idmodulo->EditValue = $arwrk;
 			}
 
-			// Edit refer script
+			// Add refer script
 			// idtipo_documento
 
+			$this->idtipo_documento->LinkCustomAttributes = "";
 			$this->idtipo_documento->HrefValue = "";
 
 			// idmodulo
+			$this->idmodulo->LinkCustomAttributes = "";
 			$this->idmodulo->HrefValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
 
@@ -1364,23 +1373,19 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 				$this->idtipo_documento->CurrentValue = $this->idtipo_documento->getSessionValue();
 				$this->idtipo_documento->OldValue = $this->idtipo_documento->CurrentValue;
 			if (strval($this->idtipo_documento->CurrentValue) <> "") {
-				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER, "");
 			$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
+				$rswrk = Conn()->Execute($sSqlWrk);
 				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idtipo_documento->ViewValue = $rswrk->fields('DispFld');
+					$arwrk = array();
+					$arwrk[1] = $rswrk->fields('DispFld');
+					$this->idtipo_documento->ViewValue = $this->idtipo_documento->DisplayValue($arwrk);
 					$rswrk->Close();
 				} else {
 					$this->idtipo_documento->ViewValue = $this->idtipo_documento->CurrentValue;
@@ -1393,22 +1398,16 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 			if (trim(strval($this->idtipo_documento->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `tipo_documento`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
@@ -1422,23 +1421,19 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 				$this->idmodulo->CurrentValue = $this->idmodulo->getSessionValue();
 				$this->idmodulo->OldValue = $this->idmodulo->CurrentValue;
 			if (strval($this->idmodulo->CurrentValue) <> "") {
-				$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER, "");
 			$sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `modulo`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idmodulo, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idmodulo, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
+				$rswrk = Conn()->Execute($sSqlWrk);
 				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idmodulo->ViewValue = $rswrk->fields('DispFld');
+					$arwrk = array();
+					$arwrk[1] = $rswrk->fields('DispFld');
+					$this->idmodulo->ViewValue = $this->idmodulo->DisplayValue($arwrk);
 					$rswrk->Close();
 				} else {
 					$this->idmodulo->ViewValue = $this->idmodulo->CurrentValue;
@@ -1451,22 +1446,16 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 			if (trim(strval($this->idmodulo->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `modulo`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idmodulo, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idmodulo, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
@@ -1476,9 +1465,11 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 			// Edit refer script
 			// idtipo_documento
 
+			$this->idtipo_documento->LinkCustomAttributes = "";
 			$this->idtipo_documento->HrefValue = "";
 
 			// idmodulo
+			$this->idmodulo->LinkCustomAttributes = "";
 			$this->idmodulo->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
@@ -1522,10 +1513,11 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 	// Delete records based on current filter
 	//
 	function DeleteRows() {
-		global $conn, $Language, $Security;
+		global $Language, $Security;
 		$DeleteRows = TRUE;
 		$sSql = $this->SQL();
-		$conn->raiseErrorFn = 'ew_ErrorFn';
+		$conn = &$this->Connection();
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 		$rs = $conn->Execute($sSql);
 		$conn->raiseErrorFn = '';
 		if ($rs === FALSE) {
@@ -1559,7 +1551,7 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 				$sThisKey = "";
 				if ($sThisKey <> "") $sThisKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
 				$sThisKey .= $row['idtipo_documento_modulo'];
-				$conn->raiseErrorFn = 'ew_ErrorFn';
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 				$DeleteRows = $this->Delete($row); // Delete
 				$conn->raiseErrorFn = '';
 				if ($DeleteRows === FALSE)
@@ -1595,16 +1587,19 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 
 	// Update record based on key values
 	function EditRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
+		$sFilter = $this->ApplyUserIDFilters($sFilter);
+		$conn = &$this->Connection();
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
-		$conn->raiseErrorFn = 'ew_ErrorFn';
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 		$rs = $conn->Execute($sSql);
 		$conn->raiseErrorFn = '';
 		if ($rs === FALSE)
 			return FALSE;
 		if ($rs->EOF) {
+			$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record message
 			$EditRow = FALSE; // Update Failed
 		} else {
 
@@ -1622,7 +1617,7 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 			// Call Row Updating event
 			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
 			if ($bUpdateRow) {
-				$conn->raiseErrorFn = 'ew_ErrorFn';
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 				if (count($rsnew) > 0)
 					$EditRow = $this->Update($rsnew, "", $rsold);
 				else
@@ -1653,7 +1648,7 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 
 	// Add record
 	function AddRow($rsold = NULL) {
-		global $conn, $Language, $Security;
+		global $Language, $Security;
 
 		// Set up foreign key field value from Session
 			if ($this->getCurrentMasterTable() == "tipo_documento") {
@@ -1662,6 +1657,7 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 			if ($this->getCurrentMasterTable() == "modulo") {
 				$this->idmodulo->CurrentValue = $this->idmodulo->getSessionValue();
 			}
+		$conn = &$this->Connection();
 
 		// Load db values from rsold
 		if ($rsold) {
@@ -1679,10 +1675,14 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
 		$bInsertRow = $this->Row_Inserting($rs, $rsnew);
 		if ($bInsertRow) {
-			$conn->raiseErrorFn = 'ew_ErrorFn';
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 			$AddRow = $this->Insert($rsnew);
 			$conn->raiseErrorFn = '';
 			if ($AddRow) {
+
+				// Get insert id if necessary
+				$this->idtipo_documento_modulo->setDbValue($conn->Insert_ID());
+				$rsnew['idtipo_documento_modulo'] = $this->idtipo_documento_modulo->DbValue;
 			}
 		} else {
 			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
@@ -1695,12 +1695,6 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 				$this->setFailureMessage($Language->Phrase("InsertCancelled"));
 			}
 			$AddRow = FALSE;
-		}
-
-		// Get insert id if necessary
-		if ($AddRow) {
-			$this->idtipo_documento_modulo->setDbValue($conn->Insert_ID());
-			$rsnew['idtipo_documento_modulo'] = $this->idtipo_documento_modulo->DbValue;
 		}
 		if ($AddRow) {
 
@@ -1724,7 +1718,7 @@ class ctipo_documento_modulo_grid extends ctipo_documento_modulo {
 			$this->idmodulo->Visible = FALSE;
 			if ($GLOBALS["modulo"]->EventCancelled) $this->EventCancelled = TRUE;
 		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 

@@ -27,10 +27,16 @@ class ccliente extends cTable {
 		$this->TableVar = 'cliente';
 		$this->TableName = 'cliente';
 		$this->TableType = 'TABLE';
+
+		// Update Table
+		$this->UpdateTable = "`cliente`";
+		$this->DBID = 'DB';
 		$this->ExportAll = TRUE;
 		$this->ExportPageBreakCount = 0; // Page break per every n record (PDF only)
 		$this->ExportPageOrientation = "portrait"; // Page orientation (PDF only)
 		$this->ExportPageSize = "a4"; // Page size (PDF only)
+		$this->ExportExcelPageOrientation = ""; // Page orientation (PHPExcel only)
+		$this->ExportExcelPageSize = ""; // Page size (PHPExcel only)
 		$this->DetailAdd = FALSE; // Allow detail add
 		$this->DetailEdit = FALSE; // Allow detail edit
 		$this->DetailView = FALSE; // Allow detail view
@@ -41,38 +47,39 @@ class ccliente extends cTable {
 		$this->BasicSearch = new cBasicSearch($this->TableVar);
 
 		// idcliente
-		$this->idcliente = new cField('cliente', 'cliente', 'x_idcliente', 'idcliente', '`idcliente`', '`idcliente`', 3, -1, FALSE, '`idcliente`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->idcliente = new cField('cliente', 'cliente', 'x_idcliente', 'idcliente', '`idcliente`', '`idcliente`', 3, -1, FALSE, '`idcliente`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'NO');
 		$this->idcliente->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idcliente'] = &$this->idcliente;
 
 		// codigo
-		$this->codigo = new cField('cliente', 'cliente', 'x_codigo', 'codigo', '`codigo`', '`codigo`', 200, -1, FALSE, '`codigo`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->codigo = new cField('cliente', 'cliente', 'x_codigo', 'codigo', '`codigo`', '`codigo`', 200, -1, FALSE, '`codigo`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->fields['codigo'] = &$this->codigo;
 
 		// nombre
-		$this->nombre = new cField('cliente', 'cliente', 'x_nombre', 'nombre', '`nombre`', '`nombre`', 200, -1, FALSE, '`nombre`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->nombre = new cField('cliente', 'cliente', 'x_nombre', 'nombre', '`nombre`', '`nombre`', 200, -1, FALSE, '`nombre`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->fields['nombre'] = &$this->nombre;
 
 		// nit
-		$this->nit = new cField('cliente', 'cliente', 'x_nit', 'nit', '`nit`', '`nit`', 200, -1, FALSE, '`nit`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->nit = new cField('cliente', 'cliente', 'x_nit', 'nit', '`nit`', '`nit`', 200, -1, FALSE, '`nit`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->fields['nit'] = &$this->nit;
 
 		// direccion
-		$this->direccion = new cField('cliente', 'cliente', 'x_direccion', 'direccion', '`direccion`', '`direccion`', 200, -1, FALSE, '`direccion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->direccion = new cField('cliente', 'cliente', 'x_direccion', 'direccion', '`direccion`', '`direccion`', 200, -1, FALSE, '`direccion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->fields['direccion'] = &$this->direccion;
 
 		// idpersona
-		$this->idpersona = new cField('cliente', 'cliente', 'x_idpersona', 'idpersona', '`idpersona`', '`idpersona`', 3, -1, FALSE, '`idpersona`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->idpersona = new cField('cliente', 'cliente', 'x_idpersona', 'idpersona', '`idpersona`', '`idpersona`', 3, -1, FALSE, '`idpersona`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
 		$this->idpersona->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idpersona'] = &$this->idpersona;
 
 		// idempresa
-		$this->idempresa = new cField('cliente', 'cliente', 'x_idempresa', 'idempresa', '`idempresa`', '`idempresa`', 3, -1, FALSE, '`idempresa`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->idempresa = new cField('cliente', 'cliente', 'x_idempresa', 'idempresa', '`idempresa`', '`idempresa`', 3, -1, FALSE, '`idempresa`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
 		$this->idempresa->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idempresa'] = &$this->idempresa;
 
 		// estado
-		$this->estado = new cField('cliente', 'cliente', 'x_estado', 'estado', '`estado`', '`estado`', 202, -1, FALSE, '`estado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->estado = new cField('cliente', 'cliente', 'x_estado', 'estado', '`estado`', '`estado`', 202, -1, FALSE, '`estado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
+		$this->estado->OptionCount = 2;
 		$this->fields['estado'] = &$this->estado;
 	}
 
@@ -109,7 +116,7 @@ class ccliente extends cTable {
 		$sMasterFilter = "";
 		if ($this->getCurrentMasterTable() == "persona") {
 			if ($this->idpersona->getSessionValue() <> "")
-				$sMasterFilter .= "`idpersona`=" . ew_QuotedValue($this->idpersona->getSessionValue(), EW_DATATYPE_NUMBER);
+				$sMasterFilter .= "`idpersona`=" . ew_QuotedValue($this->idpersona->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
 			else
 				return "";
 		}
@@ -123,7 +130,7 @@ class ccliente extends cTable {
 		$sDetailFilter = "";
 		if ($this->getCurrentMasterTable() == "persona") {
 			if ($this->idpersona->getSessionValue() <> "")
-				$sDetailFilter .= "`idpersona`=" . ew_QuotedValue($this->idpersona->getSessionValue(), EW_DATATYPE_NUMBER);
+				$sDetailFilter .= "`idpersona`=" . ew_QuotedValue($this->idpersona->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
 			else
 				return "";
 		}
@@ -223,29 +230,6 @@ class ccliente extends cTable {
     	$this->_SqlOrderBy = $v;
 	}
 
-	// Check if Anonymous User is allowed
-	function AllowAnonymousUser() {
-		switch (@$this->PageID) {
-			case "add":
-			case "register":
-			case "addopt":
-				return FALSE;
-			case "edit":
-			case "update":
-			case "changepwd":
-			case "forgotpwd":
-				return FALSE;
-			case "delete":
-				return FALSE;
-			case "view":
-				return FALSE;
-			case "search":
-				return FALSE;
-			default:
-				return FALSE;
-		}
-	}
-
 	// Apply User ID filters
 	function ApplyUserIDFilters($sFilter) {
 		return $sFilter;
@@ -314,9 +298,8 @@ class ccliente extends cTable {
 
 	// Try to get record count
 	function TryGetRecordCount($sSql) {
-		global $conn;
 		$cnt = -1;
-		if ($this->TableType == 'TABLE' || $this->TableType == 'VIEW') {
+		if (($this->TableType == 'TABLE' || $this->TableType == 'VIEW' || $this->TableType == 'LINKTABLE') && preg_match("/^SELECT \* FROM/i", $sSql)) {
 			$sSql = "SELECT COUNT(*) FROM" . preg_replace('/^SELECT\s([\s\S]+)?\*\sFROM/i', "", $sSql);
 			$sOrderBy = $this->GetOrderBy();
 			if (substr($sSql, strlen($sOrderBy) * -1) == $sOrderBy)
@@ -324,6 +307,7 @@ class ccliente extends cTable {
 		} else {
 			$sSql = "SELECT COUNT(*) FROM (" . $sSql . ") EW_COUNT_TABLE";
 		}
+		$conn = &$this->Connection();
 		if ($rs = $conn->Execute($sSql)) {
 			if (!$rs->EOF && $rs->FieldCount() > 0) {
 				$cnt = $rs->fields[0];
@@ -354,10 +338,10 @@ class ccliente extends cTable {
 
 	// Get record count (for current List page)
 	function SelectRecordCount() {
-		global $conn;
 		$sSql = $this->SelectSQL();
 		$cnt = $this->TryGetRecordCount($sSql);
 		if ($cnt == -1) {
+			$conn = &$this->Connection();
 			if ($rs = $conn->Execute($sSql)) {
 				$cnt = $rs->RecordCount();
 				$rs->Close();
@@ -366,19 +350,15 @@ class ccliente extends cTable {
 		return intval($cnt);
 	}
 
-	// Update Table
-	var $UpdateTable = "`cliente`";
-
 	// INSERT statement
 	function InsertSQL(&$rs) {
-		global $conn;
 		$names = "";
 		$values = "";
 		foreach ($rs as $name => $value) {
-			if (!isset($this->fields[$name]))
+			if (!isset($this->fields[$name]) || $this->fields[$name]->FldIsCustom)
 				continue;
 			$names .= $this->fields[$name]->FldExpression . ",";
-			$values .= ew_QuotedValue($value, $this->fields[$name]->FldDataType) . ",";
+			$values .= ew_QuotedValue($value, $this->fields[$name]->FldDataType, $this->DBID) . ",";
 		}
 		while (substr($names, -1) == ",")
 			$names = substr($names, 0, -1);
@@ -389,41 +369,45 @@ class ccliente extends cTable {
 
 	// Insert
 	function Insert(&$rs) {
-		global $conn;
+		$conn = &$this->Connection();
 		return $conn->Execute($this->InsertSQL($rs));
 	}
 
 	// UPDATE statement
-	function UpdateSQL(&$rs, $where = "") {
+	function UpdateSQL(&$rs, $where = "", $curfilter = TRUE) {
 		$sql = "UPDATE " . $this->UpdateTable . " SET ";
 		foreach ($rs as $name => $value) {
-			if (!isset($this->fields[$name]))
+			if (!isset($this->fields[$name]) || $this->fields[$name]->FldIsCustom)
 				continue;
 			$sql .= $this->fields[$name]->FldExpression . "=";
-			$sql .= ew_QuotedValue($value, $this->fields[$name]->FldDataType) . ",";
+			$sql .= ew_QuotedValue($value, $this->fields[$name]->FldDataType, $this->DBID) . ",";
 		}
 		while (substr($sql, -1) == ",")
 			$sql = substr($sql, 0, -1);
-		$filter = $this->CurrentFilter;
+		$filter = ($curfilter) ? $this->CurrentFilter : "";
+		if (is_array($where))
+			$where = $this->ArrayToFilter($where);
 		ew_AddFilter($filter, $where);
 		if ($filter <> "")	$sql .= " WHERE " . $filter;
 		return $sql;
 	}
 
 	// Update
-	function Update(&$rs, $where = "", $rsold = NULL) {
-		global $conn;
-		return $conn->Execute($this->UpdateSQL($rs, $where));
+	function Update(&$rs, $where = "", $rsold = NULL, $curfilter = TRUE) {
+		$conn = &$this->Connection();
+		return $conn->Execute($this->UpdateSQL($rs, $where, $curfilter));
 	}
 
 	// DELETE statement
-	function DeleteSQL(&$rs, $where = "") {
+	function DeleteSQL(&$rs, $where = "", $curfilter = TRUE) {
 		$sql = "DELETE FROM " . $this->UpdateTable . " WHERE ";
+		if (is_array($where))
+			$where = $this->ArrayToFilter($where);
 		if ($rs) {
 			if (array_key_exists('idcliente', $rs))
-				ew_AddFilter($where, ew_QuotedName('idcliente') . '=' . ew_QuotedValue($rs['idcliente'], $this->idcliente->FldDataType));
+				ew_AddFilter($where, ew_QuotedName('idcliente', $this->DBID) . '=' . ew_QuotedValue($rs['idcliente'], $this->idcliente->FldDataType, $this->DBID));
 		}
-		$filter = $this->CurrentFilter;
+		$filter = ($curfilter) ? $this->CurrentFilter : "";
 		ew_AddFilter($filter, $where);
 		if ($filter <> "")
 			$sql .= $filter;
@@ -433,9 +417,9 @@ class ccliente extends cTable {
 	}
 
 	// Delete
-	function Delete(&$rs, $where = "") {
-		global $conn;
-		return $conn->Execute($this->DeleteSQL($rs, $where));
+	function Delete(&$rs, $where = "", $curfilter = TRUE) {
+		$conn = &$this->Connection();
+		return $conn->Execute($this->DeleteSQL($rs, $where, $curfilter));
 	}
 
 	// Key filter WHERE clause
@@ -448,7 +432,7 @@ class ccliente extends cTable {
 		$sKeyFilter = $this->SqlKeyFilter();
 		if (!is_numeric($this->idcliente->CurrentValue))
 			$sKeyFilter = "0=1"; // Invalid key
-		$sKeyFilter = str_replace("@idcliente@", ew_AdjustSql($this->idcliente->CurrentValue), $sKeyFilter); // Replace key value
+		$sKeyFilter = str_replace("@idcliente@", ew_AdjustSql($this->idcliente->CurrentValue, $this->DBID), $sKeyFilter); // Replace key value
 		return $sKeyFilter;
 	}
 
@@ -478,42 +462,63 @@ class ccliente extends cTable {
 	// View URL
 	function GetViewUrl($parm = "") {
 		if ($parm <> "")
-			return $this->KeyUrl("clienteview.php", $this->UrlParm($parm));
+			$url = $this->KeyUrl("clienteview.php", $this->UrlParm($parm));
 		else
-			return $this->KeyUrl("clienteview.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+			$url = $this->KeyUrl("clienteview.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Add URL
 	function GetAddUrl($parm = "") {
 		if ($parm <> "")
-			return "clienteadd.php?" . $this->UrlParm($parm);
+			$url = "clienteadd.php?" . $this->UrlParm($parm);
 		else
-			return "clienteadd.php";
+			$url = "clienteadd.php";
+		return $this->AddMasterUrl($url);
 	}
 
 	// Edit URL
 	function GetEditUrl($parm = "") {
-		return $this->KeyUrl("clienteedit.php", $this->UrlParm($parm));
+		$url = $this->KeyUrl("clienteedit.php", $this->UrlParm($parm));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Inline edit URL
 	function GetInlineEditUrl() {
-		return $this->KeyUrl(ew_CurrentPage(), $this->UrlParm("a=edit"));
+		$url = $this->KeyUrl(ew_CurrentPage(), $this->UrlParm("a=edit"));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Copy URL
 	function GetCopyUrl($parm = "") {
-		return $this->KeyUrl("clienteadd.php", $this->UrlParm($parm));
+		$url = $this->KeyUrl("clienteadd.php", $this->UrlParm($parm));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Inline copy URL
 	function GetInlineCopyUrl() {
-		return $this->KeyUrl(ew_CurrentPage(), $this->UrlParm("a=copy"));
+		$url = $this->KeyUrl(ew_CurrentPage(), $this->UrlParm("a=copy"));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Delete URL
 	function GetDeleteUrl() {
 		return $this->KeyUrl("clientedelete.php", $this->UrlParm());
+	}
+
+	// Add master url
+	function AddMasterUrl($url) {
+		if ($this->getCurrentMasterTable() == "persona" && strpos($url, EW_TABLE_SHOW_MASTER . "=") === FALSE) {
+			$url .= (strpos($url, "?") !== FALSE ? "&" : "?") . EW_TABLE_SHOW_MASTER . "=" . $this->getCurrentMasterTable();
+			$url .= "&fk_idpersona=" . urlencode($this->idpersona->CurrentValue);
+		}
+		return $url;
+	}
+
+	function KeyToJson() {
+		$json = "";
+		$json .= "idcliente:" . ew_VarToJson($this->idcliente->CurrentValue, "number", "'");
+		return "{" . $json . "}";
 	}
 
 	// Add key value to URL
@@ -523,7 +528,7 @@ class ccliente extends cTable {
 		if (!is_null($this->idcliente->CurrentValue)) {
 			$sUrl .= "idcliente=" . urlencode($this->idcliente->CurrentValue);
 		} else {
-			return "javascript:alert(ewLanguage.Phrase('InvalidRecord'));";
+			return "javascript:ew_Alert(ewLanguage.Phrase('InvalidRecord'));";
 		}
 		return $sUrl;
 	}
@@ -552,18 +557,26 @@ class ccliente extends cTable {
 		} elseif (isset($_GET["key_m"])) {
 			$arKeys = ew_StripSlashes($_GET["key_m"]);
 			$cnt = count($arKeys);
-		} elseif (isset($_GET)) {
-			$arKeys[] = @$_GET["idcliente"]; // idcliente
+		} elseif (!empty($_GET) || !empty($_POST)) {
+			$isPost = ew_IsHttpPost();
+			if ($isPost && isset($_POST["idcliente"]))
+				$arKeys[] = ew_StripSlashes($_POST["idcliente"]);
+			elseif (isset($_GET["idcliente"]))
+				$arKeys[] = ew_StripSlashes($_GET["idcliente"]);
+			else
+				$arKeys = NULL; // Do not setup
 
 			//return $arKeys; // Do not return yet, so the values will also be checked by the following code
 		}
 
 		// Check keys
 		$ar = array();
-		foreach ($arKeys as $key) {
-			if (!is_numeric($key))
-				continue;
-			$ar[] = $key;
+		if (is_array($arKeys)) {
+			foreach ($arKeys as $key) {
+				if (!is_numeric($key))
+					continue;
+				$ar[] = $key;
+			}
 		}
 		return $ar;
 	}
@@ -582,13 +595,13 @@ class ccliente extends cTable {
 
 	// Load rows based on filter
 	function &LoadRs($sFilter) {
-		global $conn;
 
 		// Set up filter (SQL WHERE clause) and get return SQL
 		//$this->CurrentFilter = $sFilter;
 		//$sSql = $this->SQL();
 
 		$sSql = $this->GetSQL($sFilter, "");
+		$conn = &$this->Connection();
 		$rs = $conn->Execute($sSql);
 		return $rs;
 	}
@@ -607,7 +620,7 @@ class ccliente extends cTable {
 
 	// Render list row values
 	function RenderListRow() {
-		global $conn, $Security, $gsLanguage, $Language;
+		global $Security, $gsLanguage, $Language;
 
 		// Call Row Rendering event
 		$this->Row_Rendering();
@@ -644,24 +657,20 @@ class ccliente extends cTable {
 
 		// idpersona
 		if (strval($this->idpersona->CurrentValue) <> "") {
-			$sFilterWrk = "`idpersona`" . ew_SearchString("=", $this->idpersona->CurrentValue, EW_DATATYPE_NUMBER);
+			$sFilterWrk = "`idpersona`" . ew_SearchString("=", $this->idpersona->CurrentValue, EW_DATATYPE_NUMBER, "");
 		$sSqlWrk = "SELECT `idpersona`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `persona`";
 		$sWhereWrk = "";
 		$lookuptblfilter = "`estado` = 'Activo'";
-		if (strval($lookuptblfilter) <> "") {
-			ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		}
-		if ($sFilterWrk <> "") {
-			ew_AddFilter($sWhereWrk, $sFilterWrk);
-		}
-
-		// Call Lookup selecting
-		$this->Lookup_Selecting($this->idpersona, $sWhereWrk);
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idpersona, $sWhereWrk); // Call Lookup selecting
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 		$sSqlWrk .= " ORDER BY `nombre`";
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$this->idpersona->ViewValue = $rswrk->fields('DispFld');
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idpersona->ViewValue = $this->idpersona->DisplayValue($arwrk);
 				$rswrk->Close();
 			} else {
 				$this->idpersona->ViewValue = $this->idpersona->CurrentValue;
@@ -673,23 +682,19 @@ class ccliente extends cTable {
 
 		// idempresa
 		if (strval($this->idempresa->CurrentValue) <> "") {
-			$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
+			$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
 		$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
 		$sWhereWrk = "";
 		$lookuptblfilter = "`estado`= 'Activo'";
-		if (strval($lookuptblfilter) <> "") {
-			ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		}
-		if ($sFilterWrk <> "") {
-			ew_AddFilter($sWhereWrk, $sFilterWrk);
-		}
-
-		// Call Lookup selecting
-		$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$this->idempresa->ViewValue = $rswrk->fields('DispFld');
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idempresa->ViewValue = $this->idempresa->DisplayValue($arwrk);
 				$rswrk->Close();
 			} else {
 				$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
@@ -701,16 +706,7 @@ class ccliente extends cTable {
 
 		// estado
 		if (strval($this->estado->CurrentValue) <> "") {
-			switch ($this->estado->CurrentValue) {
-				case $this->estado->FldTagValue(1):
-					$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-					break;
-				case $this->estado->FldTagValue(2):
-					$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-					break;
-				default:
-					$this->estado->ViewValue = $this->estado->CurrentValue;
-			}
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
 		} else {
 			$this->estado->ViewValue = NULL;
 		}
@@ -762,7 +758,7 @@ class ccliente extends cTable {
 
 	// Render edit row values
 	function RenderEditRow() {
-		global $conn, $Security, $gsLanguage, $Language;
+		global $Security, $gsLanguage, $Language;
 
 		// Call Row Rendering event
 		$this->Row_Rendering();
@@ -776,25 +772,25 @@ class ccliente extends cTable {
 		// codigo
 		$this->codigo->EditAttrs["class"] = "form-control";
 		$this->codigo->EditCustomAttributes = "";
-		$this->codigo->EditValue = ew_HtmlEncode($this->codigo->CurrentValue);
+		$this->codigo->EditValue = $this->codigo->CurrentValue;
 		$this->codigo->PlaceHolder = ew_RemoveHtml($this->codigo->FldCaption());
 
 		// nombre
 		$this->nombre->EditAttrs["class"] = "form-control";
 		$this->nombre->EditCustomAttributes = "";
-		$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
+		$this->nombre->EditValue = $this->nombre->CurrentValue;
 		$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
 
 		// nit
 		$this->nit->EditAttrs["class"] = "form-control";
 		$this->nit->EditCustomAttributes = "";
-		$this->nit->EditValue = ew_HtmlEncode($this->nit->CurrentValue);
+		$this->nit->EditValue = $this->nit->CurrentValue;
 		$this->nit->PlaceHolder = ew_RemoveHtml($this->nit->FldCaption());
 
 		// direccion
 		$this->direccion->EditAttrs["class"] = "form-control";
 		$this->direccion->EditCustomAttributes = "";
-		$this->direccion->EditValue = ew_HtmlEncode($this->direccion->CurrentValue);
+		$this->direccion->EditValue = $this->direccion->CurrentValue;
 		$this->direccion->PlaceHolder = ew_RemoveHtml($this->direccion->FldCaption());
 
 		// idpersona
@@ -803,24 +799,20 @@ class ccliente extends cTable {
 		if ($this->idpersona->getSessionValue() <> "") {
 			$this->idpersona->CurrentValue = $this->idpersona->getSessionValue();
 		if (strval($this->idpersona->CurrentValue) <> "") {
-			$sFilterWrk = "`idpersona`" . ew_SearchString("=", $this->idpersona->CurrentValue, EW_DATATYPE_NUMBER);
+			$sFilterWrk = "`idpersona`" . ew_SearchString("=", $this->idpersona->CurrentValue, EW_DATATYPE_NUMBER, "");
 		$sSqlWrk = "SELECT `idpersona`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `persona`";
 		$sWhereWrk = "";
 		$lookuptblfilter = "`estado` = 'Activo'";
-		if (strval($lookuptblfilter) <> "") {
-			ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		}
-		if ($sFilterWrk <> "") {
-			ew_AddFilter($sWhereWrk, $sFilterWrk);
-		}
-
-		// Call Lookup selecting
-		$this->Lookup_Selecting($this->idpersona, $sWhereWrk);
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idpersona, $sWhereWrk); // Call Lookup selecting
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 		$sSqlWrk .= " ORDER BY `nombre`";
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$this->idpersona->ViewValue = $rswrk->fields('DispFld');
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idpersona->ViewValue = $this->idpersona->DisplayValue($arwrk);
 				$rswrk->Close();
 			} else {
 				$this->idpersona->ViewValue = $this->idpersona->CurrentValue;
@@ -839,11 +831,7 @@ class ccliente extends cTable {
 		// estado
 		$this->estado->EditAttrs["class"] = "form-control";
 		$this->estado->EditCustomAttributes = "";
-		$arwrk = array();
-		$arwrk[] = array($this->estado->FldTagValue(1), $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->FldTagValue(1));
-		$arwrk[] = array($this->estado->FldTagValue(2), $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->FldTagValue(2));
-		array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
-		$this->estado->EditValue = $arwrk;
+		$this->estado->EditValue = $this->estado->Options(TRUE);
 
 		// Call Row Rendered event
 		$this->Row_Rendered();
@@ -855,6 +843,9 @@ class ccliente extends cTable {
 
 	// Aggregate list row (for rendering)
 	function AggregateListRow() {
+
+		// Call Row Rendered event
+		$this->Row_Rendered();
 	}
 	var $ExportDoc;
 
@@ -1108,7 +1099,9 @@ class ccliente extends cTable {
 	// Lookup Selecting event
 	function Lookup_Selecting($fld, &$filter) {
 
+		//var_dump($fld->FldName, $fld->LookupFilters, $filter); // Uncomment to view the filter
 		// Enter your code here
+
 	}
 
 	// Row Rendering event

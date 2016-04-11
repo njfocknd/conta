@@ -1,15 +1,14 @@
 <?php
 if (session_id() == "") session_start(); // Initialize Session data
 ob_start(); // Turn on output buffering
-$EW_RELATIVE_PATH = "";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "caja_chicainfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "encargadogridcls.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "documento_caja_chicagridcls.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
+<?php include_once "ewcfg12.php" ?>
+<?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
+<?php include_once "phpfn12.php" ?>
+<?php include_once "caja_chicainfo.php" ?>
+<?php include_once "encargadogridcls.php" ?>
+<?php include_once "documento_caja_chicagridcls.php" ?>
+<?php include_once "userfn12.php" ?>
 <?php
 
 //
@@ -75,6 +74,30 @@ class ccaja_chica_edit extends ccaja_chica {
 
 	function setWarningMessage($v) {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
+	}
+
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
 	}
 
 	// Show message
@@ -157,6 +180,7 @@ class ccaja_chica_edit extends ccaja_chica {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -169,7 +193,7 @@ class ccaja_chica_edit extends ccaja_chica {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -190,6 +214,7 @@ class ccaja_chica_edit extends ccaja_chica {
 	function __construct() {
 		global $conn, $Language;
 		$GLOBALS["Page"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -215,7 +240,7 @@ class ccaja_chica_edit extends ccaja_chica {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 	}
 
 	// 
@@ -279,7 +304,7 @@ class ccaja_chica_edit extends ccaja_chica {
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Page Unload event
 		$this->Page_Unload();
@@ -307,7 +332,7 @@ class ccaja_chica_edit extends ccaja_chica {
 		$this->Page_Redirecting($url);
 
 		 // Close connection
-		$conn->Close();
+		ew_CloseConn();
 
 		// Go to URL if specified
 		if ($url <> "") {
@@ -317,6 +342,7 @@ class ccaja_chica_edit extends ccaja_chica {
 		}
 		exit();
 	}
+	var $FormClassName = "form-horizontal ewForm ewEditForm";
 	var $DbMasterFilter;
 	var $DbDetailFilter;
 
@@ -369,14 +395,18 @@ class ccaja_chica_edit extends ccaja_chica {
 				$this->SetUpDetailParms();
 				break;
 			Case "U": // Update
+				if ($this->getCurrentDetailTable() <> "") // Master/detail edit
+					$sReturnUrl = $this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=" . $this->getCurrentDetailTable()); // Master/Detail view page
+				else
+					$sReturnUrl = $this->getReturnUrl();
+				if (ew_GetPageName($sReturnUrl) == "caja_chicalist.php")
+					$sReturnUrl = $this->AddMasterUrl($sReturnUrl); // List page, return to list page with correct master key if necessary
 				$this->SendEmail = TRUE; // Send email on update success
 				if ($this->EditRow()) { // Update record based on key
 					if ($this->getSuccessMessage() == "")
 						$this->setSuccessMessage($Language->Phrase("UpdateSuccess")); // Update success
-					if ($this->getCurrentDetailTable() <> "") // Master/detail edit
-						$sReturnUrl = $this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=" . $this->getCurrentDetailTable()); // Master/Detail view page
-					else
-						$sReturnUrl = $this->getReturnUrl();
+					$this->Page_Terminate($sReturnUrl); // Return to caller
+				} elseif ($this->getFailureMessage() == $Language->Phrase("NoRecord")) {
 					$this->Page_Terminate($sReturnUrl); // Return to caller
 				} else {
 					$this->EventCancelled = TRUE; // Event cancelled
@@ -470,7 +500,7 @@ class ccaja_chica_edit extends ccaja_chica {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -479,8 +509,9 @@ class ccaja_chica_edit extends ccaja_chica {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -491,7 +522,6 @@ class ccaja_chica_edit extends ccaja_chica {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -523,8 +553,7 @@ class ccaja_chica_edit extends ccaja_chica {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		// Call Row_Rendering event
@@ -543,123 +572,102 @@ class ccaja_chica_edit extends ccaja_chica {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idcaja_chica
-			$this->idcaja_chica->ViewValue = $this->idcaja_chica->CurrentValue;
-			$this->idcaja_chica->ViewCustomAttributes = "";
+		// idcaja_chica
+		$this->idcaja_chica->ViewValue = $this->idcaja_chica->CurrentValue;
+		$this->idcaja_chica->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
 
-			// saldo
-			$this->saldo->ViewValue = $this->saldo->CurrentValue;
-			$this->saldo->ViewCustomAttributes = "";
+		// saldo
+		$this->saldo->ViewValue = $this->saldo->CurrentValue;
+		$this->saldo->ViewCustomAttributes = "";
 
-			// idempresa
-			if (strval($this->idempresa->CurrentValue) <> "") {
-				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idempresa->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
-				}
+		// idempresa
+		if (strval($this->idempresa->CurrentValue) <> "") {
+			$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idempresa->ViewValue = $this->idempresa->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idempresa->ViewValue = NULL;
+				$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
 			}
-			$this->idempresa->ViewCustomAttributes = "";
+		} else {
+			$this->idempresa->ViewValue = NULL;
+		}
+		$this->idempresa->ViewCustomAttributes = "";
 
-			// idempleado
-			if (strval($this->idempleado->CurrentValue) <> "") {
-				$sFilterWrk = "`idempleado`" . ew_SearchString("=", $this->idempleado->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idempleado`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empleado`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempleado, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idempleado->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idempleado->ViewValue = $this->idempleado->CurrentValue;
-				}
+		// idempleado
+		if (strval($this->idempleado->CurrentValue) <> "") {
+			$sFilterWrk = "`idempleado`" . ew_SearchString("=", $this->idempleado->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idempleado`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empleado`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idempleado, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idempleado->ViewValue = $this->idempleado->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idempleado->ViewValue = NULL;
+				$this->idempleado->ViewValue = $this->idempleado->CurrentValue;
 			}
-			$this->idempleado->ViewCustomAttributes = "";
+		} else {
+			$this->idempleado->ViewValue = NULL;
+		}
+		$this->idempleado->ViewCustomAttributes = "";
 
-			// idcuenta
-			if (strval($this->idcuenta->CurrentValue) <> "") {
-				$sFilterWrk = "`idcuenta`" . ew_SearchString("=", $this->idcuenta->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idcuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo' ";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idcuenta, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idcuenta->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idcuenta->ViewValue = $this->idcuenta->CurrentValue;
-				}
+		// idcuenta
+		if (strval($this->idcuenta->CurrentValue) <> "") {
+			$sFilterWrk = "`idcuenta`" . ew_SearchString("=", $this->idcuenta->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idcuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo' ";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idcuenta, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idcuenta->ViewValue = $this->idcuenta->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idcuenta->ViewValue = NULL;
+				$this->idcuenta->ViewValue = $this->idcuenta->CurrentValue;
 			}
-			$this->idcuenta->ViewCustomAttributes = "";
+		} else {
+			$this->idcuenta->ViewValue = NULL;
+		}
+		$this->idcuenta->ViewCustomAttributes = "";
 
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
-			} else {
-				$this->estado->ViewValue = NULL;
-			}
-			$this->estado->ViewCustomAttributes = "";
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
-			// fecha_insercion
-			$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
-			$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
-			$this->fecha_insercion->ViewCustomAttributes = "";
+		// fecha_insercion
+		$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
+		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
+		$this->fecha_insercion->ViewCustomAttributes = "";
 
 			// nombre
 			$this->nombre->LinkCustomAttributes = "";
@@ -694,22 +702,16 @@ class ccaja_chica_edit extends ccaja_chica {
 			if (trim(strval($this->idempresa->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `empresa`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
@@ -721,22 +723,16 @@ class ccaja_chica_edit extends ccaja_chica {
 			if (trim(strval($this->idempleado->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idempleado`" . ew_SearchString("=", $this->idempleado->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idempleado`" . ew_SearchString("=", $this->idempleado->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idempleado`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, `idempresa` AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `empleado`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempleado, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idempleado, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
@@ -744,23 +740,24 @@ class ccaja_chica_edit extends ccaja_chica {
 
 			// estado
 			$this->estado->EditCustomAttributes = "";
-			$arwrk = array();
-			$arwrk[] = array($this->estado->FldTagValue(1), $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->FldTagValue(1));
-			$arwrk[] = array($this->estado->FldTagValue(2), $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->FldTagValue(2));
-			$this->estado->EditValue = $arwrk;
+			$this->estado->EditValue = $this->estado->Options(FALSE);
 
 			// Edit refer script
 			// nombre
 
+			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
 
 			// idempresa
+			$this->idempresa->LinkCustomAttributes = "";
 			$this->idempresa->HrefValue = "";
 
 			// idempleado
+			$this->idempleado->LinkCustomAttributes = "";
 			$this->idempleado->HrefValue = "";
 
 			// estado
+			$this->estado->LinkCustomAttributes = "";
 			$this->estado->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
@@ -822,16 +819,19 @@ class ccaja_chica_edit extends ccaja_chica {
 
 	// Update record based on key values
 	function EditRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
+		$sFilter = $this->ApplyUserIDFilters($sFilter);
+		$conn = &$this->Connection();
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
-		$conn->raiseErrorFn = 'ew_ErrorFn';
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 		$rs = $conn->Execute($sSql);
 		$conn->raiseErrorFn = '';
 		if ($rs === FALSE)
 			return FALSE;
 		if ($rs->EOF) {
+			$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record message
 			$EditRow = FALSE; // Update Failed
 		} else {
 
@@ -859,7 +859,7 @@ class ccaja_chica_edit extends ccaja_chica {
 			// Call Row Updating event
 			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
 			if ($bUpdateRow) {
-				$conn->raiseErrorFn = 'ew_ErrorFn';
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 				if (count($rsnew) > 0)
 					$EditRow = $this->Update($rsnew, "", $rsold);
 				else
@@ -869,12 +869,14 @@ class ccaja_chica_edit extends ccaja_chica {
 				}
 
 				// Update detail records
+				$DetailTblVar = explode(",", $this->getCurrentDetailTable());
 				if ($EditRow) {
-					$DetailTblVar = explode(",", $this->getCurrentDetailTable());
 					if (in_array("encargado", $DetailTblVar) && $GLOBALS["encargado"]->DetailEdit) {
 						if (!isset($GLOBALS["encargado_grid"])) $GLOBALS["encargado_grid"] = new cencargado_grid(); // Get detail page object
 						$EditRow = $GLOBALS["encargado_grid"]->GridUpdate();
 					}
+				}
+				if ($EditRow) {
 					if (in_array("documento_caja_chica", $DetailTblVar) && $GLOBALS["documento_caja_chica"]->DetailEdit) {
 						if (!isset($GLOBALS["documento_caja_chica_grid"])) $GLOBALS["documento_caja_chica_grid"] = new cdocumento_caja_chica_grid(); // Get detail page object
 						$EditRow = $GLOBALS["documento_caja_chica_grid"]->GridUpdate();
@@ -959,9 +961,10 @@ class ccaja_chica_edit extends ccaja_chica {
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$Breadcrumb->Add("list", $this->TableVar, "caja_chicalist.php", "", $this->TableVar, TRUE);
+		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("caja_chicalist.php"), "", $this->TableVar, TRUE);
 		$PageId = "edit";
-		$Breadcrumb->Add("edit", $PageId, ew_CurrentUrl());
+		$Breadcrumb->Add("edit", $PageId, $url);
 	}
 
 	// Page Load event
@@ -1050,23 +1053,18 @@ Page_Rendering();
 // Page Rendering event
 $caja_chica_edit->Page_Render();
 ?>
-<?php include_once $EW_RELATIVE_PATH . "header.php" ?>
+<?php include_once "header.php" ?>
 <script type="text/javascript">
 
-// Page object
-var caja_chica_edit = new ew_Page("caja_chica_edit");
-caja_chica_edit.PageID = "edit"; // Page ID
-var EW_PAGE_ID = caja_chica_edit.PageID; // For backward compatibility
-
 // Form object
-var fcaja_chicaedit = new ew_Form("fcaja_chicaedit");
+var CurrentPageID = EW_PAGE_ID = "edit";
+var CurrentForm = fcaja_chicaedit = new ew_Form("fcaja_chicaedit", "edit");
 
 // Validate form
 fcaja_chicaedit.Validate = function() {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
-	this.PostAutoSuggest();
 	if ($fobj.find("#a_confirm").val() == "F")
 		return true;
 	var elm, felm, uelm, addcnt = 0;
@@ -1089,9 +1087,6 @@ fcaja_chicaedit.Validate = function() {
 			elm = this.GetElements("x" + infix + "_estado");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $caja_chica->estado->FldCaption(), $caja_chica->estado->ReqErrMsg)) ?>");
-
-			// Set up row object
-			ew_ElementsToRow(fobj);
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -1125,8 +1120,10 @@ fcaja_chicaedit.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-fcaja_chicaedit.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
-fcaja_chicaedit.Lists["x_idempleado"] = {"LinkField":"x_idempleado","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":["x_idempresa"],"FilterFields":["x_idempresa"],"Options":[]};
+fcaja_chicaedit.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":["x_idempleado"],"FilterFields":[],"Options":[],"Template":""};
+fcaja_chicaedit.Lists["x_idempleado"] = {"LinkField":"x_idempleado","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":["x_idempresa"],"ChildFields":[],"FilterFields":["x_idempresa"],"Options":[],"Template":""};
+fcaja_chicaedit.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fcaja_chicaedit.Lists["x_estado"].Options = <?php echo json_encode($caja_chica->estado->Options()) ?>;
 
 // Form object for search
 </script>
@@ -1143,7 +1140,7 @@ fcaja_chicaedit.Lists["x_idempleado"] = {"LinkField":"x_idempleado","Ajax":true,
 <?php
 $caja_chica_edit->ShowMessage();
 ?>
-<form name="fcaja_chicaedit" id="fcaja_chicaedit" class="form-horizontal ewForm ewEditForm" action="<?php echo ew_CurrentPage() ?>" method="post">
+<form name="fcaja_chicaedit" id="fcaja_chicaedit" class="<?php echo $caja_chica_edit->FormClassName ?>" action="<?php echo ew_CurrentPage() ?>" method="post">
 <?php if ($caja_chica_edit->CheckToken) { ?>
 <input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $caja_chica_edit->Token ?>">
 <?php } ?>
@@ -1155,7 +1152,7 @@ $caja_chica_edit->ShowMessage();
 		<label id="elh_caja_chica_nombre" for="x_nombre" class="col-sm-2 control-label ewLabel"><?php echo $caja_chica->nombre->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
 		<div class="col-sm-10"><div<?php echo $caja_chica->nombre->CellAttributes() ?>>
 <span id="el_caja_chica_nombre">
-<input type="text" data-field="x_nombre" name="x_nombre" id="x_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($caja_chica->nombre->PlaceHolder) ?>" value="<?php echo $caja_chica->nombre->EditValue ?>"<?php echo $caja_chica->nombre->EditAttributes() ?>>
+<input type="text" data-table="caja_chica" data-field="x_nombre" name="x_nombre" id="x_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($caja_chica->nombre->getPlaceHolder()) ?>" value="<?php echo $caja_chica->nombre->EditValue ?>"<?php echo $caja_chica->nombre->EditAttributes() ?>>
 </span>
 <?php echo $caja_chica->nombre->CustomMsg ?></div></div>
 	</div>
@@ -1165,22 +1162,27 @@ $caja_chica_edit->ShowMessage();
 		<label id="elh_caja_chica_idempresa" for="x_idempresa" class="col-sm-2 control-label ewLabel"><?php echo $caja_chica->idempresa->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
 		<div class="col-sm-10"><div<?php echo $caja_chica->idempresa->CellAttributes() ?>>
 <span id="el_caja_chica_idempresa">
-<?php $caja_chica->idempresa->EditAttrs["onchange"] = "ew_UpdateOpt.call(this, ['x_idempleado']); " . @$caja_chica->idempresa->EditAttrs["onchange"]; ?>
-<select data-field="x_idempresa" id="x_idempresa" name="x_idempresa"<?php echo $caja_chica->idempresa->EditAttributes() ?>>
+<?php $caja_chica->idempresa->EditAttrs["onchange"] = "ew_UpdateOpt.call(this); " . @$caja_chica->idempresa->EditAttrs["onchange"]; ?>
+<select data-table="caja_chica" data-field="x_idempresa" data-value-separator="<?php echo ew_HtmlEncode(is_array($caja_chica->idempresa->DisplayValueSeparator) ? json_encode($caja_chica->idempresa->DisplayValueSeparator) : $caja_chica->idempresa->DisplayValueSeparator) ?>" id="x_idempresa" name="x_idempresa"<?php echo $caja_chica->idempresa->EditAttributes() ?>>
 <?php
 if (is_array($caja_chica->idempresa->EditValue)) {
 	$arwrk = $caja_chica->idempresa->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($caja_chica->idempresa->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($caja_chica->idempresa->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $caja_chica->idempresa->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($caja_chica->idempresa->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($caja_chica->idempresa->CurrentValue) ?>" selected><?php echo $caja_chica->idempresa->CurrentValue ?></option>
+<?php
+    }
 }
 ?>
 </select>
@@ -1188,15 +1190,15 @@ if (is_array($caja_chica->idempresa->EditValue)) {
 $sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
 $sWhereWrk = "";
 $lookuptblfilter = "`estado` = 'Activo'";
-if (strval($lookuptblfilter) <> "") {
-	ew_AddFilter($sWhereWrk, $lookuptblfilter);
-}
-
-// Call Lookup selecting
-$caja_chica->Lookup_Selecting($caja_chica->idempresa, $sWhereWrk);
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$caja_chica->idempresa->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$caja_chica->idempresa->LookupFilters += array("f0" => "`idempresa` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$caja_chica->Lookup_Selecting($caja_chica->idempresa, $sWhereWrk); // Call Lookup selecting
 if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $caja_chica->idempresa->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x_idempresa" id="s_x_idempresa" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idempresa` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x_idempresa" id="s_x_idempresa" value="<?php echo $caja_chica->idempresa->LookupFilterQuery() ?>">
 </span>
 <?php echo $caja_chica->idempresa->CustomMsg ?></div></div>
 	</div>
@@ -1206,21 +1208,26 @@ if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 		<label id="elh_caja_chica_idempleado" for="x_idempleado" class="col-sm-2 control-label ewLabel"><?php echo $caja_chica->idempleado->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
 		<div class="col-sm-10"><div<?php echo $caja_chica->idempleado->CellAttributes() ?>>
 <span id="el_caja_chica_idempleado">
-<select data-field="x_idempleado" id="x_idempleado" name="x_idempleado"<?php echo $caja_chica->idempleado->EditAttributes() ?>>
+<select data-table="caja_chica" data-field="x_idempleado" data-value-separator="<?php echo ew_HtmlEncode(is_array($caja_chica->idempleado->DisplayValueSeparator) ? json_encode($caja_chica->idempleado->DisplayValueSeparator) : $caja_chica->idempleado->DisplayValueSeparator) ?>" id="x_idempleado" name="x_idempleado"<?php echo $caja_chica->idempleado->EditAttributes() ?>>
 <?php
 if (is_array($caja_chica->idempleado->EditValue)) {
 	$arwrk = $caja_chica->idempleado->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($caja_chica->idempleado->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($caja_chica->idempleado->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $caja_chica->idempleado->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($caja_chica->idempleado->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($caja_chica->idempleado->CurrentValue) ?>" selected><?php echo $caja_chica->idempleado->CurrentValue ?></option>
+<?php
+    }
 }
 ?>
 </select>
@@ -1228,15 +1235,16 @@ if (is_array($caja_chica->idempleado->EditValue)) {
 $sSqlWrk = "SELECT `idempleado`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empleado`";
 $sWhereWrk = "{filter}";
 $lookuptblfilter = "`estado` = 'Activo'";
-if (strval($lookuptblfilter) <> "") {
-	ew_AddFilter($sWhereWrk, $lookuptblfilter);
-}
-
-// Call Lookup selecting
-$caja_chica->Lookup_Selecting($caja_chica->idempleado, $sWhereWrk);
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$caja_chica->idempleado->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$caja_chica->idempleado->LookupFilters += array("f0" => "`idempleado` = {filter_value}", "t0" => "3", "fn0" => "");
+$caja_chica->idempleado->LookupFilters += array("f1" => "`idempresa` IN ({filter_value})", "t1" => "3", "fn1" => "");
+$sSqlWrk = "";
+$caja_chica->Lookup_Selecting($caja_chica->idempleado, $sWhereWrk); // Call Lookup selecting
 if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $caja_chica->idempleado->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x_idempleado" id="s_x_idempleado" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idempleado` = {filter_value}"); ?>&amp;t0=3&amp;f1=<?php echo ew_Encrypt("`idempresa` IN ({filter_value})"); ?>&amp;t1=3">
+<input type="hidden" name="s_x_idempleado" id="s_x_idempleado" value="<?php echo $caja_chica->idempleado->LookupFilterQuery() ?>">
 </span>
 <?php echo $caja_chica->idempleado->CustomMsg ?></div></div>
 	</div>
@@ -1246,33 +1254,35 @@ if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 		<label id="elh_caja_chica_estado" class="col-sm-2 control-label ewLabel"><?php echo $caja_chica->estado->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
 		<div class="col-sm-10"><div<?php echo $caja_chica->estado->CellAttributes() ?>>
 <span id="el_caja_chica_estado">
-<div id="tp_x_estado" class="<?php echo EW_ITEM_TEMPLATE_CLASSNAME ?>"><input type="radio" name="x_estado" id="x_estado" value="{value}"<?php echo $caja_chica->estado->EditAttributes() ?>></div>
-<div id="dsl_x_estado" data-repeatcolumn="5" class="ewItemList">
+<div id="tp_x_estado" class="ewTemplate"><input type="radio" data-table="caja_chica" data-field="x_estado" data-value-separator="<?php echo ew_HtmlEncode(is_array($caja_chica->estado->DisplayValueSeparator) ? json_encode($caja_chica->estado->DisplayValueSeparator) : $caja_chica->estado->DisplayValueSeparator) ?>" name="x_estado" id="x_estado" value="{value}"<?php echo $caja_chica->estado->EditAttributes() ?>></div>
+<div id="dsl_x_estado" data-repeatcolumn="5" class="ewItemList" style="display: none;"><div>
 <?php
 $arwrk = $caja_chica->estado->EditValue;
 if (is_array($arwrk)) {
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($caja_chica->estado->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " checked=\"checked\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
-
-		// Note: No spacing within the LABEL tag
+		$selwrk = (strval($caja_chica->estado->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " checked" : "";
+		if ($selwrk <> "")
+			$emptywrk = FALSE;
 ?>
-<?php echo ew_RepeatColumnTable($rowswrk, $rowcntwrk, 5, 1) ?>
-<label class="radio-inline"><input type="radio" data-field="x_estado" name="x_estado" id="x_estado_<?php echo $rowcntwrk ?>" value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?><?php echo $caja_chica->estado->EditAttributes() ?>><?php echo $arwrk[$rowcntwrk][1] ?></label>
-<?php echo ew_RepeatColumnTable($rowswrk, $rowcntwrk, 5, 2) ?>
+<label class="radio-inline"><input type="radio" data-table="caja_chica" data-field="x_estado" name="x_estado" id="x_estado_<?php echo $rowcntwrk ?>" value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?><?php echo $caja_chica->estado->EditAttributes() ?>><?php echo $caja_chica->estado->DisplayValue($arwrk[$rowcntwrk]) ?></label>
 <?php
 	}
+	if ($emptywrk && strval($caja_chica->estado->CurrentValue) <> "") {
+?>
+<label class="radio-inline"><input type="radio" data-table="caja_chica" data-field="x_estado" name="x_estado" id="x_estado_<?php echo $rowswrk ?>" value="<?php echo ew_HtmlEncode($caja_chica->estado->CurrentValue) ?>" checked<?php echo $caja_chica->estado->EditAttributes() ?>><?php echo $caja_chica->estado->CurrentValue ?></label>
+<?php
+    }
 }
 ?>
-</div>
+</div></div>
 </span>
 <?php echo $caja_chica->estado->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
 </div>
-<input type="hidden" data-field="x_idcaja_chica" name="x_idcaja_chica" id="x_idcaja_chica" value="<?php echo ew_HtmlEncode($caja_chica->idcaja_chica->CurrentValue) ?>">
+<input type="hidden" data-table="caja_chica" data-field="x_idcaja_chica" name="x_idcaja_chica" id="x_idcaja_chica" value="<?php echo ew_HtmlEncode($caja_chica->idcaja_chica->CurrentValue) ?>">
 <?php
 	if (in_array("encargado", explode(",", $caja_chica->getCurrentDetailTable())) && $encargado->DetailEdit) {
 ?>
@@ -1292,6 +1302,7 @@ if (is_array($arwrk)) {
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">
 <button class="btn btn-primary ewButton" name="btnAction" id="btnAction" type="submit"><?php echo $Language->Phrase("SaveBtn") ?></button>
+<button class="btn btn-default ewButton" name="btnCancel" id="btnCancel" type="button" data-href="<?php echo $caja_chica_edit->getReturnUrl() ?>"><?php echo $Language->Phrase("CancelBtn") ?></button>
 	</div>
 </div>
 </form>
@@ -1309,7 +1320,7 @@ if (EW_DEBUG_ENABLED)
 // document.write("page loaded");
 
 </script>
-<?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
+<?php include_once "footer.php" ?>
 <?php
 $caja_chica_edit->Page_Terminate();
 ?>

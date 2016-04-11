@@ -25,10 +25,16 @@ class cconfiguracion extends cTable {
 		$this->TableVar = 'configuracion';
 		$this->TableName = 'configuracion';
 		$this->TableType = 'TABLE';
+
+		// Update Table
+		$this->UpdateTable = "`configuracion`";
+		$this->DBID = 'DB';
 		$this->ExportAll = TRUE;
 		$this->ExportPageBreakCount = 0; // Page break per every n record (PDF only)
 		$this->ExportPageOrientation = "portrait"; // Page orientation (PDF only)
 		$this->ExportPageSize = "a4"; // Page size (PDF only)
+		$this->ExportExcelPageOrientation = ""; // Page orientation (PHPExcel only)
+		$this->ExportExcelPageSize = ""; // Page size (PHPExcel only)
 		$this->DetailAdd = FALSE; // Allow detail add
 		$this->DetailEdit = FALSE; // Allow detail edit
 		$this->DetailView = FALSE; // Allow detail view
@@ -39,28 +45,29 @@ class cconfiguracion extends cTable {
 		$this->BasicSearch = new cBasicSearch($this->TableVar);
 
 		// idconfiguracion
-		$this->idconfiguracion = new cField('configuracion', 'configuracion', 'x_idconfiguracion', 'idconfiguracion', '`idconfiguracion`', '`idconfiguracion`', 3, -1, FALSE, '`idconfiguracion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->idconfiguracion = new cField('configuracion', 'configuracion', 'x_idconfiguracion', 'idconfiguracion', '`idconfiguracion`', '`idconfiguracion`', 3, -1, FALSE, '`idconfiguracion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'NO');
 		$this->idconfiguracion->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idconfiguracion'] = &$this->idconfiguracion;
 
 		// codigo
-		$this->codigo = new cField('configuracion', 'configuracion', 'x_codigo', 'codigo', '`codigo`', '`codigo`', 200, -1, FALSE, '`codigo`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->codigo = new cField('configuracion', 'configuracion', 'x_codigo', 'codigo', '`codigo`', '`codigo`', 200, -1, FALSE, '`codigo`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->fields['codigo'] = &$this->codigo;
 
 		// valor
-		$this->valor = new cField('configuracion', 'configuracion', 'x_valor', 'valor', '`valor`', '`valor`', 200, -1, FALSE, '`valor`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->valor = new cField('configuracion', 'configuracion', 'x_valor', 'valor', '`valor`', '`valor`', 200, -1, FALSE, '`valor`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->fields['valor'] = &$this->valor;
 
 		// descripcion
-		$this->descripcion = new cField('configuracion', 'configuracion', 'x_descripcion', 'descripcion', '`descripcion`', '`descripcion`', 200, -1, FALSE, '`descripcion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->descripcion = new cField('configuracion', 'configuracion', 'x_descripcion', 'descripcion', '`descripcion`', '`descripcion`', 200, -1, FALSE, '`descripcion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->fields['descripcion'] = &$this->descripcion;
 
 		// estado
-		$this->estado = new cField('configuracion', 'configuracion', 'x_estado', 'estado', '`estado`', '`estado`', 202, -1, FALSE, '`estado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->estado = new cField('configuracion', 'configuracion', 'x_estado', 'estado', '`estado`', '`estado`', 202, -1, FALSE, '`estado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
+		$this->estado->OptionCount = 2;
 		$this->fields['estado'] = &$this->estado;
 
 		// idempresa
-		$this->idempresa = new cField('configuracion', 'configuracion', 'x_idempresa', 'idempresa', '`idempresa`', '`idempresa`', 3, -1, FALSE, '`idempresa`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->idempresa = new cField('configuracion', 'configuracion', 'x_idempresa', 'idempresa', '`idempresa`', '`idempresa`', 3, -1, FALSE, '`idempresa`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->idempresa->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idempresa'] = &$this->idempresa;
 	}
@@ -165,29 +172,6 @@ class cconfiguracion extends cTable {
     	$this->_SqlOrderBy = $v;
 	}
 
-	// Check if Anonymous User is allowed
-	function AllowAnonymousUser() {
-		switch (@$this->PageID) {
-			case "add":
-			case "register":
-			case "addopt":
-				return FALSE;
-			case "edit":
-			case "update":
-			case "changepwd":
-			case "forgotpwd":
-				return FALSE;
-			case "delete":
-				return FALSE;
-			case "view":
-				return FALSE;
-			case "search":
-				return FALSE;
-			default:
-				return FALSE;
-		}
-	}
-
 	// Apply User ID filters
 	function ApplyUserIDFilters($sFilter) {
 		return $sFilter;
@@ -256,9 +240,8 @@ class cconfiguracion extends cTable {
 
 	// Try to get record count
 	function TryGetRecordCount($sSql) {
-		global $conn;
 		$cnt = -1;
-		if ($this->TableType == 'TABLE' || $this->TableType == 'VIEW') {
+		if (($this->TableType == 'TABLE' || $this->TableType == 'VIEW' || $this->TableType == 'LINKTABLE') && preg_match("/^SELECT \* FROM/i", $sSql)) {
 			$sSql = "SELECT COUNT(*) FROM" . preg_replace('/^SELECT\s([\s\S]+)?\*\sFROM/i', "", $sSql);
 			$sOrderBy = $this->GetOrderBy();
 			if (substr($sSql, strlen($sOrderBy) * -1) == $sOrderBy)
@@ -266,6 +249,7 @@ class cconfiguracion extends cTable {
 		} else {
 			$sSql = "SELECT COUNT(*) FROM (" . $sSql . ") EW_COUNT_TABLE";
 		}
+		$conn = &$this->Connection();
 		if ($rs = $conn->Execute($sSql)) {
 			if (!$rs->EOF && $rs->FieldCount() > 0) {
 				$cnt = $rs->fields[0];
@@ -296,10 +280,10 @@ class cconfiguracion extends cTable {
 
 	// Get record count (for current List page)
 	function SelectRecordCount() {
-		global $conn;
 		$sSql = $this->SelectSQL();
 		$cnt = $this->TryGetRecordCount($sSql);
 		if ($cnt == -1) {
+			$conn = &$this->Connection();
 			if ($rs = $conn->Execute($sSql)) {
 				$cnt = $rs->RecordCount();
 				$rs->Close();
@@ -308,19 +292,15 @@ class cconfiguracion extends cTable {
 		return intval($cnt);
 	}
 
-	// Update Table
-	var $UpdateTable = "`configuracion`";
-
 	// INSERT statement
 	function InsertSQL(&$rs) {
-		global $conn;
 		$names = "";
 		$values = "";
 		foreach ($rs as $name => $value) {
-			if (!isset($this->fields[$name]))
+			if (!isset($this->fields[$name]) || $this->fields[$name]->FldIsCustom)
 				continue;
 			$names .= $this->fields[$name]->FldExpression . ",";
-			$values .= ew_QuotedValue($value, $this->fields[$name]->FldDataType) . ",";
+			$values .= ew_QuotedValue($value, $this->fields[$name]->FldDataType, $this->DBID) . ",";
 		}
 		while (substr($names, -1) == ",")
 			$names = substr($names, 0, -1);
@@ -331,41 +311,45 @@ class cconfiguracion extends cTable {
 
 	// Insert
 	function Insert(&$rs) {
-		global $conn;
+		$conn = &$this->Connection();
 		return $conn->Execute($this->InsertSQL($rs));
 	}
 
 	// UPDATE statement
-	function UpdateSQL(&$rs, $where = "") {
+	function UpdateSQL(&$rs, $where = "", $curfilter = TRUE) {
 		$sql = "UPDATE " . $this->UpdateTable . " SET ";
 		foreach ($rs as $name => $value) {
-			if (!isset($this->fields[$name]))
+			if (!isset($this->fields[$name]) || $this->fields[$name]->FldIsCustom)
 				continue;
 			$sql .= $this->fields[$name]->FldExpression . "=";
-			$sql .= ew_QuotedValue($value, $this->fields[$name]->FldDataType) . ",";
+			$sql .= ew_QuotedValue($value, $this->fields[$name]->FldDataType, $this->DBID) . ",";
 		}
 		while (substr($sql, -1) == ",")
 			$sql = substr($sql, 0, -1);
-		$filter = $this->CurrentFilter;
+		$filter = ($curfilter) ? $this->CurrentFilter : "";
+		if (is_array($where))
+			$where = $this->ArrayToFilter($where);
 		ew_AddFilter($filter, $where);
 		if ($filter <> "")	$sql .= " WHERE " . $filter;
 		return $sql;
 	}
 
 	// Update
-	function Update(&$rs, $where = "", $rsold = NULL) {
-		global $conn;
-		return $conn->Execute($this->UpdateSQL($rs, $where));
+	function Update(&$rs, $where = "", $rsold = NULL, $curfilter = TRUE) {
+		$conn = &$this->Connection();
+		return $conn->Execute($this->UpdateSQL($rs, $where, $curfilter));
 	}
 
 	// DELETE statement
-	function DeleteSQL(&$rs, $where = "") {
+	function DeleteSQL(&$rs, $where = "", $curfilter = TRUE) {
 		$sql = "DELETE FROM " . $this->UpdateTable . " WHERE ";
+		if (is_array($where))
+			$where = $this->ArrayToFilter($where);
 		if ($rs) {
 			if (array_key_exists('idconfiguracion', $rs))
-				ew_AddFilter($where, ew_QuotedName('idconfiguracion') . '=' . ew_QuotedValue($rs['idconfiguracion'], $this->idconfiguracion->FldDataType));
+				ew_AddFilter($where, ew_QuotedName('idconfiguracion', $this->DBID) . '=' . ew_QuotedValue($rs['idconfiguracion'], $this->idconfiguracion->FldDataType, $this->DBID));
 		}
-		$filter = $this->CurrentFilter;
+		$filter = ($curfilter) ? $this->CurrentFilter : "";
 		ew_AddFilter($filter, $where);
 		if ($filter <> "")
 			$sql .= $filter;
@@ -375,9 +359,9 @@ class cconfiguracion extends cTable {
 	}
 
 	// Delete
-	function Delete(&$rs, $where = "") {
-		global $conn;
-		return $conn->Execute($this->DeleteSQL($rs, $where));
+	function Delete(&$rs, $where = "", $curfilter = TRUE) {
+		$conn = &$this->Connection();
+		return $conn->Execute($this->DeleteSQL($rs, $where, $curfilter));
 	}
 
 	// Key filter WHERE clause
@@ -390,7 +374,7 @@ class cconfiguracion extends cTable {
 		$sKeyFilter = $this->SqlKeyFilter();
 		if (!is_numeric($this->idconfiguracion->CurrentValue))
 			$sKeyFilter = "0=1"; // Invalid key
-		$sKeyFilter = str_replace("@idconfiguracion@", ew_AdjustSql($this->idconfiguracion->CurrentValue), $sKeyFilter); // Replace key value
+		$sKeyFilter = str_replace("@idconfiguracion@", ew_AdjustSql($this->idconfiguracion->CurrentValue, $this->DBID), $sKeyFilter); // Replace key value
 		return $sKeyFilter;
 	}
 
@@ -420,42 +404,59 @@ class cconfiguracion extends cTable {
 	// View URL
 	function GetViewUrl($parm = "") {
 		if ($parm <> "")
-			return $this->KeyUrl("configuracionview.php", $this->UrlParm($parm));
+			$url = $this->KeyUrl("configuracionview.php", $this->UrlParm($parm));
 		else
-			return $this->KeyUrl("configuracionview.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+			$url = $this->KeyUrl("configuracionview.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Add URL
 	function GetAddUrl($parm = "") {
 		if ($parm <> "")
-			return "configuracionadd.php?" . $this->UrlParm($parm);
+			$url = "configuracionadd.php?" . $this->UrlParm($parm);
 		else
-			return "configuracionadd.php";
+			$url = "configuracionadd.php";
+		return $this->AddMasterUrl($url);
 	}
 
 	// Edit URL
 	function GetEditUrl($parm = "") {
-		return $this->KeyUrl("configuracionedit.php", $this->UrlParm($parm));
+		$url = $this->KeyUrl("configuracionedit.php", $this->UrlParm($parm));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Inline edit URL
 	function GetInlineEditUrl() {
-		return $this->KeyUrl(ew_CurrentPage(), $this->UrlParm("a=edit"));
+		$url = $this->KeyUrl(ew_CurrentPage(), $this->UrlParm("a=edit"));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Copy URL
 	function GetCopyUrl($parm = "") {
-		return $this->KeyUrl("configuracionadd.php", $this->UrlParm($parm));
+		$url = $this->KeyUrl("configuracionadd.php", $this->UrlParm($parm));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Inline copy URL
 	function GetInlineCopyUrl() {
-		return $this->KeyUrl(ew_CurrentPage(), $this->UrlParm("a=copy"));
+		$url = $this->KeyUrl(ew_CurrentPage(), $this->UrlParm("a=copy"));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Delete URL
 	function GetDeleteUrl() {
 		return $this->KeyUrl("configuraciondelete.php", $this->UrlParm());
+	}
+
+	// Add master url
+	function AddMasterUrl($url) {
+		return $url;
+	}
+
+	function KeyToJson() {
+		$json = "";
+		$json .= "idconfiguracion:" . ew_VarToJson($this->idconfiguracion->CurrentValue, "number", "'");
+		return "{" . $json . "}";
 	}
 
 	// Add key value to URL
@@ -465,7 +466,7 @@ class cconfiguracion extends cTable {
 		if (!is_null($this->idconfiguracion->CurrentValue)) {
 			$sUrl .= "idconfiguracion=" . urlencode($this->idconfiguracion->CurrentValue);
 		} else {
-			return "javascript:alert(ewLanguage.Phrase('InvalidRecord'));";
+			return "javascript:ew_Alert(ewLanguage.Phrase('InvalidRecord'));";
 		}
 		return $sUrl;
 	}
@@ -494,18 +495,26 @@ class cconfiguracion extends cTable {
 		} elseif (isset($_GET["key_m"])) {
 			$arKeys = ew_StripSlashes($_GET["key_m"]);
 			$cnt = count($arKeys);
-		} elseif (isset($_GET)) {
-			$arKeys[] = @$_GET["idconfiguracion"]; // idconfiguracion
+		} elseif (!empty($_GET) || !empty($_POST)) {
+			$isPost = ew_IsHttpPost();
+			if ($isPost && isset($_POST["idconfiguracion"]))
+				$arKeys[] = ew_StripSlashes($_POST["idconfiguracion"]);
+			elseif (isset($_GET["idconfiguracion"]))
+				$arKeys[] = ew_StripSlashes($_GET["idconfiguracion"]);
+			else
+				$arKeys = NULL; // Do not setup
 
 			//return $arKeys; // Do not return yet, so the values will also be checked by the following code
 		}
 
 		// Check keys
 		$ar = array();
-		foreach ($arKeys as $key) {
-			if (!is_numeric($key))
-				continue;
-			$ar[] = $key;
+		if (is_array($arKeys)) {
+			foreach ($arKeys as $key) {
+				if (!is_numeric($key))
+					continue;
+				$ar[] = $key;
+			}
 		}
 		return $ar;
 	}
@@ -524,13 +533,13 @@ class cconfiguracion extends cTable {
 
 	// Load rows based on filter
 	function &LoadRs($sFilter) {
-		global $conn;
 
 		// Set up filter (SQL WHERE clause) and get return SQL
 		//$this->CurrentFilter = $sFilter;
 		//$sSql = $this->SQL();
 
 		$sSql = $this->GetSQL($sFilter, "");
+		$conn = &$this->Connection();
 		$rs = $conn->Execute($sSql);
 		return $rs;
 	}
@@ -547,7 +556,7 @@ class cconfiguracion extends cTable {
 
 	// Render list row values
 	function RenderListRow() {
-		global $conn, $Security, $gsLanguage, $Language;
+		global $Security, $gsLanguage, $Language;
 
 		// Call Row Rendering event
 		$this->Row_Rendering();
@@ -578,16 +587,7 @@ class cconfiguracion extends cTable {
 
 		// estado
 		if (strval($this->estado->CurrentValue) <> "") {
-			switch ($this->estado->CurrentValue) {
-				case $this->estado->FldTagValue(1):
-					$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-					break;
-				case $this->estado->FldTagValue(2):
-					$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-					break;
-				default:
-					$this->estado->ViewValue = $this->estado->CurrentValue;
-			}
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
 		} else {
 			$this->estado->ViewValue = NULL;
 		}
@@ -633,7 +633,7 @@ class cconfiguracion extends cTable {
 
 	// Render edit row values
 	function RenderEditRow() {
-		global $conn, $Security, $gsLanguage, $Language;
+		global $Security, $gsLanguage, $Language;
 
 		// Call Row Rendering event
 		$this->Row_Rendering();
@@ -647,34 +647,30 @@ class cconfiguracion extends cTable {
 		// codigo
 		$this->codigo->EditAttrs["class"] = "form-control";
 		$this->codigo->EditCustomAttributes = "";
-		$this->codigo->EditValue = ew_HtmlEncode($this->codigo->CurrentValue);
+		$this->codigo->EditValue = $this->codigo->CurrentValue;
 		$this->codigo->PlaceHolder = ew_RemoveHtml($this->codigo->FldCaption());
 
 		// valor
 		$this->valor->EditAttrs["class"] = "form-control";
 		$this->valor->EditCustomAttributes = "";
-		$this->valor->EditValue = ew_HtmlEncode($this->valor->CurrentValue);
+		$this->valor->EditValue = $this->valor->CurrentValue;
 		$this->valor->PlaceHolder = ew_RemoveHtml($this->valor->FldCaption());
 
 		// descripcion
 		$this->descripcion->EditAttrs["class"] = "form-control";
 		$this->descripcion->EditCustomAttributes = "";
-		$this->descripcion->EditValue = ew_HtmlEncode($this->descripcion->CurrentValue);
+		$this->descripcion->EditValue = $this->descripcion->CurrentValue;
 		$this->descripcion->PlaceHolder = ew_RemoveHtml($this->descripcion->FldCaption());
 
 		// estado
 		$this->estado->EditAttrs["class"] = "form-control";
 		$this->estado->EditCustomAttributes = "";
-		$arwrk = array();
-		$arwrk[] = array($this->estado->FldTagValue(1), $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->FldTagValue(1));
-		$arwrk[] = array($this->estado->FldTagValue(2), $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->FldTagValue(2));
-		array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
-		$this->estado->EditValue = $arwrk;
+		$this->estado->EditValue = $this->estado->Options(TRUE);
 
 		// idempresa
 		$this->idempresa->EditAttrs["class"] = "form-control";
 		$this->idempresa->EditCustomAttributes = "";
-		$this->idempresa->EditValue = ew_HtmlEncode($this->idempresa->CurrentValue);
+		$this->idempresa->EditValue = $this->idempresa->CurrentValue;
 		$this->idempresa->PlaceHolder = ew_RemoveHtml($this->idempresa->FldCaption());
 
 		// Call Row Rendered event
@@ -687,6 +683,9 @@ class cconfiguracion extends cTable {
 
 	// Aggregate list row (for rendering)
 	function AggregateListRow() {
+
+		// Call Row Rendered event
+		$this->Row_Rendered();
 	}
 	var $ExportDoc;
 
@@ -932,7 +931,9 @@ class cconfiguracion extends cTable {
 	// Lookup Selecting event
 	function Lookup_Selecting($fld, &$filter) {
 
+		//var_dump($fld->FldName, $fld->LookupFilters, $filter); // Uncomment to view the filter
 		// Enter your code here
+
 	}
 
 	// Row Rendering event

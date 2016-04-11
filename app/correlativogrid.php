@@ -18,13 +18,8 @@ $correlativo_grid->Page_Render();
 <?php if ($correlativo->Export == "") { ?>
 <script type="text/javascript">
 
-// Page object
-var correlativo_grid = new ew_Page("correlativo_grid");
-correlativo_grid.PageID = "grid"; // Page ID
-var EW_PAGE_ID = correlativo_grid.PageID; // For backward compatibility
-
 // Form object
-var fcorrelativogrid = new ew_Form("fcorrelativogrid");
+var fcorrelativogrid = new ew_Form("fcorrelativogrid", "grid");
 fcorrelativogrid.FormKeyCountName = '<?php echo $correlativo_grid->FormKeyCountName ?>';
 
 // Validate form
@@ -32,7 +27,6 @@ fcorrelativogrid.Validate = function() {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
-	this.PostAutoSuggest();
 	if ($fobj.find("#a_confirm").val() == "F")
 		return true;
 	var elm, felm, uelm, addcnt = 0;
@@ -58,9 +52,6 @@ fcorrelativogrid.Validate = function() {
 			elm = this.GetElements("x" + infix + "_idempresa");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $correlativo->idempresa->FldCaption(), $correlativo->idempresa->ReqErrMsg)) ?>");
-
-			// Set up row object
-			ew_ElementsToRow(fobj);
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -95,7 +86,7 @@ fcorrelativogrid.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-fcorrelativogrid.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+fcorrelativogrid.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
 // Form object for search
 </script>
@@ -103,7 +94,7 @@ fcorrelativogrid.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"
 <?php
 if ($correlativo->CurrentAction == "gridadd") {
 	if ($correlativo->CurrentMode == "copy") {
-		$bSelectLimit = EW_SELECT_LIMIT;
+		$bSelectLimit = $correlativo_grid->UseSelectLimit;
 		if ($bSelectLimit) {
 			$correlativo_grid->TotalRecs = $correlativo->SelectRecordCount();
 			$correlativo_grid->Recordset = $correlativo_grid->LoadRecordset($correlativo_grid->StartRec-1, $correlativo_grid->DisplayRecs);
@@ -121,11 +112,12 @@ if ($correlativo->CurrentAction == "gridadd") {
 	$correlativo_grid->TotalRecs = $correlativo_grid->DisplayRecs;
 	$correlativo_grid->StopRec = $correlativo_grid->DisplayRecs;
 } else {
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $correlativo_grid->UseSelectLimit;
 	if ($bSelectLimit) {
-		$correlativo_grid->TotalRecs = $correlativo->SelectRecordCount();
+		if ($correlativo_grid->TotalRecs <= 0)
+			$correlativo_grid->TotalRecs = $correlativo->SelectRecordCount();
 	} else {
-		if ($correlativo_grid->Recordset = $correlativo_grid->LoadRecordset())
+		if (!$correlativo_grid->Recordset && ($correlativo_grid->Recordset = $correlativo_grid->LoadRecordset()))
 			$correlativo_grid->TotalRecs = $correlativo_grid->Recordset->RecordCount();
 	}
 	$correlativo_grid->StartRec = 1;
@@ -148,7 +140,7 @@ $correlativo_grid->RenderOtherOptions();
 $correlativo_grid->ShowMessage();
 ?>
 <?php if ($correlativo_grid->TotalRecs > 0 || $correlativo->CurrentAction <> "") { ?>
-<div class="ewGrid">
+<div class="panel panel-default ewGrid">
 <div id="fcorrelativogrid" class="ewForm form-inline">
 <div id="gmp_correlativo" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
 <table id="tbl_correlativogrid" class="table ewTable">
@@ -156,6 +148,9 @@ $correlativo_grid->ShowMessage();
 <thead><!-- Table header -->
 	<tr class="ewTableHeader">
 <?php
+
+// Header row
+$correlativo_grid->RowType = EW_ROWTYPE_HEADER;
 
 // Render list options
 $correlativo_grid->RenderListOptions();
@@ -213,7 +208,7 @@ if ($objForm) {
 $correlativo_grid->RecCnt = $correlativo_grid->StartRec - 1;
 if ($correlativo_grid->Recordset && !$correlativo_grid->Recordset->EOF) {
 	$correlativo_grid->Recordset->MoveFirst();
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $correlativo_grid->UseSelectLimit;
 	if (!$bSelectLimit && $correlativo_grid->StartRec > 1)
 		$correlativo_grid->Recordset->Move($correlativo_grid->StartRec - 1);
 } elseif (!$correlativo->AllowAddDeleteRow && $correlativo_grid->StopRec == 0) {
@@ -303,48 +298,52 @@ $correlativo_grid->ListOptions->Render("body", "left", $correlativo_grid->RowCnt
 		<td data-name="codigo"<?php echo $correlativo->codigo->CellAttributes() ?>>
 <?php if ($correlativo->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $correlativo_grid->RowCnt ?>_correlativo_codigo" class="form-group correlativo_codigo">
-<input type="text" data-field="x_codigo" name="x<?php echo $correlativo_grid->RowIndex ?>_codigo" id="x<?php echo $correlativo_grid->RowIndex ?>_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($correlativo->codigo->PlaceHolder) ?>" value="<?php echo $correlativo->codigo->EditValue ?>"<?php echo $correlativo->codigo->EditAttributes() ?>>
+<input type="text" data-table="correlativo" data-field="x_codigo" name="x<?php echo $correlativo_grid->RowIndex ?>_codigo" id="x<?php echo $correlativo_grid->RowIndex ?>_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($correlativo->codigo->getPlaceHolder()) ?>" value="<?php echo $correlativo->codigo->EditValue ?>"<?php echo $correlativo->codigo->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_codigo" name="o<?php echo $correlativo_grid->RowIndex ?>_codigo" id="o<?php echo $correlativo_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($correlativo->codigo->OldValue) ?>">
+<input type="hidden" data-table="correlativo" data-field="x_codigo" name="o<?php echo $correlativo_grid->RowIndex ?>_codigo" id="o<?php echo $correlativo_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($correlativo->codigo->OldValue) ?>">
 <?php } ?>
 <?php if ($correlativo->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $correlativo_grid->RowCnt ?>_correlativo_codigo" class="form-group correlativo_codigo">
-<input type="text" data-field="x_codigo" name="x<?php echo $correlativo_grid->RowIndex ?>_codigo" id="x<?php echo $correlativo_grid->RowIndex ?>_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($correlativo->codigo->PlaceHolder) ?>" value="<?php echo $correlativo->codigo->EditValue ?>"<?php echo $correlativo->codigo->EditAttributes() ?>>
+<input type="text" data-table="correlativo" data-field="x_codigo" name="x<?php echo $correlativo_grid->RowIndex ?>_codigo" id="x<?php echo $correlativo_grid->RowIndex ?>_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($correlativo->codigo->getPlaceHolder()) ?>" value="<?php echo $correlativo->codigo->EditValue ?>"<?php echo $correlativo->codigo->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($correlativo->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $correlativo_grid->RowCnt ?>_correlativo_codigo" class="correlativo_codigo">
 <span<?php echo $correlativo->codigo->ViewAttributes() ?>>
 <?php echo $correlativo->codigo->ListViewValue() ?></span>
-<input type="hidden" data-field="x_codigo" name="x<?php echo $correlativo_grid->RowIndex ?>_codigo" id="x<?php echo $correlativo_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($correlativo->codigo->FormValue) ?>">
-<input type="hidden" data-field="x_codigo" name="o<?php echo $correlativo_grid->RowIndex ?>_codigo" id="o<?php echo $correlativo_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($correlativo->codigo->OldValue) ?>">
+</span>
+<input type="hidden" data-table="correlativo" data-field="x_codigo" name="x<?php echo $correlativo_grid->RowIndex ?>_codigo" id="x<?php echo $correlativo_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($correlativo->codigo->FormValue) ?>">
+<input type="hidden" data-table="correlativo" data-field="x_codigo" name="o<?php echo $correlativo_grid->RowIndex ?>_codigo" id="o<?php echo $correlativo_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($correlativo->codigo->OldValue) ?>">
 <?php } ?>
 <a id="<?php echo $correlativo_grid->PageObjName . "_row_" . $correlativo_grid->RowCnt ?>"></a></td>
 	<?php } ?>
 <?php if ($correlativo->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<input type="hidden" data-field="x_idcorrelativo" name="x<?php echo $correlativo_grid->RowIndex ?>_idcorrelativo" id="x<?php echo $correlativo_grid->RowIndex ?>_idcorrelativo" value="<?php echo ew_HtmlEncode($correlativo->idcorrelativo->CurrentValue) ?>">
-<input type="hidden" data-field="x_idcorrelativo" name="o<?php echo $correlativo_grid->RowIndex ?>_idcorrelativo" id="o<?php echo $correlativo_grid->RowIndex ?>_idcorrelativo" value="<?php echo ew_HtmlEncode($correlativo->idcorrelativo->OldValue) ?>">
+<input type="hidden" data-table="correlativo" data-field="x_idcorrelativo" name="x<?php echo $correlativo_grid->RowIndex ?>_idcorrelativo" id="x<?php echo $correlativo_grid->RowIndex ?>_idcorrelativo" value="<?php echo ew_HtmlEncode($correlativo->idcorrelativo->CurrentValue) ?>">
+<input type="hidden" data-table="correlativo" data-field="x_idcorrelativo" name="o<?php echo $correlativo_grid->RowIndex ?>_idcorrelativo" id="o<?php echo $correlativo_grid->RowIndex ?>_idcorrelativo" value="<?php echo ew_HtmlEncode($correlativo->idcorrelativo->OldValue) ?>">
 <?php } ?>
 <?php if ($correlativo->RowType == EW_ROWTYPE_EDIT || $correlativo->CurrentMode == "edit") { ?>
-<input type="hidden" data-field="x_idcorrelativo" name="x<?php echo $correlativo_grid->RowIndex ?>_idcorrelativo" id="x<?php echo $correlativo_grid->RowIndex ?>_idcorrelativo" value="<?php echo ew_HtmlEncode($correlativo->idcorrelativo->CurrentValue) ?>">
+<input type="hidden" data-table="correlativo" data-field="x_idcorrelativo" name="x<?php echo $correlativo_grid->RowIndex ?>_idcorrelativo" id="x<?php echo $correlativo_grid->RowIndex ?>_idcorrelativo" value="<?php echo ew_HtmlEncode($correlativo->idcorrelativo->CurrentValue) ?>">
 <?php } ?>
 	<?php if ($correlativo->valor->Visible) { // valor ?>
 		<td data-name="valor"<?php echo $correlativo->valor->CellAttributes() ?>>
 <?php if ($correlativo->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $correlativo_grid->RowCnt ?>_correlativo_valor" class="form-group correlativo_valor">
-<input type="text" data-field="x_valor" name="x<?php echo $correlativo_grid->RowIndex ?>_valor" id="x<?php echo $correlativo_grid->RowIndex ?>_valor" size="30" placeholder="<?php echo ew_HtmlEncode($correlativo->valor->PlaceHolder) ?>" value="<?php echo $correlativo->valor->EditValue ?>"<?php echo $correlativo->valor->EditAttributes() ?>>
+<input type="text" data-table="correlativo" data-field="x_valor" name="x<?php echo $correlativo_grid->RowIndex ?>_valor" id="x<?php echo $correlativo_grid->RowIndex ?>_valor" size="30" placeholder="<?php echo ew_HtmlEncode($correlativo->valor->getPlaceHolder()) ?>" value="<?php echo $correlativo->valor->EditValue ?>"<?php echo $correlativo->valor->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_valor" name="o<?php echo $correlativo_grid->RowIndex ?>_valor" id="o<?php echo $correlativo_grid->RowIndex ?>_valor" value="<?php echo ew_HtmlEncode($correlativo->valor->OldValue) ?>">
+<input type="hidden" data-table="correlativo" data-field="x_valor" name="o<?php echo $correlativo_grid->RowIndex ?>_valor" id="o<?php echo $correlativo_grid->RowIndex ?>_valor" value="<?php echo ew_HtmlEncode($correlativo->valor->OldValue) ?>">
 <?php } ?>
 <?php if ($correlativo->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $correlativo_grid->RowCnt ?>_correlativo_valor" class="form-group correlativo_valor">
-<input type="text" data-field="x_valor" name="x<?php echo $correlativo_grid->RowIndex ?>_valor" id="x<?php echo $correlativo_grid->RowIndex ?>_valor" size="30" placeholder="<?php echo ew_HtmlEncode($correlativo->valor->PlaceHolder) ?>" value="<?php echo $correlativo->valor->EditValue ?>"<?php echo $correlativo->valor->EditAttributes() ?>>
+<input type="text" data-table="correlativo" data-field="x_valor" name="x<?php echo $correlativo_grid->RowIndex ?>_valor" id="x<?php echo $correlativo_grid->RowIndex ?>_valor" size="30" placeholder="<?php echo ew_HtmlEncode($correlativo->valor->getPlaceHolder()) ?>" value="<?php echo $correlativo->valor->EditValue ?>"<?php echo $correlativo->valor->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($correlativo->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $correlativo_grid->RowCnt ?>_correlativo_valor" class="correlativo_valor">
 <span<?php echo $correlativo->valor->ViewAttributes() ?>>
 <?php echo $correlativo->valor->ListViewValue() ?></span>
-<input type="hidden" data-field="x_valor" name="x<?php echo $correlativo_grid->RowIndex ?>_valor" id="x<?php echo $correlativo_grid->RowIndex ?>_valor" value="<?php echo ew_HtmlEncode($correlativo->valor->FormValue) ?>">
-<input type="hidden" data-field="x_valor" name="o<?php echo $correlativo_grid->RowIndex ?>_valor" id="o<?php echo $correlativo_grid->RowIndex ?>_valor" value="<?php echo ew_HtmlEncode($correlativo->valor->OldValue) ?>">
+</span>
+<input type="hidden" data-table="correlativo" data-field="x_valor" name="x<?php echo $correlativo_grid->RowIndex ?>_valor" id="x<?php echo $correlativo_grid->RowIndex ?>_valor" value="<?php echo ew_HtmlEncode($correlativo->valor->FormValue) ?>">
+<input type="hidden" data-table="correlativo" data-field="x_valor" name="o<?php echo $correlativo_grid->RowIndex ?>_valor" id="o<?php echo $correlativo_grid->RowIndex ?>_valor" value="<?php echo ew_HtmlEncode($correlativo->valor->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -359,41 +358,46 @@ $correlativo_grid->ListOptions->Render("body", "left", $correlativo_grid->RowCnt
 <input type="hidden" id="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" name="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($correlativo->idempresa->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el<?php echo $correlativo_grid->RowCnt ?>_correlativo_idempresa" class="form-group correlativo_idempresa">
-<select data-field="x_idempresa" id="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" name="x<?php echo $correlativo_grid->RowIndex ?>_idempresa"<?php echo $correlativo->idempresa->EditAttributes() ?>>
+<select data-table="correlativo" data-field="x_idempresa" data-value-separator="<?php echo ew_HtmlEncode(is_array($correlativo->idempresa->DisplayValueSeparator) ? json_encode($correlativo->idempresa->DisplayValueSeparator) : $correlativo->idempresa->DisplayValueSeparator) ?>" id="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" name="x<?php echo $correlativo_grid->RowIndex ?>_idempresa"<?php echo $correlativo->idempresa->EditAttributes() ?>>
 <?php
 if (is_array($correlativo->idempresa->EditValue)) {
 	$arwrk = $correlativo->idempresa->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($correlativo->idempresa->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($correlativo->idempresa->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $correlativo->idempresa->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($correlativo->idempresa->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($correlativo->idempresa->CurrentValue) ?>" selected><?php echo $correlativo->idempresa->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $correlativo->idempresa->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $correlativo->Lookup_Selecting($correlativo->idempresa, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$correlativo->idempresa->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$correlativo->idempresa->LookupFilters += array("f0" => "`idempresa` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$correlativo->Lookup_Selecting($correlativo->idempresa, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $correlativo->idempresa->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $correlativo_grid->RowIndex ?>_idempresa" id="s_x<?php echo $correlativo_grid->RowIndex ?>_idempresa" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idempresa` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $correlativo_grid->RowIndex ?>_idempresa" id="s_x<?php echo $correlativo_grid->RowIndex ?>_idempresa" value="<?php echo $correlativo->idempresa->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
-<input type="hidden" data-field="x_idempresa" name="o<?php echo $correlativo_grid->RowIndex ?>_idempresa" id="o<?php echo $correlativo_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($correlativo->idempresa->OldValue) ?>">
+<input type="hidden" data-table="correlativo" data-field="x_idempresa" name="o<?php echo $correlativo_grid->RowIndex ?>_idempresa" id="o<?php echo $correlativo_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($correlativo->idempresa->OldValue) ?>">
 <?php } ?>
 <?php if ($correlativo->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <?php if ($correlativo->idempresa->getSessionValue() <> "") { ?>
@@ -404,46 +408,53 @@ if (@$emptywrk) $correlativo->idempresa->OldValue = "";
 <input type="hidden" id="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" name="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($correlativo->idempresa->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el<?php echo $correlativo_grid->RowCnt ?>_correlativo_idempresa" class="form-group correlativo_idempresa">
-<select data-field="x_idempresa" id="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" name="x<?php echo $correlativo_grid->RowIndex ?>_idempresa"<?php echo $correlativo->idempresa->EditAttributes() ?>>
+<select data-table="correlativo" data-field="x_idempresa" data-value-separator="<?php echo ew_HtmlEncode(is_array($correlativo->idempresa->DisplayValueSeparator) ? json_encode($correlativo->idempresa->DisplayValueSeparator) : $correlativo->idempresa->DisplayValueSeparator) ?>" id="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" name="x<?php echo $correlativo_grid->RowIndex ?>_idempresa"<?php echo $correlativo->idempresa->EditAttributes() ?>>
 <?php
 if (is_array($correlativo->idempresa->EditValue)) {
 	$arwrk = $correlativo->idempresa->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($correlativo->idempresa->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($correlativo->idempresa->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $correlativo->idempresa->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($correlativo->idempresa->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($correlativo->idempresa->CurrentValue) ?>" selected><?php echo $correlativo->idempresa->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $correlativo->idempresa->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $correlativo->Lookup_Selecting($correlativo->idempresa, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$correlativo->idempresa->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$correlativo->idempresa->LookupFilters += array("f0" => "`idempresa` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$correlativo->Lookup_Selecting($correlativo->idempresa, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $correlativo->idempresa->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $correlativo_grid->RowIndex ?>_idempresa" id="s_x<?php echo $correlativo_grid->RowIndex ?>_idempresa" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idempresa` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $correlativo_grid->RowIndex ?>_idempresa" id="s_x<?php echo $correlativo_grid->RowIndex ?>_idempresa" value="<?php echo $correlativo->idempresa->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php } ?>
 <?php if ($correlativo->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $correlativo_grid->RowCnt ?>_correlativo_idempresa" class="correlativo_idempresa">
 <span<?php echo $correlativo->idempresa->ViewAttributes() ?>>
 <?php echo $correlativo->idempresa->ListViewValue() ?></span>
-<input type="hidden" data-field="x_idempresa" name="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" id="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($correlativo->idempresa->FormValue) ?>">
-<input type="hidden" data-field="x_idempresa" name="o<?php echo $correlativo_grid->RowIndex ?>_idempresa" id="o<?php echo $correlativo_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($correlativo->idempresa->OldValue) ?>">
+</span>
+<input type="hidden" data-table="correlativo" data-field="x_idempresa" name="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" id="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($correlativo->idempresa->FormValue) ?>">
+<input type="hidden" data-table="correlativo" data-field="x_idempresa" name="o<?php echo $correlativo_grid->RowIndex ?>_idempresa" id="o<?php echo $correlativo_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($correlativo->idempresa->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -490,39 +501,39 @@ fcorrelativogrid.UpdateOpts(<?php echo $correlativo_grid->RowIndex ?>);
 $correlativo_grid->ListOptions->Render("body", "left", $correlativo_grid->RowIndex);
 ?>
 	<?php if ($correlativo->codigo->Visible) { // codigo ?>
-		<td>
+		<td data-name="codigo">
 <?php if ($correlativo->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_correlativo_codigo" class="form-group correlativo_codigo">
-<input type="text" data-field="x_codigo" name="x<?php echo $correlativo_grid->RowIndex ?>_codigo" id="x<?php echo $correlativo_grid->RowIndex ?>_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($correlativo->codigo->PlaceHolder) ?>" value="<?php echo $correlativo->codigo->EditValue ?>"<?php echo $correlativo->codigo->EditAttributes() ?>>
+<input type="text" data-table="correlativo" data-field="x_codigo" name="x<?php echo $correlativo_grid->RowIndex ?>_codigo" id="x<?php echo $correlativo_grid->RowIndex ?>_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($correlativo->codigo->getPlaceHolder()) ?>" value="<?php echo $correlativo->codigo->EditValue ?>"<?php echo $correlativo->codigo->EditAttributes() ?>>
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_correlativo_codigo" class="form-group correlativo_codigo">
 <span<?php echo $correlativo->codigo->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $correlativo->codigo->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_codigo" name="x<?php echo $correlativo_grid->RowIndex ?>_codigo" id="x<?php echo $correlativo_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($correlativo->codigo->FormValue) ?>">
+<input type="hidden" data-table="correlativo" data-field="x_codigo" name="x<?php echo $correlativo_grid->RowIndex ?>_codigo" id="x<?php echo $correlativo_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($correlativo->codigo->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_codigo" name="o<?php echo $correlativo_grid->RowIndex ?>_codigo" id="o<?php echo $correlativo_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($correlativo->codigo->OldValue) ?>">
+<input type="hidden" data-table="correlativo" data-field="x_codigo" name="o<?php echo $correlativo_grid->RowIndex ?>_codigo" id="o<?php echo $correlativo_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($correlativo->codigo->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($correlativo->valor->Visible) { // valor ?>
-		<td>
+		<td data-name="valor">
 <?php if ($correlativo->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_correlativo_valor" class="form-group correlativo_valor">
-<input type="text" data-field="x_valor" name="x<?php echo $correlativo_grid->RowIndex ?>_valor" id="x<?php echo $correlativo_grid->RowIndex ?>_valor" size="30" placeholder="<?php echo ew_HtmlEncode($correlativo->valor->PlaceHolder) ?>" value="<?php echo $correlativo->valor->EditValue ?>"<?php echo $correlativo->valor->EditAttributes() ?>>
+<input type="text" data-table="correlativo" data-field="x_valor" name="x<?php echo $correlativo_grid->RowIndex ?>_valor" id="x<?php echo $correlativo_grid->RowIndex ?>_valor" size="30" placeholder="<?php echo ew_HtmlEncode($correlativo->valor->getPlaceHolder()) ?>" value="<?php echo $correlativo->valor->EditValue ?>"<?php echo $correlativo->valor->EditAttributes() ?>>
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_correlativo_valor" class="form-group correlativo_valor">
 <span<?php echo $correlativo->valor->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $correlativo->valor->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_valor" name="x<?php echo $correlativo_grid->RowIndex ?>_valor" id="x<?php echo $correlativo_grid->RowIndex ?>_valor" value="<?php echo ew_HtmlEncode($correlativo->valor->FormValue) ?>">
+<input type="hidden" data-table="correlativo" data-field="x_valor" name="x<?php echo $correlativo_grid->RowIndex ?>_valor" id="x<?php echo $correlativo_grid->RowIndex ?>_valor" value="<?php echo ew_HtmlEncode($correlativo->valor->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_valor" name="o<?php echo $correlativo_grid->RowIndex ?>_valor" id="o<?php echo $correlativo_grid->RowIndex ?>_valor" value="<?php echo ew_HtmlEncode($correlativo->valor->OldValue) ?>">
+<input type="hidden" data-table="correlativo" data-field="x_valor" name="o<?php echo $correlativo_grid->RowIndex ?>_valor" id="o<?php echo $correlativo_grid->RowIndex ?>_valor" value="<?php echo ew_HtmlEncode($correlativo->valor->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($correlativo->idempresa->Visible) { // idempresa ?>
-		<td>
+		<td data-name="idempresa">
 <?php if ($correlativo->CurrentAction <> "F") { ?>
 <?php if ($correlativo->idempresa->getSessionValue() <> "") { ?>
 <span id="el$rowindex$_correlativo_idempresa" class="form-group correlativo_idempresa">
@@ -532,38 +543,43 @@ $correlativo_grid->ListOptions->Render("body", "left", $correlativo_grid->RowInd
 <input type="hidden" id="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" name="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($correlativo->idempresa->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el$rowindex$_correlativo_idempresa" class="form-group correlativo_idempresa">
-<select data-field="x_idempresa" id="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" name="x<?php echo $correlativo_grid->RowIndex ?>_idempresa"<?php echo $correlativo->idempresa->EditAttributes() ?>>
+<select data-table="correlativo" data-field="x_idempresa" data-value-separator="<?php echo ew_HtmlEncode(is_array($correlativo->idempresa->DisplayValueSeparator) ? json_encode($correlativo->idempresa->DisplayValueSeparator) : $correlativo->idempresa->DisplayValueSeparator) ?>" id="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" name="x<?php echo $correlativo_grid->RowIndex ?>_idempresa"<?php echo $correlativo->idempresa->EditAttributes() ?>>
 <?php
 if (is_array($correlativo->idempresa->EditValue)) {
 	$arwrk = $correlativo->idempresa->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($correlativo->idempresa->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($correlativo->idempresa->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $correlativo->idempresa->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($correlativo->idempresa->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($correlativo->idempresa->CurrentValue) ?>" selected><?php echo $correlativo->idempresa->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $correlativo->idempresa->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $correlativo->Lookup_Selecting($correlativo->idempresa, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$correlativo->idempresa->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$correlativo->idempresa->LookupFilters += array("f0" => "`idempresa` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$correlativo->Lookup_Selecting($correlativo->idempresa, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $correlativo->idempresa->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $correlativo_grid->RowIndex ?>_idempresa" id="s_x<?php echo $correlativo_grid->RowIndex ?>_idempresa" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idempresa` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $correlativo_grid->RowIndex ?>_idempresa" id="s_x<?php echo $correlativo_grid->RowIndex ?>_idempresa" value="<?php echo $correlativo->idempresa->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php } else { ?>
@@ -571,9 +587,9 @@ if (@$emptywrk) $correlativo->idempresa->OldValue = "";
 <span<?php echo $correlativo->idempresa->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $correlativo->idempresa->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_idempresa" name="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" id="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($correlativo->idempresa->FormValue) ?>">
+<input type="hidden" data-table="correlativo" data-field="x_idempresa" name="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" id="x<?php echo $correlativo_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($correlativo->idempresa->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_idempresa" name="o<?php echo $correlativo_grid->RowIndex ?>_idempresa" id="o<?php echo $correlativo_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($correlativo->idempresa->OldValue) ?>">
+<input type="hidden" data-table="correlativo" data-field="x_idempresa" name="o<?php echo $correlativo_grid->RowIndex ?>_idempresa" id="o<?php echo $correlativo_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($correlativo->idempresa->OldValue) ?>">
 </td>
 	<?php } ?>
 <?php
@@ -612,7 +628,7 @@ if ($correlativo_grid->Recordset)
 	$correlativo_grid->Recordset->Close();
 ?>
 <?php if ($correlativo_grid->ShowOtherOptions) { ?>
-<div class="ewGridLowerPanel">
+<div class="panel-footer ewGridLowerPanel">
 <?php
 	foreach ($correlativo_grid->OtherOptions as &$option)
 		$option->Render("body", "bottom");

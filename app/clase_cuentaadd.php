@@ -1,14 +1,13 @@
 <?php
 if (session_id() == "") session_start(); // Initialize Session data
 ob_start(); // Turn on output buffering
-$EW_RELATIVE_PATH = "";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "clase_cuentainfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "grupo_cuentagridcls.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
+<?php include_once "ewcfg12.php" ?>
+<?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
+<?php include_once "phpfn12.php" ?>
+<?php include_once "clase_cuentainfo.php" ?>
+<?php include_once "grupo_cuentagridcls.php" ?>
+<?php include_once "userfn12.php" ?>
 <?php
 
 //
@@ -74,6 +73,30 @@ class cclase_cuenta_add extends cclase_cuenta {
 
 	function setWarningMessage($v) {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
+	}
+
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
 	}
 
 	// Show message
@@ -156,6 +179,7 @@ class cclase_cuenta_add extends cclase_cuenta {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -168,7 +192,7 @@ class cclase_cuenta_add extends cclase_cuenta {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -189,6 +213,7 @@ class cclase_cuenta_add extends cclase_cuenta {
 	function __construct() {
 		global $conn, $Language;
 		$GLOBALS["Page"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -214,7 +239,7 @@ class cclase_cuenta_add extends cclase_cuenta {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 	}
 
 	// 
@@ -270,7 +295,7 @@ class cclase_cuenta_add extends cclase_cuenta {
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Page Unload event
 		$this->Page_Unload();
@@ -298,7 +323,7 @@ class cclase_cuenta_add extends cclase_cuenta {
 		$this->Page_Redirecting($url);
 
 		 // Close connection
-		$conn->Close();
+		ew_CloseConn();
 
 		// Go to URL if specified
 		if ($url <> "") {
@@ -308,6 +333,7 @@ class cclase_cuenta_add extends cclase_cuenta {
 		}
 		exit();
 	}
+	var $FormClassName = "form-horizontal ewForm ewAddForm";
 	var $DbMasterFilter = "";
 	var $DbDetailFilter = "";
 	var $StartRec;
@@ -341,7 +367,6 @@ class cclase_cuenta_add extends cclase_cuenta {
 				$this->CurrentAction = "C"; // Copy record
 			} else {
 				$this->CurrentAction = "I"; // Display blank record
-				$this->LoadDefaultValues(); // Load default values
 			}
 		}
 
@@ -359,6 +384,9 @@ class cclase_cuenta_add extends cclase_cuenta {
 				$this->RestoreFormValues(); // Restore form values
 				$this->setFailureMessage($gsFormError);
 			}
+		} else {
+			if ($this->CurrentAction == "I") // Load default values for blank record
+				$this->LoadDefaultValues();
 		}
 
 		// Perform action based on action code
@@ -383,8 +411,10 @@ class cclase_cuenta_add extends cclase_cuenta {
 						$sReturnUrl = $this->GetDetailUrl();
 					else
 						$sReturnUrl = $this->getReturnUrl();
-					if (ew_GetPageName($sReturnUrl) == "clase_cuentaview.php")
-						$sReturnUrl = $this->GetViewUrl(); // View paging, return to view page with keyurl directly
+					if (ew_GetPageName($sReturnUrl) == "clase_cuentalist.php")
+						$sReturnUrl = $this->AddMasterUrl($sReturnUrl); // List page, return to list page with correct master key if necessary
+					elseif (ew_GetPageName($sReturnUrl) == "clase_cuentaview.php")
+						$sReturnUrl = $this->GetViewUrl(); // View page, return to view page with keyurl directly
 					$this->Page_Terminate($sReturnUrl); // Clean up and return
 				} else {
 					$this->EventCancelled = TRUE; // Event cancelled
@@ -396,7 +426,7 @@ class cclase_cuenta_add extends cclase_cuenta {
 		}
 
 		// Render row based on row type
-		$this->RowType = EW_ROWTYPE_ADD;  // Render add type
+		$this->RowType = EW_ROWTYPE_ADD; // Render add type
 
 		// Render row
 		$this->ResetAttrs();
@@ -447,7 +477,7 @@ class cclase_cuenta_add extends cclase_cuenta {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -456,8 +486,9 @@ class cclase_cuenta_add extends cclase_cuenta {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -468,7 +499,6 @@ class cclase_cuenta_add extends cclase_cuenta {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -506,7 +536,8 @@ class cclase_cuenta_add extends cclase_cuenta {
 		if ($bValidKey) {
 			$this->CurrentFilter = $this->KeyFilter();
 			$sSql = $this->SQL();
-			$this->OldRecordset = ew_LoadRecordset($sSql);
+			$conn = &$this->Connection();
+			$this->OldRecordset = ew_LoadRecordset($sSql, $conn);
 			$this->LoadRowValues($this->OldRecordset); // Load row values
 		} else {
 			$this->OldRecordset = NULL;
@@ -516,8 +547,7 @@ class cclase_cuenta_add extends cclase_cuenta {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		// Call Row_Rendering event
@@ -533,38 +563,29 @@ class cclase_cuenta_add extends cclase_cuenta {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idclase_cuenta
-			$this->idclase_cuenta->ViewValue = $this->idclase_cuenta->CurrentValue;
-			$this->idclase_cuenta->ViewCustomAttributes = "";
+		// idclase_cuenta
+		$this->idclase_cuenta->ViewValue = $this->idclase_cuenta->CurrentValue;
+		$this->idclase_cuenta->ViewCustomAttributes = "";
 
-			// nomenclatura
-			$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
-			$this->nomenclatura->ViewCustomAttributes = "";
+		// nomenclatura
+		$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
+		$this->nomenclatura->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
 
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
-			} else {
-				$this->estado->ViewValue = NULL;
-			}
-			$this->estado->ViewCustomAttributes = "";
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
-			// definicion
-			$this->definicion->ViewValue = $this->definicion->CurrentValue;
-			$this->definicion->ViewCustomAttributes = "";
+		// definicion
+		$this->definicion->ViewValue = $this->definicion->CurrentValue;
+		$this->definicion->ViewCustomAttributes = "";
 
 			// nomenclatura
 			$this->nomenclatura->LinkCustomAttributes = "";
@@ -600,15 +621,18 @@ class cclase_cuenta_add extends cclase_cuenta {
 			$this->definicion->EditValue = ew_HtmlEncode($this->definicion->CurrentValue);
 			$this->definicion->PlaceHolder = ew_RemoveHtml($this->definicion->FldCaption());
 
-			// Edit refer script
+			// Add refer script
 			// nomenclatura
 
+			$this->nomenclatura->LinkCustomAttributes = "";
 			$this->nomenclatura->HrefValue = "";
 
 			// nombre
+			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
 
 			// definicion
+			$this->definicion->LinkCustomAttributes = "";
 			$this->definicion->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
@@ -654,7 +678,8 @@ class cclase_cuenta_add extends cclase_cuenta {
 
 	// Add record
 	function AddRow($rsold = NULL) {
-		global $conn, $Language, $Security;
+		global $Language, $Security;
+		$conn = &$this->Connection();
 
 		// Begin transaction
 		if ($this->getCurrentDetailTable() <> "")
@@ -679,10 +704,14 @@ class cclase_cuenta_add extends cclase_cuenta {
 		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
 		$bInsertRow = $this->Row_Inserting($rs, $rsnew);
 		if ($bInsertRow) {
-			$conn->raiseErrorFn = 'ew_ErrorFn';
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 			$AddRow = $this->Insert($rsnew);
 			$conn->raiseErrorFn = '';
 			if ($AddRow) {
+
+				// Get insert id if necessary
+				$this->idclase_cuenta->setDbValue($conn->Insert_ID());
+				$rsnew['idclase_cuenta'] = $this->idclase_cuenta->DbValue;
 			}
 		} else {
 			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
@@ -695,12 +724,6 @@ class cclase_cuenta_add extends cclase_cuenta {
 				$this->setFailureMessage($Language->Phrase("InsertCancelled"));
 			}
 			$AddRow = FALSE;
-		}
-
-		// Get insert id if necessary
-		if ($AddRow) {
-			$this->idclase_cuenta->setDbValue($conn->Insert_ID());
-			$rsnew['idclase_cuenta'] = $this->idclase_cuenta->DbValue;
 		}
 
 		// Add detail records
@@ -769,9 +792,10 @@ class cclase_cuenta_add extends cclase_cuenta {
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$Breadcrumb->Add("list", $this->TableVar, "clase_cuentalist.php", "", $this->TableVar, TRUE);
+		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("clase_cuentalist.php"), "", $this->TableVar, TRUE);
 		$PageId = ($this->CurrentAction == "C") ? "Copy" : "Add";
-		$Breadcrumb->Add("add", $PageId, ew_CurrentUrl());
+		$Breadcrumb->Add("add", $PageId, $url);
 	}
 
 	// Page Load event
@@ -860,23 +884,18 @@ Page_Rendering();
 // Page Rendering event
 $clase_cuenta_add->Page_Render();
 ?>
-<?php include_once $EW_RELATIVE_PATH . "header.php" ?>
+<?php include_once "header.php" ?>
 <script type="text/javascript">
 
-// Page object
-var clase_cuenta_add = new ew_Page("clase_cuenta_add");
-clase_cuenta_add.PageID = "add"; // Page ID
-var EW_PAGE_ID = clase_cuenta_add.PageID; // For backward compatibility
-
 // Form object
-var fclase_cuentaadd = new ew_Form("fclase_cuentaadd");
+var CurrentPageID = EW_PAGE_ID = "add";
+var CurrentForm = fclase_cuentaadd = new ew_Form("fclase_cuentaadd", "add");
 
 // Validate form
 fclase_cuentaadd.Validate = function() {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
-	this.PostAutoSuggest();
 	if ($fobj.find("#a_confirm").val() == "F")
 		return true;
 	var elm, felm, uelm, addcnt = 0;
@@ -887,9 +906,6 @@ fclase_cuentaadd.Validate = function() {
 	for (var i = startcnt; i <= rowcnt; i++) {
 		var infix = ($k[0]) ? String(i) : "";
 		$fobj.data("rowindex", infix);
-
-			// Set up row object
-			ew_ElementsToRow(fobj);
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -939,7 +955,7 @@ fclase_cuentaadd.ValidateRequired = false;
 <?php
 $clase_cuenta_add->ShowMessage();
 ?>
-<form name="fclase_cuentaadd" id="fclase_cuentaadd" class="form-horizontal ewForm ewAddForm" action="<?php echo ew_CurrentPage() ?>" method="post">
+<form name="fclase_cuentaadd" id="fclase_cuentaadd" class="<?php echo $clase_cuenta_add->FormClassName ?>" action="<?php echo ew_CurrentPage() ?>" method="post">
 <?php if ($clase_cuenta_add->CheckToken) { ?>
 <input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $clase_cuenta_add->Token ?>">
 <?php } ?>
@@ -951,7 +967,7 @@ $clase_cuenta_add->ShowMessage();
 		<label id="elh_clase_cuenta_nomenclatura" for="x_nomenclatura" class="col-sm-2 control-label ewLabel"><?php echo $clase_cuenta->nomenclatura->FldCaption() ?></label>
 		<div class="col-sm-10"><div<?php echo $clase_cuenta->nomenclatura->CellAttributes() ?>>
 <span id="el_clase_cuenta_nomenclatura">
-<input type="text" data-field="x_nomenclatura" name="x_nomenclatura" id="x_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($clase_cuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $clase_cuenta->nomenclatura->EditValue ?>"<?php echo $clase_cuenta->nomenclatura->EditAttributes() ?>>
+<input type="text" data-table="clase_cuenta" data-field="x_nomenclatura" name="x_nomenclatura" id="x_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($clase_cuenta->nomenclatura->getPlaceHolder()) ?>" value="<?php echo $clase_cuenta->nomenclatura->EditValue ?>"<?php echo $clase_cuenta->nomenclatura->EditAttributes() ?>>
 </span>
 <?php echo $clase_cuenta->nomenclatura->CustomMsg ?></div></div>
 	</div>
@@ -961,7 +977,7 @@ $clase_cuenta_add->ShowMessage();
 		<label id="elh_clase_cuenta_nombre" for="x_nombre" class="col-sm-2 control-label ewLabel"><?php echo $clase_cuenta->nombre->FldCaption() ?></label>
 		<div class="col-sm-10"><div<?php echo $clase_cuenta->nombre->CellAttributes() ?>>
 <span id="el_clase_cuenta_nombre">
-<input type="text" data-field="x_nombre" name="x_nombre" id="x_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($clase_cuenta->nombre->PlaceHolder) ?>" value="<?php echo $clase_cuenta->nombre->EditValue ?>"<?php echo $clase_cuenta->nombre->EditAttributes() ?>>
+<input type="text" data-table="clase_cuenta" data-field="x_nombre" name="x_nombre" id="x_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($clase_cuenta->nombre->getPlaceHolder()) ?>" value="<?php echo $clase_cuenta->nombre->EditValue ?>"<?php echo $clase_cuenta->nombre->EditAttributes() ?>>
 </span>
 <?php echo $clase_cuenta->nombre->CustomMsg ?></div></div>
 	</div>
@@ -971,7 +987,7 @@ $clase_cuenta_add->ShowMessage();
 		<label id="elh_clase_cuenta_definicion" for="x_definicion" class="col-sm-2 control-label ewLabel"><?php echo $clase_cuenta->definicion->FldCaption() ?></label>
 		<div class="col-sm-10"><div<?php echo $clase_cuenta->definicion->CellAttributes() ?>>
 <span id="el_clase_cuenta_definicion">
-<input type="text" data-field="x_definicion" name="x_definicion" id="x_definicion" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($clase_cuenta->definicion->PlaceHolder) ?>" value="<?php echo $clase_cuenta->definicion->EditValue ?>"<?php echo $clase_cuenta->definicion->EditAttributes() ?>>
+<input type="text" data-table="clase_cuenta" data-field="x_definicion" name="x_definicion" id="x_definicion" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($clase_cuenta->definicion->getPlaceHolder()) ?>" value="<?php echo $clase_cuenta->definicion->EditValue ?>"<?php echo $clase_cuenta->definicion->EditAttributes() ?>>
 </span>
 <?php echo $clase_cuenta->definicion->CustomMsg ?></div></div>
 	</div>
@@ -988,6 +1004,7 @@ $clase_cuenta_add->ShowMessage();
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">
 <button class="btn btn-primary ewButton" name="btnAction" id="btnAction" type="submit"><?php echo $Language->Phrase("AddBtn") ?></button>
+<button class="btn btn-default ewButton" name="btnCancel" id="btnCancel" type="button" data-href="<?php echo $clase_cuenta_add->getReturnUrl() ?>"><?php echo $Language->Phrase("CancelBtn") ?></button>
 	</div>
 </div>
 </form>
@@ -1005,7 +1022,7 @@ if (EW_DEBUG_ENABLED)
 // document.write("page loaded");
 
 </script>
-<?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
+<?php include_once "footer.php" ?>
 <?php
 $clase_cuenta_add->Page_Terminate();
 ?>

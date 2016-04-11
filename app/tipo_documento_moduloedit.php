@@ -1,15 +1,14 @@
 <?php
 if (session_id() == "") session_start(); // Initialize Session data
 ob_start(); // Turn on output buffering
-$EW_RELATIVE_PATH = "";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "tipo_documento_moduloinfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "moduloinfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "tipo_documentoinfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
+<?php include_once "ewcfg12.php" ?>
+<?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
+<?php include_once "phpfn12.php" ?>
+<?php include_once "tipo_documento_moduloinfo.php" ?>
+<?php include_once "moduloinfo.php" ?>
+<?php include_once "tipo_documentoinfo.php" ?>
+<?php include_once "userfn12.php" ?>
 <?php
 
 //
@@ -75,6 +74,30 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 
 	function setWarningMessage($v) {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
+	}
+
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
 	}
 
 	// Show message
@@ -157,6 +180,7 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -169,7 +193,7 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -190,6 +214,7 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 	function __construct() {
 		global $conn, $Language;
 		$GLOBALS["Page"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -221,7 +246,7 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 	}
 
 	// 
@@ -269,7 +294,7 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Page Unload event
 		$this->Page_Unload();
@@ -297,7 +322,7 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 		$this->Page_Redirecting($url);
 
 		 // Close connection
-		$conn->Close();
+		ew_CloseConn();
 
 		// Go to URL if specified
 		if ($url <> "") {
@@ -307,6 +332,7 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 		}
 		exit();
 	}
+	var $FormClassName = "form-horizontal ewForm ewEditForm";
 	var $DbMasterFilter;
 	var $DbDetailFilter;
 
@@ -356,11 +382,15 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 				}
 				break;
 			Case "U": // Update
+				$sReturnUrl = $this->getReturnUrl();
+				if (ew_GetPageName($sReturnUrl) == "tipo_documento_modulolist.php")
+					$sReturnUrl = $this->AddMasterUrl($sReturnUrl); // List page, return to list page with correct master key if necessary
 				$this->SendEmail = TRUE; // Send email on update success
 				if ($this->EditRow()) { // Update record based on key
 					if ($this->getSuccessMessage() == "")
 						$this->setSuccessMessage($Language->Phrase("UpdateSuccess")); // Update success
-					$sReturnUrl = $this->getReturnUrl();
+					$this->Page_Terminate($sReturnUrl); // Return to caller
+				} elseif ($this->getFailureMessage() == $Language->Phrase("NoRecord")) {
 					$this->Page_Terminate($sReturnUrl); // Return to caller
 				} else {
 					$this->EventCancelled = TRUE; // Event cancelled
@@ -447,7 +477,7 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -456,8 +486,9 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -468,7 +499,6 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -494,8 +524,7 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		// Call Row_Rendering event
@@ -511,87 +540,70 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idtipo_documento_modulo
-			$this->idtipo_documento_modulo->ViewValue = $this->idtipo_documento_modulo->CurrentValue;
-			$this->idtipo_documento_modulo->ViewCustomAttributes = "";
+		// idtipo_documento_modulo
+		$this->idtipo_documento_modulo->ViewValue = $this->idtipo_documento_modulo->CurrentValue;
+		$this->idtipo_documento_modulo->ViewCustomAttributes = "";
 
-			// idtipo_documento
-			if (strval($this->idtipo_documento->CurrentValue) <> "") {
-				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idtipo_documento->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idtipo_documento->ViewValue = $this->idtipo_documento->CurrentValue;
-				}
+		// idtipo_documento
+		if (strval($this->idtipo_documento->CurrentValue) <> "") {
+			$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idtipo_documento->ViewValue = $this->idtipo_documento->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idtipo_documento->ViewValue = NULL;
+				$this->idtipo_documento->ViewValue = $this->idtipo_documento->CurrentValue;
 			}
-			$this->idtipo_documento->ViewCustomAttributes = "";
+		} else {
+			$this->idtipo_documento->ViewValue = NULL;
+		}
+		$this->idtipo_documento->ViewCustomAttributes = "";
 
-			// idmodulo
-			if (strval($this->idmodulo->CurrentValue) <> "") {
-				$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `modulo`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idmodulo, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idmodulo->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idmodulo->ViewValue = $this->idmodulo->CurrentValue;
-				}
+		// idmodulo
+		if (strval($this->idmodulo->CurrentValue) <> "") {
+			$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `modulo`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idmodulo, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idmodulo->ViewValue = $this->idmodulo->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idmodulo->ViewValue = NULL;
+				$this->idmodulo->ViewValue = $this->idmodulo->CurrentValue;
 			}
-			$this->idmodulo->ViewCustomAttributes = "";
+		} else {
+			$this->idmodulo->ViewValue = NULL;
+		}
+		$this->idmodulo->ViewCustomAttributes = "";
 
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
-			} else {
-				$this->estado->ViewValue = NULL;
-			}
-			$this->estado->ViewCustomAttributes = "";
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
-			// fecha_insercion
-			$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
-			$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
-			$this->fecha_insercion->ViewCustomAttributes = "";
+		// fecha_insercion
+		$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
+		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
+		$this->fecha_insercion->ViewCustomAttributes = "";
 
 			// idtipo_documento
 			$this->idtipo_documento->LinkCustomAttributes = "";
@@ -615,23 +627,19 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 			if ($this->idtipo_documento->getSessionValue() <> "") {
 				$this->idtipo_documento->CurrentValue = $this->idtipo_documento->getSessionValue();
 			if (strval($this->idtipo_documento->CurrentValue) <> "") {
-				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER, "");
 			$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
+				$rswrk = Conn()->Execute($sSqlWrk);
 				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idtipo_documento->ViewValue = $rswrk->fields('DispFld');
+					$arwrk = array();
+					$arwrk[1] = $rswrk->fields('DispFld');
+					$this->idtipo_documento->ViewValue = $this->idtipo_documento->DisplayValue($arwrk);
 					$rswrk->Close();
 				} else {
 					$this->idtipo_documento->ViewValue = $this->idtipo_documento->CurrentValue;
@@ -644,22 +652,16 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 			if (trim(strval($this->idtipo_documento->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `tipo_documento`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
@@ -672,23 +674,19 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 			if ($this->idmodulo->getSessionValue() <> "") {
 				$this->idmodulo->CurrentValue = $this->idmodulo->getSessionValue();
 			if (strval($this->idmodulo->CurrentValue) <> "") {
-				$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER, "");
 			$sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `modulo`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idmodulo, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idmodulo, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
+				$rswrk = Conn()->Execute($sSqlWrk);
 				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idmodulo->ViewValue = $rswrk->fields('DispFld');
+					$arwrk = array();
+					$arwrk[1] = $rswrk->fields('DispFld');
+					$this->idmodulo->ViewValue = $this->idmodulo->DisplayValue($arwrk);
 					$rswrk->Close();
 				} else {
 					$this->idmodulo->ViewValue = $this->idmodulo->CurrentValue;
@@ -701,22 +699,16 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 			if (trim(strval($this->idmodulo->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `modulo`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idmodulo, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idmodulo, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
@@ -726,21 +718,20 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 			// estado
 			$this->estado->EditAttrs["class"] = "form-control";
 			$this->estado->EditCustomAttributes = "";
-			$arwrk = array();
-			$arwrk[] = array($this->estado->FldTagValue(1), $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->FldTagValue(1));
-			$arwrk[] = array($this->estado->FldTagValue(2), $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->FldTagValue(2));
-			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
-			$this->estado->EditValue = $arwrk;
+			$this->estado->EditValue = $this->estado->Options(TRUE);
 
 			// Edit refer script
 			// idtipo_documento
 
+			$this->idtipo_documento->LinkCustomAttributes = "";
 			$this->idtipo_documento->HrefValue = "";
 
 			// idmodulo
+			$this->idmodulo->LinkCustomAttributes = "";
 			$this->idmodulo->HrefValue = "";
 
 			// estado
+			$this->estado->LinkCustomAttributes = "";
 			$this->estado->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
@@ -785,16 +776,19 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 
 	// Update record based on key values
 	function EditRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
+		$sFilter = $this->ApplyUserIDFilters($sFilter);
+		$conn = &$this->Connection();
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
-		$conn->raiseErrorFn = 'ew_ErrorFn';
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 		$rs = $conn->Execute($sSql);
 		$conn->raiseErrorFn = '';
 		if ($rs === FALSE)
 			return FALSE;
 		if ($rs->EOF) {
+			$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record message
 			$EditRow = FALSE; // Update Failed
 		} else {
 
@@ -815,7 +809,7 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 			// Call Row Updating event
 			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
 			if ($bUpdateRow) {
-				$conn->raiseErrorFn = 'ew_ErrorFn';
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 				if (count($rsnew) > 0)
 					$EditRow = $this->Update($rsnew, "", $rsold);
 				else
@@ -878,6 +872,35 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 					$bValidMaster = FALSE;
 				}
 			}
+		} elseif (isset($_POST[EW_TABLE_SHOW_MASTER])) {
+			$sMasterTblVar = $_POST[EW_TABLE_SHOW_MASTER];
+			if ($sMasterTblVar == "") {
+				$bValidMaster = TRUE;
+				$this->DbMasterFilter = "";
+				$this->DbDetailFilter = "";
+			}
+			if ($sMasterTblVar == "tipo_documento") {
+				$bValidMaster = TRUE;
+				if (@$_POST["fk_idtipo_documento"] <> "") {
+					$GLOBALS["tipo_documento"]->idtipo_documento->setFormValue($_POST["fk_idtipo_documento"]);
+					$this->idtipo_documento->setFormValue($GLOBALS["tipo_documento"]->idtipo_documento->FormValue);
+					$this->idtipo_documento->setSessionValue($this->idtipo_documento->FormValue);
+					if (!is_numeric($GLOBALS["tipo_documento"]->idtipo_documento->FormValue)) $bValidMaster = FALSE;
+				} else {
+					$bValidMaster = FALSE;
+				}
+			}
+			if ($sMasterTblVar == "modulo") {
+				$bValidMaster = TRUE;
+				if (@$_POST["fk_idmodulo"] <> "") {
+					$GLOBALS["modulo"]->idmodulo->setFormValue($_POST["fk_idmodulo"]);
+					$this->idmodulo->setFormValue($GLOBALS["modulo"]->idmodulo->FormValue);
+					$this->idmodulo->setSessionValue($this->idmodulo->FormValue);
+					if (!is_numeric($GLOBALS["modulo"]->idmodulo->FormValue)) $bValidMaster = FALSE;
+				} else {
+					$bValidMaster = FALSE;
+				}
+			}
 		}
 		if ($bValidMaster) {
 
@@ -891,13 +914,13 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 
 			// Clear previous master key from Session
 			if ($sMasterTblVar <> "tipo_documento") {
-				if ($this->idtipo_documento->QueryStringValue == "") $this->idtipo_documento->setSessionValue("");
+				if ($this->idtipo_documento->CurrentValue == "") $this->idtipo_documento->setSessionValue("");
 			}
 			if ($sMasterTblVar <> "modulo") {
-				if ($this->idmodulo->QueryStringValue == "") $this->idmodulo->setSessionValue("");
+				if ($this->idmodulo->CurrentValue == "") $this->idmodulo->setSessionValue("");
 			}
 		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 
@@ -905,9 +928,10 @@ class ctipo_documento_modulo_edit extends ctipo_documento_modulo {
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$Breadcrumb->Add("list", $this->TableVar, "tipo_documento_modulolist.php", "", $this->TableVar, TRUE);
+		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("tipo_documento_modulolist.php"), "", $this->TableVar, TRUE);
 		$PageId = "edit";
-		$Breadcrumb->Add("edit", $PageId, ew_CurrentUrl());
+		$Breadcrumb->Add("edit", $PageId, $url);
 	}
 
 	// Page Load event
@@ -996,23 +1020,18 @@ Page_Rendering();
 // Page Rendering event
 $tipo_documento_modulo_edit->Page_Render();
 ?>
-<?php include_once $EW_RELATIVE_PATH . "header.php" ?>
+<?php include_once "header.php" ?>
 <script type="text/javascript">
 
-// Page object
-var tipo_documento_modulo_edit = new ew_Page("tipo_documento_modulo_edit");
-tipo_documento_modulo_edit.PageID = "edit"; // Page ID
-var EW_PAGE_ID = tipo_documento_modulo_edit.PageID; // For backward compatibility
-
 // Form object
-var ftipo_documento_moduloedit = new ew_Form("ftipo_documento_moduloedit");
+var CurrentPageID = EW_PAGE_ID = "edit";
+var CurrentForm = ftipo_documento_moduloedit = new ew_Form("ftipo_documento_moduloedit", "edit");
 
 // Validate form
 ftipo_documento_moduloedit.Validate = function() {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
-	this.PostAutoSuggest();
 	if ($fobj.find("#a_confirm").val() == "F")
 		return true;
 	var elm, felm, uelm, addcnt = 0;
@@ -1029,9 +1048,6 @@ ftipo_documento_moduloedit.Validate = function() {
 			elm = this.GetElements("x" + infix + "_idmodulo");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $tipo_documento_modulo->idmodulo->FldCaption(), $tipo_documento_modulo->idmodulo->ReqErrMsg)) ?>");
-
-			// Set up row object
-			ew_ElementsToRow(fobj);
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -1065,8 +1081,10 @@ ftipo_documento_moduloedit.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-ftipo_documento_moduloedit.Lists["x_idtipo_documento"] = {"LinkField":"x_idtipo_documento","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
-ftipo_documento_moduloedit.Lists["x_idmodulo"] = {"LinkField":"x_idmodulo","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+ftipo_documento_moduloedit.Lists["x_idtipo_documento"] = {"LinkField":"x_idtipo_documento","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+ftipo_documento_moduloedit.Lists["x_idmodulo"] = {"LinkField":"x_idmodulo","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+ftipo_documento_moduloedit.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+ftipo_documento_moduloedit.Lists["x_estado"].Options = <?php echo json_encode($tipo_documento_modulo->estado->Options()) ?>;
 
 // Form object for search
 </script>
@@ -1083,12 +1101,20 @@ ftipo_documento_moduloedit.Lists["x_idmodulo"] = {"LinkField":"x_idmodulo","Ajax
 <?php
 $tipo_documento_modulo_edit->ShowMessage();
 ?>
-<form name="ftipo_documento_moduloedit" id="ftipo_documento_moduloedit" class="form-horizontal ewForm ewEditForm" action="<?php echo ew_CurrentPage() ?>" method="post">
+<form name="ftipo_documento_moduloedit" id="ftipo_documento_moduloedit" class="<?php echo $tipo_documento_modulo_edit->FormClassName ?>" action="<?php echo ew_CurrentPage() ?>" method="post">
 <?php if ($tipo_documento_modulo_edit->CheckToken) { ?>
 <input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $tipo_documento_modulo_edit->Token ?>">
 <?php } ?>
 <input type="hidden" name="t" value="tipo_documento_modulo">
 <input type="hidden" name="a_edit" id="a_edit" value="U">
+<?php if ($tipo_documento_modulo->getCurrentMasterTable() == "tipo_documento") { ?>
+<input type="hidden" name="<?php echo EW_TABLE_SHOW_MASTER ?>" value="tipo_documento">
+<input type="hidden" name="fk_idtipo_documento" value="<?php echo $tipo_documento_modulo->idtipo_documento->getSessionValue() ?>">
+<?php } ?>
+<?php if ($tipo_documento_modulo->getCurrentMasterTable() == "modulo") { ?>
+<input type="hidden" name="<?php echo EW_TABLE_SHOW_MASTER ?>" value="modulo">
+<input type="hidden" name="fk_idmodulo" value="<?php echo $tipo_documento_modulo->idmodulo->getSessionValue() ?>">
+<?php } ?>
 <div>
 <?php if ($tipo_documento_modulo->idtipo_documento->Visible) { // idtipo_documento ?>
 	<div id="r_idtipo_documento" class="form-group">
@@ -1102,21 +1128,26 @@ $tipo_documento_modulo_edit->ShowMessage();
 <input type="hidden" id="x_idtipo_documento" name="x_idtipo_documento" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el_tipo_documento_modulo_idtipo_documento">
-<select data-field="x_idtipo_documento" id="x_idtipo_documento" name="x_idtipo_documento"<?php echo $tipo_documento_modulo->idtipo_documento->EditAttributes() ?>>
+<select data-table="tipo_documento_modulo" data-field="x_idtipo_documento" data-value-separator="<?php echo ew_HtmlEncode(is_array($tipo_documento_modulo->idtipo_documento->DisplayValueSeparator) ? json_encode($tipo_documento_modulo->idtipo_documento->DisplayValueSeparator) : $tipo_documento_modulo->idtipo_documento->DisplayValueSeparator) ?>" id="x_idtipo_documento" name="x_idtipo_documento"<?php echo $tipo_documento_modulo->idtipo_documento->EditAttributes() ?>>
 <?php
 if (is_array($tipo_documento_modulo->idtipo_documento->EditValue)) {
 	$arwrk = $tipo_documento_modulo->idtipo_documento->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($tipo_documento_modulo->idtipo_documento->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($tipo_documento_modulo->idtipo_documento->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $tipo_documento_modulo->idtipo_documento->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($tipo_documento_modulo->idtipo_documento->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento->CurrentValue) ?>" selected><?php echo $tipo_documento_modulo->idtipo_documento->CurrentValue ?></option>
+<?php
+    }
 }
 ?>
 </select>
@@ -1124,15 +1155,15 @@ if (is_array($tipo_documento_modulo->idtipo_documento->EditValue)) {
 $sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
 $sWhereWrk = "";
 $lookuptblfilter = "`estado` = 'Activo'";
-if (strval($lookuptblfilter) <> "") {
-	ew_AddFilter($sWhereWrk, $lookuptblfilter);
-}
-
-// Call Lookup selecting
-$tipo_documento_modulo->Lookup_Selecting($tipo_documento_modulo->idtipo_documento, $sWhereWrk);
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$tipo_documento_modulo->idtipo_documento->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$tipo_documento_modulo->idtipo_documento->LookupFilters += array("f0" => "`idtipo_documento` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$tipo_documento_modulo->Lookup_Selecting($tipo_documento_modulo->idtipo_documento, $sWhereWrk); // Call Lookup selecting
 if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $tipo_documento_modulo->idtipo_documento->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x_idtipo_documento" id="s_x_idtipo_documento" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idtipo_documento` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x_idtipo_documento" id="s_x_idtipo_documento" value="<?php echo $tipo_documento_modulo->idtipo_documento->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php echo $tipo_documento_modulo->idtipo_documento->CustomMsg ?></div></div>
@@ -1150,21 +1181,26 @@ if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 <input type="hidden" id="x_idmodulo" name="x_idmodulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idmodulo->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el_tipo_documento_modulo_idmodulo">
-<select data-field="x_idmodulo" id="x_idmodulo" name="x_idmodulo"<?php echo $tipo_documento_modulo->idmodulo->EditAttributes() ?>>
+<select data-table="tipo_documento_modulo" data-field="x_idmodulo" data-value-separator="<?php echo ew_HtmlEncode(is_array($tipo_documento_modulo->idmodulo->DisplayValueSeparator) ? json_encode($tipo_documento_modulo->idmodulo->DisplayValueSeparator) : $tipo_documento_modulo->idmodulo->DisplayValueSeparator) ?>" id="x_idmodulo" name="x_idmodulo"<?php echo $tipo_documento_modulo->idmodulo->EditAttributes() ?>>
 <?php
 if (is_array($tipo_documento_modulo->idmodulo->EditValue)) {
 	$arwrk = $tipo_documento_modulo->idmodulo->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($tipo_documento_modulo->idmodulo->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($tipo_documento_modulo->idmodulo->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $tipo_documento_modulo->idmodulo->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($tipo_documento_modulo->idmodulo->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idmodulo->CurrentValue) ?>" selected><?php echo $tipo_documento_modulo->idmodulo->CurrentValue ?></option>
+<?php
+    }
 }
 ?>
 </select>
@@ -1172,15 +1208,15 @@ if (is_array($tipo_documento_modulo->idmodulo->EditValue)) {
 $sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `modulo`";
 $sWhereWrk = "";
 $lookuptblfilter = "`estado` = 'Activo'";
-if (strval($lookuptblfilter) <> "") {
-	ew_AddFilter($sWhereWrk, $lookuptblfilter);
-}
-
-// Call Lookup selecting
-$tipo_documento_modulo->Lookup_Selecting($tipo_documento_modulo->idmodulo, $sWhereWrk);
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$tipo_documento_modulo->idmodulo->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$tipo_documento_modulo->idmodulo->LookupFilters += array("f0" => "`idmodulo` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$tipo_documento_modulo->Lookup_Selecting($tipo_documento_modulo->idmodulo, $sWhereWrk); // Call Lookup selecting
 if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $tipo_documento_modulo->idmodulo->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x_idmodulo" id="s_x_idmodulo" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idmodulo` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x_idmodulo" id="s_x_idmodulo" value="<?php echo $tipo_documento_modulo->idmodulo->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php echo $tipo_documento_modulo->idmodulo->CustomMsg ?></div></div>
@@ -1191,21 +1227,26 @@ if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 		<label id="elh_tipo_documento_modulo_estado" for="x_estado" class="col-sm-2 control-label ewLabel"><?php echo $tipo_documento_modulo->estado->FldCaption() ?></label>
 		<div class="col-sm-10"><div<?php echo $tipo_documento_modulo->estado->CellAttributes() ?>>
 <span id="el_tipo_documento_modulo_estado">
-<select data-field="x_estado" id="x_estado" name="x_estado"<?php echo $tipo_documento_modulo->estado->EditAttributes() ?>>
+<select data-table="tipo_documento_modulo" data-field="x_estado" data-value-separator="<?php echo ew_HtmlEncode(is_array($tipo_documento_modulo->estado->DisplayValueSeparator) ? json_encode($tipo_documento_modulo->estado->DisplayValueSeparator) : $tipo_documento_modulo->estado->DisplayValueSeparator) ?>" id="x_estado" name="x_estado"<?php echo $tipo_documento_modulo->estado->EditAttributes() ?>>
 <?php
 if (is_array($tipo_documento_modulo->estado->EditValue)) {
 	$arwrk = $tipo_documento_modulo->estado->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($tipo_documento_modulo->estado->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($tipo_documento_modulo->estado->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $tipo_documento_modulo->estado->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($tipo_documento_modulo->estado->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($tipo_documento_modulo->estado->CurrentValue) ?>" selected><?php echo $tipo_documento_modulo->estado->CurrentValue ?></option>
+<?php
+    }
 }
 ?>
 </select>
@@ -1214,10 +1255,11 @@ if (is_array($tipo_documento_modulo->estado->EditValue)) {
 	</div>
 <?php } ?>
 </div>
-<input type="hidden" data-field="x_idtipo_documento_modulo" name="x_idtipo_documento_modulo" id="x_idtipo_documento_modulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento_modulo->CurrentValue) ?>">
+<input type="hidden" data-table="tipo_documento_modulo" data-field="x_idtipo_documento_modulo" name="x_idtipo_documento_modulo" id="x_idtipo_documento_modulo" value="<?php echo ew_HtmlEncode($tipo_documento_modulo->idtipo_documento_modulo->CurrentValue) ?>">
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">
 <button class="btn btn-primary ewButton" name="btnAction" id="btnAction" type="submit"><?php echo $Language->Phrase("SaveBtn") ?></button>
+<button class="btn btn-default ewButton" name="btnCancel" id="btnCancel" type="button" data-href="<?php echo $tipo_documento_modulo_edit->getReturnUrl() ?>"><?php echo $Language->Phrase("CancelBtn") ?></button>
 	</div>
 </div>
 </form>
@@ -1235,7 +1277,7 @@ if (EW_DEBUG_ENABLED)
 // document.write("page loaded");
 
 </script>
-<?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
+<?php include_once "footer.php" ?>
 <?php
 $tipo_documento_modulo_edit->Page_Terminate();
 ?>

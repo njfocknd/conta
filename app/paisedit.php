@@ -1,14 +1,13 @@
 <?php
 if (session_id() == "") session_start(); // Initialize Session data
 ob_start(); // Turn on output buffering
-$EW_RELATIVE_PATH = "";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "paisinfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "personagridcls.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
+<?php include_once "ewcfg12.php" ?>
+<?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
+<?php include_once "phpfn12.php" ?>
+<?php include_once "paisinfo.php" ?>
+<?php include_once "personagridcls.php" ?>
+<?php include_once "userfn12.php" ?>
 <?php
 
 //
@@ -74,6 +73,30 @@ class cpais_edit extends cpais {
 
 	function setWarningMessage($v) {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
+	}
+
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
 	}
 
 	// Show message
@@ -156,6 +179,7 @@ class cpais_edit extends cpais {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -168,7 +192,7 @@ class cpais_edit extends cpais {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -189,6 +213,7 @@ class cpais_edit extends cpais {
 	function __construct() {
 		global $conn, $Language;
 		$GLOBALS["Page"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -214,7 +239,7 @@ class cpais_edit extends cpais {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 	}
 
 	// 
@@ -270,7 +295,7 @@ class cpais_edit extends cpais {
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Page Unload event
 		$this->Page_Unload();
@@ -298,7 +323,7 @@ class cpais_edit extends cpais {
 		$this->Page_Redirecting($url);
 
 		 // Close connection
-		$conn->Close();
+		ew_CloseConn();
 
 		// Go to URL if specified
 		if ($url <> "") {
@@ -308,6 +333,7 @@ class cpais_edit extends cpais {
 		}
 		exit();
 	}
+	var $FormClassName = "form-horizontal ewForm ewEditForm";
 	var $DbMasterFilter;
 	var $DbDetailFilter;
 
@@ -360,14 +386,18 @@ class cpais_edit extends cpais {
 				$this->SetUpDetailParms();
 				break;
 			Case "U": // Update
+				if ($this->getCurrentDetailTable() <> "") // Master/detail edit
+					$sReturnUrl = $this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=" . $this->getCurrentDetailTable()); // Master/Detail view page
+				else
+					$sReturnUrl = $this->getReturnUrl();
+				if (ew_GetPageName($sReturnUrl) == "paislist.php")
+					$sReturnUrl = $this->AddMasterUrl($sReturnUrl); // List page, return to list page with correct master key if necessary
 				$this->SendEmail = TRUE; // Send email on update success
 				if ($this->EditRow()) { // Update record based on key
 					if ($this->getSuccessMessage() == "")
 						$this->setSuccessMessage($Language->Phrase("UpdateSuccess")); // Update success
-					if ($this->getCurrentDetailTable() <> "") // Master/detail edit
-						$sReturnUrl = $this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=" . $this->getCurrentDetailTable()); // Master/Detail view page
-					else
-						$sReturnUrl = $this->getReturnUrl();
+					$this->Page_Terminate($sReturnUrl); // Return to caller
+				} elseif ($this->getFailureMessage() == $Language->Phrase("NoRecord")) {
 					$this->Page_Terminate($sReturnUrl); // Return to caller
 				} else {
 					$this->EventCancelled = TRUE; // Event cancelled
@@ -453,7 +483,7 @@ class cpais_edit extends cpais {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -462,8 +492,9 @@ class cpais_edit extends cpais {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -474,7 +505,6 @@ class cpais_edit extends cpais {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -498,8 +528,7 @@ class cpais_edit extends cpais {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		// Call Row_Rendering event
@@ -514,35 +543,26 @@ class cpais_edit extends cpais {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idpais
-			$this->idpais->ViewValue = $this->idpais->CurrentValue;
-			$this->idpais->ViewCustomAttributes = "";
+		// idpais
+		$this->idpais->ViewValue = $this->idpais->CurrentValue;
+		$this->idpais->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
 
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
-			} else {
-				$this->estado->ViewValue = NULL;
-			}
-			$this->estado->ViewCustomAttributes = "";
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
-			// fecha_insercion
-			$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
-			$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
-			$this->fecha_insercion->ViewCustomAttributes = "";
+		// fecha_insercion
+		$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
+		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
+		$this->fecha_insercion->ViewCustomAttributes = "";
 
 			// nombre
 			$this->nombre->LinkCustomAttributes = "";
@@ -564,18 +584,16 @@ class cpais_edit extends cpais {
 			// estado
 			$this->estado->EditAttrs["class"] = "form-control";
 			$this->estado->EditCustomAttributes = "";
-			$arwrk = array();
-			$arwrk[] = array($this->estado->FldTagValue(1), $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->FldTagValue(1));
-			$arwrk[] = array($this->estado->FldTagValue(2), $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->FldTagValue(2));
-			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
-			$this->estado->EditValue = $arwrk;
+			$this->estado->EditValue = $this->estado->Options(TRUE);
 
 			// Edit refer script
 			// nombre
 
+			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
 
 			// estado
+			$this->estado->LinkCustomAttributes = "";
 			$this->estado->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
@@ -627,16 +645,19 @@ class cpais_edit extends cpais {
 
 	// Update record based on key values
 	function EditRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
+		$sFilter = $this->ApplyUserIDFilters($sFilter);
+		$conn = &$this->Connection();
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
-		$conn->raiseErrorFn = 'ew_ErrorFn';
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 		$rs = $conn->Execute($sSql);
 		$conn->raiseErrorFn = '';
 		if ($rs === FALSE)
 			return FALSE;
 		if ($rs->EOF) {
+			$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record message
 			$EditRow = FALSE; // Update Failed
 		} else {
 
@@ -658,7 +679,7 @@ class cpais_edit extends cpais {
 			// Call Row Updating event
 			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
 			if ($bUpdateRow) {
-				$conn->raiseErrorFn = 'ew_ErrorFn';
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 				if (count($rsnew) > 0)
 					$EditRow = $this->Update($rsnew, "", $rsold);
 				else
@@ -668,8 +689,8 @@ class cpais_edit extends cpais {
 				}
 
 				// Update detail records
+				$DetailTblVar = explode(",", $this->getCurrentDetailTable());
 				if ($EditRow) {
-					$DetailTblVar = explode(",", $this->getCurrentDetailTable());
 					if (in_array("persona", $DetailTblVar) && $GLOBALS["persona"]->DetailEdit) {
 						if (!isset($GLOBALS["persona_grid"])) $GLOBALS["persona_grid"] = new cpersona_grid(); // Get detail page object
 						$EditRow = $GLOBALS["persona_grid"]->GridUpdate();
@@ -739,9 +760,10 @@ class cpais_edit extends cpais {
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$Breadcrumb->Add("list", $this->TableVar, "paislist.php", "", $this->TableVar, TRUE);
+		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("paislist.php"), "", $this->TableVar, TRUE);
 		$PageId = "edit";
-		$Breadcrumb->Add("edit", $PageId, ew_CurrentUrl());
+		$Breadcrumb->Add("edit", $PageId, $url);
 	}
 
 	// Page Load event
@@ -830,23 +852,18 @@ Page_Rendering();
 // Page Rendering event
 $pais_edit->Page_Render();
 ?>
-<?php include_once $EW_RELATIVE_PATH . "header.php" ?>
+<?php include_once "header.php" ?>
 <script type="text/javascript">
 
-// Page object
-var pais_edit = new ew_Page("pais_edit");
-pais_edit.PageID = "edit"; // Page ID
-var EW_PAGE_ID = pais_edit.PageID; // For backward compatibility
-
 // Form object
-var fpaisedit = new ew_Form("fpaisedit");
+var CurrentPageID = EW_PAGE_ID = "edit";
+var CurrentForm = fpaisedit = new ew_Form("fpaisedit", "edit");
 
 // Validate form
 fpaisedit.Validate = function() {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
-	this.PostAutoSuggest();
 	if ($fobj.find("#a_confirm").val() == "F")
 		return true;
 	var elm, felm, uelm, addcnt = 0;
@@ -863,9 +880,6 @@ fpaisedit.Validate = function() {
 			elm = this.GetElements("x" + infix + "_estado");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $pais->estado->FldCaption(), $pais->estado->ReqErrMsg)) ?>");
-
-			// Set up row object
-			ew_ElementsToRow(fobj);
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -899,8 +913,10 @@ fpaisedit.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-// Form object for search
+fpaisedit.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fpaisedit.Lists["x_estado"].Options = <?php echo json_encode($pais->estado->Options()) ?>;
 
+// Form object for search
 </script>
 <script type="text/javascript">
 
@@ -915,7 +931,7 @@ fpaisedit.ValidateRequired = false;
 <?php
 $pais_edit->ShowMessage();
 ?>
-<form name="fpaisedit" id="fpaisedit" class="form-horizontal ewForm ewEditForm" action="<?php echo ew_CurrentPage() ?>" method="post">
+<form name="fpaisedit" id="fpaisedit" class="<?php echo $pais_edit->FormClassName ?>" action="<?php echo ew_CurrentPage() ?>" method="post">
 <?php if ($pais_edit->CheckToken) { ?>
 <input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $pais_edit->Token ?>">
 <?php } ?>
@@ -927,7 +943,7 @@ $pais_edit->ShowMessage();
 		<label id="elh_pais_nombre" for="x_nombre" class="col-sm-2 control-label ewLabel"><?php echo $pais->nombre->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
 		<div class="col-sm-10"><div<?php echo $pais->nombre->CellAttributes() ?>>
 <span id="el_pais_nombre">
-<input type="text" data-field="x_nombre" name="x_nombre" id="x_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($pais->nombre->PlaceHolder) ?>" value="<?php echo $pais->nombre->EditValue ?>"<?php echo $pais->nombre->EditAttributes() ?>>
+<input type="text" data-table="pais" data-field="x_nombre" name="x_nombre" id="x_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($pais->nombre->getPlaceHolder()) ?>" value="<?php echo $pais->nombre->EditValue ?>"<?php echo $pais->nombre->EditAttributes() ?>>
 </span>
 <?php echo $pais->nombre->CustomMsg ?></div></div>
 	</div>
@@ -937,21 +953,26 @@ $pais_edit->ShowMessage();
 		<label id="elh_pais_estado" for="x_estado" class="col-sm-2 control-label ewLabel"><?php echo $pais->estado->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
 		<div class="col-sm-10"><div<?php echo $pais->estado->CellAttributes() ?>>
 <span id="el_pais_estado">
-<select data-field="x_estado" id="x_estado" name="x_estado"<?php echo $pais->estado->EditAttributes() ?>>
+<select data-table="pais" data-field="x_estado" data-value-separator="<?php echo ew_HtmlEncode(is_array($pais->estado->DisplayValueSeparator) ? json_encode($pais->estado->DisplayValueSeparator) : $pais->estado->DisplayValueSeparator) ?>" id="x_estado" name="x_estado"<?php echo $pais->estado->EditAttributes() ?>>
 <?php
 if (is_array($pais->estado->EditValue)) {
 	$arwrk = $pais->estado->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($pais->estado->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($pais->estado->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $pais->estado->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($pais->estado->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($pais->estado->CurrentValue) ?>" selected><?php echo $pais->estado->CurrentValue ?></option>
+<?php
+    }
 }
 ?>
 </select>
@@ -960,7 +981,7 @@ if (is_array($pais->estado->EditValue)) {
 	</div>
 <?php } ?>
 </div>
-<input type="hidden" data-field="x_idpais" name="x_idpais" id="x_idpais" value="<?php echo ew_HtmlEncode($pais->idpais->CurrentValue) ?>">
+<input type="hidden" data-table="pais" data-field="x_idpais" name="x_idpais" id="x_idpais" value="<?php echo ew_HtmlEncode($pais->idpais->CurrentValue) ?>">
 <?php
 	if (in_array("persona", explode(",", $pais->getCurrentDetailTable())) && $persona->DetailEdit) {
 ?>
@@ -972,6 +993,7 @@ if (is_array($pais->estado->EditValue)) {
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">
 <button class="btn btn-primary ewButton" name="btnAction" id="btnAction" type="submit"><?php echo $Language->Phrase("SaveBtn") ?></button>
+<button class="btn btn-default ewButton" name="btnCancel" id="btnCancel" type="button" data-href="<?php echo $pais_edit->getReturnUrl() ?>"><?php echo $Language->Phrase("CancelBtn") ?></button>
 	</div>
 </div>
 </form>
@@ -989,7 +1011,7 @@ if (EW_DEBUG_ENABLED)
 // document.write("page loaded");
 
 </script>
-<?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
+<?php include_once "footer.php" ?>
 <?php
 $pais_edit->Page_Terminate();
 ?>

@@ -1,17 +1,16 @@
 <?php
 if (session_id() == "") session_start(); // Initialize Session data
 ob_start(); // Turn on output buffering
-$EW_RELATIVE_PATH = "";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "personainfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "paisinfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "clientegridcls.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "empleadogridcls.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "proveedorgridcls.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
+<?php include_once "ewcfg12.php" ?>
+<?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
+<?php include_once "phpfn12.php" ?>
+<?php include_once "personainfo.php" ?>
+<?php include_once "paisinfo.php" ?>
+<?php include_once "clientegridcls.php" ?>
+<?php include_once "empleadogridcls.php" ?>
+<?php include_once "proveedorgridcls.php" ?>
+<?php include_once "userfn12.php" ?>
 <?php
 
 //
@@ -119,6 +118,30 @@ class cpersona_list extends cpersona {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
 	}
 
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
 	// Show message
 	function ShowMessage() {
 		$hidden = FALSE;
@@ -199,6 +222,7 @@ class cpersona_list extends cpersona {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -211,7 +235,7 @@ class cpersona_list extends cpersona {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -232,6 +256,7 @@ class cpersona_list extends cpersona {
 	function __construct() {
 		global $conn, $Language;
 		$GLOBALS["Page"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -275,7 +300,7 @@ class cpersona_list extends cpersona {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 
 		// List options
 		$this->ListOptions = new cListOptions();
@@ -296,6 +321,14 @@ class cpersona_list extends cpersona {
 		$this->OtherOptions['action'] = new cListOptions();
 		$this->OtherOptions['action']->Tag = "div";
 		$this->OtherOptions['action']->TagClassName = "ewActionOption";
+
+		// Filter options
+		$this->FilterOptions = new cListOptions();
+		$this->FilterOptions->Tag = "div";
+		$this->FilterOptions->TagClassName = "ewFilterOption fpersonalistsrch";
+
+		// List actions
+		$this->ListActions = new cListActions();
 	}
 
 	// 
@@ -367,19 +400,30 @@ class cpersona_list extends cpersona {
 		// Create Token
 		$this->CreateToken();
 
+		// Set up master detail parameters
+		$this->SetUpMasterParms();
+
 		// Setup other options
 		$this->SetupOtherOptions();
 
-		// Set "checkbox" visible
-		if (count($this->CustomActions) > 0)
-			$this->ListOptions->Items["checkbox"]->Visible = TRUE;
+		// Set up custom action (compatible with old version)
+		foreach ($this->CustomActions as $name => $action)
+			$this->ListActions->Add($name, $action);
+
+		// Show checkbox column if multiple action
+		foreach ($this->ListActions->Items as $listaction) {
+			if ($listaction->Select == EW_ACTION_MULTIPLE && $listaction->Allow) {
+				$this->ListOptions->Items["checkbox"]->Visible = TRUE;
+				break;
+			}
+		}
 	}
 
 	//
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Page Unload event
 		$this->Page_Unload();
@@ -407,7 +451,7 @@ class cpersona_list extends cpersona {
 		$this->Page_Redirecting($url);
 
 		 // Close connection
-		$conn->Close();
+		ew_CloseConn();
 
 		// Go to URL if specified
 		if ($url <> "") {
@@ -423,6 +467,10 @@ class cpersona_list extends cpersona {
 	var $ExportOptions; // Export options
 	var $SearchOptions; // Search options
 	var $OtherOptions = array(); // Other options
+	var $FilterOptions; // Filter options
+	var $ListActions; // List actions
+	var $SelectedCount = 0;
+	var $SelectedIndex = 0;
 	var $DisplayRecs = 20;
 	var $StartRec;
 	var $StopRec;
@@ -453,6 +501,7 @@ class cpersona_list extends cpersona {
 	var $MultiSelectKey;
 	var $Command;
 	var $RestoreSearch = FALSE;
+	var $DetailPages;
 	var $Recordset;
 	var $OldRecordset;
 
@@ -471,14 +520,12 @@ class cpersona_list extends cpersona {
 		$this->Command = strtolower(@$_GET["cmd"]);
 		if ($this->IsPageRequest()) { // Validate request
 
-			// Process custom action first
-			$this->ProcessCustomAction();
+			// Process list action first
+			if ($this->ProcessListAction()) // Ajax request
+				$this->Page_Terminate();
 
 			// Handle reset command
 			$this->ResetCmd();
-
-			// Set up master detail parameters
-			$this->SetUpMasterParms();
 
 			// Set up Breadcrumb
 			if ($this->Export == "")
@@ -495,9 +542,11 @@ class cpersona_list extends cpersona {
 				$this->ListOptions->UseButtonGroup = FALSE; // Disable button group
 			}
 
-			// Hide export options
-			if ($this->Export <> "" || $this->CurrentAction <> "")
+			// Hide options
+			if ($this->Export <> "" || $this->CurrentAction <> "") {
 				$this->ExportOptions->HideAllOptions();
+				$this->FilterOptions->HideAllOptions();
+			}
 
 			// Hide other options
 			if ($this->Export <> "") {
@@ -510,6 +559,9 @@ class cpersona_list extends cpersona {
 
 			// Get basic search values
 			$this->LoadBasicSearchValues();
+
+			// Restore filter list
+			$this->RestoreFilterList();
 
 			// Restore search parms from Session if not searching / reset / export
 			if (($this->Export <> "" || $this->Command <> "search" && $this->Command <> "reset" && $this->Command <> "resetall") && $this->CheckSearchParms())
@@ -591,12 +643,14 @@ class cpersona_list extends cpersona {
 		$this->CurrentFilter = "";
 
 		// Load record count first
-		$bSelectLimit = EW_SELECT_LIMIT;
-		if ($bSelectLimit) {
-			$this->TotalRecs = $this->SelectRecordCount();
-		} else {
-			if ($this->Recordset = $this->LoadRecordset())
-				$this->TotalRecs = $this->Recordset->RecordCount();
+		if (!$this->IsAddOrEdit()) {
+			$bSelectLimit = $this->UseSelectLimit;
+			if ($bSelectLimit) {
+				$this->TotalRecs = $this->SelectRecordCount();
+			} else {
+				if ($this->Recordset = $this->LoadRecordset())
+					$this->TotalRecs = $this->Recordset->RecordCount();
+			}
 		}
 
 		// Search options
@@ -641,6 +695,140 @@ class cpersona_list extends cpersona {
 		return TRUE;
 	}
 
+	// Get list of filters
+	function GetFilterList() {
+
+		// Initialize
+		$sFilterList = "";
+		$sFilterList = ew_Concat($sFilterList, $this->idpersona->AdvancedSearch->ToJSON(), ","); // Field idpersona
+		$sFilterList = ew_Concat($sFilterList, $this->tipo_persona->AdvancedSearch->ToJSON(), ","); // Field tipo_persona
+		$sFilterList = ew_Concat($sFilterList, $this->nombre->AdvancedSearch->ToJSON(), ","); // Field nombre
+		$sFilterList = ew_Concat($sFilterList, $this->apellido->AdvancedSearch->ToJSON(), ","); // Field apellido
+		$sFilterList = ew_Concat($sFilterList, $this->direccion->AdvancedSearch->ToJSON(), ","); // Field direccion
+		$sFilterList = ew_Concat($sFilterList, $this->cui->AdvancedSearch->ToJSON(), ","); // Field cui
+		$sFilterList = ew_Concat($sFilterList, $this->idpais->AdvancedSearch->ToJSON(), ","); // Field idpais
+		$sFilterList = ew_Concat($sFilterList, $this->fecha_nacimiento->AdvancedSearch->ToJSON(), ","); // Field fecha_nacimiento
+		$sFilterList = ew_Concat($sFilterList, $this->_email->AdvancedSearch->ToJSON(), ","); // Field email
+		$sFilterList = ew_Concat($sFilterList, $this->sexo->AdvancedSearch->ToJSON(), ","); // Field sexo
+		$sFilterList = ew_Concat($sFilterList, $this->fecha_insercion->AdvancedSearch->ToJSON(), ","); // Field fecha_insercion
+		$sFilterList = ew_Concat($sFilterList, $this->estado->AdvancedSearch->ToJSON(), ","); // Field estado
+		if ($this->BasicSearch->Keyword <> "") {
+			$sWrk = "\"" . EW_TABLE_BASIC_SEARCH . "\":\"" . ew_JsEncode2($this->BasicSearch->Keyword) . "\",\"" . EW_TABLE_BASIC_SEARCH_TYPE . "\":\"" . ew_JsEncode2($this->BasicSearch->Type) . "\"";
+			$sFilterList = ew_Concat($sFilterList, $sWrk, ",");
+		}
+
+		// Return filter list in json
+		return ($sFilterList <> "") ? "{" . $sFilterList . "}" : "null";
+	}
+
+	// Restore list of filters
+	function RestoreFilterList() {
+
+		// Return if not reset filter
+		if (@$_POST["cmd"] <> "resetfilter")
+			return FALSE;
+		$filter = json_decode(ew_StripSlashes(@$_POST["filter"]), TRUE);
+		$this->Command = "search";
+
+		// Field idpersona
+		$this->idpersona->AdvancedSearch->SearchValue = @$filter["x_idpersona"];
+		$this->idpersona->AdvancedSearch->SearchOperator = @$filter["z_idpersona"];
+		$this->idpersona->AdvancedSearch->SearchCondition = @$filter["v_idpersona"];
+		$this->idpersona->AdvancedSearch->SearchValue2 = @$filter["y_idpersona"];
+		$this->idpersona->AdvancedSearch->SearchOperator2 = @$filter["w_idpersona"];
+		$this->idpersona->AdvancedSearch->Save();
+
+		// Field tipo_persona
+		$this->tipo_persona->AdvancedSearch->SearchValue = @$filter["x_tipo_persona"];
+		$this->tipo_persona->AdvancedSearch->SearchOperator = @$filter["z_tipo_persona"];
+		$this->tipo_persona->AdvancedSearch->SearchCondition = @$filter["v_tipo_persona"];
+		$this->tipo_persona->AdvancedSearch->SearchValue2 = @$filter["y_tipo_persona"];
+		$this->tipo_persona->AdvancedSearch->SearchOperator2 = @$filter["w_tipo_persona"];
+		$this->tipo_persona->AdvancedSearch->Save();
+
+		// Field nombre
+		$this->nombre->AdvancedSearch->SearchValue = @$filter["x_nombre"];
+		$this->nombre->AdvancedSearch->SearchOperator = @$filter["z_nombre"];
+		$this->nombre->AdvancedSearch->SearchCondition = @$filter["v_nombre"];
+		$this->nombre->AdvancedSearch->SearchValue2 = @$filter["y_nombre"];
+		$this->nombre->AdvancedSearch->SearchOperator2 = @$filter["w_nombre"];
+		$this->nombre->AdvancedSearch->Save();
+
+		// Field apellido
+		$this->apellido->AdvancedSearch->SearchValue = @$filter["x_apellido"];
+		$this->apellido->AdvancedSearch->SearchOperator = @$filter["z_apellido"];
+		$this->apellido->AdvancedSearch->SearchCondition = @$filter["v_apellido"];
+		$this->apellido->AdvancedSearch->SearchValue2 = @$filter["y_apellido"];
+		$this->apellido->AdvancedSearch->SearchOperator2 = @$filter["w_apellido"];
+		$this->apellido->AdvancedSearch->Save();
+
+		// Field direccion
+		$this->direccion->AdvancedSearch->SearchValue = @$filter["x_direccion"];
+		$this->direccion->AdvancedSearch->SearchOperator = @$filter["z_direccion"];
+		$this->direccion->AdvancedSearch->SearchCondition = @$filter["v_direccion"];
+		$this->direccion->AdvancedSearch->SearchValue2 = @$filter["y_direccion"];
+		$this->direccion->AdvancedSearch->SearchOperator2 = @$filter["w_direccion"];
+		$this->direccion->AdvancedSearch->Save();
+
+		// Field cui
+		$this->cui->AdvancedSearch->SearchValue = @$filter["x_cui"];
+		$this->cui->AdvancedSearch->SearchOperator = @$filter["z_cui"];
+		$this->cui->AdvancedSearch->SearchCondition = @$filter["v_cui"];
+		$this->cui->AdvancedSearch->SearchValue2 = @$filter["y_cui"];
+		$this->cui->AdvancedSearch->SearchOperator2 = @$filter["w_cui"];
+		$this->cui->AdvancedSearch->Save();
+
+		// Field idpais
+		$this->idpais->AdvancedSearch->SearchValue = @$filter["x_idpais"];
+		$this->idpais->AdvancedSearch->SearchOperator = @$filter["z_idpais"];
+		$this->idpais->AdvancedSearch->SearchCondition = @$filter["v_idpais"];
+		$this->idpais->AdvancedSearch->SearchValue2 = @$filter["y_idpais"];
+		$this->idpais->AdvancedSearch->SearchOperator2 = @$filter["w_idpais"];
+		$this->idpais->AdvancedSearch->Save();
+
+		// Field fecha_nacimiento
+		$this->fecha_nacimiento->AdvancedSearch->SearchValue = @$filter["x_fecha_nacimiento"];
+		$this->fecha_nacimiento->AdvancedSearch->SearchOperator = @$filter["z_fecha_nacimiento"];
+		$this->fecha_nacimiento->AdvancedSearch->SearchCondition = @$filter["v_fecha_nacimiento"];
+		$this->fecha_nacimiento->AdvancedSearch->SearchValue2 = @$filter["y_fecha_nacimiento"];
+		$this->fecha_nacimiento->AdvancedSearch->SearchOperator2 = @$filter["w_fecha_nacimiento"];
+		$this->fecha_nacimiento->AdvancedSearch->Save();
+
+		// Field email
+		$this->_email->AdvancedSearch->SearchValue = @$filter["x__email"];
+		$this->_email->AdvancedSearch->SearchOperator = @$filter["z__email"];
+		$this->_email->AdvancedSearch->SearchCondition = @$filter["v__email"];
+		$this->_email->AdvancedSearch->SearchValue2 = @$filter["y__email"];
+		$this->_email->AdvancedSearch->SearchOperator2 = @$filter["w__email"];
+		$this->_email->AdvancedSearch->Save();
+
+		// Field sexo
+		$this->sexo->AdvancedSearch->SearchValue = @$filter["x_sexo"];
+		$this->sexo->AdvancedSearch->SearchOperator = @$filter["z_sexo"];
+		$this->sexo->AdvancedSearch->SearchCondition = @$filter["v_sexo"];
+		$this->sexo->AdvancedSearch->SearchValue2 = @$filter["y_sexo"];
+		$this->sexo->AdvancedSearch->SearchOperator2 = @$filter["w_sexo"];
+		$this->sexo->AdvancedSearch->Save();
+
+		// Field fecha_insercion
+		$this->fecha_insercion->AdvancedSearch->SearchValue = @$filter["x_fecha_insercion"];
+		$this->fecha_insercion->AdvancedSearch->SearchOperator = @$filter["z_fecha_insercion"];
+		$this->fecha_insercion->AdvancedSearch->SearchCondition = @$filter["v_fecha_insercion"];
+		$this->fecha_insercion->AdvancedSearch->SearchValue2 = @$filter["y_fecha_insercion"];
+		$this->fecha_insercion->AdvancedSearch->SearchOperator2 = @$filter["w_fecha_insercion"];
+		$this->fecha_insercion->AdvancedSearch->Save();
+
+		// Field estado
+		$this->estado->AdvancedSearch->SearchValue = @$filter["x_estado"];
+		$this->estado->AdvancedSearch->SearchOperator = @$filter["z_estado"];
+		$this->estado->AdvancedSearch->SearchCondition = @$filter["v_estado"];
+		$this->estado->AdvancedSearch->SearchValue2 = @$filter["y_estado"];
+		$this->estado->AdvancedSearch->SearchOperator2 = @$filter["w_estado"];
+		$this->estado->AdvancedSearch->Save();
+		$this->BasicSearch->setKeyword(@$filter[EW_TABLE_BASIC_SEARCH]);
+		$this->BasicSearch->setType(@$filter[EW_TABLE_BASIC_SEARCH_TYPE]);
+	}
+
 	// Return basic search SQL
 	function BasicSearchSQL($arKeywords, $type) {
 		$sWhere = "";
@@ -654,7 +842,6 @@ class cpersona_list extends cpersona {
 	// Build basic search SQL
 	function BuildBasicSearchSql(&$Where, &$Fld, $arKeywords, $type) {
 		$sDefCond = ($type == "OR") ? "OR" : "AND";
-		$sCond = $sDefCond;
 		$arSQL = array(); // Array for SQL parts
 		$arCond = array(); // Array for search conditions
 		$cnt = count($arKeywords);
@@ -678,9 +865,10 @@ class cpersona_list extends cpersona {
 						$sWrk = $Fld->FldExpression . " IS NULL";
 					} elseif ($Keyword == EW_NOT_NULL_VALUE) {
 						$sWrk = $Fld->FldExpression . " IS NOT NULL";
+					} elseif ($Fld->FldIsVirtual && $Fld->FldVirtualSearch) {
+						$sWrk = $Fld->FldVirtualExpression . ew_Like(ew_QuotedValue("%" . $Keyword . "%", EW_DATATYPE_STRING, $this->DBID), $this->DBID);
 					} elseif ($Fld->FldDataType != EW_DATATYPE_NUMBER || is_numeric($Keyword)) {
-						$sFldExpression = ($Fld->FldVirtualExpression <> $Fld->FldExpression) ? $Fld->FldVirtualExpression : $Fld->FldBasicSearchExpression;
-						$sWrk = $sFldExpression . ew_Like(ew_QuotedValue("%" . $Keyword . "%", EW_DATATYPE_STRING));
+						$sWrk = $Fld->FldBasicSearchExpression . ew_Like(ew_QuotedValue("%" . $Keyword . "%", EW_DATATYPE_STRING, $this->DBID), $this->DBID);
 					}
 					if ($sWrk <> "") {
 						$arSQL[$j] = $sWrk;
@@ -742,7 +930,18 @@ class cpersona_list extends cpersona {
 				// Match individual keywords
 				if (strlen(trim($sSearch)) > 0)
 					$ar = array_merge($ar, explode(" ", trim($sSearch)));
-				$sSearchStr = $this->BasicSearchSQL($ar, $sSearchType);
+
+				// Search keyword in any fields
+				if (($sSearchType == "OR" || $sSearchType == "AND") && $this->BasicSearch->BasicSearchAnyFields) {
+					foreach ($ar as $sKeyword) {
+						if ($sKeyword <> "") {
+							if ($sSearchStr <> "") $sSearchStr .= " " . $sSearchType . " ";
+							$sSearchStr .= "(" . $this->BasicSearchSQL(array($sKeyword), $sSearchType) . ")";
+						}
+					}
+				} else {
+					$sSearchStr = $this->BasicSearchSQL($ar, $sSearchType);
+				}
 			} else {
 				$sSearchStr = $this->BasicSearchSQL(array($sSearch), $sSearchType);
 			}
@@ -909,6 +1108,21 @@ class cpersona_list extends cpersona {
 			$item->ShowInButtonGroup = FALSE;
 		}
 
+		// Set up detail pages
+		$pages = new cSubPages();
+		$pages->Add("cliente");
+		$pages->Add("empleado");
+		$pages->Add("proveedor");
+		$this->DetailPages = $pages;
+
+		// List actions
+		$item = &$this->ListOptions->Add("listactions");
+		$item->CssStyle = "white-space: nowrap;";
+		$item->OnLeft = FALSE;
+		$item->Visible = FALSE;
+		$item->ShowInButtonGroup = FALSE;
+		$item->ShowInDropDown = FALSE;
+
 		// "checkbox"
 		$item = &$this->ListOptions->Add("checkbox");
 		$item->Visible = FALSE;
@@ -952,6 +1166,35 @@ class cpersona_list extends cpersona {
 		} else {
 			$oListOpt->Body = "";
 		}
+
+		// Set up list action buttons
+		$oListOpt = &$this->ListOptions->GetItem("listactions");
+		if ($oListOpt && $this->Export == "" && $this->CurrentAction == "") {
+			$body = "";
+			$links = array();
+			foreach ($this->ListActions->Items as $listaction) {
+				if ($listaction->Select == EW_ACTION_SINGLE && $listaction->Allow) {
+					$action = $listaction->Action;
+					$caption = $listaction->Caption;
+					$icon = ($listaction->Icon <> "") ? "<span class=\"" . ew_HtmlEncode(str_replace(" ewIcon", "", $listaction->Icon)) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\"></span> " : "";
+					$links[] = "<li><a class=\"ewAction ewListAction\" data-action=\"" . ew_HtmlEncode($action) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"\" onclick=\"ew_SubmitAction(event,jQuery.extend({key:" . $this->KeyToJson() . "}," . $listaction->ToJson(TRUE) . "));return false;\">" . $icon . $listaction->Caption . "</a></li>";
+					if (count($links) == 1) // Single button
+						$body = "<a class=\"ewAction ewListAction\" data-action=\"" . ew_HtmlEncode($action) . "\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"\" onclick=\"ew_SubmitAction(event,jQuery.extend({key:" . $this->KeyToJson() . "}," . $listaction->ToJson(TRUE) . "));return false;\">" . $Language->Phrase("ListActionButton") . "</a>";
+				}
+			}
+			if (count($links) > 1) { // More than one buttons, use dropdown
+				$body = "<button class=\"dropdown-toggle btn btn-default btn-sm ewActions\" title=\"" . ew_HtmlTitle($Language->Phrase("ListActionButton")) . "\" data-toggle=\"dropdown\">" . $Language->Phrase("ListActionButton") . "<b class=\"caret\"></b></button>";
+				$content = "";
+				foreach ($links as $link)
+					$content .= "<li>" . $link . "</li>";
+				$body .= "<ul class=\"dropdown-menu" . ($oListOpt->OnLeft ? "" : " dropdown-menu-right") . "\">". $content . "</ul>";
+				$body = "<div class=\"btn-group\">" . $body . "</div>";
+			}
+			if (count($links) > 0) {
+				$oListOpt->Body = $body;
+				$oListOpt->Visible = TRUE;
+			}
+		}
 		$DetailViewTblVar = "";
 		$DetailCopyTblVar = "";
 		$DetailEditTblVar = "";
@@ -960,7 +1203,7 @@ class cpersona_list extends cpersona {
 		$oListOpt = &$this->ListOptions->Items["detail_cliente"];
 		if (TRUE) {
 			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("cliente", "TblCaption");
-			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("clientelist.php?" . EW_TABLE_SHOW_MASTER . "=persona&fk_idpersona=" . strval($this->idpersona->CurrentValue) . "") . "\">" . $body . "</a>";
+			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("clientelist.php?" . EW_TABLE_SHOW_MASTER . "=persona&fk_idpersona=" . urlencode(strval($this->idpersona->CurrentValue)) . "") . "\">" . $body . "</a>";
 			$links = "";
 			if ($GLOBALS["cliente_grid"]->DetailView) {
 				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=cliente")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
@@ -985,7 +1228,7 @@ class cpersona_list extends cpersona {
 		$oListOpt = &$this->ListOptions->Items["detail_empleado"];
 		if (TRUE) {
 			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("empleado", "TblCaption");
-			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("empleadolist.php?" . EW_TABLE_SHOW_MASTER . "=persona&fk_idpersona=" . strval($this->idpersona->CurrentValue) . "") . "\">" . $body . "</a>";
+			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("empleadolist.php?" . EW_TABLE_SHOW_MASTER . "=persona&fk_idpersona=" . urlencode(strval($this->idpersona->CurrentValue)) . "") . "\">" . $body . "</a>";
 			$links = "";
 			if ($GLOBALS["empleado_grid"]->DetailView) {
 				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=empleado")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
@@ -1010,7 +1253,7 @@ class cpersona_list extends cpersona {
 		$oListOpt = &$this->ListOptions->Items["detail_proveedor"];
 		if (TRUE) {
 			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("proveedor", "TblCaption");
-			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("proveedorlist.php?" . EW_TABLE_SHOW_MASTER . "=persona&fk_idpersona=" . strval($this->idpersona->CurrentValue) . "") . "\">" . $body . "</a>";
+			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("proveedorlist.php?" . EW_TABLE_SHOW_MASTER . "=persona&fk_idpersona=" . urlencode(strval($this->idpersona->CurrentValue)) . "") . "\">" . $body . "</a>";
 			$links = "";
 			if ($GLOBALS["proveedor_grid"]->DetailView) {
 				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=proveedor")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
@@ -1056,7 +1299,7 @@ class cpersona_list extends cpersona {
 
 		// "checkbox"
 		$oListOpt = &$this->ListOptions->Items["checkbox"];
-		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->idpersona->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event, this);'>";
+		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->idpersona->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event);'>";
 		$this->RenderListOptionsExt();
 
 		// Call ListOptions_Rendered event
@@ -1076,21 +1319,27 @@ class cpersona_list extends cpersona {
 		$option = $options["detail"];
 		$DetailTableLink = "";
 		$item = &$option->Add("detailadd_cliente");
-		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($this->GetAddUrl() . "?" . EW_TABLE_SHOW_DETAIL . "=cliente") . "\">" . $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["cliente"]->TableCaption() . "</a>";
+		$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=cliente");
+		$caption = $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["cliente"]->TableCaption();
+		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $caption . "</a>";
 		$item->Visible = ($GLOBALS["cliente"]->DetailAdd);
 		if ($item->Visible) {
 			if ($DetailTableLink <> "") $DetailTableLink .= ",";
 			$DetailTableLink .= "cliente";
 		}
 		$item = &$option->Add("detailadd_empleado");
-		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($this->GetAddUrl() . "?" . EW_TABLE_SHOW_DETAIL . "=empleado") . "\">" . $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["empleado"]->TableCaption() . "</a>";
+		$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=empleado");
+		$caption = $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["empleado"]->TableCaption();
+		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $caption . "</a>";
 		$item->Visible = ($GLOBALS["empleado"]->DetailAdd);
 		if ($item->Visible) {
 			if ($DetailTableLink <> "") $DetailTableLink .= ",";
 			$DetailTableLink .= "empleado";
 		}
 		$item = &$option->Add("detailadd_proveedor");
-		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($this->GetAddUrl() . "?" . EW_TABLE_SHOW_DETAIL . "=proveedor") . "\">" . $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["proveedor"]->TableCaption() . "</a>";
+		$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=proveedor");
+		$caption = $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["proveedor"]->TableCaption();
+		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $caption . "</a>";
 		$item->Visible = ($GLOBALS["proveedor"]->DetailAdd);
 		if ($item->Visible) {
 			if ($DetailTableLink <> "") $DetailTableLink .= ",";
@@ -1100,7 +1349,8 @@ class cpersona_list extends cpersona {
 		// Add multiple details
 		if ($this->ShowMultipleDetails) {
 			$item = &$option->Add("detailsadd");
-			$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($this->GetAddUrl() . "?" . EW_TABLE_SHOW_DETAIL . "=" . $DetailTableLink) . "\">" . $Language->Phrase("AddMasterDetailLink") . "</a>";
+			$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailTableLink);
+			$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $Language->Phrase("AddMasterDetailLink") . "</a>";
 			$item->Visible = ($DetailTableLink <> "");
 
 			// Hide single master/detail items
@@ -1126,6 +1376,22 @@ class cpersona_list extends cpersona {
 		$options["addedit"]->DropDownButtonPhrase = $Language->Phrase("ButtonAddEdit");
 		$options["detail"]->DropDownButtonPhrase = $Language->Phrase("ButtonDetails");
 		$options["action"]->DropDownButtonPhrase = $Language->Phrase("ButtonActions");
+
+		// Filter button
+		$item = &$this->FilterOptions->Add("savecurrentfilter");
+		$item->Body = "<a class=\"ewSaveFilter\" data-form=\"fpersonalistsrch\" href=\"#\">" . $Language->Phrase("SaveCurrentFilter") . "</a>";
+		$item->Visible = TRUE;
+		$item = &$this->FilterOptions->Add("deletefilter");
+		$item->Body = "<a class=\"ewDeleteFilter\" data-form=\"fpersonalistsrch\" href=\"#\">" . $Language->Phrase("DeleteFilter") . "</a>";
+		$item->Visible = TRUE;
+		$this->FilterOptions->UseDropDownButton = TRUE;
+		$this->FilterOptions->UseButtonGroup = !$this->FilterOptions->UseDropDownButton;
+		$this->FilterOptions->DropDownButtonPhrase = $Language->Phrase("Filters");
+
+		// Add group option item
+		$item = &$this->FilterOptions->Add($this->FilterOptions->GroupOptionName);
+		$item->Body = "";
+		$item->Visible = FALSE;
 	}
 
 	// Render other options
@@ -1133,52 +1399,74 @@ class cpersona_list extends cpersona {
 		global $Language, $Security;
 		$options = &$this->OtherOptions;
 			$option = &$options["action"];
-			foreach ($this->CustomActions as $action => $name) {
 
-				// Add custom action
-				$item = &$option->Add("custom_" . $action);
-				$item->Body = "<a class=\"ewAction ewCustomAction\" href=\"\" onclick=\"ew_SubmitSelected(document.fpersonalist, '" . ew_CurrentUrl() . "', null, '" . $action . "');return false;\">" . $name . "</a>";
+			// Set up list action buttons
+			foreach ($this->ListActions->Items as $listaction) {
+				if ($listaction->Select == EW_ACTION_MULTIPLE) {
+					$item = &$option->Add("custom_" . $listaction->Action);
+					$caption = $listaction->Caption;
+					$icon = ($listaction->Icon <> "") ? "<span class=\"" . ew_HtmlEncode($listaction->Icon) . "\" data-caption=\"" . ew_HtmlEncode($caption) . "\"></span> " : $caption;
+					$item->Body = "<a class=\"ewAction ewListAction\" title=\"" . ew_HtmlEncode($caption) . "\" data-caption=\"" . ew_HtmlEncode($caption) . "\" href=\"\" onclick=\"ew_SubmitAction(event,jQuery.extend({f:document.fpersonalist}," . $listaction->ToJson(TRUE) . "));return false;\">" . $icon . "</a>";
+					$item->Visible = $listaction->Allow;
+				}
 			}
 
-			// Hide grid edit, multi-delete and multi-update
+			// Hide grid edit and other options
 			if ($this->TotalRecs <= 0) {
 				$option = &$options["addedit"];
 				$item = &$option->GetItem("gridedit");
 				if ($item) $item->Visible = FALSE;
 				$option = &$options["action"];
-				$item = &$option->GetItem("multidelete");
-				if ($item) $item->Visible = FALSE;
-				$item = &$option->GetItem("multiupdate");
-				if ($item) $item->Visible = FALSE;
+				$option->HideAllOptions();
 			}
 	}
 
-	// Process custom action
-	function ProcessCustomAction() {
-		global $conn, $Language, $Security;
+	// Process list action
+	function ProcessListAction() {
+		global $Language, $Security;
+		$userlist = "";
+		$user = "";
 		$sFilter = $this->GetKeyFilter();
 		$UserAction = @$_POST["useraction"];
 		if ($sFilter <> "" && $UserAction <> "") {
+
+			// Check permission first
+			$ActionCaption = $UserAction;
+			if (array_key_exists($UserAction, $this->ListActions->Items)) {
+				$ActionCaption = $this->ListActions->Items[$UserAction]->Caption;
+				if (!$this->ListActions->Items[$UserAction]->Allow) {
+					$errmsg = str_replace('%s', $ActionCaption, $Language->Phrase("CustomActionNotAllowed"));
+					if (@$_POST["ajax"] == $UserAction) // Ajax
+						echo "<p class=\"text-danger\">" . $errmsg . "</p>";
+					else
+						$this->setFailureMessage($errmsg);
+					return FALSE;
+				}
+			}
 			$this->CurrentFilter = $sFilter;
 			$sSql = $this->SQL();
-			$conn->raiseErrorFn = 'ew_ErrorFn';
+			$conn = &$this->Connection();
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 			$rs = $conn->Execute($sSql);
 			$conn->raiseErrorFn = '';
-			$rsuser = ($rs) ? $rs->GetRows() : array();
-			if ($rs)
-				$rs->Close();
+			$this->CurrentAction = $UserAction;
 
-			// Call row custom action event
-			if (count($rsuser) > 0) {
+			// Call row action event
+			if ($rs && !$rs->EOF) {
 				$conn->BeginTrans();
-				foreach ($rsuser as $row) {
+				$this->SelectedCount = $rs->RecordCount();
+				$this->SelectedIndex = 0;
+				while (!$rs->EOF) {
+					$this->SelectedIndex++;
+					$row = $rs->fields;
 					$Processed = $this->Row_CustomAction($UserAction, $row);
 					if (!$Processed) break;
+					$rs->MoveNext();
 				}
 				if ($Processed) {
 					$conn->CommitTrans(); // Commit the changes
 					if ($this->getSuccessMessage() == "")
-						$this->setSuccessMessage(str_replace('%s', $UserAction, $Language->Phrase("CustomActionCompleted"))); // Set up success message
+						$this->setSuccessMessage(str_replace('%s', $ActionCaption, $Language->Phrase("CustomActionCompleted"))); // Set up success message
 				} else {
 					$conn->RollbackTrans(); // Rollback changes
 
@@ -1190,11 +1478,26 @@ class cpersona_list extends cpersona {
 						$this->setFailureMessage($this->CancelMessage);
 						$this->CancelMessage = "";
 					} else {
-						$this->setFailureMessage(str_replace('%s', $UserAction, $Language->Phrase("CustomActionCancelled")));
+						$this->setFailureMessage(str_replace('%s', $ActionCaption, $Language->Phrase("CustomActionFailed")));
 					}
 				}
 			}
+			if ($rs)
+				$rs->Close();
+			$this->CurrentAction = ""; // Clear action
+			if (@$_POST["ajax"] == $UserAction) { // Ajax
+				if ($this->getSuccessMessage() <> "") {
+					echo "<p class=\"text-success\">" . $this->getSuccessMessage() . "</p>";
+					$this->ClearSuccessMessage(); // Clear message
+				}
+				if ($this->getFailureMessage() <> "") {
+					echo "<p class=\"text-danger\">" . $this->getFailureMessage() . "</p>";
+					$this->ClearFailureMessage(); // Clear message
+				}
+				return TRUE;
+			}
 		}
+		return FALSE; // Not ajax request
 	}
 
 	// Set up search options
@@ -1213,7 +1516,7 @@ class cpersona_list extends cpersona {
 		// Show all button
 		$item = &$this->SearchOptions->Add("showall");
 		$item->Body = "<a class=\"btn btn-default ewShowAll\" title=\"" . $Language->Phrase("ShowAll") . "\" data-caption=\"" . $Language->Phrase("ShowAll") . "\" href=\"" . $this->PageUrl() . "cmd=reset\">" . $Language->Phrase("ShowAllBtn") . "</a>";
-		$item->Visible = ($this->SearchWhere <> $this->DefaultSearchWhere);
+		$item->Visible = ($this->SearchWhere <> $this->DefaultSearchWhere && $this->SearchWhere <> "0=101");
 
 		// Button group for search
 		$this->SearchOptions->UseDropDownButton = FALSE;
@@ -1284,15 +1587,24 @@ class cpersona_list extends cpersona {
 
 	// Load recordset
 	function LoadRecordset($offset = -1, $rowcnt = -1) {
-		global $conn;
 
 		// Load List page SQL
 		$sSql = $this->SelectSQL();
+		$conn = &$this->Connection();
 
 		// Load recordset
-		$conn->raiseErrorFn = 'ew_ErrorFn';
-		$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
-		$conn->raiseErrorFn = '';
+		$dbtype = ew_GetConnectionType($this->DBID);
+		if ($this->UseSelectLimit) {
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+			if ($dbtype == "MSSQL") {
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset, array("_hasOrderBy" => trim($this->getOrderBy()) || trim($this->getSessionOrderBy())));
+			} else {
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
+			}
+			$conn->raiseErrorFn = '';
+		} else {
+			$rs = ew_LoadRecordset($sSql, $conn);
+		}
 
 		// Call Recordset Selected event
 		$this->Recordset_Selected($rs);
@@ -1301,7 +1613,7 @@ class cpersona_list extends cpersona {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -1310,8 +1622,9 @@ class cpersona_list extends cpersona {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -1322,7 +1635,6 @@ class cpersona_list extends cpersona {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -1374,7 +1686,8 @@ class cpersona_list extends cpersona {
 		if ($bValidKey) {
 			$this->CurrentFilter = $this->KeyFilter();
 			$sSql = $this->SQL();
-			$this->OldRecordset = ew_LoadRecordset($sSql);
+			$conn = &$this->Connection();
+			$this->OldRecordset = ew_LoadRecordset($sSql, $conn);
 			$this->LoadRowValues($this->OldRecordset); // Load row values
 		} else {
 			$this->OldRecordset = NULL;
@@ -1384,8 +1697,7 @@ class cpersona_list extends cpersona {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		$this->ViewUrl = $this->GetViewUrl();
@@ -1414,118 +1726,87 @@ class cpersona_list extends cpersona {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idpersona
-			$this->idpersona->ViewValue = $this->idpersona->CurrentValue;
-			$this->idpersona->ViewCustomAttributes = "";
+		// idpersona
+		$this->idpersona->ViewValue = $this->idpersona->CurrentValue;
+		$this->idpersona->ViewCustomAttributes = "";
 
-			// tipo_persona
-			if (strval($this->tipo_persona->CurrentValue) <> "") {
-				switch ($this->tipo_persona->CurrentValue) {
-					case $this->tipo_persona->FldTagValue(1):
-						$this->tipo_persona->ViewValue = $this->tipo_persona->FldTagCaption(1) <> "" ? $this->tipo_persona->FldTagCaption(1) : $this->tipo_persona->CurrentValue;
-						break;
-					case $this->tipo_persona->FldTagValue(2):
-						$this->tipo_persona->ViewValue = $this->tipo_persona->FldTagCaption(2) <> "" ? $this->tipo_persona->FldTagCaption(2) : $this->tipo_persona->CurrentValue;
-						break;
-					default:
-						$this->tipo_persona->ViewValue = $this->tipo_persona->CurrentValue;
-				}
+		// tipo_persona
+		if (strval($this->tipo_persona->CurrentValue) <> "") {
+			$this->tipo_persona->ViewValue = $this->tipo_persona->OptionCaption($this->tipo_persona->CurrentValue);
+		} else {
+			$this->tipo_persona->ViewValue = NULL;
+		}
+		$this->tipo_persona->ViewCustomAttributes = "";
+
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
+
+		// apellido
+		$this->apellido->ViewValue = $this->apellido->CurrentValue;
+		$this->apellido->ViewCustomAttributes = "";
+
+		// direccion
+		$this->direccion->ViewValue = $this->direccion->CurrentValue;
+		$this->direccion->ViewCustomAttributes = "";
+
+		// cui
+		$this->cui->ViewValue = $this->cui->CurrentValue;
+		$this->cui->ViewCustomAttributes = "";
+
+		// idpais
+		if (strval($this->idpais->CurrentValue) <> "") {
+			$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idpais, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idpais->ViewValue = $this->idpais->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->tipo_persona->ViewValue = NULL;
+				$this->idpais->ViewValue = $this->idpais->CurrentValue;
 			}
-			$this->tipo_persona->ViewCustomAttributes = "";
+		} else {
+			$this->idpais->ViewValue = NULL;
+		}
+		$this->idpais->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
+		// fecha_nacimiento
+		$this->fecha_nacimiento->ViewValue = $this->fecha_nacimiento->CurrentValue;
+		$this->fecha_nacimiento->ViewValue = ew_FormatDateTime($this->fecha_nacimiento->ViewValue, 7);
+		$this->fecha_nacimiento->ViewCustomAttributes = "";
 
-			// apellido
-			$this->apellido->ViewValue = $this->apellido->CurrentValue;
-			$this->apellido->ViewCustomAttributes = "";
+		// email
+		$this->_email->ViewValue = $this->_email->CurrentValue;
+		$this->_email->ViewCustomAttributes = "";
 
-			// direccion
-			$this->direccion->ViewValue = $this->direccion->CurrentValue;
-			$this->direccion->ViewCustomAttributes = "";
+		// sexo
+		if (strval($this->sexo->CurrentValue) <> "") {
+			$this->sexo->ViewValue = $this->sexo->OptionCaption($this->sexo->CurrentValue);
+		} else {
+			$this->sexo->ViewValue = NULL;
+		}
+		$this->sexo->ViewCustomAttributes = "";
 
-			// cui
-			$this->cui->ViewValue = $this->cui->CurrentValue;
-			$this->cui->ViewCustomAttributes = "";
+		// fecha_insercion
+		$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
+		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
+		$this->fecha_insercion->ViewCustomAttributes = "";
 
-			// idpais
-			if (strval($this->idpais->CurrentValue) <> "") {
-				$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idpais, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idpais->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idpais->ViewValue = $this->idpais->CurrentValue;
-				}
-			} else {
-				$this->idpais->ViewValue = NULL;
-			}
-			$this->idpais->ViewCustomAttributes = "";
-
-			// fecha_nacimiento
-			$this->fecha_nacimiento->ViewValue = $this->fecha_nacimiento->CurrentValue;
-			$this->fecha_nacimiento->ViewValue = ew_FormatDateTime($this->fecha_nacimiento->ViewValue, 7);
-			$this->fecha_nacimiento->ViewCustomAttributes = "";
-
-			// email
-			$this->_email->ViewValue = $this->_email->CurrentValue;
-			$this->_email->ViewCustomAttributes = "";
-
-			// sexo
-			if (strval($this->sexo->CurrentValue) <> "") {
-				switch ($this->sexo->CurrentValue) {
-					case $this->sexo->FldTagValue(1):
-						$this->sexo->ViewValue = $this->sexo->FldTagCaption(1) <> "" ? $this->sexo->FldTagCaption(1) : $this->sexo->CurrentValue;
-						break;
-					case $this->sexo->FldTagValue(2):
-						$this->sexo->ViewValue = $this->sexo->FldTagCaption(2) <> "" ? $this->sexo->FldTagCaption(2) : $this->sexo->CurrentValue;
-						break;
-					default:
-						$this->sexo->ViewValue = $this->sexo->CurrentValue;
-				}
-			} else {
-				$this->sexo->ViewValue = NULL;
-			}
-			$this->sexo->ViewCustomAttributes = "";
-
-			// fecha_insercion
-			$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
-			$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
-			$this->fecha_insercion->ViewCustomAttributes = "";
-
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
-			} else {
-				$this->estado->ViewValue = NULL;
-			}
-			$this->estado->ViewCustomAttributes = "";
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
 			// tipo_persona
 			$this->tipo_persona->LinkCustomAttributes = "";
@@ -1571,8 +1852,32 @@ class cpersona_list extends cpersona {
 					$bValidMaster = FALSE;
 				}
 			}
+		} elseif (isset($_POST[EW_TABLE_SHOW_MASTER])) {
+			$sMasterTblVar = $_POST[EW_TABLE_SHOW_MASTER];
+			if ($sMasterTblVar == "") {
+				$bValidMaster = TRUE;
+				$this->DbMasterFilter = "";
+				$this->DbDetailFilter = "";
+			}
+			if ($sMasterTblVar == "pais") {
+				$bValidMaster = TRUE;
+				if (@$_POST["fk_idpais"] <> "") {
+					$GLOBALS["pais"]->idpais->setFormValue($_POST["fk_idpais"]);
+					$this->idpais->setFormValue($GLOBALS["pais"]->idpais->FormValue);
+					$this->idpais->setSessionValue($this->idpais->FormValue);
+					if (!is_numeric($GLOBALS["pais"]->idpais->FormValue)) $bValidMaster = FALSE;
+				} else {
+					$bValidMaster = FALSE;
+				}
+			}
 		}
 		if ($bValidMaster) {
+
+			// Update URL
+			$this->AddUrl = $this->AddMasterUrl($this->AddUrl);
+			$this->InlineAddUrl = $this->AddMasterUrl($this->InlineAddUrl);
+			$this->GridAddUrl = $this->AddMasterUrl($this->GridAddUrl);
+			$this->GridEditUrl = $this->AddMasterUrl($this->GridEditUrl);
 
 			// Save current master table
 			$this->setCurrentMasterTable($sMasterTblVar);
@@ -1583,10 +1888,10 @@ class cpersona_list extends cpersona {
 
 			// Clear previous master key from Session
 			if ($sMasterTblVar <> "pais") {
-				if ($this->idpais->QueryStringValue == "") $this->idpais->setSessionValue("");
+				if ($this->idpais->CurrentValue == "") $this->idpais->setSessionValue("");
 			}
 		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 
@@ -1594,7 +1899,7 @@ class cpersona_list extends cpersona {
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$url = ew_CurrentUrl();
+		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
 		$url = preg_replace('/\?cmd=reset(all){0,1}$/i', '', $url); // Remove cmd=reset / cmd=resetall
 		$Breadcrumb->Add("list", $this->TableVar, $url, "", $this->TableVar, TRUE);
 	}
@@ -1737,16 +2042,12 @@ Page_Rendering();
 // Page Rendering event
 $persona_list->Page_Render();
 ?>
-<?php include_once $EW_RELATIVE_PATH . "header.php" ?>
+<?php include_once "header.php" ?>
 <script type="text/javascript">
 
-// Page object
-var persona_list = new ew_Page("persona_list");
-persona_list.PageID = "list"; // Page ID
-var EW_PAGE_ID = persona_list.PageID; // For backward compatibility
-
 // Form object
-var fpersonalist = new ew_Form("fpersonalist");
+var CurrentPageID = EW_PAGE_ID = "list";
+var CurrentForm = fpersonalist = new ew_Form("fpersonalist", "list");
 fpersonalist.FormKeyCountName = '<?php echo $persona_list->FormKeyCountName ?>';
 
 // Form_CustomValidate event
@@ -1765,9 +2066,11 @@ fpersonalist.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-// Form object for search
+fpersonalist.Lists["x_tipo_persona"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fpersonalist.Lists["x_tipo_persona"].Options = <?php echo json_encode($persona->tipo_persona->Options()) ?>;
 
-var fpersonalistsrch = new ew_Form("fpersonalistsrch");
+// Form object for search
+var CurrentSearchForm = fpersonalistsrch = new ew_Form("fpersonalistsrch");
 </script>
 <script type="text/javascript">
 
@@ -1775,11 +2078,14 @@ var fpersonalistsrch = new ew_Form("fpersonalistsrch");
 </script>
 <div class="ewToolbar">
 <?php $Breadcrumb->Render(); ?>
-<?php if ($persona_list->TotalRecs > 0 && $persona->getCurrentMasterTable() == "" && $persona_list->ExportOptions->Visible()) { ?>
+<?php if ($persona_list->TotalRecs > 0 && $persona_list->ExportOptions->Visible()) { ?>
 <?php $persona_list->ExportOptions->Render("body") ?>
 <?php } ?>
 <?php if ($persona_list->SearchOptions->Visible()) { ?>
 <?php $persona_list->SearchOptions->Render("body") ?>
+<?php } ?>
+<?php if ($persona_list->FilterOptions->Visible()) { ?>
+<?php $persona_list->FilterOptions->Render("body") ?>
 <?php } ?>
 <?php echo $Language->SelectionForm(); ?>
 <div class="clearfix"></div>
@@ -1791,21 +2097,19 @@ if ($persona_list->DbMasterFilter <> "" && $persona->getCurrentMasterTable() == 
 	if ($persona_list->MasterRecordExists) {
 		if ($persona->getCurrentMasterTable() == $persona->TableVar) $gsMasterReturnUrl .= "?" . EW_TABLE_SHOW_MASTER . "=";
 ?>
-<?php if ($persona_list->ExportOptions->Visible()) { ?>
-<div class="ewListExportOptions"><?php $persona_list->ExportOptions->Render("body") ?></div>
-<?php } ?>
-<?php include_once $EW_RELATIVE_PATH . "paismaster.php" ?>
+<?php include_once "paismaster.php" ?>
 <?php
 	}
 }
 ?>
 <?php } ?>
 <?php
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $persona_list->UseSelectLimit;
 	if ($bSelectLimit) {
-		$persona_list->TotalRecs = $persona->SelectRecordCount();
+		if ($persona_list->TotalRecs <= 0)
+			$persona_list->TotalRecs = $persona->SelectRecordCount();
 	} else {
-		if ($persona_list->Recordset = $persona_list->LoadRecordset())
+		if (!$persona_list->Recordset && ($persona_list->Recordset = $persona_list->LoadRecordset()))
 			$persona_list->TotalRecs = $persona_list->Recordset->RecordCount();
 	}
 	$persona_list->StartRec = 1;
@@ -1857,12 +2161,16 @@ $persona_list->RenderOtherOptions();
 $persona_list->ShowMessage();
 ?>
 <?php if ($persona_list->TotalRecs > 0 || $persona->CurrentAction <> "") { ?>
-<div class="ewGrid">
+<div class="panel panel-default ewGrid">
 <form name="fpersonalist" id="fpersonalist" class="form-inline ewForm ewListForm" action="<?php echo ew_CurrentPage() ?>" method="post">
 <?php if ($persona_list->CheckToken) { ?>
 <input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $persona_list->Token ?>">
 <?php } ?>
 <input type="hidden" name="t" value="persona">
+<?php if ($persona->getCurrentMasterTable() == "pais" && $persona->CurrentAction <> "") { ?>
+<input type="hidden" name="<?php echo EW_TABLE_SHOW_MASTER ?>" value="pais">
+<input type="hidden" name="fk_idpais" value="<?php echo $persona->idpais->getSessionValue() ?>">
+<?php } ?>
 <div id="gmp_persona" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
 <?php if ($persona_list->TotalRecs > 0) { ?>
 <table id="tbl_personalist" class="table ewTable">
@@ -1870,6 +2178,9 @@ $persona_list->ShowMessage();
 <thead><!-- Table header -->
 	<tr class="ewTableHeader">
 <?php
+
+// Header row
+$persona_list->RowType = EW_ROWTYPE_HEADER;
 
 // Render list options
 $persona_list->RenderListOptions();
@@ -1926,7 +2237,7 @@ if ($persona->ExportAll && $persona->Export <> "") {
 $persona_list->RecCnt = $persona_list->StartRec - 1;
 if ($persona_list->Recordset && !$persona_list->Recordset->EOF) {
 	$persona_list->Recordset->MoveFirst();
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $persona_list->UseSelectLimit;
 	if (!$bSelectLimit && $persona_list->StartRec > 1)
 		$persona_list->Recordset->Move($persona_list->StartRec - 1);
 } elseif (!$persona->AllowAddDeleteRow && $persona_list->StopRec == 0) {
@@ -1971,20 +2282,26 @@ $persona_list->ListOptions->Render("body", "left", $persona_list->RowCnt);
 ?>
 	<?php if ($persona->tipo_persona->Visible) { // tipo_persona ?>
 		<td data-name="tipo_persona"<?php echo $persona->tipo_persona->CellAttributes() ?>>
+<span id="el<?php echo $persona_list->RowCnt ?>_persona_tipo_persona" class="persona_tipo_persona">
 <span<?php echo $persona->tipo_persona->ViewAttributes() ?>>
 <?php echo $persona->tipo_persona->ListViewValue() ?></span>
+</span>
 <a id="<?php echo $persona_list->PageObjName . "_row_" . $persona_list->RowCnt ?>"></a></td>
 	<?php } ?>
 	<?php if ($persona->nombre->Visible) { // nombre ?>
 		<td data-name="nombre"<?php echo $persona->nombre->CellAttributes() ?>>
+<span id="el<?php echo $persona_list->RowCnt ?>_persona_nombre" class="persona_nombre">
 <span<?php echo $persona->nombre->ViewAttributes() ?>>
 <?php echo $persona->nombre->ListViewValue() ?></span>
+</span>
 </td>
 	<?php } ?>
 	<?php if ($persona->apellido->Visible) { // apellido ?>
 		<td data-name="apellido"<?php echo $persona->apellido->CellAttributes() ?>>
+<span id="el<?php echo $persona_list->RowCnt ?>_persona_apellido" class="persona_apellido">
 <span<?php echo $persona->apellido->ViewAttributes() ?>>
 <?php echo $persona->apellido->ListViewValue() ?></span>
+</span>
 </td>
 	<?php } ?>
 <?php
@@ -2013,7 +2330,7 @@ $persona_list->ListOptions->Render("body", "right", $persona_list->RowCnt);
 if ($persona_list->Recordset)
 	$persona_list->Recordset->Close();
 ?>
-<div class="ewGridLowerPanel">
+<div class="panel-footer ewGridLowerPanel">
 <?php if ($persona->CurrentAction <> "gridadd" && $persona->CurrentAction <> "gridedit") { ?>
 <form name="ewPagerForm" class="ewForm form-inline ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
 <?php if (!isset($persona_list->Pager)) $persona_list->Pager = new cPrevNextPager($persona_list->StartRec, $persona_list->DisplayRecs, $persona_list->TotalRecs) ?>
@@ -2084,6 +2401,7 @@ if ($persona_list->Recordset)
 <?php } ?>
 <script type="text/javascript">
 fpersonalistsrch.Init();
+fpersonalistsrch.FilterList = <?php echo $persona_list->GetFilterList() ?>;
 fpersonalist.Init();
 </script>
 <?php
@@ -2097,7 +2415,7 @@ if (EW_DEBUG_ENABLED)
 // document.write("page loaded");
 
 </script>
-<?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
+<?php include_once "footer.php" ?>
 <?php
 $persona_list->Page_Terminate();
 ?>

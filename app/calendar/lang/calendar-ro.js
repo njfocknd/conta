@@ -64,3 +64,9 @@ Calendar._TT["TT_DATE_FORMAT"] = "%A, %d %B";
 
 Calendar._TT["WK"] = "spt";
 Calendar._TT["TIME"] = "Ora:";
+
+//***
+Calendar._TT["CLEAR"] = "Clear";
+Calendar._TT["CLEAR_TIME"] = "Clear time";
+Calendar._TT["NOW"] = "Now";
+Calendar._TT["RESET_TIME_TO_NOW"] = "Reset time to now";

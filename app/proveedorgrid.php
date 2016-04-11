@@ -18,13 +18,8 @@ $proveedor_grid->Page_Render();
 <?php if ($proveedor->Export == "") { ?>
 <script type="text/javascript">
 
-// Page object
-var proveedor_grid = new ew_Page("proveedor_grid");
-proveedor_grid.PageID = "grid"; // Page ID
-var EW_PAGE_ID = proveedor_grid.PageID; // For backward compatibility
-
 // Form object
-var fproveedorgrid = new ew_Form("fproveedorgrid");
+var fproveedorgrid = new ew_Form("fproveedorgrid", "grid");
 fproveedorgrid.FormKeyCountName = '<?php echo $proveedor_grid->FormKeyCountName ?>';
 
 // Validate form
@@ -32,7 +27,6 @@ fproveedorgrid.Validate = function() {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
-	this.PostAutoSuggest();
 	if ($fobj.find("#a_confirm").val() == "F")
 		return true;
 	var elm, felm, uelm, addcnt = 0;
@@ -55,9 +49,6 @@ fproveedorgrid.Validate = function() {
 			elm = this.GetElements("x" + infix + "_fecha_insercion");
 			if (elm && !ew_CheckEuroDate(elm.value))
 				return this.OnError(elm, "<?php echo ew_JsEncode2($proveedor->fecha_insercion->FldErrMsg()) ?>");
-
-			// Set up row object
-			ew_ElementsToRow(fobj);
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -96,7 +87,9 @@ fproveedorgrid.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-fproveedorgrid.Lists["x_idpersona"] = {"LinkField":"x_idpersona","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+fproveedorgrid.Lists["x_idpersona"] = {"LinkField":"x_idpersona","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fproveedorgrid.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fproveedorgrid.Lists["x_estado"].Options = <?php echo json_encode($proveedor->estado->Options()) ?>;
 
 // Form object for search
 </script>
@@ -104,7 +97,7 @@ fproveedorgrid.Lists["x_idpersona"] = {"LinkField":"x_idpersona","Ajax":true,"Au
 <?php
 if ($proveedor->CurrentAction == "gridadd") {
 	if ($proveedor->CurrentMode == "copy") {
-		$bSelectLimit = EW_SELECT_LIMIT;
+		$bSelectLimit = $proveedor_grid->UseSelectLimit;
 		if ($bSelectLimit) {
 			$proveedor_grid->TotalRecs = $proveedor->SelectRecordCount();
 			$proveedor_grid->Recordset = $proveedor_grid->LoadRecordset($proveedor_grid->StartRec-1, $proveedor_grid->DisplayRecs);
@@ -122,11 +115,12 @@ if ($proveedor->CurrentAction == "gridadd") {
 	$proveedor_grid->TotalRecs = $proveedor_grid->DisplayRecs;
 	$proveedor_grid->StopRec = $proveedor_grid->DisplayRecs;
 } else {
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $proveedor_grid->UseSelectLimit;
 	if ($bSelectLimit) {
-		$proveedor_grid->TotalRecs = $proveedor->SelectRecordCount();
+		if ($proveedor_grid->TotalRecs <= 0)
+			$proveedor_grid->TotalRecs = $proveedor->SelectRecordCount();
 	} else {
-		if ($proveedor_grid->Recordset = $proveedor_grid->LoadRecordset())
+		if (!$proveedor_grid->Recordset && ($proveedor_grid->Recordset = $proveedor_grid->LoadRecordset()))
 			$proveedor_grid->TotalRecs = $proveedor_grid->Recordset->RecordCount();
 	}
 	$proveedor_grid->StartRec = 1;
@@ -149,7 +143,7 @@ $proveedor_grid->RenderOtherOptions();
 $proveedor_grid->ShowMessage();
 ?>
 <?php if ($proveedor_grid->TotalRecs > 0 || $proveedor->CurrentAction <> "") { ?>
-<div class="ewGrid">
+<div class="panel panel-default ewGrid">
 <div id="fproveedorgrid" class="ewForm form-inline">
 <div id="gmp_proveedor" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
 <table id="tbl_proveedorgrid" class="table ewTable">
@@ -157,6 +151,9 @@ $proveedor_grid->ShowMessage();
 <thead><!-- Table header -->
 	<tr class="ewTableHeader">
 <?php
+
+// Header row
+$proveedor_grid->RowType = EW_ROWTYPE_HEADER;
 
 // Render list options
 $proveedor_grid->RenderListOptions();
@@ -250,7 +247,7 @@ if ($objForm) {
 $proveedor_grid->RecCnt = $proveedor_grid->StartRec - 1;
 if ($proveedor_grid->Recordset && !$proveedor_grid->Recordset->EOF) {
 	$proveedor_grid->Recordset->MoveFirst();
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $proveedor_grid->UseSelectLimit;
 	if (!$bSelectLimit && $proveedor_grid->StartRec > 1)
 		$proveedor_grid->Recordset->Move($proveedor_grid->StartRec - 1);
 } elseif (!$proveedor->AllowAddDeleteRow && $proveedor_grid->StopRec == 0) {
@@ -340,48 +337,52 @@ $proveedor_grid->ListOptions->Render("body", "left", $proveedor_grid->RowCnt);
 		<td data-name="codigo"<?php echo $proveedor->codigo->CellAttributes() ?>>
 <?php if ($proveedor->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_codigo" class="form-group proveedor_codigo">
-<input type="text" data-field="x_codigo" name="x<?php echo $proveedor_grid->RowIndex ?>_codigo" id="x<?php echo $proveedor_grid->RowIndex ?>_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->codigo->PlaceHolder) ?>" value="<?php echo $proveedor->codigo->EditValue ?>"<?php echo $proveedor->codigo->EditAttributes() ?>>
+<input type="text" data-table="proveedor" data-field="x_codigo" name="x<?php echo $proveedor_grid->RowIndex ?>_codigo" id="x<?php echo $proveedor_grid->RowIndex ?>_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->codigo->getPlaceHolder()) ?>" value="<?php echo $proveedor->codigo->EditValue ?>"<?php echo $proveedor->codigo->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_codigo" name="o<?php echo $proveedor_grid->RowIndex ?>_codigo" id="o<?php echo $proveedor_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($proveedor->codigo->OldValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_codigo" name="o<?php echo $proveedor_grid->RowIndex ?>_codigo" id="o<?php echo $proveedor_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($proveedor->codigo->OldValue) ?>">
 <?php } ?>
 <?php if ($proveedor->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_codigo" class="form-group proveedor_codigo">
-<input type="text" data-field="x_codigo" name="x<?php echo $proveedor_grid->RowIndex ?>_codigo" id="x<?php echo $proveedor_grid->RowIndex ?>_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->codigo->PlaceHolder) ?>" value="<?php echo $proveedor->codigo->EditValue ?>"<?php echo $proveedor->codigo->EditAttributes() ?>>
+<input type="text" data-table="proveedor" data-field="x_codigo" name="x<?php echo $proveedor_grid->RowIndex ?>_codigo" id="x<?php echo $proveedor_grid->RowIndex ?>_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->codigo->getPlaceHolder()) ?>" value="<?php echo $proveedor->codigo->EditValue ?>"<?php echo $proveedor->codigo->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($proveedor->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_codigo" class="proveedor_codigo">
 <span<?php echo $proveedor->codigo->ViewAttributes() ?>>
 <?php echo $proveedor->codigo->ListViewValue() ?></span>
-<input type="hidden" data-field="x_codigo" name="x<?php echo $proveedor_grid->RowIndex ?>_codigo" id="x<?php echo $proveedor_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($proveedor->codigo->FormValue) ?>">
-<input type="hidden" data-field="x_codigo" name="o<?php echo $proveedor_grid->RowIndex ?>_codigo" id="o<?php echo $proveedor_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($proveedor->codigo->OldValue) ?>">
+</span>
+<input type="hidden" data-table="proveedor" data-field="x_codigo" name="x<?php echo $proveedor_grid->RowIndex ?>_codigo" id="x<?php echo $proveedor_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($proveedor->codigo->FormValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_codigo" name="o<?php echo $proveedor_grid->RowIndex ?>_codigo" id="o<?php echo $proveedor_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($proveedor->codigo->OldValue) ?>">
 <?php } ?>
 <a id="<?php echo $proveedor_grid->PageObjName . "_row_" . $proveedor_grid->RowCnt ?>"></a></td>
 	<?php } ?>
 <?php if ($proveedor->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<input type="hidden" data-field="x_idproveedor" name="x<?php echo $proveedor_grid->RowIndex ?>_idproveedor" id="x<?php echo $proveedor_grid->RowIndex ?>_idproveedor" value="<?php echo ew_HtmlEncode($proveedor->idproveedor->CurrentValue) ?>">
-<input type="hidden" data-field="x_idproveedor" name="o<?php echo $proveedor_grid->RowIndex ?>_idproveedor" id="o<?php echo $proveedor_grid->RowIndex ?>_idproveedor" value="<?php echo ew_HtmlEncode($proveedor->idproveedor->OldValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_idproveedor" name="x<?php echo $proveedor_grid->RowIndex ?>_idproveedor" id="x<?php echo $proveedor_grid->RowIndex ?>_idproveedor" value="<?php echo ew_HtmlEncode($proveedor->idproveedor->CurrentValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_idproveedor" name="o<?php echo $proveedor_grid->RowIndex ?>_idproveedor" id="o<?php echo $proveedor_grid->RowIndex ?>_idproveedor" value="<?php echo ew_HtmlEncode($proveedor->idproveedor->OldValue) ?>">
 <?php } ?>
 <?php if ($proveedor->RowType == EW_ROWTYPE_EDIT || $proveedor->CurrentMode == "edit") { ?>
-<input type="hidden" data-field="x_idproveedor" name="x<?php echo $proveedor_grid->RowIndex ?>_idproveedor" id="x<?php echo $proveedor_grid->RowIndex ?>_idproveedor" value="<?php echo ew_HtmlEncode($proveedor->idproveedor->CurrentValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_idproveedor" name="x<?php echo $proveedor_grid->RowIndex ?>_idproveedor" id="x<?php echo $proveedor_grid->RowIndex ?>_idproveedor" value="<?php echo ew_HtmlEncode($proveedor->idproveedor->CurrentValue) ?>">
 <?php } ?>
 	<?php if ($proveedor->nit->Visible) { // nit ?>
 		<td data-name="nit"<?php echo $proveedor->nit->CellAttributes() ?>>
 <?php if ($proveedor->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_nit" class="form-group proveedor_nit">
-<input type="text" data-field="x_nit" name="x<?php echo $proveedor_grid->RowIndex ?>_nit" id="x<?php echo $proveedor_grid->RowIndex ?>_nit" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->nit->PlaceHolder) ?>" value="<?php echo $proveedor->nit->EditValue ?>"<?php echo $proveedor->nit->EditAttributes() ?>>
+<input type="text" data-table="proveedor" data-field="x_nit" name="x<?php echo $proveedor_grid->RowIndex ?>_nit" id="x<?php echo $proveedor_grid->RowIndex ?>_nit" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->nit->getPlaceHolder()) ?>" value="<?php echo $proveedor->nit->EditValue ?>"<?php echo $proveedor->nit->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_nit" name="o<?php echo $proveedor_grid->RowIndex ?>_nit" id="o<?php echo $proveedor_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($proveedor->nit->OldValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_nit" name="o<?php echo $proveedor_grid->RowIndex ?>_nit" id="o<?php echo $proveedor_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($proveedor->nit->OldValue) ?>">
 <?php } ?>
 <?php if ($proveedor->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_nit" class="form-group proveedor_nit">
-<input type="text" data-field="x_nit" name="x<?php echo $proveedor_grid->RowIndex ?>_nit" id="x<?php echo $proveedor_grid->RowIndex ?>_nit" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->nit->PlaceHolder) ?>" value="<?php echo $proveedor->nit->EditValue ?>"<?php echo $proveedor->nit->EditAttributes() ?>>
+<input type="text" data-table="proveedor" data-field="x_nit" name="x<?php echo $proveedor_grid->RowIndex ?>_nit" id="x<?php echo $proveedor_grid->RowIndex ?>_nit" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->nit->getPlaceHolder()) ?>" value="<?php echo $proveedor->nit->EditValue ?>"<?php echo $proveedor->nit->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($proveedor->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_nit" class="proveedor_nit">
 <span<?php echo $proveedor->nit->ViewAttributes() ?>>
 <?php echo $proveedor->nit->ListViewValue() ?></span>
-<input type="hidden" data-field="x_nit" name="x<?php echo $proveedor_grid->RowIndex ?>_nit" id="x<?php echo $proveedor_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($proveedor->nit->FormValue) ?>">
-<input type="hidden" data-field="x_nit" name="o<?php echo $proveedor_grid->RowIndex ?>_nit" id="o<?php echo $proveedor_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($proveedor->nit->OldValue) ?>">
+</span>
+<input type="hidden" data-table="proveedor" data-field="x_nit" name="x<?php echo $proveedor_grid->RowIndex ?>_nit" id="x<?php echo $proveedor_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($proveedor->nit->FormValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_nit" name="o<?php echo $proveedor_grid->RowIndex ?>_nit" id="o<?php echo $proveedor_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($proveedor->nit->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -389,20 +390,22 @@ $proveedor_grid->ListOptions->Render("body", "left", $proveedor_grid->RowCnt);
 		<td data-name="nombre"<?php echo $proveedor->nombre->CellAttributes() ?>>
 <?php if ($proveedor->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_nombre" class="form-group proveedor_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $proveedor_grid->RowIndex ?>_nombre" id="x<?php echo $proveedor_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->nombre->PlaceHolder) ?>" value="<?php echo $proveedor->nombre->EditValue ?>"<?php echo $proveedor->nombre->EditAttributes() ?>>
+<input type="text" data-table="proveedor" data-field="x_nombre" name="x<?php echo $proveedor_grid->RowIndex ?>_nombre" id="x<?php echo $proveedor_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->nombre->getPlaceHolder()) ?>" value="<?php echo $proveedor->nombre->EditValue ?>"<?php echo $proveedor->nombre->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_nombre" name="o<?php echo $proveedor_grid->RowIndex ?>_nombre" id="o<?php echo $proveedor_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($proveedor->nombre->OldValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_nombre" name="o<?php echo $proveedor_grid->RowIndex ?>_nombre" id="o<?php echo $proveedor_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($proveedor->nombre->OldValue) ?>">
 <?php } ?>
 <?php if ($proveedor->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_nombre" class="form-group proveedor_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $proveedor_grid->RowIndex ?>_nombre" id="x<?php echo $proveedor_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->nombre->PlaceHolder) ?>" value="<?php echo $proveedor->nombre->EditValue ?>"<?php echo $proveedor->nombre->EditAttributes() ?>>
+<input type="text" data-table="proveedor" data-field="x_nombre" name="x<?php echo $proveedor_grid->RowIndex ?>_nombre" id="x<?php echo $proveedor_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->nombre->getPlaceHolder()) ?>" value="<?php echo $proveedor->nombre->EditValue ?>"<?php echo $proveedor->nombre->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($proveedor->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_nombre" class="proveedor_nombre">
 <span<?php echo $proveedor->nombre->ViewAttributes() ?>>
 <?php echo $proveedor->nombre->ListViewValue() ?></span>
-<input type="hidden" data-field="x_nombre" name="x<?php echo $proveedor_grid->RowIndex ?>_nombre" id="x<?php echo $proveedor_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($proveedor->nombre->FormValue) ?>">
-<input type="hidden" data-field="x_nombre" name="o<?php echo $proveedor_grid->RowIndex ?>_nombre" id="o<?php echo $proveedor_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($proveedor->nombre->OldValue) ?>">
+</span>
+<input type="hidden" data-table="proveedor" data-field="x_nombre" name="x<?php echo $proveedor_grid->RowIndex ?>_nombre" id="x<?php echo $proveedor_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($proveedor->nombre->FormValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_nombre" name="o<?php echo $proveedor_grid->RowIndex ?>_nombre" id="o<?php echo $proveedor_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($proveedor->nombre->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -410,20 +413,22 @@ $proveedor_grid->ListOptions->Render("body", "left", $proveedor_grid->RowCnt);
 		<td data-name="direccion"<?php echo $proveedor->direccion->CellAttributes() ?>>
 <?php if ($proveedor->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_direccion" class="form-group proveedor_direccion">
-<input type="text" data-field="x_direccion" name="x<?php echo $proveedor_grid->RowIndex ?>_direccion" id="x<?php echo $proveedor_grid->RowIndex ?>_direccion" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->direccion->PlaceHolder) ?>" value="<?php echo $proveedor->direccion->EditValue ?>"<?php echo $proveedor->direccion->EditAttributes() ?>>
+<input type="text" data-table="proveedor" data-field="x_direccion" name="x<?php echo $proveedor_grid->RowIndex ?>_direccion" id="x<?php echo $proveedor_grid->RowIndex ?>_direccion" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->direccion->getPlaceHolder()) ?>" value="<?php echo $proveedor->direccion->EditValue ?>"<?php echo $proveedor->direccion->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_direccion" name="o<?php echo $proveedor_grid->RowIndex ?>_direccion" id="o<?php echo $proveedor_grid->RowIndex ?>_direccion" value="<?php echo ew_HtmlEncode($proveedor->direccion->OldValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_direccion" name="o<?php echo $proveedor_grid->RowIndex ?>_direccion" id="o<?php echo $proveedor_grid->RowIndex ?>_direccion" value="<?php echo ew_HtmlEncode($proveedor->direccion->OldValue) ?>">
 <?php } ?>
 <?php if ($proveedor->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_direccion" class="form-group proveedor_direccion">
-<input type="text" data-field="x_direccion" name="x<?php echo $proveedor_grid->RowIndex ?>_direccion" id="x<?php echo $proveedor_grid->RowIndex ?>_direccion" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->direccion->PlaceHolder) ?>" value="<?php echo $proveedor->direccion->EditValue ?>"<?php echo $proveedor->direccion->EditAttributes() ?>>
+<input type="text" data-table="proveedor" data-field="x_direccion" name="x<?php echo $proveedor_grid->RowIndex ?>_direccion" id="x<?php echo $proveedor_grid->RowIndex ?>_direccion" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->direccion->getPlaceHolder()) ?>" value="<?php echo $proveedor->direccion->EditValue ?>"<?php echo $proveedor->direccion->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($proveedor->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_direccion" class="proveedor_direccion">
 <span<?php echo $proveedor->direccion->ViewAttributes() ?>>
 <?php echo $proveedor->direccion->ListViewValue() ?></span>
-<input type="hidden" data-field="x_direccion" name="x<?php echo $proveedor_grid->RowIndex ?>_direccion" id="x<?php echo $proveedor_grid->RowIndex ?>_direccion" value="<?php echo ew_HtmlEncode($proveedor->direccion->FormValue) ?>">
-<input type="hidden" data-field="x_direccion" name="o<?php echo $proveedor_grid->RowIndex ?>_direccion" id="o<?php echo $proveedor_grid->RowIndex ?>_direccion" value="<?php echo ew_HtmlEncode($proveedor->direccion->OldValue) ?>">
+</span>
+<input type="hidden" data-table="proveedor" data-field="x_direccion" name="x<?php echo $proveedor_grid->RowIndex ?>_direccion" id="x<?php echo $proveedor_grid->RowIndex ?>_direccion" value="<?php echo ew_HtmlEncode($proveedor->direccion->FormValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_direccion" name="o<?php echo $proveedor_grid->RowIndex ?>_direccion" id="o<?php echo $proveedor_grid->RowIndex ?>_direccion" value="<?php echo ew_HtmlEncode($proveedor->direccion->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -438,37 +443,44 @@ $proveedor_grid->ListOptions->Render("body", "left", $proveedor_grid->RowCnt);
 <input type="hidden" id="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" name="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" value="<?php echo ew_HtmlEncode($proveedor->idpersona->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_idpersona" class="form-group proveedor_idpersona">
-<select data-field="x_idpersona" id="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" name="x<?php echo $proveedor_grid->RowIndex ?>_idpersona"<?php echo $proveedor->idpersona->EditAttributes() ?>>
+<select data-table="proveedor" data-field="x_idpersona" data-value-separator="<?php echo ew_HtmlEncode(is_array($proveedor->idpersona->DisplayValueSeparator) ? json_encode($proveedor->idpersona->DisplayValueSeparator) : $proveedor->idpersona->DisplayValueSeparator) ?>" id="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" name="x<?php echo $proveedor_grid->RowIndex ?>_idpersona"<?php echo $proveedor->idpersona->EditAttributes() ?>>
 <?php
 if (is_array($proveedor->idpersona->EditValue)) {
 	$arwrk = $proveedor->idpersona->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($proveedor->idpersona->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($proveedor->idpersona->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $proveedor->idpersona->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($proveedor->idpersona->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($proveedor->idpersona->CurrentValue) ?>" selected><?php echo $proveedor->idpersona->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $proveedor->idpersona->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idpersona`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `persona`";
- $sWhereWrk = "";
-
- // Call Lookup selecting
- $proveedor->Lookup_Selecting($proveedor->idpersona, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idpersona`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `persona`";
+$sWhereWrk = "";
+$proveedor->idpersona->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$proveedor->idpersona->LookupFilters += array("f0" => "`idpersona` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$proveedor->Lookup_Selecting($proveedor->idpersona, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $proveedor->idpersona->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $proveedor_grid->RowIndex ?>_idpersona" id="s_x<?php echo $proveedor_grid->RowIndex ?>_idpersona" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idpersona` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $proveedor_grid->RowIndex ?>_idpersona" id="s_x<?php echo $proveedor_grid->RowIndex ?>_idpersona" value="<?php echo $proveedor->idpersona->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
-<input type="hidden" data-field="x_idpersona" name="o<?php echo $proveedor_grid->RowIndex ?>_idpersona" id="o<?php echo $proveedor_grid->RowIndex ?>_idpersona" value="<?php echo ew_HtmlEncode($proveedor->idpersona->OldValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_idpersona" name="o<?php echo $proveedor_grid->RowIndex ?>_idpersona" id="o<?php echo $proveedor_grid->RowIndex ?>_idpersona" value="<?php echo ew_HtmlEncode($proveedor->idpersona->OldValue) ?>">
 <?php } ?>
 <?php if ($proveedor->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <?php if ($proveedor->idpersona->getSessionValue() <> "") { ?>
@@ -479,42 +491,51 @@ if (@$emptywrk) $proveedor->idpersona->OldValue = "";
 <input type="hidden" id="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" name="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" value="<?php echo ew_HtmlEncode($proveedor->idpersona->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_idpersona" class="form-group proveedor_idpersona">
-<select data-field="x_idpersona" id="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" name="x<?php echo $proveedor_grid->RowIndex ?>_idpersona"<?php echo $proveedor->idpersona->EditAttributes() ?>>
+<select data-table="proveedor" data-field="x_idpersona" data-value-separator="<?php echo ew_HtmlEncode(is_array($proveedor->idpersona->DisplayValueSeparator) ? json_encode($proveedor->idpersona->DisplayValueSeparator) : $proveedor->idpersona->DisplayValueSeparator) ?>" id="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" name="x<?php echo $proveedor_grid->RowIndex ?>_idpersona"<?php echo $proveedor->idpersona->EditAttributes() ?>>
 <?php
 if (is_array($proveedor->idpersona->EditValue)) {
 	$arwrk = $proveedor->idpersona->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($proveedor->idpersona->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($proveedor->idpersona->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $proveedor->idpersona->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($proveedor->idpersona->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($proveedor->idpersona->CurrentValue) ?>" selected><?php echo $proveedor->idpersona->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $proveedor->idpersona->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idpersona`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `persona`";
- $sWhereWrk = "";
-
- // Call Lookup selecting
- $proveedor->Lookup_Selecting($proveedor->idpersona, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idpersona`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `persona`";
+$sWhereWrk = "";
+$proveedor->idpersona->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$proveedor->idpersona->LookupFilters += array("f0" => "`idpersona` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$proveedor->Lookup_Selecting($proveedor->idpersona, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $proveedor->idpersona->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $proveedor_grid->RowIndex ?>_idpersona" id="s_x<?php echo $proveedor_grid->RowIndex ?>_idpersona" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idpersona` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $proveedor_grid->RowIndex ?>_idpersona" id="s_x<?php echo $proveedor_grid->RowIndex ?>_idpersona" value="<?php echo $proveedor->idpersona->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php } ?>
 <?php if ($proveedor->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_idpersona" class="proveedor_idpersona">
 <span<?php echo $proveedor->idpersona->ViewAttributes() ?>>
 <?php echo $proveedor->idpersona->ListViewValue() ?></span>
-<input type="hidden" data-field="x_idpersona" name="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" id="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" value="<?php echo ew_HtmlEncode($proveedor->idpersona->FormValue) ?>">
-<input type="hidden" data-field="x_idpersona" name="o<?php echo $proveedor_grid->RowIndex ?>_idpersona" id="o<?php echo $proveedor_grid->RowIndex ?>_idpersona" value="<?php echo ew_HtmlEncode($proveedor->idpersona->OldValue) ?>">
+</span>
+<input type="hidden" data-table="proveedor" data-field="x_idpersona" name="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" id="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" value="<?php echo ew_HtmlEncode($proveedor->idpersona->FormValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_idpersona" name="o<?php echo $proveedor_grid->RowIndex ?>_idpersona" id="o<?php echo $proveedor_grid->RowIndex ?>_idpersona" value="<?php echo ew_HtmlEncode($proveedor->idpersona->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -522,62 +543,68 @@ if (@$emptywrk) $proveedor->idpersona->OldValue = "";
 		<td data-name="estado"<?php echo $proveedor->estado->CellAttributes() ?>>
 <?php if ($proveedor->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_estado" class="form-group proveedor_estado">
-<div id="tp_x<?php echo $proveedor_grid->RowIndex ?>_estado" class="<?php echo EW_ITEM_TEMPLATE_CLASSNAME ?>"><input type="radio" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado" value="{value}"<?php echo $proveedor->estado->EditAttributes() ?>></div>
-<div id="dsl_x<?php echo $proveedor_grid->RowIndex ?>_estado" data-repeatcolumn="5" class="ewItemList">
+<div id="tp_x<?php echo $proveedor_grid->RowIndex ?>_estado" class="ewTemplate"><input type="radio" data-table="proveedor" data-field="x_estado" data-value-separator="<?php echo ew_HtmlEncode(is_array($proveedor->estado->DisplayValueSeparator) ? json_encode($proveedor->estado->DisplayValueSeparator) : $proveedor->estado->DisplayValueSeparator) ?>" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado" value="{value}"<?php echo $proveedor->estado->EditAttributes() ?>></div>
+<div id="dsl_x<?php echo $proveedor_grid->RowIndex ?>_estado" data-repeatcolumn="5" class="ewItemList" style="display: none;"><div>
 <?php
 $arwrk = $proveedor->estado->EditValue;
 if (is_array($arwrk)) {
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($proveedor->estado->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " checked=\"checked\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
-
-		// Note: No spacing within the LABEL tag
+		$selwrk = (strval($proveedor->estado->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " checked" : "";
+		if ($selwrk <> "")
+			$emptywrk = FALSE;
 ?>
-<?php echo ew_RepeatColumnTable($rowswrk, $rowcntwrk, 5, 1) ?>
-<label class="radio-inline"><input type="radio" data-field="x_estado" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado_<?php echo $rowcntwrk ?>" value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?><?php echo $proveedor->estado->EditAttributes() ?>><?php echo $arwrk[$rowcntwrk][1] ?></label>
-<?php echo ew_RepeatColumnTable($rowswrk, $rowcntwrk, 5, 2) ?>
+<label class="radio-inline"><input type="radio" data-table="proveedor" data-field="x_estado" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado_<?php echo $rowcntwrk ?>" value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?><?php echo $proveedor->estado->EditAttributes() ?>><?php echo $proveedor->estado->DisplayValue($arwrk[$rowcntwrk]) ?></label>
 <?php
 	}
+	if ($emptywrk && strval($proveedor->estado->CurrentValue) <> "") {
+?>
+<label class="radio-inline"><input type="radio" data-table="proveedor" data-field="x_estado" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado_<?php echo $rowswrk ?>" value="<?php echo ew_HtmlEncode($proveedor->estado->CurrentValue) ?>" checked<?php echo $proveedor->estado->EditAttributes() ?>><?php echo $proveedor->estado->CurrentValue ?></label>
+<?php
+    }
 }
 if (@$emptywrk) $proveedor->estado->OldValue = "";
 ?>
-</div>
+</div></div>
 </span>
-<input type="hidden" data-field="x_estado" name="o<?php echo $proveedor_grid->RowIndex ?>_estado" id="o<?php echo $proveedor_grid->RowIndex ?>_estado" value="<?php echo ew_HtmlEncode($proveedor->estado->OldValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_estado" name="o<?php echo $proveedor_grid->RowIndex ?>_estado" id="o<?php echo $proveedor_grid->RowIndex ?>_estado" value="<?php echo ew_HtmlEncode($proveedor->estado->OldValue) ?>">
 <?php } ?>
 <?php if ($proveedor->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_estado" class="form-group proveedor_estado">
-<div id="tp_x<?php echo $proveedor_grid->RowIndex ?>_estado" class="<?php echo EW_ITEM_TEMPLATE_CLASSNAME ?>"><input type="radio" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado" value="{value}"<?php echo $proveedor->estado->EditAttributes() ?>></div>
-<div id="dsl_x<?php echo $proveedor_grid->RowIndex ?>_estado" data-repeatcolumn="5" class="ewItemList">
+<div id="tp_x<?php echo $proveedor_grid->RowIndex ?>_estado" class="ewTemplate"><input type="radio" data-table="proveedor" data-field="x_estado" data-value-separator="<?php echo ew_HtmlEncode(is_array($proveedor->estado->DisplayValueSeparator) ? json_encode($proveedor->estado->DisplayValueSeparator) : $proveedor->estado->DisplayValueSeparator) ?>" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado" value="{value}"<?php echo $proveedor->estado->EditAttributes() ?>></div>
+<div id="dsl_x<?php echo $proveedor_grid->RowIndex ?>_estado" data-repeatcolumn="5" class="ewItemList" style="display: none;"><div>
 <?php
 $arwrk = $proveedor->estado->EditValue;
 if (is_array($arwrk)) {
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($proveedor->estado->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " checked=\"checked\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
-
-		// Note: No spacing within the LABEL tag
+		$selwrk = (strval($proveedor->estado->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " checked" : "";
+		if ($selwrk <> "")
+			$emptywrk = FALSE;
 ?>
-<?php echo ew_RepeatColumnTable($rowswrk, $rowcntwrk, 5, 1) ?>
-<label class="radio-inline"><input type="radio" data-field="x_estado" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado_<?php echo $rowcntwrk ?>" value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?><?php echo $proveedor->estado->EditAttributes() ?>><?php echo $arwrk[$rowcntwrk][1] ?></label>
-<?php echo ew_RepeatColumnTable($rowswrk, $rowcntwrk, 5, 2) ?>
+<label class="radio-inline"><input type="radio" data-table="proveedor" data-field="x_estado" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado_<?php echo $rowcntwrk ?>" value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?><?php echo $proveedor->estado->EditAttributes() ?>><?php echo $proveedor->estado->DisplayValue($arwrk[$rowcntwrk]) ?></label>
 <?php
 	}
+	if ($emptywrk && strval($proveedor->estado->CurrentValue) <> "") {
+?>
+<label class="radio-inline"><input type="radio" data-table="proveedor" data-field="x_estado" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado_<?php echo $rowswrk ?>" value="<?php echo ew_HtmlEncode($proveedor->estado->CurrentValue) ?>" checked<?php echo $proveedor->estado->EditAttributes() ?>><?php echo $proveedor->estado->CurrentValue ?></label>
+<?php
+    }
 }
 if (@$emptywrk) $proveedor->estado->OldValue = "";
 ?>
-</div>
+</div></div>
 </span>
 <?php } ?>
 <?php if ($proveedor->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_estado" class="proveedor_estado">
 <span<?php echo $proveedor->estado->ViewAttributes() ?>>
 <?php echo $proveedor->estado->ListViewValue() ?></span>
-<input type="hidden" data-field="x_estado" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado" value="<?php echo ew_HtmlEncode($proveedor->estado->FormValue) ?>">
-<input type="hidden" data-field="x_estado" name="o<?php echo $proveedor_grid->RowIndex ?>_estado" id="o<?php echo $proveedor_grid->RowIndex ?>_estado" value="<?php echo ew_HtmlEncode($proveedor->estado->OldValue) ?>">
+</span>
+<input type="hidden" data-table="proveedor" data-field="x_estado" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado" value="<?php echo ew_HtmlEncode($proveedor->estado->FormValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_estado" name="o<?php echo $proveedor_grid->RowIndex ?>_estado" id="o<?php echo $proveedor_grid->RowIndex ?>_estado" value="<?php echo ew_HtmlEncode($proveedor->estado->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -585,20 +612,22 @@ if (@$emptywrk) $proveedor->estado->OldValue = "";
 		<td data-name="fecha_insercion"<?php echo $proveedor->fecha_insercion->CellAttributes() ?>>
 <?php if ($proveedor->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_fecha_insercion" class="form-group proveedor_fecha_insercion">
-<input type="text" data-field="x_fecha_insercion" name="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" placeholder="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->PlaceHolder) ?>" value="<?php echo $proveedor->fecha_insercion->EditValue ?>"<?php echo $proveedor->fecha_insercion->EditAttributes() ?>>
+<input type="text" data-table="proveedor" data-field="x_fecha_insercion" data-format="7" name="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" placeholder="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->getPlaceHolder()) ?>" value="<?php echo $proveedor->fecha_insercion->EditValue ?>"<?php echo $proveedor->fecha_insercion->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_fecha_insercion" name="o<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="o<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" value="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->OldValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_fecha_insercion" name="o<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="o<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" value="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->OldValue) ?>">
 <?php } ?>
 <?php if ($proveedor->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_fecha_insercion" class="form-group proveedor_fecha_insercion">
-<input type="text" data-field="x_fecha_insercion" name="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" placeholder="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->PlaceHolder) ?>" value="<?php echo $proveedor->fecha_insercion->EditValue ?>"<?php echo $proveedor->fecha_insercion->EditAttributes() ?>>
+<input type="text" data-table="proveedor" data-field="x_fecha_insercion" data-format="7" name="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" placeholder="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->getPlaceHolder()) ?>" value="<?php echo $proveedor->fecha_insercion->EditValue ?>"<?php echo $proveedor->fecha_insercion->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($proveedor->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $proveedor_grid->RowCnt ?>_proveedor_fecha_insercion" class="proveedor_fecha_insercion">
 <span<?php echo $proveedor->fecha_insercion->ViewAttributes() ?>>
 <?php echo $proveedor->fecha_insercion->ListViewValue() ?></span>
-<input type="hidden" data-field="x_fecha_insercion" name="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" value="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->FormValue) ?>">
-<input type="hidden" data-field="x_fecha_insercion" name="o<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="o<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" value="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->OldValue) ?>">
+</span>
+<input type="hidden" data-table="proveedor" data-field="x_fecha_insercion" name="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" value="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->FormValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_fecha_insercion" name="o<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="o<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" value="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -645,71 +674,71 @@ fproveedorgrid.UpdateOpts(<?php echo $proveedor_grid->RowIndex ?>);
 $proveedor_grid->ListOptions->Render("body", "left", $proveedor_grid->RowIndex);
 ?>
 	<?php if ($proveedor->codigo->Visible) { // codigo ?>
-		<td>
+		<td data-name="codigo">
 <?php if ($proveedor->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_proveedor_codigo" class="form-group proveedor_codigo">
-<input type="text" data-field="x_codigo" name="x<?php echo $proveedor_grid->RowIndex ?>_codigo" id="x<?php echo $proveedor_grid->RowIndex ?>_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->codigo->PlaceHolder) ?>" value="<?php echo $proveedor->codigo->EditValue ?>"<?php echo $proveedor->codigo->EditAttributes() ?>>
+<input type="text" data-table="proveedor" data-field="x_codigo" name="x<?php echo $proveedor_grid->RowIndex ?>_codigo" id="x<?php echo $proveedor_grid->RowIndex ?>_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->codigo->getPlaceHolder()) ?>" value="<?php echo $proveedor->codigo->EditValue ?>"<?php echo $proveedor->codigo->EditAttributes() ?>>
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_proveedor_codigo" class="form-group proveedor_codigo">
 <span<?php echo $proveedor->codigo->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $proveedor->codigo->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_codigo" name="x<?php echo $proveedor_grid->RowIndex ?>_codigo" id="x<?php echo $proveedor_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($proveedor->codigo->FormValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_codigo" name="x<?php echo $proveedor_grid->RowIndex ?>_codigo" id="x<?php echo $proveedor_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($proveedor->codigo->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_codigo" name="o<?php echo $proveedor_grid->RowIndex ?>_codigo" id="o<?php echo $proveedor_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($proveedor->codigo->OldValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_codigo" name="o<?php echo $proveedor_grid->RowIndex ?>_codigo" id="o<?php echo $proveedor_grid->RowIndex ?>_codigo" value="<?php echo ew_HtmlEncode($proveedor->codigo->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($proveedor->nit->Visible) { // nit ?>
-		<td>
+		<td data-name="nit">
 <?php if ($proveedor->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_proveedor_nit" class="form-group proveedor_nit">
-<input type="text" data-field="x_nit" name="x<?php echo $proveedor_grid->RowIndex ?>_nit" id="x<?php echo $proveedor_grid->RowIndex ?>_nit" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->nit->PlaceHolder) ?>" value="<?php echo $proveedor->nit->EditValue ?>"<?php echo $proveedor->nit->EditAttributes() ?>>
+<input type="text" data-table="proveedor" data-field="x_nit" name="x<?php echo $proveedor_grid->RowIndex ?>_nit" id="x<?php echo $proveedor_grid->RowIndex ?>_nit" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->nit->getPlaceHolder()) ?>" value="<?php echo $proveedor->nit->EditValue ?>"<?php echo $proveedor->nit->EditAttributes() ?>>
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_proveedor_nit" class="form-group proveedor_nit">
 <span<?php echo $proveedor->nit->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $proveedor->nit->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_nit" name="x<?php echo $proveedor_grid->RowIndex ?>_nit" id="x<?php echo $proveedor_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($proveedor->nit->FormValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_nit" name="x<?php echo $proveedor_grid->RowIndex ?>_nit" id="x<?php echo $proveedor_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($proveedor->nit->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_nit" name="o<?php echo $proveedor_grid->RowIndex ?>_nit" id="o<?php echo $proveedor_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($proveedor->nit->OldValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_nit" name="o<?php echo $proveedor_grid->RowIndex ?>_nit" id="o<?php echo $proveedor_grid->RowIndex ?>_nit" value="<?php echo ew_HtmlEncode($proveedor->nit->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($proveedor->nombre->Visible) { // nombre ?>
-		<td>
+		<td data-name="nombre">
 <?php if ($proveedor->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_proveedor_nombre" class="form-group proveedor_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $proveedor_grid->RowIndex ?>_nombre" id="x<?php echo $proveedor_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->nombre->PlaceHolder) ?>" value="<?php echo $proveedor->nombre->EditValue ?>"<?php echo $proveedor->nombre->EditAttributes() ?>>
+<input type="text" data-table="proveedor" data-field="x_nombre" name="x<?php echo $proveedor_grid->RowIndex ?>_nombre" id="x<?php echo $proveedor_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->nombre->getPlaceHolder()) ?>" value="<?php echo $proveedor->nombre->EditValue ?>"<?php echo $proveedor->nombre->EditAttributes() ?>>
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_proveedor_nombre" class="form-group proveedor_nombre">
 <span<?php echo $proveedor->nombre->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $proveedor->nombre->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_nombre" name="x<?php echo $proveedor_grid->RowIndex ?>_nombre" id="x<?php echo $proveedor_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($proveedor->nombre->FormValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_nombre" name="x<?php echo $proveedor_grid->RowIndex ?>_nombre" id="x<?php echo $proveedor_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($proveedor->nombre->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_nombre" name="o<?php echo $proveedor_grid->RowIndex ?>_nombre" id="o<?php echo $proveedor_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($proveedor->nombre->OldValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_nombre" name="o<?php echo $proveedor_grid->RowIndex ?>_nombre" id="o<?php echo $proveedor_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($proveedor->nombre->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($proveedor->direccion->Visible) { // direccion ?>
-		<td>
+		<td data-name="direccion">
 <?php if ($proveedor->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_proveedor_direccion" class="form-group proveedor_direccion">
-<input type="text" data-field="x_direccion" name="x<?php echo $proveedor_grid->RowIndex ?>_direccion" id="x<?php echo $proveedor_grid->RowIndex ?>_direccion" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->direccion->PlaceHolder) ?>" value="<?php echo $proveedor->direccion->EditValue ?>"<?php echo $proveedor->direccion->EditAttributes() ?>>
+<input type="text" data-table="proveedor" data-field="x_direccion" name="x<?php echo $proveedor_grid->RowIndex ?>_direccion" id="x<?php echo $proveedor_grid->RowIndex ?>_direccion" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($proveedor->direccion->getPlaceHolder()) ?>" value="<?php echo $proveedor->direccion->EditValue ?>"<?php echo $proveedor->direccion->EditAttributes() ?>>
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_proveedor_direccion" class="form-group proveedor_direccion">
 <span<?php echo $proveedor->direccion->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $proveedor->direccion->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_direccion" name="x<?php echo $proveedor_grid->RowIndex ?>_direccion" id="x<?php echo $proveedor_grid->RowIndex ?>_direccion" value="<?php echo ew_HtmlEncode($proveedor->direccion->FormValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_direccion" name="x<?php echo $proveedor_grid->RowIndex ?>_direccion" id="x<?php echo $proveedor_grid->RowIndex ?>_direccion" value="<?php echo ew_HtmlEncode($proveedor->direccion->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_direccion" name="o<?php echo $proveedor_grid->RowIndex ?>_direccion" id="o<?php echo $proveedor_grid->RowIndex ?>_direccion" value="<?php echo ew_HtmlEncode($proveedor->direccion->OldValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_direccion" name="o<?php echo $proveedor_grid->RowIndex ?>_direccion" id="o<?php echo $proveedor_grid->RowIndex ?>_direccion" value="<?php echo ew_HtmlEncode($proveedor->direccion->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($proveedor->idpersona->Visible) { // idpersona ?>
-		<td>
+		<td data-name="idpersona">
 <?php if ($proveedor->CurrentAction <> "F") { ?>
 <?php if ($proveedor->idpersona->getSessionValue() <> "") { ?>
 <span id="el$rowindex$_proveedor_idpersona" class="form-group proveedor_idpersona">
@@ -719,34 +748,41 @@ $proveedor_grid->ListOptions->Render("body", "left", $proveedor_grid->RowIndex);
 <input type="hidden" id="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" name="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" value="<?php echo ew_HtmlEncode($proveedor->idpersona->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el$rowindex$_proveedor_idpersona" class="form-group proveedor_idpersona">
-<select data-field="x_idpersona" id="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" name="x<?php echo $proveedor_grid->RowIndex ?>_idpersona"<?php echo $proveedor->idpersona->EditAttributes() ?>>
+<select data-table="proveedor" data-field="x_idpersona" data-value-separator="<?php echo ew_HtmlEncode(is_array($proveedor->idpersona->DisplayValueSeparator) ? json_encode($proveedor->idpersona->DisplayValueSeparator) : $proveedor->idpersona->DisplayValueSeparator) ?>" id="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" name="x<?php echo $proveedor_grid->RowIndex ?>_idpersona"<?php echo $proveedor->idpersona->EditAttributes() ?>>
 <?php
 if (is_array($proveedor->idpersona->EditValue)) {
 	$arwrk = $proveedor->idpersona->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($proveedor->idpersona->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($proveedor->idpersona->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $proveedor->idpersona->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($proveedor->idpersona->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($proveedor->idpersona->CurrentValue) ?>" selected><?php echo $proveedor->idpersona->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $proveedor->idpersona->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idpersona`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `persona`";
- $sWhereWrk = "";
-
- // Call Lookup selecting
- $proveedor->Lookup_Selecting($proveedor->idpersona, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk = "SELECT `idpersona`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `persona`";
+$sWhereWrk = "";
+$proveedor->idpersona->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$proveedor->idpersona->LookupFilters += array("f0" => "`idpersona` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$proveedor->Lookup_Selecting($proveedor->idpersona, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $proveedor->idpersona->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $proveedor_grid->RowIndex ?>_idpersona" id="s_x<?php echo $proveedor_grid->RowIndex ?>_idpersona" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idpersona` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $proveedor_grid->RowIndex ?>_idpersona" id="s_x<?php echo $proveedor_grid->RowIndex ?>_idpersona" value="<?php echo $proveedor->idpersona->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php } else { ?>
@@ -754,62 +790,64 @@ if (@$emptywrk) $proveedor->idpersona->OldValue = "";
 <span<?php echo $proveedor->idpersona->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $proveedor->idpersona->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_idpersona" name="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" id="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" value="<?php echo ew_HtmlEncode($proveedor->idpersona->FormValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_idpersona" name="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" id="x<?php echo $proveedor_grid->RowIndex ?>_idpersona" value="<?php echo ew_HtmlEncode($proveedor->idpersona->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_idpersona" name="o<?php echo $proveedor_grid->RowIndex ?>_idpersona" id="o<?php echo $proveedor_grid->RowIndex ?>_idpersona" value="<?php echo ew_HtmlEncode($proveedor->idpersona->OldValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_idpersona" name="o<?php echo $proveedor_grid->RowIndex ?>_idpersona" id="o<?php echo $proveedor_grid->RowIndex ?>_idpersona" value="<?php echo ew_HtmlEncode($proveedor->idpersona->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($proveedor->estado->Visible) { // estado ?>
-		<td>
+		<td data-name="estado">
 <?php if ($proveedor->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_proveedor_estado" class="form-group proveedor_estado">
-<div id="tp_x<?php echo $proveedor_grid->RowIndex ?>_estado" class="<?php echo EW_ITEM_TEMPLATE_CLASSNAME ?>"><input type="radio" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado" value="{value}"<?php echo $proveedor->estado->EditAttributes() ?>></div>
-<div id="dsl_x<?php echo $proveedor_grid->RowIndex ?>_estado" data-repeatcolumn="5" class="ewItemList">
+<div id="tp_x<?php echo $proveedor_grid->RowIndex ?>_estado" class="ewTemplate"><input type="radio" data-table="proveedor" data-field="x_estado" data-value-separator="<?php echo ew_HtmlEncode(is_array($proveedor->estado->DisplayValueSeparator) ? json_encode($proveedor->estado->DisplayValueSeparator) : $proveedor->estado->DisplayValueSeparator) ?>" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado" value="{value}"<?php echo $proveedor->estado->EditAttributes() ?>></div>
+<div id="dsl_x<?php echo $proveedor_grid->RowIndex ?>_estado" data-repeatcolumn="5" class="ewItemList" style="display: none;"><div>
 <?php
 $arwrk = $proveedor->estado->EditValue;
 if (is_array($arwrk)) {
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($proveedor->estado->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " checked=\"checked\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
-
-		// Note: No spacing within the LABEL tag
+		$selwrk = (strval($proveedor->estado->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " checked" : "";
+		if ($selwrk <> "")
+			$emptywrk = FALSE;
 ?>
-<?php echo ew_RepeatColumnTable($rowswrk, $rowcntwrk, 5, 1) ?>
-<label class="radio-inline"><input type="radio" data-field="x_estado" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado_<?php echo $rowcntwrk ?>" value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?><?php echo $proveedor->estado->EditAttributes() ?>><?php echo $arwrk[$rowcntwrk][1] ?></label>
-<?php echo ew_RepeatColumnTable($rowswrk, $rowcntwrk, 5, 2) ?>
+<label class="radio-inline"><input type="radio" data-table="proveedor" data-field="x_estado" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado_<?php echo $rowcntwrk ?>" value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?><?php echo $proveedor->estado->EditAttributes() ?>><?php echo $proveedor->estado->DisplayValue($arwrk[$rowcntwrk]) ?></label>
 <?php
 	}
+	if ($emptywrk && strval($proveedor->estado->CurrentValue) <> "") {
+?>
+<label class="radio-inline"><input type="radio" data-table="proveedor" data-field="x_estado" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado_<?php echo $rowswrk ?>" value="<?php echo ew_HtmlEncode($proveedor->estado->CurrentValue) ?>" checked<?php echo $proveedor->estado->EditAttributes() ?>><?php echo $proveedor->estado->CurrentValue ?></label>
+<?php
+    }
 }
 if (@$emptywrk) $proveedor->estado->OldValue = "";
 ?>
-</div>
+</div></div>
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_proveedor_estado" class="form-group proveedor_estado">
 <span<?php echo $proveedor->estado->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $proveedor->estado->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_estado" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado" value="<?php echo ew_HtmlEncode($proveedor->estado->FormValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_estado" name="x<?php echo $proveedor_grid->RowIndex ?>_estado" id="x<?php echo $proveedor_grid->RowIndex ?>_estado" value="<?php echo ew_HtmlEncode($proveedor->estado->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_estado" name="o<?php echo $proveedor_grid->RowIndex ?>_estado" id="o<?php echo $proveedor_grid->RowIndex ?>_estado" value="<?php echo ew_HtmlEncode($proveedor->estado->OldValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_estado" name="o<?php echo $proveedor_grid->RowIndex ?>_estado" id="o<?php echo $proveedor_grid->RowIndex ?>_estado" value="<?php echo ew_HtmlEncode($proveedor->estado->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($proveedor->fecha_insercion->Visible) { // fecha_insercion ?>
-		<td>
+		<td data-name="fecha_insercion">
 <?php if ($proveedor->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_proveedor_fecha_insercion" class="form-group proveedor_fecha_insercion">
-<input type="text" data-field="x_fecha_insercion" name="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" placeholder="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->PlaceHolder) ?>" value="<?php echo $proveedor->fecha_insercion->EditValue ?>"<?php echo $proveedor->fecha_insercion->EditAttributes() ?>>
+<input type="text" data-table="proveedor" data-field="x_fecha_insercion" data-format="7" name="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" placeholder="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->getPlaceHolder()) ?>" value="<?php echo $proveedor->fecha_insercion->EditValue ?>"<?php echo $proveedor->fecha_insercion->EditAttributes() ?>>
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_proveedor_fecha_insercion" class="form-group proveedor_fecha_insercion">
 <span<?php echo $proveedor->fecha_insercion->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $proveedor->fecha_insercion->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_fecha_insercion" name="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" value="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->FormValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_fecha_insercion" name="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="x<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" value="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_fecha_insercion" name="o<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="o<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" value="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->OldValue) ?>">
+<input type="hidden" data-table="proveedor" data-field="x_fecha_insercion" name="o<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" id="o<?php echo $proveedor_grid->RowIndex ?>_fecha_insercion" value="<?php echo ew_HtmlEncode($proveedor->fecha_insercion->OldValue) ?>">
 </td>
 	<?php } ?>
 <?php
@@ -848,7 +886,7 @@ if ($proveedor_grid->Recordset)
 	$proveedor_grid->Recordset->Close();
 ?>
 <?php if ($proveedor_grid->ShowOtherOptions) { ?>
-<div class="ewGridLowerPanel">
+<div class="panel-footer ewGridLowerPanel">
 <?php
 	foreach ($proveedor_grid->OtherOptions as &$option)
 		$option->Render("body", "bottom");

@@ -18,13 +18,8 @@ $sucursal_grid->Page_Render();
 <?php if ($sucursal->Export == "") { ?>
 <script type="text/javascript">
 
-// Page object
-var sucursal_grid = new ew_Page("sucursal_grid");
-sucursal_grid.PageID = "grid"; // Page ID
-var EW_PAGE_ID = sucursal_grid.PageID; // For backward compatibility
-
 // Form object
-var fsucursalgrid = new ew_Form("fsucursalgrid");
+var fsucursalgrid = new ew_Form("fsucursalgrid", "grid");
 fsucursalgrid.FormKeyCountName = '<?php echo $sucursal_grid->FormKeyCountName ?>';
 
 // Validate form
@@ -32,7 +27,6 @@ fsucursalgrid.Validate = function() {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
-	this.PostAutoSuggest();
 	if ($fobj.find("#a_confirm").val() == "F")
 		return true;
 	var elm, felm, uelm, addcnt = 0;
@@ -55,9 +49,6 @@ fsucursalgrid.Validate = function() {
 			elm = this.GetElements("x" + infix + "_idpais");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $sucursal->idpais->FldCaption(), $sucursal->idpais->ReqErrMsg)) ?>");
-
-			// Set up row object
-			ew_ElementsToRow(fobj);
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -93,8 +84,10 @@ fsucursalgrid.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-fsucursalgrid.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
-fsucursalgrid.Lists["x_idpais"] = {"LinkField":"x_idpais","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+fsucursalgrid.Lists["x_casa_matriz"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fsucursalgrid.Lists["x_casa_matriz"].Options = <?php echo json_encode($sucursal->casa_matriz->Options()) ?>;
+fsucursalgrid.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fsucursalgrid.Lists["x_idpais"] = {"LinkField":"x_idpais","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
 // Form object for search
 </script>
@@ -102,7 +95,7 @@ fsucursalgrid.Lists["x_idpais"] = {"LinkField":"x_idpais","Ajax":true,"AutoFill"
 <?php
 if ($sucursal->CurrentAction == "gridadd") {
 	if ($sucursal->CurrentMode == "copy") {
-		$bSelectLimit = EW_SELECT_LIMIT;
+		$bSelectLimit = $sucursal_grid->UseSelectLimit;
 		if ($bSelectLimit) {
 			$sucursal_grid->TotalRecs = $sucursal->SelectRecordCount();
 			$sucursal_grid->Recordset = $sucursal_grid->LoadRecordset($sucursal_grid->StartRec-1, $sucursal_grid->DisplayRecs);
@@ -120,11 +113,12 @@ if ($sucursal->CurrentAction == "gridadd") {
 	$sucursal_grid->TotalRecs = $sucursal_grid->DisplayRecs;
 	$sucursal_grid->StopRec = $sucursal_grid->DisplayRecs;
 } else {
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $sucursal_grid->UseSelectLimit;
 	if ($bSelectLimit) {
-		$sucursal_grid->TotalRecs = $sucursal->SelectRecordCount();
+		if ($sucursal_grid->TotalRecs <= 0)
+			$sucursal_grid->TotalRecs = $sucursal->SelectRecordCount();
 	} else {
-		if ($sucursal_grid->Recordset = $sucursal_grid->LoadRecordset())
+		if (!$sucursal_grid->Recordset && ($sucursal_grid->Recordset = $sucursal_grid->LoadRecordset()))
 			$sucursal_grid->TotalRecs = $sucursal_grid->Recordset->RecordCount();
 	}
 	$sucursal_grid->StartRec = 1;
@@ -147,7 +141,7 @@ $sucursal_grid->RenderOtherOptions();
 $sucursal_grid->ShowMessage();
 ?>
 <?php if ($sucursal_grid->TotalRecs > 0 || $sucursal->CurrentAction <> "") { ?>
-<div class="ewGrid">
+<div class="panel panel-default ewGrid">
 <div id="fsucursalgrid" class="ewForm form-inline">
 <div id="gmp_sucursal" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
 <table id="tbl_sucursalgrid" class="table ewTable">
@@ -155,6 +149,9 @@ $sucursal_grid->ShowMessage();
 <thead><!-- Table header -->
 	<tr class="ewTableHeader">
 <?php
+
+// Header row
+$sucursal_grid->RowType = EW_ROWTYPE_HEADER;
 
 // Render list options
 $sucursal_grid->RenderListOptions();
@@ -221,7 +218,7 @@ if ($objForm) {
 $sucursal_grid->RecCnt = $sucursal_grid->StartRec - 1;
 if ($sucursal_grid->Recordset && !$sucursal_grid->Recordset->EOF) {
 	$sucursal_grid->Recordset->MoveFirst();
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $sucursal_grid->UseSelectLimit;
 	if (!$bSelectLimit && $sucursal_grid->StartRec > 1)
 		$sucursal_grid->Recordset->Move($sucursal_grid->StartRec - 1);
 } elseif (!$sucursal->AllowAddDeleteRow && $sucursal_grid->StopRec == 0) {
@@ -311,73 +308,85 @@ $sucursal_grid->ListOptions->Render("body", "left", $sucursal_grid->RowCnt);
 		<td data-name="nombre"<?php echo $sucursal->nombre->CellAttributes() ?>>
 <?php if ($sucursal->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $sucursal_grid->RowCnt ?>_sucursal_nombre" class="form-group sucursal_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $sucursal_grid->RowIndex ?>_nombre" id="x<?php echo $sucursal_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($sucursal->nombre->PlaceHolder) ?>" value="<?php echo $sucursal->nombre->EditValue ?>"<?php echo $sucursal->nombre->EditAttributes() ?>>
+<input type="text" data-table="sucursal" data-field="x_nombre" name="x<?php echo $sucursal_grid->RowIndex ?>_nombre" id="x<?php echo $sucursal_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($sucursal->nombre->getPlaceHolder()) ?>" value="<?php echo $sucursal->nombre->EditValue ?>"<?php echo $sucursal->nombre->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_nombre" name="o<?php echo $sucursal_grid->RowIndex ?>_nombre" id="o<?php echo $sucursal_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($sucursal->nombre->OldValue) ?>">
+<input type="hidden" data-table="sucursal" data-field="x_nombre" name="o<?php echo $sucursal_grid->RowIndex ?>_nombre" id="o<?php echo $sucursal_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($sucursal->nombre->OldValue) ?>">
 <?php } ?>
 <?php if ($sucursal->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $sucursal_grid->RowCnt ?>_sucursal_nombre" class="form-group sucursal_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $sucursal_grid->RowIndex ?>_nombre" id="x<?php echo $sucursal_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($sucursal->nombre->PlaceHolder) ?>" value="<?php echo $sucursal->nombre->EditValue ?>"<?php echo $sucursal->nombre->EditAttributes() ?>>
+<input type="text" data-table="sucursal" data-field="x_nombre" name="x<?php echo $sucursal_grid->RowIndex ?>_nombre" id="x<?php echo $sucursal_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($sucursal->nombre->getPlaceHolder()) ?>" value="<?php echo $sucursal->nombre->EditValue ?>"<?php echo $sucursal->nombre->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($sucursal->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $sucursal_grid->RowCnt ?>_sucursal_nombre" class="sucursal_nombre">
 <span<?php echo $sucursal->nombre->ViewAttributes() ?>>
 <?php echo $sucursal->nombre->ListViewValue() ?></span>
-<input type="hidden" data-field="x_nombre" name="x<?php echo $sucursal_grid->RowIndex ?>_nombre" id="x<?php echo $sucursal_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($sucursal->nombre->FormValue) ?>">
-<input type="hidden" data-field="x_nombre" name="o<?php echo $sucursal_grid->RowIndex ?>_nombre" id="o<?php echo $sucursal_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($sucursal->nombre->OldValue) ?>">
+</span>
+<input type="hidden" data-table="sucursal" data-field="x_nombre" name="x<?php echo $sucursal_grid->RowIndex ?>_nombre" id="x<?php echo $sucursal_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($sucursal->nombre->FormValue) ?>">
+<input type="hidden" data-table="sucursal" data-field="x_nombre" name="o<?php echo $sucursal_grid->RowIndex ?>_nombre" id="o<?php echo $sucursal_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($sucursal->nombre->OldValue) ?>">
 <?php } ?>
 <a id="<?php echo $sucursal_grid->PageObjName . "_row_" . $sucursal_grid->RowCnt ?>"></a></td>
 	<?php } ?>
 <?php if ($sucursal->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<input type="hidden" data-field="x_idsucursal" name="x<?php echo $sucursal_grid->RowIndex ?>_idsucursal" id="x<?php echo $sucursal_grid->RowIndex ?>_idsucursal" value="<?php echo ew_HtmlEncode($sucursal->idsucursal->CurrentValue) ?>">
-<input type="hidden" data-field="x_idsucursal" name="o<?php echo $sucursal_grid->RowIndex ?>_idsucursal" id="o<?php echo $sucursal_grid->RowIndex ?>_idsucursal" value="<?php echo ew_HtmlEncode($sucursal->idsucursal->OldValue) ?>">
+<input type="hidden" data-table="sucursal" data-field="x_idsucursal" name="x<?php echo $sucursal_grid->RowIndex ?>_idsucursal" id="x<?php echo $sucursal_grid->RowIndex ?>_idsucursal" value="<?php echo ew_HtmlEncode($sucursal->idsucursal->CurrentValue) ?>">
+<input type="hidden" data-table="sucursal" data-field="x_idsucursal" name="o<?php echo $sucursal_grid->RowIndex ?>_idsucursal" id="o<?php echo $sucursal_grid->RowIndex ?>_idsucursal" value="<?php echo ew_HtmlEncode($sucursal->idsucursal->OldValue) ?>">
 <?php } ?>
 <?php if ($sucursal->RowType == EW_ROWTYPE_EDIT || $sucursal->CurrentMode == "edit") { ?>
-<input type="hidden" data-field="x_idsucursal" name="x<?php echo $sucursal_grid->RowIndex ?>_idsucursal" id="x<?php echo $sucursal_grid->RowIndex ?>_idsucursal" value="<?php echo ew_HtmlEncode($sucursal->idsucursal->CurrentValue) ?>">
+<input type="hidden" data-table="sucursal" data-field="x_idsucursal" name="x<?php echo $sucursal_grid->RowIndex ?>_idsucursal" id="x<?php echo $sucursal_grid->RowIndex ?>_idsucursal" value="<?php echo ew_HtmlEncode($sucursal->idsucursal->CurrentValue) ?>">
 <?php } ?>
 	<?php if ($sucursal->casa_matriz->Visible) { // casa_matriz ?>
 		<td data-name="casa_matriz"<?php echo $sucursal->casa_matriz->CellAttributes() ?>>
 <?php if ($sucursal->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $sucursal_grid->RowCnt ?>_sucursal_casa_matriz" class="form-group sucursal_casa_matriz">
-<select data-field="x_casa_matriz" id="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" name="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz"<?php echo $sucursal->casa_matriz->EditAttributes() ?>>
+<select data-table="sucursal" data-field="x_casa_matriz" data-value-separator="<?php echo ew_HtmlEncode(is_array($sucursal->casa_matriz->DisplayValueSeparator) ? json_encode($sucursal->casa_matriz->DisplayValueSeparator) : $sucursal->casa_matriz->DisplayValueSeparator) ?>" id="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" name="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz"<?php echo $sucursal->casa_matriz->EditAttributes() ?>>
 <?php
 if (is_array($sucursal->casa_matriz->EditValue)) {
 	$arwrk = $sucursal->casa_matriz->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($sucursal->casa_matriz->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($sucursal->casa_matriz->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $sucursal->casa_matriz->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($sucursal->casa_matriz->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($sucursal->casa_matriz->CurrentValue) ?>" selected><?php echo $sucursal->casa_matriz->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $sucursal->casa_matriz->OldValue = "";
 ?>
 </select>
 </span>
-<input type="hidden" data-field="x_casa_matriz" name="o<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" id="o<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" value="<?php echo ew_HtmlEncode($sucursal->casa_matriz->OldValue) ?>">
+<input type="hidden" data-table="sucursal" data-field="x_casa_matriz" name="o<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" id="o<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" value="<?php echo ew_HtmlEncode($sucursal->casa_matriz->OldValue) ?>">
 <?php } ?>
 <?php if ($sucursal->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $sucursal_grid->RowCnt ?>_sucursal_casa_matriz" class="form-group sucursal_casa_matriz">
-<select data-field="x_casa_matriz" id="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" name="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz"<?php echo $sucursal->casa_matriz->EditAttributes() ?>>
+<select data-table="sucursal" data-field="x_casa_matriz" data-value-separator="<?php echo ew_HtmlEncode(is_array($sucursal->casa_matriz->DisplayValueSeparator) ? json_encode($sucursal->casa_matriz->DisplayValueSeparator) : $sucursal->casa_matriz->DisplayValueSeparator) ?>" id="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" name="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz"<?php echo $sucursal->casa_matriz->EditAttributes() ?>>
 <?php
 if (is_array($sucursal->casa_matriz->EditValue)) {
 	$arwrk = $sucursal->casa_matriz->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($sucursal->casa_matriz->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($sucursal->casa_matriz->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $sucursal->casa_matriz->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($sucursal->casa_matriz->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($sucursal->casa_matriz->CurrentValue) ?>" selected><?php echo $sucursal->casa_matriz->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $sucursal->casa_matriz->OldValue = "";
 ?>
@@ -385,10 +394,12 @@ if (@$emptywrk) $sucursal->casa_matriz->OldValue = "";
 </span>
 <?php } ?>
 <?php if ($sucursal->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $sucursal_grid->RowCnt ?>_sucursal_casa_matriz" class="sucursal_casa_matriz">
 <span<?php echo $sucursal->casa_matriz->ViewAttributes() ?>>
 <?php echo $sucursal->casa_matriz->ListViewValue() ?></span>
-<input type="hidden" data-field="x_casa_matriz" name="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" id="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" value="<?php echo ew_HtmlEncode($sucursal->casa_matriz->FormValue) ?>">
-<input type="hidden" data-field="x_casa_matriz" name="o<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" id="o<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" value="<?php echo ew_HtmlEncode($sucursal->casa_matriz->OldValue) ?>">
+</span>
+<input type="hidden" data-table="sucursal" data-field="x_casa_matriz" name="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" id="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" value="<?php echo ew_HtmlEncode($sucursal->casa_matriz->FormValue) ?>">
+<input type="hidden" data-table="sucursal" data-field="x_casa_matriz" name="o<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" id="o<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" value="<?php echo ew_HtmlEncode($sucursal->casa_matriz->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -403,42 +414,47 @@ if (@$emptywrk) $sucursal->casa_matriz->OldValue = "";
 <input type="hidden" id="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" name="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($sucursal->idempresa->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el<?php echo $sucursal_grid->RowCnt ?>_sucursal_idempresa" class="form-group sucursal_idempresa">
-<select data-field="x_idempresa" id="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" name="x<?php echo $sucursal_grid->RowIndex ?>_idempresa"<?php echo $sucursal->idempresa->EditAttributes() ?>>
+<select data-table="sucursal" data-field="x_idempresa" data-value-separator="<?php echo ew_HtmlEncode(is_array($sucursal->idempresa->DisplayValueSeparator) ? json_encode($sucursal->idempresa->DisplayValueSeparator) : $sucursal->idempresa->DisplayValueSeparator) ?>" id="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" name="x<?php echo $sucursal_grid->RowIndex ?>_idempresa"<?php echo $sucursal->idempresa->EditAttributes() ?>>
 <?php
 if (is_array($sucursal->idempresa->EditValue)) {
 	$arwrk = $sucursal->idempresa->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($sucursal->idempresa->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($sucursal->idempresa->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $sucursal->idempresa->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($sucursal->idempresa->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($sucursal->idempresa->CurrentValue) ?>" selected><?php echo $sucursal->idempresa->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $sucursal->idempresa->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $sucursal->Lookup_Selecting($sucursal->idempresa, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
- $sSqlWrk .= " ORDER BY `nombre`";
+$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$sucursal->idempresa->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$sucursal->idempresa->LookupFilters += array("f0" => "`idempresa` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$sucursal->Lookup_Selecting($sucursal->idempresa, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk .= " ORDER BY `nombre`";
+if ($sSqlWrk <> "") $sucursal->idempresa->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $sucursal_grid->RowIndex ?>_idempresa" id="s_x<?php echo $sucursal_grid->RowIndex ?>_idempresa" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idempresa` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $sucursal_grid->RowIndex ?>_idempresa" id="s_x<?php echo $sucursal_grid->RowIndex ?>_idempresa" value="<?php echo $sucursal->idempresa->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
-<input type="hidden" data-field="x_idempresa" name="o<?php echo $sucursal_grid->RowIndex ?>_idempresa" id="o<?php echo $sucursal_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($sucursal->idempresa->OldValue) ?>">
+<input type="hidden" data-table="sucursal" data-field="x_idempresa" name="o<?php echo $sucursal_grid->RowIndex ?>_idempresa" id="o<?php echo $sucursal_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($sucursal->idempresa->OldValue) ?>">
 <?php } ?>
 <?php if ($sucursal->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <?php if ($sucursal->idempresa->getSessionValue() <> "") { ?>
@@ -449,47 +465,54 @@ if (@$emptywrk) $sucursal->idempresa->OldValue = "";
 <input type="hidden" id="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" name="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($sucursal->idempresa->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el<?php echo $sucursal_grid->RowCnt ?>_sucursal_idempresa" class="form-group sucursal_idempresa">
-<select data-field="x_idempresa" id="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" name="x<?php echo $sucursal_grid->RowIndex ?>_idempresa"<?php echo $sucursal->idempresa->EditAttributes() ?>>
+<select data-table="sucursal" data-field="x_idempresa" data-value-separator="<?php echo ew_HtmlEncode(is_array($sucursal->idempresa->DisplayValueSeparator) ? json_encode($sucursal->idempresa->DisplayValueSeparator) : $sucursal->idempresa->DisplayValueSeparator) ?>" id="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" name="x<?php echo $sucursal_grid->RowIndex ?>_idempresa"<?php echo $sucursal->idempresa->EditAttributes() ?>>
 <?php
 if (is_array($sucursal->idempresa->EditValue)) {
 	$arwrk = $sucursal->idempresa->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($sucursal->idempresa->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($sucursal->idempresa->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $sucursal->idempresa->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($sucursal->idempresa->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($sucursal->idempresa->CurrentValue) ?>" selected><?php echo $sucursal->idempresa->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $sucursal->idempresa->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $sucursal->Lookup_Selecting($sucursal->idempresa, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
- $sSqlWrk .= " ORDER BY `nombre`";
+$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$sucursal->idempresa->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$sucursal->idempresa->LookupFilters += array("f0" => "`idempresa` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$sucursal->Lookup_Selecting($sucursal->idempresa, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk .= " ORDER BY `nombre`";
+if ($sSqlWrk <> "") $sucursal->idempresa->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $sucursal_grid->RowIndex ?>_idempresa" id="s_x<?php echo $sucursal_grid->RowIndex ?>_idempresa" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idempresa` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $sucursal_grid->RowIndex ?>_idempresa" id="s_x<?php echo $sucursal_grid->RowIndex ?>_idempresa" value="<?php echo $sucursal->idempresa->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php } ?>
 <?php if ($sucursal->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $sucursal_grid->RowCnt ?>_sucursal_idempresa" class="sucursal_idempresa">
 <span<?php echo $sucursal->idempresa->ViewAttributes() ?>>
 <?php echo $sucursal->idempresa->ListViewValue() ?></span>
-<input type="hidden" data-field="x_idempresa" name="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" id="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($sucursal->idempresa->FormValue) ?>">
-<input type="hidden" data-field="x_idempresa" name="o<?php echo $sucursal_grid->RowIndex ?>_idempresa" id="o<?php echo $sucursal_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($sucursal->idempresa->OldValue) ?>">
+</span>
+<input type="hidden" data-table="sucursal" data-field="x_idempresa" name="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" id="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($sucursal->idempresa->FormValue) ?>">
+<input type="hidden" data-table="sucursal" data-field="x_idempresa" name="o<?php echo $sucursal_grid->RowIndex ?>_idempresa" id="o<?php echo $sucursal_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($sucursal->idempresa->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -497,84 +520,96 @@ if (@$emptywrk) $sucursal->idempresa->OldValue = "";
 		<td data-name="idpais"<?php echo $sucursal->idpais->CellAttributes() ?>>
 <?php if ($sucursal->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $sucursal_grid->RowCnt ?>_sucursal_idpais" class="form-group sucursal_idpais">
-<select data-field="x_idpais" id="x<?php echo $sucursal_grid->RowIndex ?>_idpais" name="x<?php echo $sucursal_grid->RowIndex ?>_idpais"<?php echo $sucursal->idpais->EditAttributes() ?>>
+<select data-table="sucursal" data-field="x_idpais" data-value-separator="<?php echo ew_HtmlEncode(is_array($sucursal->idpais->DisplayValueSeparator) ? json_encode($sucursal->idpais->DisplayValueSeparator) : $sucursal->idpais->DisplayValueSeparator) ?>" id="x<?php echo $sucursal_grid->RowIndex ?>_idpais" name="x<?php echo $sucursal_grid->RowIndex ?>_idpais"<?php echo $sucursal->idpais->EditAttributes() ?>>
 <?php
 if (is_array($sucursal->idpais->EditValue)) {
 	$arwrk = $sucursal->idpais->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($sucursal->idpais->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($sucursal->idpais->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $sucursal->idpais->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($sucursal->idpais->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($sucursal->idpais->CurrentValue) ?>" selected><?php echo $sucursal->idpais->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $sucursal->idpais->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $sucursal->Lookup_Selecting($sucursal->idpais, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
- $sSqlWrk .= " ORDER BY `nombre`";
+$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$sucursal->idpais->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$sucursal->idpais->LookupFilters += array("f0" => "`idpais` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$sucursal->Lookup_Selecting($sucursal->idpais, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk .= " ORDER BY `nombre`";
+if ($sSqlWrk <> "") $sucursal->idpais->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $sucursal_grid->RowIndex ?>_idpais" id="s_x<?php echo $sucursal_grid->RowIndex ?>_idpais" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idpais` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $sucursal_grid->RowIndex ?>_idpais" id="s_x<?php echo $sucursal_grid->RowIndex ?>_idpais" value="<?php echo $sucursal->idpais->LookupFilterQuery() ?>">
 </span>
-<input type="hidden" data-field="x_idpais" name="o<?php echo $sucursal_grid->RowIndex ?>_idpais" id="o<?php echo $sucursal_grid->RowIndex ?>_idpais" value="<?php echo ew_HtmlEncode($sucursal->idpais->OldValue) ?>">
+<input type="hidden" data-table="sucursal" data-field="x_idpais" name="o<?php echo $sucursal_grid->RowIndex ?>_idpais" id="o<?php echo $sucursal_grid->RowIndex ?>_idpais" value="<?php echo ew_HtmlEncode($sucursal->idpais->OldValue) ?>">
 <?php } ?>
 <?php if ($sucursal->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $sucursal_grid->RowCnt ?>_sucursal_idpais" class="form-group sucursal_idpais">
-<select data-field="x_idpais" id="x<?php echo $sucursal_grid->RowIndex ?>_idpais" name="x<?php echo $sucursal_grid->RowIndex ?>_idpais"<?php echo $sucursal->idpais->EditAttributes() ?>>
+<select data-table="sucursal" data-field="x_idpais" data-value-separator="<?php echo ew_HtmlEncode(is_array($sucursal->idpais->DisplayValueSeparator) ? json_encode($sucursal->idpais->DisplayValueSeparator) : $sucursal->idpais->DisplayValueSeparator) ?>" id="x<?php echo $sucursal_grid->RowIndex ?>_idpais" name="x<?php echo $sucursal_grid->RowIndex ?>_idpais"<?php echo $sucursal->idpais->EditAttributes() ?>>
 <?php
 if (is_array($sucursal->idpais->EditValue)) {
 	$arwrk = $sucursal->idpais->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($sucursal->idpais->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($sucursal->idpais->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $sucursal->idpais->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($sucursal->idpais->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($sucursal->idpais->CurrentValue) ?>" selected><?php echo $sucursal->idpais->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $sucursal->idpais->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $sucursal->Lookup_Selecting($sucursal->idpais, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
- $sSqlWrk .= " ORDER BY `nombre`";
+$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$sucursal->idpais->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$sucursal->idpais->LookupFilters += array("f0" => "`idpais` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$sucursal->Lookup_Selecting($sucursal->idpais, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk .= " ORDER BY `nombre`";
+if ($sSqlWrk <> "") $sucursal->idpais->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $sucursal_grid->RowIndex ?>_idpais" id="s_x<?php echo $sucursal_grid->RowIndex ?>_idpais" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idpais` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $sucursal_grid->RowIndex ?>_idpais" id="s_x<?php echo $sucursal_grid->RowIndex ?>_idpais" value="<?php echo $sucursal->idpais->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php if ($sucursal->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $sucursal_grid->RowCnt ?>_sucursal_idpais" class="sucursal_idpais">
 <span<?php echo $sucursal->idpais->ViewAttributes() ?>>
 <?php echo $sucursal->idpais->ListViewValue() ?></span>
-<input type="hidden" data-field="x_idpais" name="x<?php echo $sucursal_grid->RowIndex ?>_idpais" id="x<?php echo $sucursal_grid->RowIndex ?>_idpais" value="<?php echo ew_HtmlEncode($sucursal->idpais->FormValue) ?>">
-<input type="hidden" data-field="x_idpais" name="o<?php echo $sucursal_grid->RowIndex ?>_idpais" id="o<?php echo $sucursal_grid->RowIndex ?>_idpais" value="<?php echo ew_HtmlEncode($sucursal->idpais->OldValue) ?>">
+</span>
+<input type="hidden" data-table="sucursal" data-field="x_idpais" name="x<?php echo $sucursal_grid->RowIndex ?>_idpais" id="x<?php echo $sucursal_grid->RowIndex ?>_idpais" value="<?php echo ew_HtmlEncode($sucursal->idpais->FormValue) ?>">
+<input type="hidden" data-table="sucursal" data-field="x_idpais" name="o<?php echo $sucursal_grid->RowIndex ?>_idpais" id="o<?php echo $sucursal_grid->RowIndex ?>_idpais" value="<?php echo ew_HtmlEncode($sucursal->idpais->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -621,40 +656,45 @@ fsucursalgrid.UpdateOpts(<?php echo $sucursal_grid->RowIndex ?>);
 $sucursal_grid->ListOptions->Render("body", "left", $sucursal_grid->RowIndex);
 ?>
 	<?php if ($sucursal->nombre->Visible) { // nombre ?>
-		<td>
+		<td data-name="nombre">
 <?php if ($sucursal->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_sucursal_nombre" class="form-group sucursal_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $sucursal_grid->RowIndex ?>_nombre" id="x<?php echo $sucursal_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($sucursal->nombre->PlaceHolder) ?>" value="<?php echo $sucursal->nombre->EditValue ?>"<?php echo $sucursal->nombre->EditAttributes() ?>>
+<input type="text" data-table="sucursal" data-field="x_nombre" name="x<?php echo $sucursal_grid->RowIndex ?>_nombre" id="x<?php echo $sucursal_grid->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($sucursal->nombre->getPlaceHolder()) ?>" value="<?php echo $sucursal->nombre->EditValue ?>"<?php echo $sucursal->nombre->EditAttributes() ?>>
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_sucursal_nombre" class="form-group sucursal_nombre">
 <span<?php echo $sucursal->nombre->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $sucursal->nombre->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_nombre" name="x<?php echo $sucursal_grid->RowIndex ?>_nombre" id="x<?php echo $sucursal_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($sucursal->nombre->FormValue) ?>">
+<input type="hidden" data-table="sucursal" data-field="x_nombre" name="x<?php echo $sucursal_grid->RowIndex ?>_nombre" id="x<?php echo $sucursal_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($sucursal->nombre->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_nombre" name="o<?php echo $sucursal_grid->RowIndex ?>_nombre" id="o<?php echo $sucursal_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($sucursal->nombre->OldValue) ?>">
+<input type="hidden" data-table="sucursal" data-field="x_nombre" name="o<?php echo $sucursal_grid->RowIndex ?>_nombre" id="o<?php echo $sucursal_grid->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($sucursal->nombre->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($sucursal->casa_matriz->Visible) { // casa_matriz ?>
-		<td>
+		<td data-name="casa_matriz">
 <?php if ($sucursal->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_sucursal_casa_matriz" class="form-group sucursal_casa_matriz">
-<select data-field="x_casa_matriz" id="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" name="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz"<?php echo $sucursal->casa_matriz->EditAttributes() ?>>
+<select data-table="sucursal" data-field="x_casa_matriz" data-value-separator="<?php echo ew_HtmlEncode(is_array($sucursal->casa_matriz->DisplayValueSeparator) ? json_encode($sucursal->casa_matriz->DisplayValueSeparator) : $sucursal->casa_matriz->DisplayValueSeparator) ?>" id="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" name="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz"<?php echo $sucursal->casa_matriz->EditAttributes() ?>>
 <?php
 if (is_array($sucursal->casa_matriz->EditValue)) {
 	$arwrk = $sucursal->casa_matriz->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($sucursal->casa_matriz->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($sucursal->casa_matriz->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $sucursal->casa_matriz->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($sucursal->casa_matriz->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($sucursal->casa_matriz->CurrentValue) ?>" selected><?php echo $sucursal->casa_matriz->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $sucursal->casa_matriz->OldValue = "";
 ?>
@@ -665,13 +705,13 @@ if (@$emptywrk) $sucursal->casa_matriz->OldValue = "";
 <span<?php echo $sucursal->casa_matriz->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $sucursal->casa_matriz->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_casa_matriz" name="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" id="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" value="<?php echo ew_HtmlEncode($sucursal->casa_matriz->FormValue) ?>">
+<input type="hidden" data-table="sucursal" data-field="x_casa_matriz" name="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" id="x<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" value="<?php echo ew_HtmlEncode($sucursal->casa_matriz->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_casa_matriz" name="o<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" id="o<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" value="<?php echo ew_HtmlEncode($sucursal->casa_matriz->OldValue) ?>">
+<input type="hidden" data-table="sucursal" data-field="x_casa_matriz" name="o<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" id="o<?php echo $sucursal_grid->RowIndex ?>_casa_matriz" value="<?php echo ew_HtmlEncode($sucursal->casa_matriz->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($sucursal->idempresa->Visible) { // idempresa ?>
-		<td>
+		<td data-name="idempresa">
 <?php if ($sucursal->CurrentAction <> "F") { ?>
 <?php if ($sucursal->idempresa->getSessionValue() <> "") { ?>
 <span id="el$rowindex$_sucursal_idempresa" class="form-group sucursal_idempresa">
@@ -681,39 +721,44 @@ if (@$emptywrk) $sucursal->casa_matriz->OldValue = "";
 <input type="hidden" id="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" name="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($sucursal->idempresa->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el$rowindex$_sucursal_idempresa" class="form-group sucursal_idempresa">
-<select data-field="x_idempresa" id="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" name="x<?php echo $sucursal_grid->RowIndex ?>_idempresa"<?php echo $sucursal->idempresa->EditAttributes() ?>>
+<select data-table="sucursal" data-field="x_idempresa" data-value-separator="<?php echo ew_HtmlEncode(is_array($sucursal->idempresa->DisplayValueSeparator) ? json_encode($sucursal->idempresa->DisplayValueSeparator) : $sucursal->idempresa->DisplayValueSeparator) ?>" id="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" name="x<?php echo $sucursal_grid->RowIndex ?>_idempresa"<?php echo $sucursal->idempresa->EditAttributes() ?>>
 <?php
 if (is_array($sucursal->idempresa->EditValue)) {
 	$arwrk = $sucursal->idempresa->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($sucursal->idempresa->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($sucursal->idempresa->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $sucursal->idempresa->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($sucursal->idempresa->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($sucursal->idempresa->CurrentValue) ?>" selected><?php echo $sucursal->idempresa->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $sucursal->idempresa->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $sucursal->Lookup_Selecting($sucursal->idempresa, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
- $sSqlWrk .= " ORDER BY `nombre`";
+$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$sucursal->idempresa->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$sucursal->idempresa->LookupFilters += array("f0" => "`idempresa` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$sucursal->Lookup_Selecting($sucursal->idempresa, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk .= " ORDER BY `nombre`";
+if ($sSqlWrk <> "") $sucursal->idempresa->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $sucursal_grid->RowIndex ?>_idempresa" id="s_x<?php echo $sucursal_grid->RowIndex ?>_idempresa" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idempresa` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $sucursal_grid->RowIndex ?>_idempresa" id="s_x<?php echo $sucursal_grid->RowIndex ?>_idempresa" value="<?php echo $sucursal->idempresa->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php } else { ?>
@@ -721,57 +766,62 @@ if (@$emptywrk) $sucursal->idempresa->OldValue = "";
 <span<?php echo $sucursal->idempresa->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $sucursal->idempresa->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_idempresa" name="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" id="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($sucursal->idempresa->FormValue) ?>">
+<input type="hidden" data-table="sucursal" data-field="x_idempresa" name="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" id="x<?php echo $sucursal_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($sucursal->idempresa->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_idempresa" name="o<?php echo $sucursal_grid->RowIndex ?>_idempresa" id="o<?php echo $sucursal_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($sucursal->idempresa->OldValue) ?>">
+<input type="hidden" data-table="sucursal" data-field="x_idempresa" name="o<?php echo $sucursal_grid->RowIndex ?>_idempresa" id="o<?php echo $sucursal_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($sucursal->idempresa->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($sucursal->idpais->Visible) { // idpais ?>
-		<td>
+		<td data-name="idpais">
 <?php if ($sucursal->CurrentAction <> "F") { ?>
 <span id="el$rowindex$_sucursal_idpais" class="form-group sucursal_idpais">
-<select data-field="x_idpais" id="x<?php echo $sucursal_grid->RowIndex ?>_idpais" name="x<?php echo $sucursal_grid->RowIndex ?>_idpais"<?php echo $sucursal->idpais->EditAttributes() ?>>
+<select data-table="sucursal" data-field="x_idpais" data-value-separator="<?php echo ew_HtmlEncode(is_array($sucursal->idpais->DisplayValueSeparator) ? json_encode($sucursal->idpais->DisplayValueSeparator) : $sucursal->idpais->DisplayValueSeparator) ?>" id="x<?php echo $sucursal_grid->RowIndex ?>_idpais" name="x<?php echo $sucursal_grid->RowIndex ?>_idpais"<?php echo $sucursal->idpais->EditAttributes() ?>>
 <?php
 if (is_array($sucursal->idpais->EditValue)) {
 	$arwrk = $sucursal->idpais->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($sucursal->idpais->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($sucursal->idpais->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $sucursal->idpais->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($sucursal->idpais->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($sucursal->idpais->CurrentValue) ?>" selected><?php echo $sucursal->idpais->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $sucursal->idpais->OldValue = "";
 ?>
 </select>
 <?php
- $sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
- $sWhereWrk = "";
- $lookuptblfilter = "`estado` = 'Activo'";
- if (strval($lookuptblfilter) <> "") {
- 	ew_AddFilter($sWhereWrk, $lookuptblfilter);
- }
-
- // Call Lookup selecting
- $sucursal->Lookup_Selecting($sucursal->idpais, $sWhereWrk);
- if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
- $sSqlWrk .= " ORDER BY `nombre`";
+$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$sucursal->idpais->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$sucursal->idpais->LookupFilters += array("f0" => "`idpais` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$sucursal->Lookup_Selecting($sucursal->idpais, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+$sSqlWrk .= " ORDER BY `nombre`";
+if ($sSqlWrk <> "") $sucursal->idpais->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $sucursal_grid->RowIndex ?>_idpais" id="s_x<?php echo $sucursal_grid->RowIndex ?>_idpais" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idpais` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $sucursal_grid->RowIndex ?>_idpais" id="s_x<?php echo $sucursal_grid->RowIndex ?>_idpais" value="<?php echo $sucursal->idpais->LookupFilterQuery() ?>">
 </span>
 <?php } else { ?>
 <span id="el$rowindex$_sucursal_idpais" class="form-group sucursal_idpais">
 <span<?php echo $sucursal->idpais->ViewAttributes() ?>>
 <p class="form-control-static"><?php echo $sucursal->idpais->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-field="x_idpais" name="x<?php echo $sucursal_grid->RowIndex ?>_idpais" id="x<?php echo $sucursal_grid->RowIndex ?>_idpais" value="<?php echo ew_HtmlEncode($sucursal->idpais->FormValue) ?>">
+<input type="hidden" data-table="sucursal" data-field="x_idpais" name="x<?php echo $sucursal_grid->RowIndex ?>_idpais" id="x<?php echo $sucursal_grid->RowIndex ?>_idpais" value="<?php echo ew_HtmlEncode($sucursal->idpais->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-field="x_idpais" name="o<?php echo $sucursal_grid->RowIndex ?>_idpais" id="o<?php echo $sucursal_grid->RowIndex ?>_idpais" value="<?php echo ew_HtmlEncode($sucursal->idpais->OldValue) ?>">
+<input type="hidden" data-table="sucursal" data-field="x_idpais" name="o<?php echo $sucursal_grid->RowIndex ?>_idpais" id="o<?php echo $sucursal_grid->RowIndex ?>_idpais" value="<?php echo ew_HtmlEncode($sucursal->idpais->OldValue) ?>">
 </td>
 	<?php } ?>
 <?php
@@ -810,7 +860,7 @@ if ($sucursal_grid->Recordset)
 	$sucursal_grid->Recordset->Close();
 ?>
 <?php if ($sucursal_grid->ShowOtherOptions) { ?>
-<div class="ewGridLowerPanel">
+<div class="panel-footer ewGridLowerPanel">
 <?php
 	foreach ($sucursal_grid->OtherOptions as &$option)
 		$option->Render("body", "bottom");

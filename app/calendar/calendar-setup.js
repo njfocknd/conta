@@ -124,7 +124,7 @@ Calendar.setup = function (params) {
 		if (update && p.singleClick && cal.dateClicked)
 			cal.callCloseHandler();
 	};
-
+	
 	if (params.flat != null) {
 		if (typeof params.flat == "string")
 			params.flat = document.getElementById(params.flat);

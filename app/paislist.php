@@ -1,14 +1,13 @@
 <?php
 if (session_id() == "") session_start(); // Initialize Session data
 ob_start(); // Turn on output buffering
-$EW_RELATIVE_PATH = "";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "paisinfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "personagridcls.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
+<?php include_once "ewcfg12.php" ?>
+<?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
+<?php include_once "phpfn12.php" ?>
+<?php include_once "paisinfo.php" ?>
+<?php include_once "personagridcls.php" ?>
+<?php include_once "userfn12.php" ?>
 <?php
 
 //
@@ -116,6 +115,30 @@ class cpais_list extends cpais {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
 	}
 
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
 	// Show message
 	function ShowMessage() {
 		$hidden = FALSE;
@@ -196,6 +219,7 @@ class cpais_list extends cpais {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -208,7 +232,7 @@ class cpais_list extends cpais {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -229,6 +253,7 @@ class cpais_list extends cpais {
 	function __construct() {
 		global $conn, $Language;
 		$GLOBALS["Page"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -269,7 +294,7 @@ class cpais_list extends cpais {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 
 		// List options
 		$this->ListOptions = new cListOptions();
@@ -290,6 +315,14 @@ class cpais_list extends cpais {
 		$this->OtherOptions['action'] = new cListOptions();
 		$this->OtherOptions['action']->Tag = "div";
 		$this->OtherOptions['action']->TagClassName = "ewActionOption";
+
+		// Filter options
+		$this->FilterOptions = new cListOptions();
+		$this->FilterOptions->Tag = "div";
+		$this->FilterOptions->TagClassName = "ewFilterOption fpaislistsrch";
+
+		// List actions
+		$this->ListActions = new cListActions();
 	}
 
 	// 
@@ -348,16 +381,24 @@ class cpais_list extends cpais {
 		// Setup other options
 		$this->SetupOtherOptions();
 
-		// Set "checkbox" visible
-		if (count($this->CustomActions) > 0)
-			$this->ListOptions->Items["checkbox"]->Visible = TRUE;
+		// Set up custom action (compatible with old version)
+		foreach ($this->CustomActions as $name => $action)
+			$this->ListActions->Add($name, $action);
+
+		// Show checkbox column if multiple action
+		foreach ($this->ListActions->Items as $listaction) {
+			if ($listaction->Select == EW_ACTION_MULTIPLE && $listaction->Allow) {
+				$this->ListOptions->Items["checkbox"]->Visible = TRUE;
+				break;
+			}
+		}
 	}
 
 	//
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Page Unload event
 		$this->Page_Unload();
@@ -385,7 +426,7 @@ class cpais_list extends cpais {
 		$this->Page_Redirecting($url);
 
 		 // Close connection
-		$conn->Close();
+		ew_CloseConn();
 
 		// Go to URL if specified
 		if ($url <> "") {
@@ -401,6 +442,10 @@ class cpais_list extends cpais {
 	var $ExportOptions; // Export options
 	var $SearchOptions; // Search options
 	var $OtherOptions = array(); // Other options
+	var $FilterOptions; // Filter options
+	var $ListActions; // List actions
+	var $SelectedCount = 0;
+	var $SelectedIndex = 0;
 	var $DisplayRecs = 20;
 	var $StartRec;
 	var $StopRec;
@@ -431,6 +476,7 @@ class cpais_list extends cpais {
 	var $MultiSelectKey;
 	var $Command;
 	var $RestoreSearch = FALSE;
+	var $DetailPages;
 	var $Recordset;
 	var $OldRecordset;
 
@@ -449,8 +495,9 @@ class cpais_list extends cpais {
 		$this->Command = strtolower(@$_GET["cmd"]);
 		if ($this->IsPageRequest()) { // Validate request
 
-			// Process custom action first
-			$this->ProcessCustomAction();
+			// Process list action first
+			if ($this->ProcessListAction()) // Ajax request
+				$this->Page_Terminate();
 
 			// Handle reset command
 			$this->ResetCmd();
@@ -470,9 +517,11 @@ class cpais_list extends cpais {
 				$this->ListOptions->UseButtonGroup = FALSE; // Disable button group
 			}
 
-			// Hide export options
-			if ($this->Export <> "" || $this->CurrentAction <> "")
+			// Hide options
+			if ($this->Export <> "" || $this->CurrentAction <> "") {
 				$this->ExportOptions->HideAllOptions();
+				$this->FilterOptions->HideAllOptions();
+			}
 
 			// Hide other options
 			if ($this->Export <> "") {
@@ -485,6 +534,9 @@ class cpais_list extends cpais {
 
 			// Get basic search values
 			$this->LoadBasicSearchValues();
+
+			// Restore filter list
+			$this->RestoreFilterList();
 
 			// Restore search parms from Session if not searching / reset / export
 			if (($this->Export <> "" || $this->Command <> "search" && $this->Command <> "reset" && $this->Command <> "resetall") && $this->CheckSearchParms())
@@ -546,12 +598,14 @@ class cpais_list extends cpais {
 		$this->CurrentFilter = "";
 
 		// Load record count first
-		$bSelectLimit = EW_SELECT_LIMIT;
-		if ($bSelectLimit) {
-			$this->TotalRecs = $this->SelectRecordCount();
-		} else {
-			if ($this->Recordset = $this->LoadRecordset())
-				$this->TotalRecs = $this->Recordset->RecordCount();
+		if (!$this->IsAddOrEdit()) {
+			$bSelectLimit = $this->UseSelectLimit;
+			if ($bSelectLimit) {
+				$this->TotalRecs = $this->SelectRecordCount();
+			} else {
+				if ($this->Recordset = $this->LoadRecordset())
+					$this->TotalRecs = $this->Recordset->RecordCount();
+			}
 		}
 
 		// Search options
@@ -596,6 +650,68 @@ class cpais_list extends cpais {
 		return TRUE;
 	}
 
+	// Get list of filters
+	function GetFilterList() {
+
+		// Initialize
+		$sFilterList = "";
+		$sFilterList = ew_Concat($sFilterList, $this->idpais->AdvancedSearch->ToJSON(), ","); // Field idpais
+		$sFilterList = ew_Concat($sFilterList, $this->nombre->AdvancedSearch->ToJSON(), ","); // Field nombre
+		$sFilterList = ew_Concat($sFilterList, $this->estado->AdvancedSearch->ToJSON(), ","); // Field estado
+		$sFilterList = ew_Concat($sFilterList, $this->fecha_insercion->AdvancedSearch->ToJSON(), ","); // Field fecha_insercion
+		if ($this->BasicSearch->Keyword <> "") {
+			$sWrk = "\"" . EW_TABLE_BASIC_SEARCH . "\":\"" . ew_JsEncode2($this->BasicSearch->Keyword) . "\",\"" . EW_TABLE_BASIC_SEARCH_TYPE . "\":\"" . ew_JsEncode2($this->BasicSearch->Type) . "\"";
+			$sFilterList = ew_Concat($sFilterList, $sWrk, ",");
+		}
+
+		// Return filter list in json
+		return ($sFilterList <> "") ? "{" . $sFilterList . "}" : "null";
+	}
+
+	// Restore list of filters
+	function RestoreFilterList() {
+
+		// Return if not reset filter
+		if (@$_POST["cmd"] <> "resetfilter")
+			return FALSE;
+		$filter = json_decode(ew_StripSlashes(@$_POST["filter"]), TRUE);
+		$this->Command = "search";
+
+		// Field idpais
+		$this->idpais->AdvancedSearch->SearchValue = @$filter["x_idpais"];
+		$this->idpais->AdvancedSearch->SearchOperator = @$filter["z_idpais"];
+		$this->idpais->AdvancedSearch->SearchCondition = @$filter["v_idpais"];
+		$this->idpais->AdvancedSearch->SearchValue2 = @$filter["y_idpais"];
+		$this->idpais->AdvancedSearch->SearchOperator2 = @$filter["w_idpais"];
+		$this->idpais->AdvancedSearch->Save();
+
+		// Field nombre
+		$this->nombre->AdvancedSearch->SearchValue = @$filter["x_nombre"];
+		$this->nombre->AdvancedSearch->SearchOperator = @$filter["z_nombre"];
+		$this->nombre->AdvancedSearch->SearchCondition = @$filter["v_nombre"];
+		$this->nombre->AdvancedSearch->SearchValue2 = @$filter["y_nombre"];
+		$this->nombre->AdvancedSearch->SearchOperator2 = @$filter["w_nombre"];
+		$this->nombre->AdvancedSearch->Save();
+
+		// Field estado
+		$this->estado->AdvancedSearch->SearchValue = @$filter["x_estado"];
+		$this->estado->AdvancedSearch->SearchOperator = @$filter["z_estado"];
+		$this->estado->AdvancedSearch->SearchCondition = @$filter["v_estado"];
+		$this->estado->AdvancedSearch->SearchValue2 = @$filter["y_estado"];
+		$this->estado->AdvancedSearch->SearchOperator2 = @$filter["w_estado"];
+		$this->estado->AdvancedSearch->Save();
+
+		// Field fecha_insercion
+		$this->fecha_insercion->AdvancedSearch->SearchValue = @$filter["x_fecha_insercion"];
+		$this->fecha_insercion->AdvancedSearch->SearchOperator = @$filter["z_fecha_insercion"];
+		$this->fecha_insercion->AdvancedSearch->SearchCondition = @$filter["v_fecha_insercion"];
+		$this->fecha_insercion->AdvancedSearch->SearchValue2 = @$filter["y_fecha_insercion"];
+		$this->fecha_insercion->AdvancedSearch->SearchOperator2 = @$filter["w_fecha_insercion"];
+		$this->fecha_insercion->AdvancedSearch->Save();
+		$this->BasicSearch->setKeyword(@$filter[EW_TABLE_BASIC_SEARCH]);
+		$this->BasicSearch->setType(@$filter[EW_TABLE_BASIC_SEARCH_TYPE]);
+	}
+
 	// Return basic search SQL
 	function BasicSearchSQL($arKeywords, $type) {
 		$sWhere = "";
@@ -606,7 +722,6 @@ class cpais_list extends cpais {
 	// Build basic search SQL
 	function BuildBasicSearchSql(&$Where, &$Fld, $arKeywords, $type) {
 		$sDefCond = ($type == "OR") ? "OR" : "AND";
-		$sCond = $sDefCond;
 		$arSQL = array(); // Array for SQL parts
 		$arCond = array(); // Array for search conditions
 		$cnt = count($arKeywords);
@@ -630,9 +745,10 @@ class cpais_list extends cpais {
 						$sWrk = $Fld->FldExpression . " IS NULL";
 					} elseif ($Keyword == EW_NOT_NULL_VALUE) {
 						$sWrk = $Fld->FldExpression . " IS NOT NULL";
+					} elseif ($Fld->FldIsVirtual && $Fld->FldVirtualSearch) {
+						$sWrk = $Fld->FldVirtualExpression . ew_Like(ew_QuotedValue("%" . $Keyword . "%", EW_DATATYPE_STRING, $this->DBID), $this->DBID);
 					} elseif ($Fld->FldDataType != EW_DATATYPE_NUMBER || is_numeric($Keyword)) {
-						$sFldExpression = ($Fld->FldVirtualExpression <> $Fld->FldExpression) ? $Fld->FldVirtualExpression : $Fld->FldBasicSearchExpression;
-						$sWrk = $sFldExpression . ew_Like(ew_QuotedValue("%" . $Keyword . "%", EW_DATATYPE_STRING));
+						$sWrk = $Fld->FldBasicSearchExpression . ew_Like(ew_QuotedValue("%" . $Keyword . "%", EW_DATATYPE_STRING, $this->DBID), $this->DBID);
 					}
 					if ($sWrk <> "") {
 						$arSQL[$j] = $sWrk;
@@ -694,7 +810,18 @@ class cpais_list extends cpais {
 				// Match individual keywords
 				if (strlen(trim($sSearch)) > 0)
 					$ar = array_merge($ar, explode(" ", trim($sSearch)));
-				$sSearchStr = $this->BasicSearchSQL($ar, $sSearchType);
+
+				// Search keyword in any fields
+				if (($sSearchType == "OR" || $sSearchType == "AND") && $this->BasicSearch->BasicSearchAnyFields) {
+					foreach ($ar as $sKeyword) {
+						if ($sKeyword <> "") {
+							if ($sSearchStr <> "") $sSearchStr .= " " . $sSearchType . " ";
+							$sSearchStr .= "(" . $this->BasicSearchSQL(array($sKeyword), $sSearchType) . ")";
+						}
+					}
+				} else {
+					$sSearchStr = $this->BasicSearchSQL($ar, $sSearchType);
+				}
 			} else {
 				$sSearchStr = $this->BasicSearchSQL(array($sSearch), $sSearchType);
 			}
@@ -833,6 +960,19 @@ class cpais_list extends cpais {
 			$item->ShowInButtonGroup = FALSE;
 		}
 
+		// Set up detail pages
+		$pages = new cSubPages();
+		$pages->Add("persona");
+		$this->DetailPages = $pages;
+
+		// List actions
+		$item = &$this->ListOptions->Add("listactions");
+		$item->CssStyle = "white-space: nowrap;";
+		$item->OnLeft = FALSE;
+		$item->Visible = FALSE;
+		$item->ShowInButtonGroup = FALSE;
+		$item->ShowInDropDown = FALSE;
+
 		// "checkbox"
 		$item = &$this->ListOptions->Add("checkbox");
 		$item->Visible = FALSE;
@@ -876,6 +1016,35 @@ class cpais_list extends cpais {
 		} else {
 			$oListOpt->Body = "";
 		}
+
+		// Set up list action buttons
+		$oListOpt = &$this->ListOptions->GetItem("listactions");
+		if ($oListOpt && $this->Export == "" && $this->CurrentAction == "") {
+			$body = "";
+			$links = array();
+			foreach ($this->ListActions->Items as $listaction) {
+				if ($listaction->Select == EW_ACTION_SINGLE && $listaction->Allow) {
+					$action = $listaction->Action;
+					$caption = $listaction->Caption;
+					$icon = ($listaction->Icon <> "") ? "<span class=\"" . ew_HtmlEncode(str_replace(" ewIcon", "", $listaction->Icon)) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\"></span> " : "";
+					$links[] = "<li><a class=\"ewAction ewListAction\" data-action=\"" . ew_HtmlEncode($action) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"\" onclick=\"ew_SubmitAction(event,jQuery.extend({key:" . $this->KeyToJson() . "}," . $listaction->ToJson(TRUE) . "));return false;\">" . $icon . $listaction->Caption . "</a></li>";
+					if (count($links) == 1) // Single button
+						$body = "<a class=\"ewAction ewListAction\" data-action=\"" . ew_HtmlEncode($action) . "\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"\" onclick=\"ew_SubmitAction(event,jQuery.extend({key:" . $this->KeyToJson() . "}," . $listaction->ToJson(TRUE) . "));return false;\">" . $Language->Phrase("ListActionButton") . "</a>";
+				}
+			}
+			if (count($links) > 1) { // More than one buttons, use dropdown
+				$body = "<button class=\"dropdown-toggle btn btn-default btn-sm ewActions\" title=\"" . ew_HtmlTitle($Language->Phrase("ListActionButton")) . "\" data-toggle=\"dropdown\">" . $Language->Phrase("ListActionButton") . "<b class=\"caret\"></b></button>";
+				$content = "";
+				foreach ($links as $link)
+					$content .= "<li>" . $link . "</li>";
+				$body .= "<ul class=\"dropdown-menu" . ($oListOpt->OnLeft ? "" : " dropdown-menu-right") . "\">". $content . "</ul>";
+				$body = "<div class=\"btn-group\">" . $body . "</div>";
+			}
+			if (count($links) > 0) {
+				$oListOpt->Body = $body;
+				$oListOpt->Visible = TRUE;
+			}
+		}
 		$DetailViewTblVar = "";
 		$DetailCopyTblVar = "";
 		$DetailEditTblVar = "";
@@ -884,7 +1053,7 @@ class cpais_list extends cpais {
 		$oListOpt = &$this->ListOptions->Items["detail_persona"];
 		if (TRUE) {
 			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("persona", "TblCaption");
-			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("personalist.php?" . EW_TABLE_SHOW_MASTER . "=pais&fk_idpais=" . strval($this->idpais->CurrentValue) . "") . "\">" . $body . "</a>";
+			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("personalist.php?" . EW_TABLE_SHOW_MASTER . "=pais&fk_idpais=" . urlencode(strval($this->idpais->CurrentValue)) . "") . "\">" . $body . "</a>";
 			$links = "";
 			if ($GLOBALS["persona_grid"]->DetailView) {
 				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=persona")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
@@ -930,7 +1099,7 @@ class cpais_list extends cpais {
 
 		// "checkbox"
 		$oListOpt = &$this->ListOptions->Items["checkbox"];
-		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->idpais->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event, this);'>";
+		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->idpais->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event);'>";
 		$this->RenderListOptionsExt();
 
 		// Call ListOptions_Rendered event
@@ -950,7 +1119,9 @@ class cpais_list extends cpais {
 		$option = $options["detail"];
 		$DetailTableLink = "";
 		$item = &$option->Add("detailadd_persona");
-		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($this->GetAddUrl() . "?" . EW_TABLE_SHOW_DETAIL . "=persona") . "\">" . $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["persona"]->TableCaption() . "</a>";
+		$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=persona");
+		$caption = $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["persona"]->TableCaption();
+		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $caption . "</a>";
 		$item->Visible = ($GLOBALS["persona"]->DetailAdd);
 		if ($item->Visible) {
 			if ($DetailTableLink <> "") $DetailTableLink .= ",";
@@ -960,7 +1131,8 @@ class cpais_list extends cpais {
 		// Add multiple details
 		if ($this->ShowMultipleDetails) {
 			$item = &$option->Add("detailsadd");
-			$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($this->GetAddUrl() . "?" . EW_TABLE_SHOW_DETAIL . "=" . $DetailTableLink) . "\">" . $Language->Phrase("AddMasterDetailLink") . "</a>";
+			$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailTableLink);
+			$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $Language->Phrase("AddMasterDetailLink") . "</a>";
 			$item->Visible = ($DetailTableLink <> "");
 
 			// Hide single master/detail items
@@ -986,6 +1158,22 @@ class cpais_list extends cpais {
 		$options["addedit"]->DropDownButtonPhrase = $Language->Phrase("ButtonAddEdit");
 		$options["detail"]->DropDownButtonPhrase = $Language->Phrase("ButtonDetails");
 		$options["action"]->DropDownButtonPhrase = $Language->Phrase("ButtonActions");
+
+		// Filter button
+		$item = &$this->FilterOptions->Add("savecurrentfilter");
+		$item->Body = "<a class=\"ewSaveFilter\" data-form=\"fpaislistsrch\" href=\"#\">" . $Language->Phrase("SaveCurrentFilter") . "</a>";
+		$item->Visible = TRUE;
+		$item = &$this->FilterOptions->Add("deletefilter");
+		$item->Body = "<a class=\"ewDeleteFilter\" data-form=\"fpaislistsrch\" href=\"#\">" . $Language->Phrase("DeleteFilter") . "</a>";
+		$item->Visible = TRUE;
+		$this->FilterOptions->UseDropDownButton = TRUE;
+		$this->FilterOptions->UseButtonGroup = !$this->FilterOptions->UseDropDownButton;
+		$this->FilterOptions->DropDownButtonPhrase = $Language->Phrase("Filters");
+
+		// Add group option item
+		$item = &$this->FilterOptions->Add($this->FilterOptions->GroupOptionName);
+		$item->Body = "";
+		$item->Visible = FALSE;
 	}
 
 	// Render other options
@@ -993,52 +1181,74 @@ class cpais_list extends cpais {
 		global $Language, $Security;
 		$options = &$this->OtherOptions;
 			$option = &$options["action"];
-			foreach ($this->CustomActions as $action => $name) {
 
-				// Add custom action
-				$item = &$option->Add("custom_" . $action);
-				$item->Body = "<a class=\"ewAction ewCustomAction\" href=\"\" onclick=\"ew_SubmitSelected(document.fpaislist, '" . ew_CurrentUrl() . "', null, '" . $action . "');return false;\">" . $name . "</a>";
+			// Set up list action buttons
+			foreach ($this->ListActions->Items as $listaction) {
+				if ($listaction->Select == EW_ACTION_MULTIPLE) {
+					$item = &$option->Add("custom_" . $listaction->Action);
+					$caption = $listaction->Caption;
+					$icon = ($listaction->Icon <> "") ? "<span class=\"" . ew_HtmlEncode($listaction->Icon) . "\" data-caption=\"" . ew_HtmlEncode($caption) . "\"></span> " : $caption;
+					$item->Body = "<a class=\"ewAction ewListAction\" title=\"" . ew_HtmlEncode($caption) . "\" data-caption=\"" . ew_HtmlEncode($caption) . "\" href=\"\" onclick=\"ew_SubmitAction(event,jQuery.extend({f:document.fpaislist}," . $listaction->ToJson(TRUE) . "));return false;\">" . $icon . "</a>";
+					$item->Visible = $listaction->Allow;
+				}
 			}
 
-			// Hide grid edit, multi-delete and multi-update
+			// Hide grid edit and other options
 			if ($this->TotalRecs <= 0) {
 				$option = &$options["addedit"];
 				$item = &$option->GetItem("gridedit");
 				if ($item) $item->Visible = FALSE;
 				$option = &$options["action"];
-				$item = &$option->GetItem("multidelete");
-				if ($item) $item->Visible = FALSE;
-				$item = &$option->GetItem("multiupdate");
-				if ($item) $item->Visible = FALSE;
+				$option->HideAllOptions();
 			}
 	}
 
-	// Process custom action
-	function ProcessCustomAction() {
-		global $conn, $Language, $Security;
+	// Process list action
+	function ProcessListAction() {
+		global $Language, $Security;
+		$userlist = "";
+		$user = "";
 		$sFilter = $this->GetKeyFilter();
 		$UserAction = @$_POST["useraction"];
 		if ($sFilter <> "" && $UserAction <> "") {
+
+			// Check permission first
+			$ActionCaption = $UserAction;
+			if (array_key_exists($UserAction, $this->ListActions->Items)) {
+				$ActionCaption = $this->ListActions->Items[$UserAction]->Caption;
+				if (!$this->ListActions->Items[$UserAction]->Allow) {
+					$errmsg = str_replace('%s', $ActionCaption, $Language->Phrase("CustomActionNotAllowed"));
+					if (@$_POST["ajax"] == $UserAction) // Ajax
+						echo "<p class=\"text-danger\">" . $errmsg . "</p>";
+					else
+						$this->setFailureMessage($errmsg);
+					return FALSE;
+				}
+			}
 			$this->CurrentFilter = $sFilter;
 			$sSql = $this->SQL();
-			$conn->raiseErrorFn = 'ew_ErrorFn';
+			$conn = &$this->Connection();
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 			$rs = $conn->Execute($sSql);
 			$conn->raiseErrorFn = '';
-			$rsuser = ($rs) ? $rs->GetRows() : array();
-			if ($rs)
-				$rs->Close();
+			$this->CurrentAction = $UserAction;
 
-			// Call row custom action event
-			if (count($rsuser) > 0) {
+			// Call row action event
+			if ($rs && !$rs->EOF) {
 				$conn->BeginTrans();
-				foreach ($rsuser as $row) {
+				$this->SelectedCount = $rs->RecordCount();
+				$this->SelectedIndex = 0;
+				while (!$rs->EOF) {
+					$this->SelectedIndex++;
+					$row = $rs->fields;
 					$Processed = $this->Row_CustomAction($UserAction, $row);
 					if (!$Processed) break;
+					$rs->MoveNext();
 				}
 				if ($Processed) {
 					$conn->CommitTrans(); // Commit the changes
 					if ($this->getSuccessMessage() == "")
-						$this->setSuccessMessage(str_replace('%s', $UserAction, $Language->Phrase("CustomActionCompleted"))); // Set up success message
+						$this->setSuccessMessage(str_replace('%s', $ActionCaption, $Language->Phrase("CustomActionCompleted"))); // Set up success message
 				} else {
 					$conn->RollbackTrans(); // Rollback changes
 
@@ -1050,11 +1260,26 @@ class cpais_list extends cpais {
 						$this->setFailureMessage($this->CancelMessage);
 						$this->CancelMessage = "";
 					} else {
-						$this->setFailureMessage(str_replace('%s', $UserAction, $Language->Phrase("CustomActionCancelled")));
+						$this->setFailureMessage(str_replace('%s', $ActionCaption, $Language->Phrase("CustomActionFailed")));
 					}
 				}
 			}
+			if ($rs)
+				$rs->Close();
+			$this->CurrentAction = ""; // Clear action
+			if (@$_POST["ajax"] == $UserAction) { // Ajax
+				if ($this->getSuccessMessage() <> "") {
+					echo "<p class=\"text-success\">" . $this->getSuccessMessage() . "</p>";
+					$this->ClearSuccessMessage(); // Clear message
+				}
+				if ($this->getFailureMessage() <> "") {
+					echo "<p class=\"text-danger\">" . $this->getFailureMessage() . "</p>";
+					$this->ClearFailureMessage(); // Clear message
+				}
+				return TRUE;
+			}
 		}
+		return FALSE; // Not ajax request
 	}
 
 	// Set up search options
@@ -1073,7 +1298,7 @@ class cpais_list extends cpais {
 		// Show all button
 		$item = &$this->SearchOptions->Add("showall");
 		$item->Body = "<a class=\"btn btn-default ewShowAll\" title=\"" . $Language->Phrase("ShowAll") . "\" data-caption=\"" . $Language->Phrase("ShowAll") . "\" href=\"" . $this->PageUrl() . "cmd=reset\">" . $Language->Phrase("ShowAllBtn") . "</a>";
-		$item->Visible = ($this->SearchWhere <> $this->DefaultSearchWhere);
+		$item->Visible = ($this->SearchWhere <> $this->DefaultSearchWhere && $this->SearchWhere <> "0=101");
 
 		// Button group for search
 		$this->SearchOptions->UseDropDownButton = FALSE;
@@ -1144,15 +1369,24 @@ class cpais_list extends cpais {
 
 	// Load recordset
 	function LoadRecordset($offset = -1, $rowcnt = -1) {
-		global $conn;
 
 		// Load List page SQL
 		$sSql = $this->SelectSQL();
+		$conn = &$this->Connection();
 
 		// Load recordset
-		$conn->raiseErrorFn = 'ew_ErrorFn';
-		$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
-		$conn->raiseErrorFn = '';
+		$dbtype = ew_GetConnectionType($this->DBID);
+		if ($this->UseSelectLimit) {
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+			if ($dbtype == "MSSQL") {
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset, array("_hasOrderBy" => trim($this->getOrderBy()) || trim($this->getSessionOrderBy())));
+			} else {
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
+			}
+			$conn->raiseErrorFn = '';
+		} else {
+			$rs = ew_LoadRecordset($sSql, $conn);
+		}
 
 		// Call Recordset Selected event
 		$this->Recordset_Selected($rs);
@@ -1161,7 +1395,7 @@ class cpais_list extends cpais {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -1170,8 +1404,9 @@ class cpais_list extends cpais {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -1182,7 +1417,6 @@ class cpais_list extends cpais {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -1218,7 +1452,8 @@ class cpais_list extends cpais {
 		if ($bValidKey) {
 			$this->CurrentFilter = $this->KeyFilter();
 			$sSql = $this->SQL();
-			$this->OldRecordset = ew_LoadRecordset($sSql);
+			$conn = &$this->Connection();
+			$this->OldRecordset = ew_LoadRecordset($sSql, $conn);
 			$this->LoadRowValues($this->OldRecordset); // Load row values
 		} else {
 			$this->OldRecordset = NULL;
@@ -1228,8 +1463,7 @@ class cpais_list extends cpais {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		$this->ViewUrl = $this->GetViewUrl();
@@ -1250,35 +1484,26 @@ class cpais_list extends cpais {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idpais
-			$this->idpais->ViewValue = $this->idpais->CurrentValue;
-			$this->idpais->ViewCustomAttributes = "";
+		// idpais
+		$this->idpais->ViewValue = $this->idpais->CurrentValue;
+		$this->idpais->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
 
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
-			} else {
-				$this->estado->ViewValue = NULL;
-			}
-			$this->estado->ViewCustomAttributes = "";
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
-			// fecha_insercion
-			$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
-			$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
-			$this->fecha_insercion->ViewCustomAttributes = "";
+		// fecha_insercion
+		$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
+		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
+		$this->fecha_insercion->ViewCustomAttributes = "";
 
 			// nombre
 			$this->nombre->LinkCustomAttributes = "";
@@ -1295,7 +1520,7 @@ class cpais_list extends cpais {
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$url = ew_CurrentUrl();
+		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
 		$url = preg_replace('/\?cmd=reset(all){0,1}$/i', '', $url); // Remove cmd=reset / cmd=resetall
 		$Breadcrumb->Add("list", $this->TableVar, $url, "", $this->TableVar, TRUE);
 	}
@@ -1438,16 +1663,12 @@ Page_Rendering();
 // Page Rendering event
 $pais_list->Page_Render();
 ?>
-<?php include_once $EW_RELATIVE_PATH . "header.php" ?>
+<?php include_once "header.php" ?>
 <script type="text/javascript">
 
-// Page object
-var pais_list = new ew_Page("pais_list");
-pais_list.PageID = "list"; // Page ID
-var EW_PAGE_ID = pais_list.PageID; // For backward compatibility
-
 // Form object
-var fpaislist = new ew_Form("fpaislist");
+var CurrentPageID = EW_PAGE_ID = "list";
+var CurrentForm = fpaislist = new ew_Form("fpaislist", "list");
 fpaislist.FormKeyCountName = '<?php echo $pais_list->FormKeyCountName ?>';
 
 // Form_CustomValidate event
@@ -1468,7 +1689,7 @@ fpaislist.ValidateRequired = false;
 // Dynamic selection lists
 // Form object for search
 
-var fpaislistsrch = new ew_Form("fpaislistsrch");
+var CurrentSearchForm = fpaislistsrch = new ew_Form("fpaislistsrch");
 </script>
 <script type="text/javascript">
 
@@ -1482,15 +1703,19 @@ var fpaislistsrch = new ew_Form("fpaislistsrch");
 <?php if ($pais_list->SearchOptions->Visible()) { ?>
 <?php $pais_list->SearchOptions->Render("body") ?>
 <?php } ?>
+<?php if ($pais_list->FilterOptions->Visible()) { ?>
+<?php $pais_list->FilterOptions->Render("body") ?>
+<?php } ?>
 <?php echo $Language->SelectionForm(); ?>
 <div class="clearfix"></div>
 </div>
 <?php
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $pais_list->UseSelectLimit;
 	if ($bSelectLimit) {
-		$pais_list->TotalRecs = $pais->SelectRecordCount();
+		if ($pais_list->TotalRecs <= 0)
+			$pais_list->TotalRecs = $pais->SelectRecordCount();
 	} else {
-		if ($pais_list->Recordset = $pais_list->LoadRecordset())
+		if (!$pais_list->Recordset && ($pais_list->Recordset = $pais_list->LoadRecordset()))
 			$pais_list->TotalRecs = $pais_list->Recordset->RecordCount();
 	}
 	$pais_list->StartRec = 1;
@@ -1542,7 +1767,7 @@ $pais_list->RenderOtherOptions();
 $pais_list->ShowMessage();
 ?>
 <?php if ($pais_list->TotalRecs > 0 || $pais->CurrentAction <> "") { ?>
-<div class="ewGrid">
+<div class="panel panel-default ewGrid">
 <form name="fpaislist" id="fpaislist" class="form-inline ewForm ewListForm" action="<?php echo ew_CurrentPage() ?>" method="post">
 <?php if ($pais_list->CheckToken) { ?>
 <input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $pais_list->Token ?>">
@@ -1555,6 +1780,9 @@ $pais_list->ShowMessage();
 <thead><!-- Table header -->
 	<tr class="ewTableHeader">
 <?php
+
+// Header row
+$pais_list->RowType = EW_ROWTYPE_HEADER;
 
 // Render list options
 $pais_list->RenderListOptions();
@@ -1593,7 +1821,7 @@ if ($pais->ExportAll && $pais->Export <> "") {
 $pais_list->RecCnt = $pais_list->StartRec - 1;
 if ($pais_list->Recordset && !$pais_list->Recordset->EOF) {
 	$pais_list->Recordset->MoveFirst();
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $pais_list->UseSelectLimit;
 	if (!$bSelectLimit && $pais_list->StartRec > 1)
 		$pais_list->Recordset->Move($pais_list->StartRec - 1);
 } elseif (!$pais->AllowAddDeleteRow && $pais_list->StopRec == 0) {
@@ -1638,8 +1866,10 @@ $pais_list->ListOptions->Render("body", "left", $pais_list->RowCnt);
 ?>
 	<?php if ($pais->nombre->Visible) { // nombre ?>
 		<td data-name="nombre"<?php echo $pais->nombre->CellAttributes() ?>>
+<span id="el<?php echo $pais_list->RowCnt ?>_pais_nombre" class="pais_nombre">
 <span<?php echo $pais->nombre->ViewAttributes() ?>>
 <?php echo $pais->nombre->ListViewValue() ?></span>
+</span>
 <a id="<?php echo $pais_list->PageObjName . "_row_" . $pais_list->RowCnt ?>"></a></td>
 	<?php } ?>
 <?php
@@ -1668,7 +1898,7 @@ $pais_list->ListOptions->Render("body", "right", $pais_list->RowCnt);
 if ($pais_list->Recordset)
 	$pais_list->Recordset->Close();
 ?>
-<div class="ewGridLowerPanel">
+<div class="panel-footer ewGridLowerPanel">
 <?php if ($pais->CurrentAction <> "gridadd" && $pais->CurrentAction <> "gridedit") { ?>
 <form name="ewPagerForm" class="ewForm form-inline ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
 <?php if (!isset($pais_list->Pager)) $pais_list->Pager = new cPrevNextPager($pais_list->StartRec, $pais_list->DisplayRecs, $pais_list->TotalRecs) ?>
@@ -1739,6 +1969,7 @@ if ($pais_list->Recordset)
 <?php } ?>
 <script type="text/javascript">
 fpaislistsrch.Init();
+fpaislistsrch.FilterList = <?php echo $pais_list->GetFilterList() ?>;
 fpaislist.Init();
 </script>
 <?php
@@ -1752,7 +1983,7 @@ if (EW_DEBUG_ENABLED)
 // document.write("page loaded");
 
 </script>
-<?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
+<?php include_once "footer.php" ?>
 <?php
 $pais_list->Page_Terminate();
 ?>

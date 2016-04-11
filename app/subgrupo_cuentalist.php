@@ -1,15 +1,14 @@
 <?php
 if (session_id() == "") session_start(); // Initialize Session data
 ob_start(); // Turn on output buffering
-$EW_RELATIVE_PATH = "";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "subgrupo_cuentainfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "grupo_cuentainfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "cuenta_mayor_principalgridcls.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
+<?php include_once "ewcfg12.php" ?>
+<?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
+<?php include_once "phpfn12.php" ?>
+<?php include_once "subgrupo_cuentainfo.php" ?>
+<?php include_once "grupo_cuentainfo.php" ?>
+<?php include_once "cuenta_mayor_principalgridcls.php" ?>
+<?php include_once "userfn12.php" ?>
 <?php
 
 //
@@ -117,6 +116,30 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
 	}
 
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
 	// Show message
 	function ShowMessage() {
 		$hidden = FALSE;
@@ -197,6 +220,7 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -209,7 +233,7 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -230,6 +254,7 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 	function __construct() {
 		global $conn, $Language;
 		$GLOBALS["Page"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -273,7 +298,7 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 
 		// List options
 		$this->ListOptions = new cListOptions();
@@ -294,6 +319,14 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 		$this->OtherOptions['action'] = new cListOptions();
 		$this->OtherOptions['action']->Tag = "div";
 		$this->OtherOptions['action']->TagClassName = "ewActionOption";
+
+		// Filter options
+		$this->FilterOptions = new cListOptions();
+		$this->FilterOptions->Tag = "div";
+		$this->FilterOptions->TagClassName = "ewFilterOption fsubgrupo_cuentalistsrch";
+
+		// List actions
+		$this->ListActions = new cListActions();
 	}
 
 	// 
@@ -352,19 +385,30 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 		// Create Token
 		$this->CreateToken();
 
+		// Set up master detail parameters
+		$this->SetUpMasterParms();
+
 		// Setup other options
 		$this->SetupOtherOptions();
 
-		// Set "checkbox" visible
-		if (count($this->CustomActions) > 0)
-			$this->ListOptions->Items["checkbox"]->Visible = TRUE;
+		// Set up custom action (compatible with old version)
+		foreach ($this->CustomActions as $name => $action)
+			$this->ListActions->Add($name, $action);
+
+		// Show checkbox column if multiple action
+		foreach ($this->ListActions->Items as $listaction) {
+			if ($listaction->Select == EW_ACTION_MULTIPLE && $listaction->Allow) {
+				$this->ListOptions->Items["checkbox"]->Visible = TRUE;
+				break;
+			}
+		}
 	}
 
 	//
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Page Unload event
 		$this->Page_Unload();
@@ -392,7 +436,7 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 		$this->Page_Redirecting($url);
 
 		 // Close connection
-		$conn->Close();
+		ew_CloseConn();
 
 		// Go to URL if specified
 		if ($url <> "") {
@@ -408,6 +452,10 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 	var $ExportOptions; // Export options
 	var $SearchOptions; // Search options
 	var $OtherOptions = array(); // Other options
+	var $FilterOptions; // Filter options
+	var $ListActions; // List actions
+	var $SelectedCount = 0;
+	var $SelectedIndex = 0;
 	var $DisplayRecs = 20;
 	var $StartRec;
 	var $StopRec;
@@ -438,6 +486,7 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 	var $MultiSelectKey;
 	var $Command;
 	var $RestoreSearch = FALSE;
+	var $DetailPages;
 	var $Recordset;
 	var $OldRecordset;
 
@@ -456,14 +505,12 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 		$this->Command = strtolower(@$_GET["cmd"]);
 		if ($this->IsPageRequest()) { // Validate request
 
-			// Process custom action first
-			$this->ProcessCustomAction();
+			// Process list action first
+			if ($this->ProcessListAction()) // Ajax request
+				$this->Page_Terminate();
 
 			// Handle reset command
 			$this->ResetCmd();
-
-			// Set up master detail parameters
-			$this->SetUpMasterParms();
 
 			// Set up Breadcrumb
 			if ($this->Export == "")
@@ -529,9 +576,11 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 				$this->ListOptions->UseButtonGroup = FALSE; // Disable button group
 			}
 
-			// Hide export options
-			if ($this->Export <> "" || $this->CurrentAction <> "")
+			// Hide options
+			if ($this->Export <> "" || $this->CurrentAction <> "") {
 				$this->ExportOptions->HideAllOptions();
+				$this->FilterOptions->HideAllOptions();
+			}
 
 			// Hide other options
 			if ($this->Export <> "") {
@@ -591,12 +640,14 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 		$this->CurrentFilter = "";
 
 		// Load record count first
-		$bSelectLimit = EW_SELECT_LIMIT;
-		if ($bSelectLimit) {
-			$this->TotalRecs = $this->SelectRecordCount();
-		} else {
-			if ($this->Recordset = $this->LoadRecordset())
-				$this->TotalRecs = $this->Recordset->RecordCount();
+		if (!$this->IsAddOrEdit()) {
+			$bSelectLimit = $this->UseSelectLimit;
+			if ($bSelectLimit) {
+				$this->TotalRecs = $this->SelectRecordCount();
+			} else {
+				if ($this->Recordset = $this->LoadRecordset())
+					$this->TotalRecs = $this->Recordset->RecordCount();
+			}
 		}
 
 		// Search options
@@ -622,7 +673,7 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 
 	// Perform update to grid
 	function GridUpdate() {
-		global $conn, $Language, $objForm, $gsFormError;
+		global $Language, $objForm, $gsFormError;
 		$bGridUpdate = TRUE;
 
 		// Get old recordset
@@ -630,6 +681,7 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 		if ($this->CurrentFilter == "")
 			$this->CurrentFilter = "0=1";
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		if ($rs = $conn->Execute($sSql)) {
 			$rsold = $rs->GetRows();
 			$rs->Close();
@@ -761,9 +813,10 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 
 	// Perform Grid Add
 	function GridInsert() {
-		global $conn, $Language, $objForm, $gsFormError;
+		global $Language, $objForm, $gsFormError;
 		$rowindex = 1;
 		$bGridInsert = FALSE;
+		$conn = &$this->Connection();
 
 		// Call Grid Inserting event
 		if (!$this->Grid_Inserting()) {
@@ -1039,6 +1092,19 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 			$item->ShowInButtonGroup = FALSE;
 		}
 
+		// Set up detail pages
+		$pages = new cSubPages();
+		$pages->Add("cuenta_mayor_principal");
+		$this->DetailPages = $pages;
+
+		// List actions
+		$item = &$this->ListOptions->Add("listactions");
+		$item->CssStyle = "white-space: nowrap;";
+		$item->OnLeft = FALSE;
+		$item->Visible = FALSE;
+		$item->ShowInButtonGroup = FALSE;
+		$item->ShowInDropDown = FALSE;
+
 		// "checkbox"
 		$item = &$this->ListOptions->Add("checkbox");
 		$item->Visible = FALSE;
@@ -1095,7 +1161,7 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 				if (is_numeric($this->RowIndex) && ($this->RowAction == "" || $this->RowAction == "edit")) { // Do not allow delete existing record
 					$oListOpt->Body = "&nbsp;";
 				} else {
-					$oListOpt->Body = "<a class=\"ewGridLink ewGridDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" href=\"javascript:void(0);\" onclick=\"ew_DeleteGridRow(this, " . $this->RowIndex . ");\">" . $Language->Phrase("DeleteLink") . "</a>";
+					$oListOpt->Body = "<a class=\"ewGridLink ewGridDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" onclick=\"return ew_DeleteGridRow(this, " . $this->RowIndex . ");\">" . $Language->Phrase("DeleteLink") . "</a>";
 				}
 			}
 		}
@@ -1122,6 +1188,35 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 		} else {
 			$oListOpt->Body = "";
 		}
+
+		// Set up list action buttons
+		$oListOpt = &$this->ListOptions->GetItem("listactions");
+		if ($oListOpt && $this->Export == "" && $this->CurrentAction == "") {
+			$body = "";
+			$links = array();
+			foreach ($this->ListActions->Items as $listaction) {
+				if ($listaction->Select == EW_ACTION_SINGLE && $listaction->Allow) {
+					$action = $listaction->Action;
+					$caption = $listaction->Caption;
+					$icon = ($listaction->Icon <> "") ? "<span class=\"" . ew_HtmlEncode(str_replace(" ewIcon", "", $listaction->Icon)) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\"></span> " : "";
+					$links[] = "<li><a class=\"ewAction ewListAction\" data-action=\"" . ew_HtmlEncode($action) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"\" onclick=\"ew_SubmitAction(event,jQuery.extend({key:" . $this->KeyToJson() . "}," . $listaction->ToJson(TRUE) . "));return false;\">" . $icon . $listaction->Caption . "</a></li>";
+					if (count($links) == 1) // Single button
+						$body = "<a class=\"ewAction ewListAction\" data-action=\"" . ew_HtmlEncode($action) . "\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"\" onclick=\"ew_SubmitAction(event,jQuery.extend({key:" . $this->KeyToJson() . "}," . $listaction->ToJson(TRUE) . "));return false;\">" . $Language->Phrase("ListActionButton") . "</a>";
+				}
+			}
+			if (count($links) > 1) { // More than one buttons, use dropdown
+				$body = "<button class=\"dropdown-toggle btn btn-default btn-sm ewActions\" title=\"" . ew_HtmlTitle($Language->Phrase("ListActionButton")) . "\" data-toggle=\"dropdown\">" . $Language->Phrase("ListActionButton") . "<b class=\"caret\"></b></button>";
+				$content = "";
+				foreach ($links as $link)
+					$content .= "<li>" . $link . "</li>";
+				$body .= "<ul class=\"dropdown-menu" . ($oListOpt->OnLeft ? "" : " dropdown-menu-right") . "\">". $content . "</ul>";
+				$body = "<div class=\"btn-group\">" . $body . "</div>";
+			}
+			if (count($links) > 0) {
+				$oListOpt->Body = $body;
+				$oListOpt->Visible = TRUE;
+			}
+		}
 		$DetailViewTblVar = "";
 		$DetailCopyTblVar = "";
 		$DetailEditTblVar = "";
@@ -1130,7 +1225,7 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 		$oListOpt = &$this->ListOptions->Items["detail_cuenta_mayor_principal"];
 		if (TRUE) {
 			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("cuenta_mayor_principal", "TblCaption");
-			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("cuenta_mayor_principallist.php?" . EW_TABLE_SHOW_MASTER . "=subgrupo_cuenta&fk_idsubgrupo_cuenta=" . strval($this->idsubgrupo_cuenta->CurrentValue) . "") . "\">" . $body . "</a>";
+			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("cuenta_mayor_principallist.php?" . EW_TABLE_SHOW_MASTER . "=subgrupo_cuenta&fk_idsubgrupo_cuenta=" . urlencode(strval($this->idsubgrupo_cuenta->CurrentValue)) . "") . "\">" . $body . "</a>";
 			$links = "";
 			if ($GLOBALS["cuenta_mayor_principal_grid"]->DetailView) {
 				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=cuenta_mayor_principal")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
@@ -1181,7 +1276,7 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 
 		// "checkbox"
 		$oListOpt = &$this->ListOptions->Items["checkbox"];
-		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->idsubgrupo_cuenta->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event, this);'>";
+		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->idsubgrupo_cuenta->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event);'>";
 		if ($this->CurrentAction == "gridedit" && is_numeric($this->RowIndex)) {
 			$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $KeyName . "\" id=\"" . $KeyName . "\" value=\"" . $this->idsubgrupo_cuenta->CurrentValue . "\">";
 		}
@@ -1207,7 +1302,9 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 		$option = $options["detail"];
 		$DetailTableLink = "";
 		$item = &$option->Add("detailadd_cuenta_mayor_principal");
-		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($this->GetAddUrl() . "?" . EW_TABLE_SHOW_DETAIL . "=cuenta_mayor_principal") . "\">" . $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["cuenta_mayor_principal"]->TableCaption() . "</a>";
+		$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=cuenta_mayor_principal");
+		$caption = $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["cuenta_mayor_principal"]->TableCaption();
+		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $caption . "</a>";
 		$item->Visible = ($GLOBALS["cuenta_mayor_principal"]->DetailAdd);
 		if ($item->Visible) {
 			if ($DetailTableLink <> "") $DetailTableLink .= ",";
@@ -1217,7 +1314,8 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 		// Add multiple details
 		if ($this->ShowMultipleDetails) {
 			$item = &$option->Add("detailsadd");
-			$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($this->GetAddUrl() . "?" . EW_TABLE_SHOW_DETAIL . "=" . $DetailTableLink) . "\">" . $Language->Phrase("AddMasterDetailLink") . "</a>";
+			$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailTableLink);
+			$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $Language->Phrase("AddMasterDetailLink") . "</a>";
 			$item->Visible = ($DetailTableLink <> "");
 
 			// Hide single master/detail items
@@ -1249,6 +1347,22 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 		$options["addedit"]->DropDownButtonPhrase = $Language->Phrase("ButtonAddEdit");
 		$options["detail"]->DropDownButtonPhrase = $Language->Phrase("ButtonDetails");
 		$options["action"]->DropDownButtonPhrase = $Language->Phrase("ButtonActions");
+
+		// Filter button
+		$item = &$this->FilterOptions->Add("savecurrentfilter");
+		$item->Body = "<a class=\"ewSaveFilter\" data-form=\"fsubgrupo_cuentalistsrch\" href=\"#\">" . $Language->Phrase("SaveCurrentFilter") . "</a>";
+		$item->Visible = FALSE;
+		$item = &$this->FilterOptions->Add("deletefilter");
+		$item->Body = "<a class=\"ewDeleteFilter\" data-form=\"fsubgrupo_cuentalistsrch\" href=\"#\">" . $Language->Phrase("DeleteFilter") . "</a>";
+		$item->Visible = FALSE;
+		$this->FilterOptions->UseDropDownButton = TRUE;
+		$this->FilterOptions->UseButtonGroup = !$this->FilterOptions->UseDropDownButton;
+		$this->FilterOptions->DropDownButtonPhrase = $Language->Phrase("Filters");
+
+		// Add group option item
+		$item = &$this->FilterOptions->Add($this->FilterOptions->GroupOptionName);
+		$item->Body = "";
+		$item->Visible = FALSE;
 	}
 
 	// Render other options
@@ -1257,23 +1371,25 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 		$options = &$this->OtherOptions;
 		if ($this->CurrentAction <> "gridadd" && $this->CurrentAction <> "gridedit") { // Not grid add/edit mode
 			$option = &$options["action"];
-			foreach ($this->CustomActions as $action => $name) {
 
-				// Add custom action
-				$item = &$option->Add("custom_" . $action);
-				$item->Body = "<a class=\"ewAction ewCustomAction\" href=\"\" onclick=\"ew_SubmitSelected(document.fsubgrupo_cuentalist, '" . ew_CurrentUrl() . "', null, '" . $action . "');return false;\">" . $name . "</a>";
+			// Set up list action buttons
+			foreach ($this->ListActions->Items as $listaction) {
+				if ($listaction->Select == EW_ACTION_MULTIPLE) {
+					$item = &$option->Add("custom_" . $listaction->Action);
+					$caption = $listaction->Caption;
+					$icon = ($listaction->Icon <> "") ? "<span class=\"" . ew_HtmlEncode($listaction->Icon) . "\" data-caption=\"" . ew_HtmlEncode($caption) . "\"></span> " : $caption;
+					$item->Body = "<a class=\"ewAction ewListAction\" title=\"" . ew_HtmlEncode($caption) . "\" data-caption=\"" . ew_HtmlEncode($caption) . "\" href=\"\" onclick=\"ew_SubmitAction(event,jQuery.extend({f:document.fsubgrupo_cuentalist}," . $listaction->ToJson(TRUE) . "));return false;\">" . $icon . "</a>";
+					$item->Visible = $listaction->Allow;
+				}
 			}
 
-			// Hide grid edit, multi-delete and multi-update
+			// Hide grid edit and other options
 			if ($this->TotalRecs <= 0) {
 				$option = &$options["addedit"];
 				$item = &$option->GetItem("gridedit");
 				if ($item) $item->Visible = FALSE;
 				$option = &$options["action"];
-				$item = &$option->GetItem("multidelete");
-				if ($item) $item->Visible = FALSE;
-				$item = &$option->GetItem("multiupdate");
-				if ($item) $item->Visible = FALSE;
+				$option->HideAllOptions();
 			}
 		} else { // Grid add/edit mode
 
@@ -1297,11 +1413,12 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 
 				// Add grid insert
 				$item = &$option->Add("gridinsert");
-				$item->Body = "<a class=\"ewAction ewGridInsert\" title=\"" . ew_HtmlTitle($Language->Phrase("GridInsertLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridInsertLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit();\">" . $Language->Phrase("GridInsertLink") . "</a>";
+				$item->Body = "<a class=\"ewAction ewGridInsert\" title=\"" . ew_HtmlTitle($Language->Phrase("GridInsertLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridInsertLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit('" . $this->PageName() . "');\">" . $Language->Phrase("GridInsertLink") . "</a>";
 
 				// Add grid cancel
 				$item = &$option->Add("gridcancel");
-				$item->Body = "<a class=\"ewAction ewGridCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" href=\"" . $this->PageUrl() . "a=cancel\">" . $Language->Phrase("GridCancelLink") . "</a>";
+				$cancelurl = $this->AddMasterUrl($this->PageUrl() . "a=cancel");
+				$item->Body = "<a class=\"ewAction ewGridCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" href=\"" . $cancelurl . "\">" . $Language->Phrase("GridCancelLink") . "</a>";
 			}
 			if ($this->CurrentAction == "gridedit") {
 				if ($this->AllowAddDeleteRow) {
@@ -1318,39 +1435,60 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 				$option->UseDropDownButton = FALSE;
 				$option->UseImageAndText = TRUE;
 					$item = &$option->Add("gridsave");
-					$item->Body = "<a class=\"ewAction ewGridSave\" title=\"" . ew_HtmlTitle($Language->Phrase("GridSaveLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridSaveLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit();\">" . $Language->Phrase("GridSaveLink") . "</a>";
+					$item->Body = "<a class=\"ewAction ewGridSave\" title=\"" . ew_HtmlTitle($Language->Phrase("GridSaveLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridSaveLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit('" . $this->PageName() . "');\">" . $Language->Phrase("GridSaveLink") . "</a>";
 					$item = &$option->Add("gridcancel");
-					$item->Body = "<a class=\"ewAction ewGridCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" href=\"" . $this->PageUrl() . "a=cancel\">" . $Language->Phrase("GridCancelLink") . "</a>";
+					$cancelurl = $this->AddMasterUrl($this->PageUrl() . "a=cancel");
+					$item->Body = "<a class=\"ewAction ewGridCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" href=\"" . $cancelurl . "\">" . $Language->Phrase("GridCancelLink") . "</a>";
 			}
 		}
 	}
 
-	// Process custom action
-	function ProcessCustomAction() {
-		global $conn, $Language, $Security;
+	// Process list action
+	function ProcessListAction() {
+		global $Language, $Security;
+		$userlist = "";
+		$user = "";
 		$sFilter = $this->GetKeyFilter();
 		$UserAction = @$_POST["useraction"];
 		if ($sFilter <> "" && $UserAction <> "") {
+
+			// Check permission first
+			$ActionCaption = $UserAction;
+			if (array_key_exists($UserAction, $this->ListActions->Items)) {
+				$ActionCaption = $this->ListActions->Items[$UserAction]->Caption;
+				if (!$this->ListActions->Items[$UserAction]->Allow) {
+					$errmsg = str_replace('%s', $ActionCaption, $Language->Phrase("CustomActionNotAllowed"));
+					if (@$_POST["ajax"] == $UserAction) // Ajax
+						echo "<p class=\"text-danger\">" . $errmsg . "</p>";
+					else
+						$this->setFailureMessage($errmsg);
+					return FALSE;
+				}
+			}
 			$this->CurrentFilter = $sFilter;
 			$sSql = $this->SQL();
-			$conn->raiseErrorFn = 'ew_ErrorFn';
+			$conn = &$this->Connection();
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 			$rs = $conn->Execute($sSql);
 			$conn->raiseErrorFn = '';
-			$rsuser = ($rs) ? $rs->GetRows() : array();
-			if ($rs)
-				$rs->Close();
+			$this->CurrentAction = $UserAction;
 
-			// Call row custom action event
-			if (count($rsuser) > 0) {
+			// Call row action event
+			if ($rs && !$rs->EOF) {
 				$conn->BeginTrans();
-				foreach ($rsuser as $row) {
+				$this->SelectedCount = $rs->RecordCount();
+				$this->SelectedIndex = 0;
+				while (!$rs->EOF) {
+					$this->SelectedIndex++;
+					$row = $rs->fields;
 					$Processed = $this->Row_CustomAction($UserAction, $row);
 					if (!$Processed) break;
+					$rs->MoveNext();
 				}
 				if ($Processed) {
 					$conn->CommitTrans(); // Commit the changes
 					if ($this->getSuccessMessage() == "")
-						$this->setSuccessMessage(str_replace('%s', $UserAction, $Language->Phrase("CustomActionCompleted"))); // Set up success message
+						$this->setSuccessMessage(str_replace('%s', $ActionCaption, $Language->Phrase("CustomActionCompleted"))); // Set up success message
 				} else {
 					$conn->RollbackTrans(); // Rollback changes
 
@@ -1362,11 +1500,26 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 						$this->setFailureMessage($this->CancelMessage);
 						$this->CancelMessage = "";
 					} else {
-						$this->setFailureMessage(str_replace('%s', $UserAction, $Language->Phrase("CustomActionCancelled")));
+						$this->setFailureMessage(str_replace('%s', $ActionCaption, $Language->Phrase("CustomActionFailed")));
 					}
 				}
 			}
+			if ($rs)
+				$rs->Close();
+			$this->CurrentAction = ""; // Clear action
+			if (@$_POST["ajax"] == $UserAction) { // Ajax
+				if ($this->getSuccessMessage() <> "") {
+					echo "<p class=\"text-success\">" . $this->getSuccessMessage() . "</p>";
+					$this->ClearSuccessMessage(); // Clear message
+				}
+				if ($this->getFailureMessage() <> "") {
+					echo "<p class=\"text-danger\">" . $this->getFailureMessage() . "</p>";
+					$this->ClearFailureMessage(); // Clear message
+				}
+				return TRUE;
+			}
 		}
+		return FALSE; // Not ajax request
 	}
 
 	// Set up search options
@@ -1479,15 +1632,24 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 
 	// Load recordset
 	function LoadRecordset($offset = -1, $rowcnt = -1) {
-		global $conn;
 
 		// Load List page SQL
 		$sSql = $this->SelectSQL();
+		$conn = &$this->Connection();
 
 		// Load recordset
-		$conn->raiseErrorFn = 'ew_ErrorFn';
-		$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
-		$conn->raiseErrorFn = '';
+		$dbtype = ew_GetConnectionType($this->DBID);
+		if ($this->UseSelectLimit) {
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+			if ($dbtype == "MSSQL") {
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset, array("_hasOrderBy" => trim($this->getOrderBy()) || trim($this->getSessionOrderBy())));
+			} else {
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
+			}
+			$conn->raiseErrorFn = '';
+		} else {
+			$rs = ew_LoadRecordset($sSql, $conn);
+		}
 
 		// Call Recordset Selected event
 		$this->Recordset_Selected($rs);
@@ -1496,7 +1658,7 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -1505,8 +1667,9 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -1517,7 +1680,6 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -1557,7 +1719,8 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 		if ($bValidKey) {
 			$this->CurrentFilter = $this->KeyFilter();
 			$sSql = $this->SQL();
-			$this->OldRecordset = ew_LoadRecordset($sSql);
+			$conn = &$this->Connection();
+			$this->OldRecordset = ew_LoadRecordset($sSql, $conn);
 			$this->LoadRowValues($this->OldRecordset); // Load row values
 		} else {
 			$this->OldRecordset = NULL;
@@ -1567,8 +1730,7 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		$this->ViewUrl = $this->GetViewUrl();
@@ -1591,66 +1753,53 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idsubgrupo_cuenta
-			$this->idsubgrupo_cuenta->ViewValue = $this->idsubgrupo_cuenta->CurrentValue;
-			$this->idsubgrupo_cuenta->ViewCustomAttributes = "";
+		// idsubgrupo_cuenta
+		$this->idsubgrupo_cuenta->ViewValue = $this->idsubgrupo_cuenta->CurrentValue;
+		$this->idsubgrupo_cuenta->ViewCustomAttributes = "";
 
-			// nomenclatura
-			$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
-			$this->nomenclatura->ViewCustomAttributes = "";
+		// nomenclatura
+		$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
+		$this->nomenclatura->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
 
-			// idgrupo_cuenta
-			if (strval($this->idgrupo_cuenta->CurrentValue) <> "") {
-				$sFilterWrk = "`idgrupo_cuenta`" . ew_SearchString("=", $this->idgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `grupo_cuenta`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idgrupo_cuenta, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idgrupo_cuenta->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idgrupo_cuenta->ViewValue = $this->idgrupo_cuenta->CurrentValue;
-				}
+		// idgrupo_cuenta
+		if (strval($this->idgrupo_cuenta->CurrentValue) <> "") {
+			$sFilterWrk = "`idgrupo_cuenta`" . ew_SearchString("=", $this->idgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `grupo_cuenta`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idgrupo_cuenta, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idgrupo_cuenta->ViewValue = $this->idgrupo_cuenta->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idgrupo_cuenta->ViewValue = NULL;
+				$this->idgrupo_cuenta->ViewValue = $this->idgrupo_cuenta->CurrentValue;
 			}
-			$this->idgrupo_cuenta->ViewCustomAttributes = "";
+		} else {
+			$this->idgrupo_cuenta->ViewValue = NULL;
+		}
+		$this->idgrupo_cuenta->ViewCustomAttributes = "";
 
-			// definicion
-			$this->definicion->ViewValue = $this->definicion->CurrentValue;
-			$this->definicion->ViewCustomAttributes = "";
+		// definicion
+		$this->definicion->ViewValue = $this->definicion->CurrentValue;
+		$this->definicion->ViewCustomAttributes = "";
 
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
-			} else {
-				$this->estado->ViewValue = NULL;
-			}
-			$this->estado->ViewCustomAttributes = "";
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
 			// nomenclatura
 			$this->nomenclatura->LinkCustomAttributes = "";
@@ -1687,23 +1836,19 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 				$this->idgrupo_cuenta->CurrentValue = $this->idgrupo_cuenta->getSessionValue();
 				$this->idgrupo_cuenta->OldValue = $this->idgrupo_cuenta->CurrentValue;
 			if (strval($this->idgrupo_cuenta->CurrentValue) <> "") {
-				$sFilterWrk = "`idgrupo_cuenta`" . ew_SearchString("=", $this->idgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idgrupo_cuenta`" . ew_SearchString("=", $this->idgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER, "");
 			$sSqlWrk = "SELECT `idgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `grupo_cuenta`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idgrupo_cuenta, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idgrupo_cuenta, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
+				$rswrk = Conn()->Execute($sSqlWrk);
 				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idgrupo_cuenta->ViewValue = $rswrk->fields('DispFld');
+					$arwrk = array();
+					$arwrk[1] = $rswrk->fields('DispFld');
+					$this->idgrupo_cuenta->ViewValue = $this->idgrupo_cuenta->DisplayValue($arwrk);
 					$rswrk->Close();
 				} else {
 					$this->idgrupo_cuenta->ViewValue = $this->idgrupo_cuenta->CurrentValue;
@@ -1716,37 +1861,34 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 			if (trim(strval($this->idgrupo_cuenta->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idgrupo_cuenta`" . ew_SearchString("=", $this->idgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idgrupo_cuenta`" . ew_SearchString("=", $this->idgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `grupo_cuenta`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idgrupo_cuenta, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idgrupo_cuenta, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
 			$this->idgrupo_cuenta->EditValue = $arwrk;
 			}
 
-			// Edit refer script
+			// Add refer script
 			// nomenclatura
 
+			$this->nomenclatura->LinkCustomAttributes = "";
 			$this->nomenclatura->HrefValue = "";
 
 			// nombre
+			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
 
 			// idgrupo_cuenta
+			$this->idgrupo_cuenta->LinkCustomAttributes = "";
 			$this->idgrupo_cuenta->HrefValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
 
@@ -1769,23 +1911,19 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 				$this->idgrupo_cuenta->CurrentValue = $this->idgrupo_cuenta->getSessionValue();
 				$this->idgrupo_cuenta->OldValue = $this->idgrupo_cuenta->CurrentValue;
 			if (strval($this->idgrupo_cuenta->CurrentValue) <> "") {
-				$sFilterWrk = "`idgrupo_cuenta`" . ew_SearchString("=", $this->idgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idgrupo_cuenta`" . ew_SearchString("=", $this->idgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER, "");
 			$sSqlWrk = "SELECT `idgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `grupo_cuenta`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idgrupo_cuenta, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idgrupo_cuenta, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
+				$rswrk = Conn()->Execute($sSqlWrk);
 				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idgrupo_cuenta->ViewValue = $rswrk->fields('DispFld');
+					$arwrk = array();
+					$arwrk[1] = $rswrk->fields('DispFld');
+					$this->idgrupo_cuenta->ViewValue = $this->idgrupo_cuenta->DisplayValue($arwrk);
 					$rswrk->Close();
 				} else {
 					$this->idgrupo_cuenta->ViewValue = $this->idgrupo_cuenta->CurrentValue;
@@ -1798,22 +1936,16 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 			if (trim(strval($this->idgrupo_cuenta->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idgrupo_cuenta`" . ew_SearchString("=", $this->idgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idgrupo_cuenta`" . ew_SearchString("=", $this->idgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `grupo_cuenta`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idgrupo_cuenta, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idgrupo_cuenta, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
@@ -1823,12 +1955,15 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 			// Edit refer script
 			// nomenclatura
 
+			$this->nomenclatura->LinkCustomAttributes = "";
 			$this->nomenclatura->HrefValue = "";
 
 			// nombre
+			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
 
 			// idgrupo_cuenta
+			$this->idgrupo_cuenta->LinkCustomAttributes = "";
 			$this->idgrupo_cuenta->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
@@ -1878,10 +2013,11 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 	// Delete records based on current filter
 	//
 	function DeleteRows() {
-		global $conn, $Language, $Security;
+		global $Language, $Security;
 		$DeleteRows = TRUE;
 		$sSql = $this->SQL();
-		$conn->raiseErrorFn = 'ew_ErrorFn';
+		$conn = &$this->Connection();
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 		$rs = $conn->Execute($sSql);
 		$conn->raiseErrorFn = '';
 		if ($rs === FALSE) {
@@ -1915,7 +2051,7 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 				$sThisKey = "";
 				if ($sThisKey <> "") $sThisKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
 				$sThisKey .= $row['idsubgrupo_cuenta'];
-				$conn->raiseErrorFn = 'ew_ErrorFn';
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 				$DeleteRows = $this->Delete($row); // Delete
 				$conn->raiseErrorFn = '';
 				if ($DeleteRows === FALSE)
@@ -1951,16 +2087,19 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 
 	// Update record based on key values
 	function EditRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
+		$sFilter = $this->ApplyUserIDFilters($sFilter);
+		$conn = &$this->Connection();
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
-		$conn->raiseErrorFn = 'ew_ErrorFn';
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 		$rs = $conn->Execute($sSql);
 		$conn->raiseErrorFn = '';
 		if ($rs === FALSE)
 			return FALSE;
 		if ($rs->EOF) {
+			$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record message
 			$EditRow = FALSE; // Update Failed
 		} else {
 
@@ -1981,7 +2120,7 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 			// Call Row Updating event
 			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
 			if ($bUpdateRow) {
-				$conn->raiseErrorFn = 'ew_ErrorFn';
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 				if (count($rsnew) > 0)
 					$EditRow = $this->Update($rsnew, "", $rsold);
 				else
@@ -2012,7 +2151,8 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 
 	// Add record
 	function AddRow($rsold = NULL) {
-		global $conn, $Language, $Security;
+		global $Language, $Security;
+		$conn = &$this->Connection();
 
 		// Load db values from rsold
 		if ($rsold) {
@@ -2033,10 +2173,14 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
 		$bInsertRow = $this->Row_Inserting($rs, $rsnew);
 		if ($bInsertRow) {
-			$conn->raiseErrorFn = 'ew_ErrorFn';
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 			$AddRow = $this->Insert($rsnew);
 			$conn->raiseErrorFn = '';
 			if ($AddRow) {
+
+				// Get insert id if necessary
+				$this->idsubgrupo_cuenta->setDbValue($conn->Insert_ID());
+				$rsnew['idsubgrupo_cuenta'] = $this->idsubgrupo_cuenta->DbValue;
 			}
 		} else {
 			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
@@ -2049,12 +2193,6 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 				$this->setFailureMessage($Language->Phrase("InsertCancelled"));
 			}
 			$AddRow = FALSE;
-		}
-
-		// Get insert id if necessary
-		if ($AddRow) {
-			$this->idsubgrupo_cuenta->setDbValue($conn->Insert_ID());
-			$rsnew['idsubgrupo_cuenta'] = $this->idsubgrupo_cuenta->DbValue;
 		}
 		if ($AddRow) {
 
@@ -2088,8 +2226,32 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 					$bValidMaster = FALSE;
 				}
 			}
+		} elseif (isset($_POST[EW_TABLE_SHOW_MASTER])) {
+			$sMasterTblVar = $_POST[EW_TABLE_SHOW_MASTER];
+			if ($sMasterTblVar == "") {
+				$bValidMaster = TRUE;
+				$this->DbMasterFilter = "";
+				$this->DbDetailFilter = "";
+			}
+			if ($sMasterTblVar == "grupo_cuenta") {
+				$bValidMaster = TRUE;
+				if (@$_POST["fk_idgrupo_cuenta"] <> "") {
+					$GLOBALS["grupo_cuenta"]->idgrupo_cuenta->setFormValue($_POST["fk_idgrupo_cuenta"]);
+					$this->idgrupo_cuenta->setFormValue($GLOBALS["grupo_cuenta"]->idgrupo_cuenta->FormValue);
+					$this->idgrupo_cuenta->setSessionValue($this->idgrupo_cuenta->FormValue);
+					if (!is_numeric($GLOBALS["grupo_cuenta"]->idgrupo_cuenta->FormValue)) $bValidMaster = FALSE;
+				} else {
+					$bValidMaster = FALSE;
+				}
+			}
 		}
 		if ($bValidMaster) {
+
+			// Update URL
+			$this->AddUrl = $this->AddMasterUrl($this->AddUrl);
+			$this->InlineAddUrl = $this->AddMasterUrl($this->InlineAddUrl);
+			$this->GridAddUrl = $this->AddMasterUrl($this->GridAddUrl);
+			$this->GridEditUrl = $this->AddMasterUrl($this->GridEditUrl);
 
 			// Save current master table
 			$this->setCurrentMasterTable($sMasterTblVar);
@@ -2100,10 +2262,10 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 
 			// Clear previous master key from Session
 			if ($sMasterTblVar <> "grupo_cuenta") {
-				if ($this->idgrupo_cuenta->QueryStringValue == "") $this->idgrupo_cuenta->setSessionValue("");
+				if ($this->idgrupo_cuenta->CurrentValue == "") $this->idgrupo_cuenta->setSessionValue("");
 			}
 		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 
@@ -2111,7 +2273,7 @@ class csubgrupo_cuenta_list extends csubgrupo_cuenta {
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$url = ew_CurrentUrl();
+		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
 		$url = preg_replace('/\?cmd=reset(all){0,1}$/i', '', $url); // Remove cmd=reset / cmd=resetall
 		$Breadcrumb->Add("list", $this->TableVar, $url, "", $this->TableVar, TRUE);
 	}
@@ -2254,16 +2416,12 @@ Page_Rendering();
 // Page Rendering event
 $subgrupo_cuenta_list->Page_Render();
 ?>
-<?php include_once $EW_RELATIVE_PATH . "header.php" ?>
+<?php include_once "header.php" ?>
 <script type="text/javascript">
 
-// Page object
-var subgrupo_cuenta_list = new ew_Page("subgrupo_cuenta_list");
-subgrupo_cuenta_list.PageID = "list"; // Page ID
-var EW_PAGE_ID = subgrupo_cuenta_list.PageID; // For backward compatibility
-
 // Form object
-var fsubgrupo_cuentalist = new ew_Form("fsubgrupo_cuentalist");
+var CurrentPageID = EW_PAGE_ID = "list";
+var CurrentForm = fsubgrupo_cuentalist = new ew_Form("fsubgrupo_cuentalist", "list");
 fsubgrupo_cuentalist.FormKeyCountName = '<?php echo $subgrupo_cuenta_list->FormKeyCountName ?>';
 
 // Validate form
@@ -2271,7 +2429,6 @@ fsubgrupo_cuentalist.Validate = function() {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
-	this.PostAutoSuggest();
 	if ($fobj.find("#a_confirm").val() == "F")
 		return true;
 	var elm, felm, uelm, addcnt = 0;
@@ -2295,16 +2452,13 @@ fsubgrupo_cuentalist.Validate = function() {
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $subgrupo_cuenta->idgrupo_cuenta->FldCaption(), $subgrupo_cuenta->idgrupo_cuenta->ReqErrMsg)) ?>");
 
-			// Set up row object
-			ew_ElementsToRow(fobj);
-
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
 				return false;
 		} // End Grid Add checking
 	}
 	if (gridinsert && addcnt == 0) { // No row added
-		alert(ewLanguage.Phrase("NoAddRecord"));
+		ew_Alert(ewLanguage.Phrase("NoAddRecord"));
 		return false;
 	}
 	return true;
@@ -2335,7 +2489,7 @@ fsubgrupo_cuentalist.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-fsubgrupo_cuentalist.Lists["x_idgrupo_cuenta"] = {"LinkField":"x_idgrupo_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+fsubgrupo_cuentalist.Lists["x_idgrupo_cuenta"] = {"LinkField":"x_idgrupo_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
 // Form object for search
 </script>
@@ -2345,7 +2499,7 @@ fsubgrupo_cuentalist.Lists["x_idgrupo_cuenta"] = {"LinkField":"x_idgrupo_cuenta"
 </script>
 <div class="ewToolbar">
 <?php $Breadcrumb->Render(); ?>
-<?php if ($subgrupo_cuenta_list->TotalRecs > 0 && $subgrupo_cuenta->getCurrentMasterTable() == "" && $subgrupo_cuenta_list->ExportOptions->Visible()) { ?>
+<?php if ($subgrupo_cuenta_list->TotalRecs > 0 && $subgrupo_cuenta_list->ExportOptions->Visible()) { ?>
 <?php $subgrupo_cuenta_list->ExportOptions->Render("body") ?>
 <?php } ?>
 <?php echo $Language->SelectionForm(); ?>
@@ -2358,10 +2512,7 @@ if ($subgrupo_cuenta_list->DbMasterFilter <> "" && $subgrupo_cuenta->getCurrentM
 	if ($subgrupo_cuenta_list->MasterRecordExists) {
 		if ($subgrupo_cuenta->getCurrentMasterTable() == $subgrupo_cuenta->TableVar) $gsMasterReturnUrl .= "?" . EW_TABLE_SHOW_MASTER . "=";
 ?>
-<?php if ($subgrupo_cuenta_list->ExportOptions->Visible()) { ?>
-<div class="ewListExportOptions"><?php $subgrupo_cuenta_list->ExportOptions->Render("body") ?></div>
-<?php } ?>
-<?php include_once $EW_RELATIVE_PATH . "grupo_cuentamaster.php" ?>
+<?php include_once "grupo_cuentamaster.php" ?>
 <?php
 	}
 }
@@ -2375,11 +2526,12 @@ if ($subgrupo_cuenta->CurrentAction == "gridadd") {
 	$subgrupo_cuenta_list->TotalRecs = $subgrupo_cuenta_list->DisplayRecs;
 	$subgrupo_cuenta_list->StopRec = $subgrupo_cuenta_list->DisplayRecs;
 } else {
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $subgrupo_cuenta_list->UseSelectLimit;
 	if ($bSelectLimit) {
-		$subgrupo_cuenta_list->TotalRecs = $subgrupo_cuenta->SelectRecordCount();
+		if ($subgrupo_cuenta_list->TotalRecs <= 0)
+			$subgrupo_cuenta_list->TotalRecs = $subgrupo_cuenta->SelectRecordCount();
 	} else {
-		if ($subgrupo_cuenta_list->Recordset = $subgrupo_cuenta_list->LoadRecordset())
+		if (!$subgrupo_cuenta_list->Recordset && ($subgrupo_cuenta_list->Recordset = $subgrupo_cuenta_list->LoadRecordset()))
 			$subgrupo_cuenta_list->TotalRecs = $subgrupo_cuenta_list->Recordset->RecordCount();
 	}
 	$subgrupo_cuenta_list->StartRec = 1;
@@ -2405,12 +2557,16 @@ $subgrupo_cuenta_list->RenderOtherOptions();
 $subgrupo_cuenta_list->ShowMessage();
 ?>
 <?php if ($subgrupo_cuenta_list->TotalRecs > 0 || $subgrupo_cuenta->CurrentAction <> "") { ?>
-<div class="ewGrid">
+<div class="panel panel-default ewGrid">
 <form name="fsubgrupo_cuentalist" id="fsubgrupo_cuentalist" class="form-inline ewForm ewListForm" action="<?php echo ew_CurrentPage() ?>" method="post">
 <?php if ($subgrupo_cuenta_list->CheckToken) { ?>
 <input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $subgrupo_cuenta_list->Token ?>">
 <?php } ?>
 <input type="hidden" name="t" value="subgrupo_cuenta">
+<?php if ($subgrupo_cuenta->getCurrentMasterTable() == "grupo_cuenta" && $subgrupo_cuenta->CurrentAction <> "") { ?>
+<input type="hidden" name="<?php echo EW_TABLE_SHOW_MASTER ?>" value="grupo_cuenta">
+<input type="hidden" name="fk_idgrupo_cuenta" value="<?php echo $subgrupo_cuenta->idgrupo_cuenta->getSessionValue() ?>">
+<?php } ?>
 <div id="gmp_subgrupo_cuenta" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
 <?php if ($subgrupo_cuenta_list->TotalRecs > 0) { ?>
 <table id="tbl_subgrupo_cuentalist" class="table ewTable">
@@ -2418,6 +2574,9 @@ $subgrupo_cuenta_list->ShowMessage();
 <thead><!-- Table header -->
 	<tr class="ewTableHeader">
 <?php
+
+// Header row
+$subgrupo_cuenta_list->RowType = EW_ROWTYPE_HEADER;
 
 // Render list options
 $subgrupo_cuenta_list->RenderListOptions();
@@ -2483,7 +2642,7 @@ if ($objForm) {
 $subgrupo_cuenta_list->RecCnt = $subgrupo_cuenta_list->StartRec - 1;
 if ($subgrupo_cuenta_list->Recordset && !$subgrupo_cuenta_list->Recordset->EOF) {
 	$subgrupo_cuenta_list->Recordset->MoveFirst();
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $subgrupo_cuenta_list->UseSelectLimit;
 	if (!$bSelectLimit && $subgrupo_cuenta_list->StartRec > 1)
 		$subgrupo_cuenta_list->Recordset->Move($subgrupo_cuenta_list->StartRec - 1);
 } elseif (!$subgrupo_cuenta->AllowAddDeleteRow && $subgrupo_cuenta_list->StopRec == 0) {
@@ -2565,44 +2724,48 @@ $subgrupo_cuenta_list->ListOptions->Render("body", "left", $subgrupo_cuenta_list
 		<td data-name="nomenclatura"<?php echo $subgrupo_cuenta->nomenclatura->CellAttributes() ?>>
 <?php if ($subgrupo_cuenta->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $subgrupo_cuenta_list->RowCnt ?>_subgrupo_cuenta_nomenclatura" class="form-group subgrupo_cuenta_nomenclatura">
-<input type="text" data-field="x_nomenclatura" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $subgrupo_cuenta->nomenclatura->EditValue ?>"<?php echo $subgrupo_cuenta->nomenclatura->EditAttributes() ?>>
+<input type="text" data-table="subgrupo_cuenta" data-field="x_nomenclatura" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomenclatura->getPlaceHolder()) ?>" value="<?php echo $subgrupo_cuenta->nomenclatura->EditValue ?>"<?php echo $subgrupo_cuenta->nomenclatura->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" id="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomenclatura->OldValue) ?>">
+<input type="hidden" data-table="subgrupo_cuenta" data-field="x_nomenclatura" name="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" id="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomenclatura->OldValue) ?>">
 <?php } ?>
 <?php if ($subgrupo_cuenta->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $subgrupo_cuenta_list->RowCnt ?>_subgrupo_cuenta_nomenclatura" class="form-group subgrupo_cuenta_nomenclatura">
-<input type="text" data-field="x_nomenclatura" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $subgrupo_cuenta->nomenclatura->EditValue ?>"<?php echo $subgrupo_cuenta->nomenclatura->EditAttributes() ?>>
+<input type="text" data-table="subgrupo_cuenta" data-field="x_nomenclatura" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomenclatura->getPlaceHolder()) ?>" value="<?php echo $subgrupo_cuenta->nomenclatura->EditValue ?>"<?php echo $subgrupo_cuenta->nomenclatura->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($subgrupo_cuenta->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $subgrupo_cuenta_list->RowCnt ?>_subgrupo_cuenta_nomenclatura" class="subgrupo_cuenta_nomenclatura">
 <span<?php echo $subgrupo_cuenta->nomenclatura->ViewAttributes() ?>>
 <?php echo $subgrupo_cuenta->nomenclatura->ListViewValue() ?></span>
+</span>
 <?php } ?>
 <a id="<?php echo $subgrupo_cuenta_list->PageObjName . "_row_" . $subgrupo_cuenta_list->RowCnt ?>"></a></td>
 	<?php } ?>
 <?php if ($subgrupo_cuenta->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<input type="hidden" data-field="x_idsubgrupo_cuenta" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idsubgrupo_cuenta" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idsubgrupo_cuenta" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->idsubgrupo_cuenta->CurrentValue) ?>">
-<input type="hidden" data-field="x_idsubgrupo_cuenta" name="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_idsubgrupo_cuenta" id="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_idsubgrupo_cuenta" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->idsubgrupo_cuenta->OldValue) ?>">
+<input type="hidden" data-table="subgrupo_cuenta" data-field="x_idsubgrupo_cuenta" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idsubgrupo_cuenta" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idsubgrupo_cuenta" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->idsubgrupo_cuenta->CurrentValue) ?>">
+<input type="hidden" data-table="subgrupo_cuenta" data-field="x_idsubgrupo_cuenta" name="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_idsubgrupo_cuenta" id="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_idsubgrupo_cuenta" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->idsubgrupo_cuenta->OldValue) ?>">
 <?php } ?>
 <?php if ($subgrupo_cuenta->RowType == EW_ROWTYPE_EDIT || $subgrupo_cuenta->CurrentMode == "edit") { ?>
-<input type="hidden" data-field="x_idsubgrupo_cuenta" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idsubgrupo_cuenta" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idsubgrupo_cuenta" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->idsubgrupo_cuenta->CurrentValue) ?>">
+<input type="hidden" data-table="subgrupo_cuenta" data-field="x_idsubgrupo_cuenta" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idsubgrupo_cuenta" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idsubgrupo_cuenta" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->idsubgrupo_cuenta->CurrentValue) ?>">
 <?php } ?>
 	<?php if ($subgrupo_cuenta->nombre->Visible) { // nombre ?>
 		<td data-name="nombre"<?php echo $subgrupo_cuenta->nombre->CellAttributes() ?>>
 <?php if ($subgrupo_cuenta->RowType == EW_ROWTYPE_ADD) { // Add record ?>
 <span id="el<?php echo $subgrupo_cuenta_list->RowCnt ?>_subgrupo_cuenta_nombre" class="form-group subgrupo_cuenta_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->nombre->PlaceHolder) ?>" value="<?php echo $subgrupo_cuenta->nombre->EditValue ?>"<?php echo $subgrupo_cuenta->nombre->EditAttributes() ?>>
+<input type="text" data-table="subgrupo_cuenta" data-field="x_nombre" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->nombre->getPlaceHolder()) ?>" value="<?php echo $subgrupo_cuenta->nombre->EditValue ?>"<?php echo $subgrupo_cuenta->nombre->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_nombre" name="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" id="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->nombre->OldValue) ?>">
+<input type="hidden" data-table="subgrupo_cuenta" data-field="x_nombre" name="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" id="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->nombre->OldValue) ?>">
 <?php } ?>
 <?php if ($subgrupo_cuenta->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <span id="el<?php echo $subgrupo_cuenta_list->RowCnt ?>_subgrupo_cuenta_nombre" class="form-group subgrupo_cuenta_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->nombre->PlaceHolder) ?>" value="<?php echo $subgrupo_cuenta->nombre->EditValue ?>"<?php echo $subgrupo_cuenta->nombre->EditAttributes() ?>>
+<input type="text" data-table="subgrupo_cuenta" data-field="x_nombre" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->nombre->getPlaceHolder()) ?>" value="<?php echo $subgrupo_cuenta->nombre->EditValue ?>"<?php echo $subgrupo_cuenta->nombre->EditAttributes() ?>>
 </span>
 <?php } ?>
 <?php if ($subgrupo_cuenta->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $subgrupo_cuenta_list->RowCnt ?>_subgrupo_cuenta_nombre" class="subgrupo_cuenta_nombre">
 <span<?php echo $subgrupo_cuenta->nombre->ViewAttributes() ?>>
 <?php echo $subgrupo_cuenta->nombre->ListViewValue() ?></span>
+</span>
 <?php } ?>
 </td>
 	<?php } ?>
@@ -2617,21 +2780,26 @@ $subgrupo_cuenta_list->ListOptions->Render("body", "left", $subgrupo_cuenta_list
 <input type="hidden" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->idgrupo_cuenta->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el<?php echo $subgrupo_cuenta_list->RowCnt ?>_subgrupo_cuenta_idgrupo_cuenta" class="form-group subgrupo_cuenta_idgrupo_cuenta">
-<select data-field="x_idgrupo_cuenta" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta"<?php echo $subgrupo_cuenta->idgrupo_cuenta->EditAttributes() ?>>
+<select data-table="subgrupo_cuenta" data-field="x_idgrupo_cuenta" data-value-separator="<?php echo ew_HtmlEncode(is_array($subgrupo_cuenta->idgrupo_cuenta->DisplayValueSeparator) ? json_encode($subgrupo_cuenta->idgrupo_cuenta->DisplayValueSeparator) : $subgrupo_cuenta->idgrupo_cuenta->DisplayValueSeparator) ?>" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta"<?php echo $subgrupo_cuenta->idgrupo_cuenta->EditAttributes() ?>>
 <?php
 if (is_array($subgrupo_cuenta->idgrupo_cuenta->EditValue)) {
 	$arwrk = $subgrupo_cuenta->idgrupo_cuenta->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($subgrupo_cuenta->idgrupo_cuenta->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($subgrupo_cuenta->idgrupo_cuenta->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $subgrupo_cuenta->idgrupo_cuenta->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($subgrupo_cuenta->idgrupo_cuenta->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($subgrupo_cuenta->idgrupo_cuenta->CurrentValue) ?>" selected><?php echo $subgrupo_cuenta->idgrupo_cuenta->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $subgrupo_cuenta->idgrupo_cuenta->OldValue = "";
 ?>
@@ -2640,18 +2808,18 @@ if (@$emptywrk) $subgrupo_cuenta->idgrupo_cuenta->OldValue = "";
 $sSqlWrk = "SELECT `idgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `grupo_cuenta`";
 $sWhereWrk = "";
 $lookuptblfilter = "`estado` = 'Activo'";
-if (strval($lookuptblfilter) <> "") {
-	ew_AddFilter($sWhereWrk, $lookuptblfilter);
-}
-
-// Call Lookup selecting
-$subgrupo_cuenta->Lookup_Selecting($subgrupo_cuenta->idgrupo_cuenta, $sWhereWrk);
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$subgrupo_cuenta->idgrupo_cuenta->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$subgrupo_cuenta->idgrupo_cuenta->LookupFilters += array("f0" => "`idgrupo_cuenta` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$subgrupo_cuenta->Lookup_Selecting($subgrupo_cuenta->idgrupo_cuenta, $sWhereWrk); // Call Lookup selecting
 if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $subgrupo_cuenta->idgrupo_cuenta->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" id="s_x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idgrupo_cuenta` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" id="s_x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" value="<?php echo $subgrupo_cuenta->idgrupo_cuenta->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
-<input type="hidden" data-field="x_idgrupo_cuenta" name="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" id="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->idgrupo_cuenta->OldValue) ?>">
+<input type="hidden" data-table="subgrupo_cuenta" data-field="x_idgrupo_cuenta" name="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" id="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->idgrupo_cuenta->OldValue) ?>">
 <?php } ?>
 <?php if ($subgrupo_cuenta->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
 <?php if ($subgrupo_cuenta->idgrupo_cuenta->getSessionValue() <> "") { ?>
@@ -2662,21 +2830,26 @@ if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 <input type="hidden" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->idgrupo_cuenta->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el<?php echo $subgrupo_cuenta_list->RowCnt ?>_subgrupo_cuenta_idgrupo_cuenta" class="form-group subgrupo_cuenta_idgrupo_cuenta">
-<select data-field="x_idgrupo_cuenta" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta"<?php echo $subgrupo_cuenta->idgrupo_cuenta->EditAttributes() ?>>
+<select data-table="subgrupo_cuenta" data-field="x_idgrupo_cuenta" data-value-separator="<?php echo ew_HtmlEncode(is_array($subgrupo_cuenta->idgrupo_cuenta->DisplayValueSeparator) ? json_encode($subgrupo_cuenta->idgrupo_cuenta->DisplayValueSeparator) : $subgrupo_cuenta->idgrupo_cuenta->DisplayValueSeparator) ?>" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta"<?php echo $subgrupo_cuenta->idgrupo_cuenta->EditAttributes() ?>>
 <?php
 if (is_array($subgrupo_cuenta->idgrupo_cuenta->EditValue)) {
 	$arwrk = $subgrupo_cuenta->idgrupo_cuenta->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($subgrupo_cuenta->idgrupo_cuenta->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($subgrupo_cuenta->idgrupo_cuenta->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $subgrupo_cuenta->idgrupo_cuenta->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($subgrupo_cuenta->idgrupo_cuenta->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($subgrupo_cuenta->idgrupo_cuenta->CurrentValue) ?>" selected><?php echo $subgrupo_cuenta->idgrupo_cuenta->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $subgrupo_cuenta->idgrupo_cuenta->OldValue = "";
 ?>
@@ -2685,21 +2858,23 @@ if (@$emptywrk) $subgrupo_cuenta->idgrupo_cuenta->OldValue = "";
 $sSqlWrk = "SELECT `idgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `grupo_cuenta`";
 $sWhereWrk = "";
 $lookuptblfilter = "`estado` = 'Activo'";
-if (strval($lookuptblfilter) <> "") {
-	ew_AddFilter($sWhereWrk, $lookuptblfilter);
-}
-
-// Call Lookup selecting
-$subgrupo_cuenta->Lookup_Selecting($subgrupo_cuenta->idgrupo_cuenta, $sWhereWrk);
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$subgrupo_cuenta->idgrupo_cuenta->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$subgrupo_cuenta->idgrupo_cuenta->LookupFilters += array("f0" => "`idgrupo_cuenta` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$subgrupo_cuenta->Lookup_Selecting($subgrupo_cuenta->idgrupo_cuenta, $sWhereWrk); // Call Lookup selecting
 if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $subgrupo_cuenta->idgrupo_cuenta->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" id="s_x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idgrupo_cuenta` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" id="s_x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" value="<?php echo $subgrupo_cuenta->idgrupo_cuenta->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php } ?>
 <?php if ($subgrupo_cuenta->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $subgrupo_cuenta_list->RowCnt ?>_subgrupo_cuenta_idgrupo_cuenta" class="subgrupo_cuenta_idgrupo_cuenta">
 <span<?php echo $subgrupo_cuenta->idgrupo_cuenta->ViewAttributes() ?>>
 <?php echo $subgrupo_cuenta->idgrupo_cuenta->ListViewValue() ?></span>
+</span>
 <?php } ?>
 </td>
 	<?php } ?>
@@ -2746,23 +2921,23 @@ fsubgrupo_cuentalist.UpdateOpts(<?php echo $subgrupo_cuenta_list->RowIndex ?>);
 $subgrupo_cuenta_list->ListOptions->Render("body", "left", $subgrupo_cuenta_list->RowIndex);
 ?>
 	<?php if ($subgrupo_cuenta->nomenclatura->Visible) { // nomenclatura ?>
-		<td>
+		<td data-name="nomenclatura">
 <span id="el$rowindex$_subgrupo_cuenta_nomenclatura" class="form-group subgrupo_cuenta_nomenclatura">
-<input type="text" data-field="x_nomenclatura" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $subgrupo_cuenta->nomenclatura->EditValue ?>"<?php echo $subgrupo_cuenta->nomenclatura->EditAttributes() ?>>
+<input type="text" data-table="subgrupo_cuenta" data-field="x_nomenclatura" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomenclatura->getPlaceHolder()) ?>" value="<?php echo $subgrupo_cuenta->nomenclatura->EditValue ?>"<?php echo $subgrupo_cuenta->nomenclatura->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_nomenclatura" name="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" id="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomenclatura->OldValue) ?>">
+<input type="hidden" data-table="subgrupo_cuenta" data-field="x_nomenclatura" name="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" id="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_nomenclatura" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->nomenclatura->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($subgrupo_cuenta->nombre->Visible) { // nombre ?>
-		<td>
+		<td data-name="nombre">
 <span id="el$rowindex$_subgrupo_cuenta_nombre" class="form-group subgrupo_cuenta_nombre">
-<input type="text" data-field="x_nombre" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->nombre->PlaceHolder) ?>" value="<?php echo $subgrupo_cuenta->nombre->EditValue ?>"<?php echo $subgrupo_cuenta->nombre->EditAttributes() ?>>
+<input type="text" data-table="subgrupo_cuenta" data-field="x_nombre" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->nombre->getPlaceHolder()) ?>" value="<?php echo $subgrupo_cuenta->nombre->EditValue ?>"<?php echo $subgrupo_cuenta->nombre->EditAttributes() ?>>
 </span>
-<input type="hidden" data-field="x_nombre" name="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" id="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->nombre->OldValue) ?>">
+<input type="hidden" data-table="subgrupo_cuenta" data-field="x_nombre" name="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" id="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_nombre" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->nombre->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($subgrupo_cuenta->idgrupo_cuenta->Visible) { // idgrupo_cuenta ?>
-		<td>
+		<td data-name="idgrupo_cuenta">
 <?php if ($subgrupo_cuenta->idgrupo_cuenta->getSessionValue() <> "") { ?>
 <span id="el$rowindex$_subgrupo_cuenta_idgrupo_cuenta" class="form-group subgrupo_cuenta_idgrupo_cuenta">
 <span<?php echo $subgrupo_cuenta->idgrupo_cuenta->ViewAttributes() ?>>
@@ -2771,21 +2946,26 @@ $subgrupo_cuenta_list->ListOptions->Render("body", "left", $subgrupo_cuenta_list
 <input type="hidden" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->idgrupo_cuenta->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el$rowindex$_subgrupo_cuenta_idgrupo_cuenta" class="form-group subgrupo_cuenta_idgrupo_cuenta">
-<select data-field="x_idgrupo_cuenta" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta"<?php echo $subgrupo_cuenta->idgrupo_cuenta->EditAttributes() ?>>
+<select data-table="subgrupo_cuenta" data-field="x_idgrupo_cuenta" data-value-separator="<?php echo ew_HtmlEncode(is_array($subgrupo_cuenta->idgrupo_cuenta->DisplayValueSeparator) ? json_encode($subgrupo_cuenta->idgrupo_cuenta->DisplayValueSeparator) : $subgrupo_cuenta->idgrupo_cuenta->DisplayValueSeparator) ?>" id="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" name="x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta"<?php echo $subgrupo_cuenta->idgrupo_cuenta->EditAttributes() ?>>
 <?php
 if (is_array($subgrupo_cuenta->idgrupo_cuenta->EditValue)) {
 	$arwrk = $subgrupo_cuenta->idgrupo_cuenta->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($subgrupo_cuenta->idgrupo_cuenta->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($subgrupo_cuenta->idgrupo_cuenta->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $subgrupo_cuenta->idgrupo_cuenta->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($subgrupo_cuenta->idgrupo_cuenta->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($subgrupo_cuenta->idgrupo_cuenta->CurrentValue) ?>" selected><?php echo $subgrupo_cuenta->idgrupo_cuenta->CurrentValue ?></option>
+<?php
+    }
 }
 if (@$emptywrk) $subgrupo_cuenta->idgrupo_cuenta->OldValue = "";
 ?>
@@ -2794,18 +2974,18 @@ if (@$emptywrk) $subgrupo_cuenta->idgrupo_cuenta->OldValue = "";
 $sSqlWrk = "SELECT `idgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `grupo_cuenta`";
 $sWhereWrk = "";
 $lookuptblfilter = "`estado` = 'Activo'";
-if (strval($lookuptblfilter) <> "") {
-	ew_AddFilter($sWhereWrk, $lookuptblfilter);
-}
-
-// Call Lookup selecting
-$subgrupo_cuenta->Lookup_Selecting($subgrupo_cuenta->idgrupo_cuenta, $sWhereWrk);
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$subgrupo_cuenta->idgrupo_cuenta->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$subgrupo_cuenta->idgrupo_cuenta->LookupFilters += array("f0" => "`idgrupo_cuenta` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$subgrupo_cuenta->Lookup_Selecting($subgrupo_cuenta->idgrupo_cuenta, $sWhereWrk); // Call Lookup selecting
 if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $subgrupo_cuenta->idgrupo_cuenta->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" id="s_x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idgrupo_cuenta` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" id="s_x<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" value="<?php echo $subgrupo_cuenta->idgrupo_cuenta->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
-<input type="hidden" data-field="x_idgrupo_cuenta" name="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" id="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->idgrupo_cuenta->OldValue) ?>">
+<input type="hidden" data-table="subgrupo_cuenta" data-field="x_idgrupo_cuenta" name="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" id="o<?php echo $subgrupo_cuenta_list->RowIndex ?>_idgrupo_cuenta" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->idgrupo_cuenta->OldValue) ?>">
 </td>
 	<?php } ?>
 <?php
@@ -2844,7 +3024,7 @@ fsubgrupo_cuentalist.UpdateOpts(<?php echo $subgrupo_cuenta_list->RowIndex ?>);
 if ($subgrupo_cuenta_list->Recordset)
 	$subgrupo_cuenta_list->Recordset->Close();
 ?>
-<div class="ewGridLowerPanel">
+<div class="panel-footer ewGridLowerPanel">
 <?php if ($subgrupo_cuenta->CurrentAction <> "gridadd" && $subgrupo_cuenta->CurrentAction <> "gridedit") { ?>
 <form name="ewPagerForm" class="ewForm form-inline ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
 <?php if (!isset($subgrupo_cuenta_list->Pager)) $subgrupo_cuenta_list->Pager = new cPrevNextPager($subgrupo_cuenta_list->StartRec, $subgrupo_cuenta_list->DisplayRecs, $subgrupo_cuenta_list->TotalRecs) ?>
@@ -2927,7 +3107,7 @@ if (EW_DEBUG_ENABLED)
 // document.write("page loaded");
 
 </script>
-<?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
+<?php include_once "footer.php" ?>
 <?php
 $subgrupo_cuenta_list->Page_Terminate();
 ?>

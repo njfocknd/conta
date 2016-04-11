@@ -29,10 +29,16 @@ class cdocumento_caja_chica extends cTable {
 		$this->TableVar = 'documento_caja_chica';
 		$this->TableName = 'documento_caja_chica';
 		$this->TableType = 'TABLE';
+
+		// Update Table
+		$this->UpdateTable = "`documento_caja_chica`";
+		$this->DBID = 'DB';
 		$this->ExportAll = TRUE;
 		$this->ExportPageBreakCount = 0; // Page break per every n record (PDF only)
 		$this->ExportPageOrientation = "portrait"; // Page orientation (PDF only)
 		$this->ExportPageSize = "a4"; // Page size (PDF only)
+		$this->ExportExcelPageOrientation = ""; // Page orientation (PHPExcel only)
+		$this->ExportExcelPageSize = ""; // Page size (PHPExcel only)
 		$this->DetailAdd = FALSE; // Allow detail add
 		$this->DetailEdit = FALSE; // Allow detail edit
 		$this->DetailView = FALSE; // Allow detail view
@@ -43,48 +49,50 @@ class cdocumento_caja_chica extends cTable {
 		$this->BasicSearch = new cBasicSearch($this->TableVar);
 
 		// iddocumento_caja_chica
-		$this->iddocumento_caja_chica = new cField('documento_caja_chica', 'documento_caja_chica', 'x_iddocumento_caja_chica', 'iddocumento_caja_chica', '`iddocumento_caja_chica`', '`iddocumento_caja_chica`', 3, -1, FALSE, '`iddocumento_caja_chica`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->iddocumento_caja_chica = new cField('documento_caja_chica', 'documento_caja_chica', 'x_iddocumento_caja_chica', 'iddocumento_caja_chica', '`iddocumento_caja_chica`', '`iddocumento_caja_chica`', 3, -1, FALSE, '`iddocumento_caja_chica`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'NO');
 		$this->iddocumento_caja_chica->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['iddocumento_caja_chica'] = &$this->iddocumento_caja_chica;
 
 		// idcaja_chica
-		$this->idcaja_chica = new cField('documento_caja_chica', 'documento_caja_chica', 'x_idcaja_chica', 'idcaja_chica', '`idcaja_chica`', '`idcaja_chica`', 3, -1, FALSE, '`idcaja_chica`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->idcaja_chica = new cField('documento_caja_chica', 'documento_caja_chica', 'x_idcaja_chica', 'idcaja_chica', '`idcaja_chica`', '`idcaja_chica`', 3, -1, FALSE, '`idcaja_chica`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
 		$this->idcaja_chica->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idcaja_chica'] = &$this->idcaja_chica;
 
 		// tipo
-		$this->tipo = new cField('documento_caja_chica', 'documento_caja_chica', 'x_tipo', 'tipo', '`tipo`', '`tipo`', 202, -1, FALSE, '`tipo`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->tipo = new cField('documento_caja_chica', 'documento_caja_chica', 'x_tipo', 'tipo', '`tipo`', '`tipo`', 202, -1, FALSE, '`tipo`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
+		$this->tipo->OptionCount = 2;
 		$this->fields['tipo'] = &$this->tipo;
 
 		// idtipo_documento
-		$this->idtipo_documento = new cField('documento_caja_chica', 'documento_caja_chica', 'x_idtipo_documento', 'idtipo_documento', '`idtipo_documento`', '`idtipo_documento`', 3, -1, FALSE, '`idtipo_documento`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->idtipo_documento = new cField('documento_caja_chica', 'documento_caja_chica', 'x_idtipo_documento', 'idtipo_documento', '`idtipo_documento`', '`idtipo_documento`', 3, -1, FALSE, '`idtipo_documento`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
 		$this->idtipo_documento->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idtipo_documento'] = &$this->idtipo_documento;
 
 		// serie
-		$this->serie = new cField('documento_caja_chica', 'documento_caja_chica', 'x_serie', 'serie', '`serie`', '`serie`', 200, -1, FALSE, '`serie`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->serie = new cField('documento_caja_chica', 'documento_caja_chica', 'x_serie', 'serie', '`serie`', '`serie`', 200, -1, FALSE, '`serie`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->fields['serie'] = &$this->serie;
 
 		// numero
-		$this->numero = new cField('documento_caja_chica', 'documento_caja_chica', 'x_numero', 'numero', '`numero`', '`numero`', 200, -1, FALSE, '`numero`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->numero = new cField('documento_caja_chica', 'documento_caja_chica', 'x_numero', 'numero', '`numero`', '`numero`', 200, -1, FALSE, '`numero`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->fields['numero'] = &$this->numero;
 
 		// fecha
-		$this->fecha = new cField('documento_caja_chica', 'documento_caja_chica', 'x_fecha', 'fecha', '`fecha`', 'DATE_FORMAT(`fecha`, \'%d/%m/%Y\')', 133, 7, FALSE, '`fecha`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->fecha = new cField('documento_caja_chica', 'documento_caja_chica', 'x_fecha', 'fecha', '`fecha`', 'DATE_FORMAT(`fecha`, \'%d/%m/%Y\')', 133, 7, FALSE, '`fecha`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->fecha->FldDefaultErrMsg = str_replace("%s", "/", $Language->Phrase("IncorrectDateDMY"));
 		$this->fields['fecha'] = &$this->fecha;
 
 		// monto
-		$this->monto = new cField('documento_caja_chica', 'documento_caja_chica', 'x_monto', 'monto', '`monto`', '`monto`', 131, -1, FALSE, '`monto`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->monto = new cField('documento_caja_chica', 'documento_caja_chica', 'x_monto', 'monto', '`monto`', '`monto`', 131, -1, FALSE, '`monto`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->monto->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
 		$this->fields['monto'] = &$this->monto;
 
 		// estado
-		$this->estado = new cField('documento_caja_chica', 'documento_caja_chica', 'x_estado', 'estado', '`estado`', '`estado`', 202, -1, FALSE, '`estado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->estado = new cField('documento_caja_chica', 'documento_caja_chica', 'x_estado', 'estado', '`estado`', '`estado`', 202, -1, FALSE, '`estado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'RADIO');
+		$this->estado->OptionCount = 2;
 		$this->fields['estado'] = &$this->estado;
 
 		// fecha_insercion
-		$this->fecha_insercion = new cField('documento_caja_chica', 'documento_caja_chica', 'x_fecha_insercion', 'fecha_insercion', '`fecha_insercion`', 'DATE_FORMAT(`fecha_insercion`, \'%d/%m/%Y\')', 135, 7, FALSE, '`fecha_insercion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT');
+		$this->fecha_insercion = new cField('documento_caja_chica', 'documento_caja_chica', 'x_fecha_insercion', 'fecha_insercion', '`fecha_insercion`', 'DATE_FORMAT(`fecha_insercion`, \'%d/%m/%Y\')', 135, 7, FALSE, '`fecha_insercion`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->fecha_insercion->FldDefaultErrMsg = str_replace("%s", "/", $Language->Phrase("IncorrectDateDMY"));
 		$this->fields['fecha_insercion'] = &$this->fecha_insercion;
 	}
@@ -122,7 +130,7 @@ class cdocumento_caja_chica extends cTable {
 		$sMasterFilter = "";
 		if ($this->getCurrentMasterTable() == "caja_chica") {
 			if ($this->idcaja_chica->getSessionValue() <> "")
-				$sMasterFilter .= "`idcaja_chica`=" . ew_QuotedValue($this->idcaja_chica->getSessionValue(), EW_DATATYPE_NUMBER);
+				$sMasterFilter .= "`idcaja_chica`=" . ew_QuotedValue($this->idcaja_chica->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
 			else
 				return "";
 		}
@@ -136,7 +144,7 @@ class cdocumento_caja_chica extends cTable {
 		$sDetailFilter = "";
 		if ($this->getCurrentMasterTable() == "caja_chica") {
 			if ($this->idcaja_chica->getSessionValue() <> "")
-				$sDetailFilter .= "`idcaja_chica`=" . ew_QuotedValue($this->idcaja_chica->getSessionValue(), EW_DATATYPE_NUMBER);
+				$sDetailFilter .= "`idcaja_chica`=" . ew_QuotedValue($this->idcaja_chica->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
 			else
 				return "";
 		}
@@ -236,29 +244,6 @@ class cdocumento_caja_chica extends cTable {
     	$this->_SqlOrderBy = $v;
 	}
 
-	// Check if Anonymous User is allowed
-	function AllowAnonymousUser() {
-		switch (@$this->PageID) {
-			case "add":
-			case "register":
-			case "addopt":
-				return FALSE;
-			case "edit":
-			case "update":
-			case "changepwd":
-			case "forgotpwd":
-				return FALSE;
-			case "delete":
-				return FALSE;
-			case "view":
-				return FALSE;
-			case "search":
-				return FALSE;
-			default:
-				return FALSE;
-		}
-	}
-
 	// Apply User ID filters
 	function ApplyUserIDFilters($sFilter) {
 		return $sFilter;
@@ -327,9 +312,8 @@ class cdocumento_caja_chica extends cTable {
 
 	// Try to get record count
 	function TryGetRecordCount($sSql) {
-		global $conn;
 		$cnt = -1;
-		if ($this->TableType == 'TABLE' || $this->TableType == 'VIEW') {
+		if (($this->TableType == 'TABLE' || $this->TableType == 'VIEW' || $this->TableType == 'LINKTABLE') && preg_match("/^SELECT \* FROM/i", $sSql)) {
 			$sSql = "SELECT COUNT(*) FROM" . preg_replace('/^SELECT\s([\s\S]+)?\*\sFROM/i', "", $sSql);
 			$sOrderBy = $this->GetOrderBy();
 			if (substr($sSql, strlen($sOrderBy) * -1) == $sOrderBy)
@@ -337,6 +321,7 @@ class cdocumento_caja_chica extends cTable {
 		} else {
 			$sSql = "SELECT COUNT(*) FROM (" . $sSql . ") EW_COUNT_TABLE";
 		}
+		$conn = &$this->Connection();
 		if ($rs = $conn->Execute($sSql)) {
 			if (!$rs->EOF && $rs->FieldCount() > 0) {
 				$cnt = $rs->fields[0];
@@ -367,10 +352,10 @@ class cdocumento_caja_chica extends cTable {
 
 	// Get record count (for current List page)
 	function SelectRecordCount() {
-		global $conn;
 		$sSql = $this->SelectSQL();
 		$cnt = $this->TryGetRecordCount($sSql);
 		if ($cnt == -1) {
+			$conn = &$this->Connection();
 			if ($rs = $conn->Execute($sSql)) {
 				$cnt = $rs->RecordCount();
 				$rs->Close();
@@ -379,19 +364,15 @@ class cdocumento_caja_chica extends cTable {
 		return intval($cnt);
 	}
 
-	// Update Table
-	var $UpdateTable = "`documento_caja_chica`";
-
 	// INSERT statement
 	function InsertSQL(&$rs) {
-		global $conn;
 		$names = "";
 		$values = "";
 		foreach ($rs as $name => $value) {
-			if (!isset($this->fields[$name]))
+			if (!isset($this->fields[$name]) || $this->fields[$name]->FldIsCustom)
 				continue;
 			$names .= $this->fields[$name]->FldExpression . ",";
-			$values .= ew_QuotedValue($value, $this->fields[$name]->FldDataType) . ",";
+			$values .= ew_QuotedValue($value, $this->fields[$name]->FldDataType, $this->DBID) . ",";
 		}
 		while (substr($names, -1) == ",")
 			$names = substr($names, 0, -1);
@@ -402,41 +383,45 @@ class cdocumento_caja_chica extends cTable {
 
 	// Insert
 	function Insert(&$rs) {
-		global $conn;
+		$conn = &$this->Connection();
 		return $conn->Execute($this->InsertSQL($rs));
 	}
 
 	// UPDATE statement
-	function UpdateSQL(&$rs, $where = "") {
+	function UpdateSQL(&$rs, $where = "", $curfilter = TRUE) {
 		$sql = "UPDATE " . $this->UpdateTable . " SET ";
 		foreach ($rs as $name => $value) {
-			if (!isset($this->fields[$name]))
+			if (!isset($this->fields[$name]) || $this->fields[$name]->FldIsCustom)
 				continue;
 			$sql .= $this->fields[$name]->FldExpression . "=";
-			$sql .= ew_QuotedValue($value, $this->fields[$name]->FldDataType) . ",";
+			$sql .= ew_QuotedValue($value, $this->fields[$name]->FldDataType, $this->DBID) . ",";
 		}
 		while (substr($sql, -1) == ",")
 			$sql = substr($sql, 0, -1);
-		$filter = $this->CurrentFilter;
+		$filter = ($curfilter) ? $this->CurrentFilter : "";
+		if (is_array($where))
+			$where = $this->ArrayToFilter($where);
 		ew_AddFilter($filter, $where);
 		if ($filter <> "")	$sql .= " WHERE " . $filter;
 		return $sql;
 	}
 
 	// Update
-	function Update(&$rs, $where = "", $rsold = NULL) {
-		global $conn;
-		return $conn->Execute($this->UpdateSQL($rs, $where));
+	function Update(&$rs, $where = "", $rsold = NULL, $curfilter = TRUE) {
+		$conn = &$this->Connection();
+		return $conn->Execute($this->UpdateSQL($rs, $where, $curfilter));
 	}
 
 	// DELETE statement
-	function DeleteSQL(&$rs, $where = "") {
+	function DeleteSQL(&$rs, $where = "", $curfilter = TRUE) {
 		$sql = "DELETE FROM " . $this->UpdateTable . " WHERE ";
+		if (is_array($where))
+			$where = $this->ArrayToFilter($where);
 		if ($rs) {
 			if (array_key_exists('iddocumento_caja_chica', $rs))
-				ew_AddFilter($where, ew_QuotedName('iddocumento_caja_chica') . '=' . ew_QuotedValue($rs['iddocumento_caja_chica'], $this->iddocumento_caja_chica->FldDataType));
+				ew_AddFilter($where, ew_QuotedName('iddocumento_caja_chica', $this->DBID) . '=' . ew_QuotedValue($rs['iddocumento_caja_chica'], $this->iddocumento_caja_chica->FldDataType, $this->DBID));
 		}
-		$filter = $this->CurrentFilter;
+		$filter = ($curfilter) ? $this->CurrentFilter : "";
 		ew_AddFilter($filter, $where);
 		if ($filter <> "")
 			$sql .= $filter;
@@ -446,9 +431,9 @@ class cdocumento_caja_chica extends cTable {
 	}
 
 	// Delete
-	function Delete(&$rs, $where = "") {
-		global $conn;
-		return $conn->Execute($this->DeleteSQL($rs, $where));
+	function Delete(&$rs, $where = "", $curfilter = TRUE) {
+		$conn = &$this->Connection();
+		return $conn->Execute($this->DeleteSQL($rs, $where, $curfilter));
 	}
 
 	// Key filter WHERE clause
@@ -461,7 +446,7 @@ class cdocumento_caja_chica extends cTable {
 		$sKeyFilter = $this->SqlKeyFilter();
 		if (!is_numeric($this->iddocumento_caja_chica->CurrentValue))
 			$sKeyFilter = "0=1"; // Invalid key
-		$sKeyFilter = str_replace("@iddocumento_caja_chica@", ew_AdjustSql($this->iddocumento_caja_chica->CurrentValue), $sKeyFilter); // Replace key value
+		$sKeyFilter = str_replace("@iddocumento_caja_chica@", ew_AdjustSql($this->iddocumento_caja_chica->CurrentValue, $this->DBID), $sKeyFilter); // Replace key value
 		return $sKeyFilter;
 	}
 
@@ -491,42 +476,63 @@ class cdocumento_caja_chica extends cTable {
 	// View URL
 	function GetViewUrl($parm = "") {
 		if ($parm <> "")
-			return $this->KeyUrl("documento_caja_chicaview.php", $this->UrlParm($parm));
+			$url = $this->KeyUrl("documento_caja_chicaview.php", $this->UrlParm($parm));
 		else
-			return $this->KeyUrl("documento_caja_chicaview.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+			$url = $this->KeyUrl("documento_caja_chicaview.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Add URL
 	function GetAddUrl($parm = "") {
 		if ($parm <> "")
-			return "documento_caja_chicaadd.php?" . $this->UrlParm($parm);
+			$url = "documento_caja_chicaadd.php?" . $this->UrlParm($parm);
 		else
-			return "documento_caja_chicaadd.php";
+			$url = "documento_caja_chicaadd.php";
+		return $this->AddMasterUrl($url);
 	}
 
 	// Edit URL
 	function GetEditUrl($parm = "") {
-		return $this->KeyUrl("documento_caja_chicaedit.php", $this->UrlParm($parm));
+		$url = $this->KeyUrl("documento_caja_chicaedit.php", $this->UrlParm($parm));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Inline edit URL
 	function GetInlineEditUrl() {
-		return $this->KeyUrl(ew_CurrentPage(), $this->UrlParm("a=edit"));
+		$url = $this->KeyUrl(ew_CurrentPage(), $this->UrlParm("a=edit"));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Copy URL
 	function GetCopyUrl($parm = "") {
-		return $this->KeyUrl("documento_caja_chicaadd.php", $this->UrlParm($parm));
+		$url = $this->KeyUrl("documento_caja_chicaadd.php", $this->UrlParm($parm));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Inline copy URL
 	function GetInlineCopyUrl() {
-		return $this->KeyUrl(ew_CurrentPage(), $this->UrlParm("a=copy"));
+		$url = $this->KeyUrl(ew_CurrentPage(), $this->UrlParm("a=copy"));
+		return $this->AddMasterUrl($url);
 	}
 
 	// Delete URL
 	function GetDeleteUrl() {
 		return $this->KeyUrl("documento_caja_chicadelete.php", $this->UrlParm());
+	}
+
+	// Add master url
+	function AddMasterUrl($url) {
+		if ($this->getCurrentMasterTable() == "caja_chica" && strpos($url, EW_TABLE_SHOW_MASTER . "=") === FALSE) {
+			$url .= (strpos($url, "?") !== FALSE ? "&" : "?") . EW_TABLE_SHOW_MASTER . "=" . $this->getCurrentMasterTable();
+			$url .= "&fk_idcaja_chica=" . urlencode($this->idcaja_chica->CurrentValue);
+		}
+		return $url;
+	}
+
+	function KeyToJson() {
+		$json = "";
+		$json .= "iddocumento_caja_chica:" . ew_VarToJson($this->iddocumento_caja_chica->CurrentValue, "number", "'");
+		return "{" . $json . "}";
 	}
 
 	// Add key value to URL
@@ -536,7 +542,7 @@ class cdocumento_caja_chica extends cTable {
 		if (!is_null($this->iddocumento_caja_chica->CurrentValue)) {
 			$sUrl .= "iddocumento_caja_chica=" . urlencode($this->iddocumento_caja_chica->CurrentValue);
 		} else {
-			return "javascript:alert(ewLanguage.Phrase('InvalidRecord'));";
+			return "javascript:ew_Alert(ewLanguage.Phrase('InvalidRecord'));";
 		}
 		return $sUrl;
 	}
@@ -565,18 +571,26 @@ class cdocumento_caja_chica extends cTable {
 		} elseif (isset($_GET["key_m"])) {
 			$arKeys = ew_StripSlashes($_GET["key_m"]);
 			$cnt = count($arKeys);
-		} elseif (isset($_GET)) {
-			$arKeys[] = @$_GET["iddocumento_caja_chica"]; // iddocumento_caja_chica
+		} elseif (!empty($_GET) || !empty($_POST)) {
+			$isPost = ew_IsHttpPost();
+			if ($isPost && isset($_POST["iddocumento_caja_chica"]))
+				$arKeys[] = ew_StripSlashes($_POST["iddocumento_caja_chica"]);
+			elseif (isset($_GET["iddocumento_caja_chica"]))
+				$arKeys[] = ew_StripSlashes($_GET["iddocumento_caja_chica"]);
+			else
+				$arKeys = NULL; // Do not setup
 
 			//return $arKeys; // Do not return yet, so the values will also be checked by the following code
 		}
 
 		// Check keys
 		$ar = array();
-		foreach ($arKeys as $key) {
-			if (!is_numeric($key))
-				continue;
-			$ar[] = $key;
+		if (is_array($arKeys)) {
+			foreach ($arKeys as $key) {
+				if (!is_numeric($key))
+					continue;
+				$ar[] = $key;
+			}
 		}
 		return $ar;
 	}
@@ -595,13 +609,13 @@ class cdocumento_caja_chica extends cTable {
 
 	// Load rows based on filter
 	function &LoadRs($sFilter) {
-		global $conn;
 
 		// Set up filter (SQL WHERE clause) and get return SQL
 		//$this->CurrentFilter = $sFilter;
 		//$sSql = $this->SQL();
 
 		$sSql = $this->GetSQL($sFilter, "");
+		$conn = &$this->Connection();
 		$rs = $conn->Execute($sSql);
 		return $rs;
 	}
@@ -622,7 +636,7 @@ class cdocumento_caja_chica extends cTable {
 
 	// Render list row values
 	function RenderListRow() {
-		global $conn, $Security, $gsLanguage, $Language;
+		global $Security, $gsLanguage, $Language;
 
 		// Call Row Rendering event
 		$this->Row_Rendering();
@@ -645,23 +659,19 @@ class cdocumento_caja_chica extends cTable {
 
 		// idcaja_chica
 		if (strval($this->idcaja_chica->CurrentValue) <> "") {
-			$sFilterWrk = "`idcaja_chica`" . ew_SearchString("=", $this->idcaja_chica->CurrentValue, EW_DATATYPE_NUMBER);
+			$sFilterWrk = "`idcaja_chica`" . ew_SearchString("=", $this->idcaja_chica->CurrentValue, EW_DATATYPE_NUMBER, "");
 		$sSqlWrk = "SELECT `idcaja_chica`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `caja_chica`";
 		$sWhereWrk = "";
 		$lookuptblfilter = "`estado` = 'Activo'";
-		if (strval($lookuptblfilter) <> "") {
-			ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		}
-		if ($sFilterWrk <> "") {
-			ew_AddFilter($sWhereWrk, $sFilterWrk);
-		}
-
-		// Call Lookup selecting
-		$this->Lookup_Selecting($this->idcaja_chica, $sWhereWrk);
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idcaja_chica, $sWhereWrk); // Call Lookup selecting
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$this->idcaja_chica->ViewValue = $rswrk->fields('DispFld');
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idcaja_chica->ViewValue = $this->idcaja_chica->DisplayValue($arwrk);
 				$rswrk->Close();
 			} else {
 				$this->idcaja_chica->ViewValue = $this->idcaja_chica->CurrentValue;
@@ -673,16 +683,7 @@ class cdocumento_caja_chica extends cTable {
 
 		// tipo
 		if (strval($this->tipo->CurrentValue) <> "") {
-			switch ($this->tipo->CurrentValue) {
-				case $this->tipo->FldTagValue(1):
-					$this->tipo->ViewValue = $this->tipo->FldTagCaption(1) <> "" ? $this->tipo->FldTagCaption(1) : $this->tipo->CurrentValue;
-					break;
-				case $this->tipo->FldTagValue(2):
-					$this->tipo->ViewValue = $this->tipo->FldTagCaption(2) <> "" ? $this->tipo->FldTagCaption(2) : $this->tipo->CurrentValue;
-					break;
-				default:
-					$this->tipo->ViewValue = $this->tipo->CurrentValue;
-			}
+			$this->tipo->ViewValue = $this->tipo->OptionCaption($this->tipo->CurrentValue);
 		} else {
 			$this->tipo->ViewValue = NULL;
 		}
@@ -690,23 +691,19 @@ class cdocumento_caja_chica extends cTable {
 
 		// idtipo_documento
 		if (strval($this->idtipo_documento->CurrentValue) <> "") {
-			$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER);
+			$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER, "");
 		$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
 		$sWhereWrk = "";
 		$lookuptblfilter = "`estado` = 'Activo'";
-		if (strval($lookuptblfilter) <> "") {
-			ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		}
-		if ($sFilterWrk <> "") {
-			ew_AddFilter($sWhereWrk, $sFilterWrk);
-		}
-
-		// Call Lookup selecting
-		$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk);
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk); // Call Lookup selecting
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$this->idtipo_documento->ViewValue = $rswrk->fields('DispFld');
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idtipo_documento->ViewValue = $this->idtipo_documento->DisplayValue($arwrk);
 				$rswrk->Close();
 			} else {
 				$this->idtipo_documento->ViewValue = $this->idtipo_documento->CurrentValue;
@@ -735,16 +732,7 @@ class cdocumento_caja_chica extends cTable {
 
 		// estado
 		if (strval($this->estado->CurrentValue) <> "") {
-			switch ($this->estado->CurrentValue) {
-				case $this->estado->FldTagValue(1):
-					$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-					break;
-				case $this->estado->FldTagValue(2):
-					$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-					break;
-				default:
-					$this->estado->ViewValue = $this->estado->CurrentValue;
-			}
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
 		} else {
 			$this->estado->ViewValue = NULL;
 		}
@@ -811,7 +799,7 @@ class cdocumento_caja_chica extends cTable {
 
 	// Render edit row values
 	function RenderEditRow() {
-		global $conn, $Security, $gsLanguage, $Language;
+		global $Security, $gsLanguage, $Language;
 
 		// Call Row Rendering event
 		$this->Row_Rendering();
@@ -828,23 +816,19 @@ class cdocumento_caja_chica extends cTable {
 		if ($this->idcaja_chica->getSessionValue() <> "") {
 			$this->idcaja_chica->CurrentValue = $this->idcaja_chica->getSessionValue();
 		if (strval($this->idcaja_chica->CurrentValue) <> "") {
-			$sFilterWrk = "`idcaja_chica`" . ew_SearchString("=", $this->idcaja_chica->CurrentValue, EW_DATATYPE_NUMBER);
+			$sFilterWrk = "`idcaja_chica`" . ew_SearchString("=", $this->idcaja_chica->CurrentValue, EW_DATATYPE_NUMBER, "");
 		$sSqlWrk = "SELECT `idcaja_chica`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `caja_chica`";
 		$sWhereWrk = "";
 		$lookuptblfilter = "`estado` = 'Activo'";
-		if (strval($lookuptblfilter) <> "") {
-			ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		}
-		if ($sFilterWrk <> "") {
-			ew_AddFilter($sWhereWrk, $sFilterWrk);
-		}
-
-		// Call Lookup selecting
-		$this->Lookup_Selecting($this->idcaja_chica, $sWhereWrk);
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idcaja_chica, $sWhereWrk); // Call Lookup selecting
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$this->idcaja_chica->ViewValue = $rswrk->fields('DispFld');
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idcaja_chica->ViewValue = $this->idcaja_chica->DisplayValue($arwrk);
 				$rswrk->Close();
 			} else {
 				$this->idcaja_chica->ViewValue = $this->idcaja_chica->CurrentValue;
@@ -859,11 +843,7 @@ class cdocumento_caja_chica extends cTable {
 		// tipo
 		$this->tipo->EditAttrs["class"] = "form-control";
 		$this->tipo->EditCustomAttributes = "";
-		$arwrk = array();
-		$arwrk[] = array($this->tipo->FldTagValue(1), $this->tipo->FldTagCaption(1) <> "" ? $this->tipo->FldTagCaption(1) : $this->tipo->FldTagValue(1));
-		$arwrk[] = array($this->tipo->FldTagValue(2), $this->tipo->FldTagCaption(2) <> "" ? $this->tipo->FldTagCaption(2) : $this->tipo->FldTagValue(2));
-		array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
-		$this->tipo->EditValue = $arwrk;
+		$this->tipo->EditValue = $this->tipo->Options(TRUE);
 
 		// idtipo_documento
 		$this->idtipo_documento->EditAttrs["class"] = "form-control";
@@ -872,39 +852,36 @@ class cdocumento_caja_chica extends cTable {
 		// serie
 		$this->serie->EditAttrs["class"] = "form-control";
 		$this->serie->EditCustomAttributes = "";
-		$this->serie->EditValue = ew_HtmlEncode($this->serie->CurrentValue);
+		$this->serie->EditValue = $this->serie->CurrentValue;
 		$this->serie->PlaceHolder = ew_RemoveHtml($this->serie->FldCaption());
 
 		// numero
 		$this->numero->EditAttrs["class"] = "form-control";
 		$this->numero->EditCustomAttributes = "";
-		$this->numero->EditValue = ew_HtmlEncode($this->numero->CurrentValue);
+		$this->numero->EditValue = $this->numero->CurrentValue;
 		$this->numero->PlaceHolder = ew_RemoveHtml($this->numero->FldCaption());
 
 		// fecha
 		$this->fecha->EditAttrs["class"] = "form-control";
 		$this->fecha->EditCustomAttributes = "";
-		$this->fecha->EditValue = ew_HtmlEncode(ew_FormatDateTime($this->fecha->CurrentValue, 7));
+		$this->fecha->EditValue = ew_FormatDateTime($this->fecha->CurrentValue, 7);
 		$this->fecha->PlaceHolder = ew_RemoveHtml($this->fecha->FldCaption());
 
 		// monto
 		$this->monto->EditAttrs["class"] = "form-control";
 		$this->monto->EditCustomAttributes = "";
-		$this->monto->EditValue = ew_HtmlEncode($this->monto->CurrentValue);
+		$this->monto->EditValue = $this->monto->CurrentValue;
 		$this->monto->PlaceHolder = ew_RemoveHtml($this->monto->FldCaption());
 		if (strval($this->monto->EditValue) <> "" && is_numeric($this->monto->EditValue)) $this->monto->EditValue = ew_FormatNumber($this->monto->EditValue, -2, -1, -2, 0);
 
 		// estado
 		$this->estado->EditCustomAttributes = "";
-		$arwrk = array();
-		$arwrk[] = array($this->estado->FldTagValue(1), $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->FldTagValue(1));
-		$arwrk[] = array($this->estado->FldTagValue(2), $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->FldTagValue(2));
-		$this->estado->EditValue = $arwrk;
+		$this->estado->EditValue = $this->estado->Options(FALSE);
 
 		// fecha_insercion
 		$this->fecha_insercion->EditAttrs["class"] = "form-control";
 		$this->fecha_insercion->EditCustomAttributes = "";
-		$this->fecha_insercion->EditValue = ew_HtmlEncode(ew_FormatDateTime($this->fecha_insercion->CurrentValue, 7));
+		$this->fecha_insercion->EditValue = ew_FormatDateTime($this->fecha_insercion->CurrentValue, 7);
 		$this->fecha_insercion->PlaceHolder = ew_RemoveHtml($this->fecha_insercion->FldCaption());
 
 		// Call Row Rendered event
@@ -917,6 +894,9 @@ class cdocumento_caja_chica extends cTable {
 
 	// Aggregate list row (for rendering)
 	function AggregateListRow() {
+
+		// Call Row Rendered event
+		$this->Row_Rendered();
 	}
 	var $ExportDoc;
 
@@ -1178,7 +1158,9 @@ class cdocumento_caja_chica extends cTable {
 	// Lookup Selecting event
 	function Lookup_Selecting($fld, &$filter) {
 
+		//var_dump($fld->FldName, $fld->LookupFilters, $filter); // Uncomment to view the filter
 		// Enter your code here
+
 	}
 
 	// Row Rendering event

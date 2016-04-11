@@ -1,17 +1,16 @@
 <?php
 if (session_id() == "") session_start(); // Initialize Session data
 ob_start(); // Turn on output buffering
-$EW_RELATIVE_PATH = "";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "personainfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "paisinfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "clientegridcls.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "empleadogridcls.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "proveedorgridcls.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
+<?php include_once "ewcfg12.php" ?>
+<?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
+<?php include_once "phpfn12.php" ?>
+<?php include_once "personainfo.php" ?>
+<?php include_once "paisinfo.php" ?>
+<?php include_once "clientegridcls.php" ?>
+<?php include_once "empleadogridcls.php" ?>
+<?php include_once "proveedorgridcls.php" ?>
+<?php include_once "userfn12.php" ?>
 <?php
 
 //
@@ -77,6 +76,30 @@ class cpersona_edit extends cpersona {
 
 	function setWarningMessage($v) {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
+	}
+
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
 	}
 
 	// Show message
@@ -159,6 +182,7 @@ class cpersona_edit extends cpersona {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -171,7 +195,7 @@ class cpersona_edit extends cpersona {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -192,6 +216,7 @@ class cpersona_edit extends cpersona {
 	function __construct() {
 		global $conn, $Language;
 		$GLOBALS["Page"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -220,7 +245,7 @@ class cpersona_edit extends cpersona {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 	}
 
 	// 
@@ -292,7 +317,7 @@ class cpersona_edit extends cpersona {
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Page Unload event
 		$this->Page_Unload();
@@ -320,7 +345,7 @@ class cpersona_edit extends cpersona {
 		$this->Page_Redirecting($url);
 
 		 // Close connection
-		$conn->Close();
+		ew_CloseConn();
 
 		// Go to URL if specified
 		if ($url <> "") {
@@ -330,6 +355,7 @@ class cpersona_edit extends cpersona {
 		}
 		exit();
 	}
+	var $FormClassName = "form-horizontal ewForm ewEditForm";
 	var $DbMasterFilter;
 	var $DbDetailFilter;
 
@@ -385,14 +411,18 @@ class cpersona_edit extends cpersona {
 				$this->SetUpDetailParms();
 				break;
 			Case "U": // Update
+				if ($this->getCurrentDetailTable() <> "") // Master/detail edit
+					$sReturnUrl = $this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=" . $this->getCurrentDetailTable()); // Master/Detail view page
+				else
+					$sReturnUrl = $this->getReturnUrl();
+				if (ew_GetPageName($sReturnUrl) == "personalist.php")
+					$sReturnUrl = $this->AddMasterUrl($sReturnUrl); // List page, return to list page with correct master key if necessary
 				$this->SendEmail = TRUE; // Send email on update success
 				if ($this->EditRow()) { // Update record based on key
 					if ($this->getSuccessMessage() == "")
 						$this->setSuccessMessage($Language->Phrase("UpdateSuccess")); // Update success
-					if ($this->getCurrentDetailTable() <> "") // Master/detail edit
-						$sReturnUrl = $this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=" . $this->getCurrentDetailTable()); // Master/Detail view page
-					else
-						$sReturnUrl = $this->getReturnUrl();
+					$this->Page_Terminate($sReturnUrl); // Return to caller
+				} elseif ($this->getFailureMessage() == $Language->Phrase("NoRecord")) {
 					$this->Page_Terminate($sReturnUrl); // Return to caller
 				} else {
 					$this->EventCancelled = TRUE; // Event cancelled
@@ -512,7 +542,7 @@ class cpersona_edit extends cpersona {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -521,8 +551,9 @@ class cpersona_edit extends cpersona {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -533,7 +564,6 @@ class cpersona_edit extends cpersona {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -573,8 +603,7 @@ class cpersona_edit extends cpersona {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		// Call Row_Rendering event
@@ -597,118 +626,87 @@ class cpersona_edit extends cpersona {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idpersona
-			$this->idpersona->ViewValue = $this->idpersona->CurrentValue;
-			$this->idpersona->ViewCustomAttributes = "";
+		// idpersona
+		$this->idpersona->ViewValue = $this->idpersona->CurrentValue;
+		$this->idpersona->ViewCustomAttributes = "";
 
-			// tipo_persona
-			if (strval($this->tipo_persona->CurrentValue) <> "") {
-				switch ($this->tipo_persona->CurrentValue) {
-					case $this->tipo_persona->FldTagValue(1):
-						$this->tipo_persona->ViewValue = $this->tipo_persona->FldTagCaption(1) <> "" ? $this->tipo_persona->FldTagCaption(1) : $this->tipo_persona->CurrentValue;
-						break;
-					case $this->tipo_persona->FldTagValue(2):
-						$this->tipo_persona->ViewValue = $this->tipo_persona->FldTagCaption(2) <> "" ? $this->tipo_persona->FldTagCaption(2) : $this->tipo_persona->CurrentValue;
-						break;
-					default:
-						$this->tipo_persona->ViewValue = $this->tipo_persona->CurrentValue;
-				}
+		// tipo_persona
+		if (strval($this->tipo_persona->CurrentValue) <> "") {
+			$this->tipo_persona->ViewValue = $this->tipo_persona->OptionCaption($this->tipo_persona->CurrentValue);
+		} else {
+			$this->tipo_persona->ViewValue = NULL;
+		}
+		$this->tipo_persona->ViewCustomAttributes = "";
+
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
+
+		// apellido
+		$this->apellido->ViewValue = $this->apellido->CurrentValue;
+		$this->apellido->ViewCustomAttributes = "";
+
+		// direccion
+		$this->direccion->ViewValue = $this->direccion->CurrentValue;
+		$this->direccion->ViewCustomAttributes = "";
+
+		// cui
+		$this->cui->ViewValue = $this->cui->CurrentValue;
+		$this->cui->ViewCustomAttributes = "";
+
+		// idpais
+		if (strval($this->idpais->CurrentValue) <> "") {
+			$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idpais, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idpais->ViewValue = $this->idpais->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->tipo_persona->ViewValue = NULL;
+				$this->idpais->ViewValue = $this->idpais->CurrentValue;
 			}
-			$this->tipo_persona->ViewCustomAttributes = "";
+		} else {
+			$this->idpais->ViewValue = NULL;
+		}
+		$this->idpais->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
+		// fecha_nacimiento
+		$this->fecha_nacimiento->ViewValue = $this->fecha_nacimiento->CurrentValue;
+		$this->fecha_nacimiento->ViewValue = ew_FormatDateTime($this->fecha_nacimiento->ViewValue, 7);
+		$this->fecha_nacimiento->ViewCustomAttributes = "";
 
-			// apellido
-			$this->apellido->ViewValue = $this->apellido->CurrentValue;
-			$this->apellido->ViewCustomAttributes = "";
+		// email
+		$this->_email->ViewValue = $this->_email->CurrentValue;
+		$this->_email->ViewCustomAttributes = "";
 
-			// direccion
-			$this->direccion->ViewValue = $this->direccion->CurrentValue;
-			$this->direccion->ViewCustomAttributes = "";
+		// sexo
+		if (strval($this->sexo->CurrentValue) <> "") {
+			$this->sexo->ViewValue = $this->sexo->OptionCaption($this->sexo->CurrentValue);
+		} else {
+			$this->sexo->ViewValue = NULL;
+		}
+		$this->sexo->ViewCustomAttributes = "";
 
-			// cui
-			$this->cui->ViewValue = $this->cui->CurrentValue;
-			$this->cui->ViewCustomAttributes = "";
+		// fecha_insercion
+		$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
+		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
+		$this->fecha_insercion->ViewCustomAttributes = "";
 
-			// idpais
-			if (strval($this->idpais->CurrentValue) <> "") {
-				$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idpais, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idpais->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idpais->ViewValue = $this->idpais->CurrentValue;
-				}
-			} else {
-				$this->idpais->ViewValue = NULL;
-			}
-			$this->idpais->ViewCustomAttributes = "";
-
-			// fecha_nacimiento
-			$this->fecha_nacimiento->ViewValue = $this->fecha_nacimiento->CurrentValue;
-			$this->fecha_nacimiento->ViewValue = ew_FormatDateTime($this->fecha_nacimiento->ViewValue, 7);
-			$this->fecha_nacimiento->ViewCustomAttributes = "";
-
-			// email
-			$this->_email->ViewValue = $this->_email->CurrentValue;
-			$this->_email->ViewCustomAttributes = "";
-
-			// sexo
-			if (strval($this->sexo->CurrentValue) <> "") {
-				switch ($this->sexo->CurrentValue) {
-					case $this->sexo->FldTagValue(1):
-						$this->sexo->ViewValue = $this->sexo->FldTagCaption(1) <> "" ? $this->sexo->FldTagCaption(1) : $this->sexo->CurrentValue;
-						break;
-					case $this->sexo->FldTagValue(2):
-						$this->sexo->ViewValue = $this->sexo->FldTagCaption(2) <> "" ? $this->sexo->FldTagCaption(2) : $this->sexo->CurrentValue;
-						break;
-					default:
-						$this->sexo->ViewValue = $this->sexo->CurrentValue;
-				}
-			} else {
-				$this->sexo->ViewValue = NULL;
-			}
-			$this->sexo->ViewCustomAttributes = "";
-
-			// fecha_insercion
-			$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
-			$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
-			$this->fecha_insercion->ViewCustomAttributes = "";
-
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
-			} else {
-				$this->estado->ViewValue = NULL;
-			}
-			$this->estado->ViewCustomAttributes = "";
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
 			// tipo_persona
 			$this->tipo_persona->LinkCustomAttributes = "";
@@ -764,11 +762,7 @@ class cpersona_edit extends cpersona {
 			// tipo_persona
 			$this->tipo_persona->EditAttrs["class"] = "form-control";
 			$this->tipo_persona->EditCustomAttributes = "";
-			$arwrk = array();
-			$arwrk[] = array($this->tipo_persona->FldTagValue(1), $this->tipo_persona->FldTagCaption(1) <> "" ? $this->tipo_persona->FldTagCaption(1) : $this->tipo_persona->FldTagValue(1));
-			$arwrk[] = array($this->tipo_persona->FldTagValue(2), $this->tipo_persona->FldTagCaption(2) <> "" ? $this->tipo_persona->FldTagCaption(2) : $this->tipo_persona->FldTagValue(2));
-			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
-			$this->tipo_persona->EditValue = $arwrk;
+			$this->tipo_persona->EditValue = $this->tipo_persona->Options(TRUE);
 
 			// nombre
 			$this->nombre->EditAttrs["class"] = "form-control";
@@ -800,23 +794,19 @@ class cpersona_edit extends cpersona {
 			if ($this->idpais->getSessionValue() <> "") {
 				$this->idpais->CurrentValue = $this->idpais->getSessionValue();
 			if (strval($this->idpais->CurrentValue) <> "") {
-				$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER, "");
 			$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idpais, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idpais, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
+				$rswrk = Conn()->Execute($sSqlWrk);
 				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idpais->ViewValue = $rswrk->fields('DispFld');
+					$arwrk = array();
+					$arwrk[1] = $rswrk->fields('DispFld');
+					$this->idpais->ViewValue = $this->idpais->DisplayValue($arwrk);
 					$rswrk->Close();
 				} else {
 					$this->idpais->ViewValue = $this->idpais->CurrentValue;
@@ -829,22 +819,16 @@ class cpersona_edit extends cpersona {
 			if (trim(strval($this->idpais->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `pais`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idpais, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idpais, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
@@ -866,51 +850,53 @@ class cpersona_edit extends cpersona {
 			// sexo
 			$this->sexo->EditAttrs["class"] = "form-control";
 			$this->sexo->EditCustomAttributes = "";
-			$arwrk = array();
-			$arwrk[] = array($this->sexo->FldTagValue(1), $this->sexo->FldTagCaption(1) <> "" ? $this->sexo->FldTagCaption(1) : $this->sexo->FldTagValue(1));
-			$arwrk[] = array($this->sexo->FldTagValue(2), $this->sexo->FldTagCaption(2) <> "" ? $this->sexo->FldTagCaption(2) : $this->sexo->FldTagValue(2));
-			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
-			$this->sexo->EditValue = $arwrk;
+			$this->sexo->EditValue = $this->sexo->Options(TRUE);
 
 			// estado
 			$this->estado->EditAttrs["class"] = "form-control";
 			$this->estado->EditCustomAttributes = "";
-			$arwrk = array();
-			$arwrk[] = array($this->estado->FldTagValue(1), $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->FldTagValue(1));
-			$arwrk[] = array($this->estado->FldTagValue(2), $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->FldTagValue(2));
-			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect")));
-			$this->estado->EditValue = $arwrk;
+			$this->estado->EditValue = $this->estado->Options(TRUE);
 
 			// Edit refer script
 			// tipo_persona
 
+			$this->tipo_persona->LinkCustomAttributes = "";
 			$this->tipo_persona->HrefValue = "";
 
 			// nombre
+			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
 
 			// apellido
+			$this->apellido->LinkCustomAttributes = "";
 			$this->apellido->HrefValue = "";
 
 			// direccion
+			$this->direccion->LinkCustomAttributes = "";
 			$this->direccion->HrefValue = "";
 
 			// cui
+			$this->cui->LinkCustomAttributes = "";
 			$this->cui->HrefValue = "";
 
 			// idpais
+			$this->idpais->LinkCustomAttributes = "";
 			$this->idpais->HrefValue = "";
 
 			// fecha_nacimiento
+			$this->fecha_nacimiento->LinkCustomAttributes = "";
 			$this->fecha_nacimiento->HrefValue = "";
 
 			// email
+			$this->_email->LinkCustomAttributes = "";
 			$this->_email->HrefValue = "";
 
 			// sexo
+			$this->sexo->LinkCustomAttributes = "";
 			$this->sexo->HrefValue = "";
 
 			// estado
+			$this->estado->LinkCustomAttributes = "";
 			$this->estado->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
@@ -979,16 +965,19 @@ class cpersona_edit extends cpersona {
 
 	// Update record based on key values
 	function EditRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
+		$sFilter = $this->ApplyUserIDFilters($sFilter);
+		$conn = &$this->Connection();
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
-		$conn->raiseErrorFn = 'ew_ErrorFn';
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 		$rs = $conn->Execute($sSql);
 		$conn->raiseErrorFn = '';
 		if ($rs === FALSE)
 			return FALSE;
 		if ($rs->EOF) {
+			$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record message
 			$EditRow = FALSE; // Update Failed
 		} else {
 
@@ -1034,7 +1023,7 @@ class cpersona_edit extends cpersona {
 			// Call Row Updating event
 			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
 			if ($bUpdateRow) {
-				$conn->raiseErrorFn = 'ew_ErrorFn';
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 				if (count($rsnew) > 0)
 					$EditRow = $this->Update($rsnew, "", $rsold);
 				else
@@ -1044,16 +1033,20 @@ class cpersona_edit extends cpersona {
 				}
 
 				// Update detail records
+				$DetailTblVar = explode(",", $this->getCurrentDetailTable());
 				if ($EditRow) {
-					$DetailTblVar = explode(",", $this->getCurrentDetailTable());
 					if (in_array("cliente", $DetailTblVar) && $GLOBALS["cliente"]->DetailEdit) {
 						if (!isset($GLOBALS["cliente_grid"])) $GLOBALS["cliente_grid"] = new ccliente_grid(); // Get detail page object
 						$EditRow = $GLOBALS["cliente_grid"]->GridUpdate();
 					}
+				}
+				if ($EditRow) {
 					if (in_array("empleado", $DetailTblVar) && $GLOBALS["empleado"]->DetailEdit) {
 						if (!isset($GLOBALS["empleado_grid"])) $GLOBALS["empleado_grid"] = new cempleado_grid(); // Get detail page object
 						$EditRow = $GLOBALS["empleado_grid"]->GridUpdate();
 					}
+				}
+				if ($EditRow) {
 					if (in_array("proveedor", $DetailTblVar) && $GLOBALS["proveedor"]->DetailEdit) {
 						if (!isset($GLOBALS["proveedor_grid"])) $GLOBALS["proveedor_grid"] = new cproveedor_grid(); // Get detail page object
 						$EditRow = $GLOBALS["proveedor_grid"]->GridUpdate();
@@ -1112,6 +1105,24 @@ class cpersona_edit extends cpersona {
 					$bValidMaster = FALSE;
 				}
 			}
+		} elseif (isset($_POST[EW_TABLE_SHOW_MASTER])) {
+			$sMasterTblVar = $_POST[EW_TABLE_SHOW_MASTER];
+			if ($sMasterTblVar == "") {
+				$bValidMaster = TRUE;
+				$this->DbMasterFilter = "";
+				$this->DbDetailFilter = "";
+			}
+			if ($sMasterTblVar == "pais") {
+				$bValidMaster = TRUE;
+				if (@$_POST["fk_idpais"] <> "") {
+					$GLOBALS["pais"]->idpais->setFormValue($_POST["fk_idpais"]);
+					$this->idpais->setFormValue($GLOBALS["pais"]->idpais->FormValue);
+					$this->idpais->setSessionValue($this->idpais->FormValue);
+					if (!is_numeric($GLOBALS["pais"]->idpais->FormValue)) $bValidMaster = FALSE;
+				} else {
+					$bValidMaster = FALSE;
+				}
+			}
 		}
 		if ($bValidMaster) {
 
@@ -1125,10 +1136,10 @@ class cpersona_edit extends cpersona {
 
 			// Clear previous master key from Session
 			if ($sMasterTblVar <> "pais") {
-				if ($this->idpais->QueryStringValue == "") $this->idpais->setSessionValue("");
+				if ($this->idpais->CurrentValue == "") $this->idpais->setSessionValue("");
 			}
 		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 
@@ -1196,9 +1207,10 @@ class cpersona_edit extends cpersona {
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$Breadcrumb->Add("list", $this->TableVar, "personalist.php", "", $this->TableVar, TRUE);
+		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("personalist.php"), "", $this->TableVar, TRUE);
 		$PageId = "edit";
-		$Breadcrumb->Add("edit", $PageId, ew_CurrentUrl());
+		$Breadcrumb->Add("edit", $PageId, $url);
 	}
 
 	// Page Load event
@@ -1287,23 +1299,18 @@ Page_Rendering();
 // Page Rendering event
 $persona_edit->Page_Render();
 ?>
-<?php include_once $EW_RELATIVE_PATH . "header.php" ?>
+<?php include_once "header.php" ?>
 <script type="text/javascript">
 
-// Page object
-var persona_edit = new ew_Page("persona_edit");
-persona_edit.PageID = "edit"; // Page ID
-var EW_PAGE_ID = persona_edit.PageID; // For backward compatibility
-
 // Form object
-var fpersonaedit = new ew_Form("fpersonaedit");
+var CurrentPageID = EW_PAGE_ID = "edit";
+var CurrentForm = fpersonaedit = new ew_Form("fpersonaedit", "edit");
 
 // Validate form
 fpersonaedit.Validate = function() {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
-	this.PostAutoSuggest();
 	if ($fobj.find("#a_confirm").val() == "F")
 		return true;
 	var elm, felm, uelm, addcnt = 0;
@@ -1329,9 +1336,6 @@ fpersonaedit.Validate = function() {
 			elm = this.GetElements("x" + infix + "_estado");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $persona->estado->FldCaption(), $persona->estado->ReqErrMsg)) ?>");
-
-			// Set up row object
-			ew_ElementsToRow(fobj);
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -1365,7 +1369,13 @@ fpersonaedit.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-fpersonaedit.Lists["x_idpais"] = {"LinkField":"x_idpais","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+fpersonaedit.Lists["x_tipo_persona"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fpersonaedit.Lists["x_tipo_persona"].Options = <?php echo json_encode($persona->tipo_persona->Options()) ?>;
+fpersonaedit.Lists["x_idpais"] = {"LinkField":"x_idpais","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fpersonaedit.Lists["x_sexo"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fpersonaedit.Lists["x_sexo"].Options = <?php echo json_encode($persona->sexo->Options()) ?>;
+fpersonaedit.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fpersonaedit.Lists["x_estado"].Options = <?php echo json_encode($persona->estado->Options()) ?>;
 
 // Form object for search
 </script>
@@ -1382,33 +1392,42 @@ fpersonaedit.Lists["x_idpais"] = {"LinkField":"x_idpais","Ajax":true,"AutoFill":
 <?php
 $persona_edit->ShowMessage();
 ?>
-<form name="fpersonaedit" id="fpersonaedit" class="form-horizontal ewForm ewEditForm" action="<?php echo ew_CurrentPage() ?>" method="post">
+<form name="fpersonaedit" id="fpersonaedit" class="<?php echo $persona_edit->FormClassName ?>" action="<?php echo ew_CurrentPage() ?>" method="post">
 <?php if ($persona_edit->CheckToken) { ?>
 <input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $persona_edit->Token ?>">
 <?php } ?>
 <input type="hidden" name="t" value="persona">
 <input type="hidden" name="a_edit" id="a_edit" value="U">
+<?php if ($persona->getCurrentMasterTable() == "pais") { ?>
+<input type="hidden" name="<?php echo EW_TABLE_SHOW_MASTER ?>" value="pais">
+<input type="hidden" name="fk_idpais" value="<?php echo $persona->idpais->getSessionValue() ?>">
+<?php } ?>
 <div>
 <?php if ($persona->tipo_persona->Visible) { // tipo_persona ?>
 	<div id="r_tipo_persona" class="form-group">
 		<label id="elh_persona_tipo_persona" for="x_tipo_persona" class="col-sm-2 control-label ewLabel"><?php echo $persona->tipo_persona->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
 		<div class="col-sm-10"><div<?php echo $persona->tipo_persona->CellAttributes() ?>>
 <span id="el_persona_tipo_persona">
-<select data-field="x_tipo_persona" id="x_tipo_persona" name="x_tipo_persona"<?php echo $persona->tipo_persona->EditAttributes() ?>>
+<select data-table="persona" data-field="x_tipo_persona" data-value-separator="<?php echo ew_HtmlEncode(is_array($persona->tipo_persona->DisplayValueSeparator) ? json_encode($persona->tipo_persona->DisplayValueSeparator) : $persona->tipo_persona->DisplayValueSeparator) ?>" id="x_tipo_persona" name="x_tipo_persona"<?php echo $persona->tipo_persona->EditAttributes() ?>>
 <?php
 if (is_array($persona->tipo_persona->EditValue)) {
 	$arwrk = $persona->tipo_persona->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($persona->tipo_persona->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($persona->tipo_persona->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $persona->tipo_persona->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($persona->tipo_persona->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($persona->tipo_persona->CurrentValue) ?>" selected><?php echo $persona->tipo_persona->CurrentValue ?></option>
+<?php
+    }
 }
 ?>
 </select>
@@ -1421,7 +1440,7 @@ if (is_array($persona->tipo_persona->EditValue)) {
 		<label id="elh_persona_nombre" for="x_nombre" class="col-sm-2 control-label ewLabel"><?php echo $persona->nombre->FldCaption() ?></label>
 		<div class="col-sm-10"><div<?php echo $persona->nombre->CellAttributes() ?>>
 <span id="el_persona_nombre">
-<input type="text" data-field="x_nombre" name="x_nombre" id="x_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($persona->nombre->PlaceHolder) ?>" value="<?php echo $persona->nombre->EditValue ?>"<?php echo $persona->nombre->EditAttributes() ?>>
+<input type="text" data-table="persona" data-field="x_nombre" name="x_nombre" id="x_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($persona->nombre->getPlaceHolder()) ?>" value="<?php echo $persona->nombre->EditValue ?>"<?php echo $persona->nombre->EditAttributes() ?>>
 </span>
 <?php echo $persona->nombre->CustomMsg ?></div></div>
 	</div>
@@ -1431,7 +1450,7 @@ if (is_array($persona->tipo_persona->EditValue)) {
 		<label id="elh_persona_apellido" for="x_apellido" class="col-sm-2 control-label ewLabel"><?php echo $persona->apellido->FldCaption() ?></label>
 		<div class="col-sm-10"><div<?php echo $persona->apellido->CellAttributes() ?>>
 <span id="el_persona_apellido">
-<input type="text" data-field="x_apellido" name="x_apellido" id="x_apellido" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($persona->apellido->PlaceHolder) ?>" value="<?php echo $persona->apellido->EditValue ?>"<?php echo $persona->apellido->EditAttributes() ?>>
+<input type="text" data-table="persona" data-field="x_apellido" name="x_apellido" id="x_apellido" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($persona->apellido->getPlaceHolder()) ?>" value="<?php echo $persona->apellido->EditValue ?>"<?php echo $persona->apellido->EditAttributes() ?>>
 </span>
 <?php echo $persona->apellido->CustomMsg ?></div></div>
 	</div>
@@ -1441,7 +1460,7 @@ if (is_array($persona->tipo_persona->EditValue)) {
 		<label id="elh_persona_direccion" for="x_direccion" class="col-sm-2 control-label ewLabel"><?php echo $persona->direccion->FldCaption() ?></label>
 		<div class="col-sm-10"><div<?php echo $persona->direccion->CellAttributes() ?>>
 <span id="el_persona_direccion">
-<input type="text" data-field="x_direccion" name="x_direccion" id="x_direccion" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($persona->direccion->PlaceHolder) ?>" value="<?php echo $persona->direccion->EditValue ?>"<?php echo $persona->direccion->EditAttributes() ?>>
+<input type="text" data-table="persona" data-field="x_direccion" name="x_direccion" id="x_direccion" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($persona->direccion->getPlaceHolder()) ?>" value="<?php echo $persona->direccion->EditValue ?>"<?php echo $persona->direccion->EditAttributes() ?>>
 </span>
 <?php echo $persona->direccion->CustomMsg ?></div></div>
 	</div>
@@ -1451,7 +1470,7 @@ if (is_array($persona->tipo_persona->EditValue)) {
 		<label id="elh_persona_cui" for="x_cui" class="col-sm-2 control-label ewLabel"><?php echo $persona->cui->FldCaption() ?></label>
 		<div class="col-sm-10"><div<?php echo $persona->cui->CellAttributes() ?>>
 <span id="el_persona_cui">
-<input type="text" data-field="x_cui" name="x_cui" id="x_cui" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($persona->cui->PlaceHolder) ?>" value="<?php echo $persona->cui->EditValue ?>"<?php echo $persona->cui->EditAttributes() ?>>
+<input type="text" data-table="persona" data-field="x_cui" name="x_cui" id="x_cui" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($persona->cui->getPlaceHolder()) ?>" value="<?php echo $persona->cui->EditValue ?>"<?php echo $persona->cui->EditAttributes() ?>>
 </span>
 <?php echo $persona->cui->CustomMsg ?></div></div>
 	</div>
@@ -1468,21 +1487,26 @@ if (is_array($persona->tipo_persona->EditValue)) {
 <input type="hidden" id="x_idpais" name="x_idpais" value="<?php echo ew_HtmlEncode($persona->idpais->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el_persona_idpais">
-<select data-field="x_idpais" id="x_idpais" name="x_idpais"<?php echo $persona->idpais->EditAttributes() ?>>
+<select data-table="persona" data-field="x_idpais" data-value-separator="<?php echo ew_HtmlEncode(is_array($persona->idpais->DisplayValueSeparator) ? json_encode($persona->idpais->DisplayValueSeparator) : $persona->idpais->DisplayValueSeparator) ?>" id="x_idpais" name="x_idpais"<?php echo $persona->idpais->EditAttributes() ?>>
 <?php
 if (is_array($persona->idpais->EditValue)) {
 	$arwrk = $persona->idpais->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($persona->idpais->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($persona->idpais->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $persona->idpais->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($persona->idpais->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($persona->idpais->CurrentValue) ?>" selected><?php echo $persona->idpais->CurrentValue ?></option>
+<?php
+    }
 }
 ?>
 </select>
@@ -1490,15 +1514,15 @@ if (is_array($persona->idpais->EditValue)) {
 $sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
 $sWhereWrk = "";
 $lookuptblfilter = "`estado` = 'Activo'";
-if (strval($lookuptblfilter) <> "") {
-	ew_AddFilter($sWhereWrk, $lookuptblfilter);
-}
-
-// Call Lookup selecting
-$persona->Lookup_Selecting($persona->idpais, $sWhereWrk);
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$persona->idpais->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$persona->idpais->LookupFilters += array("f0" => "`idpais` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$persona->Lookup_Selecting($persona->idpais, $sWhereWrk); // Call Lookup selecting
 if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $persona->idpais->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x_idpais" id="s_x_idpais" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idpais` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x_idpais" id="s_x_idpais" value="<?php echo $persona->idpais->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php echo $persona->idpais->CustomMsg ?></div></div>
@@ -1509,8 +1533,8 @@ if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 		<label id="elh_persona_fecha_nacimiento" for="x_fecha_nacimiento" class="col-sm-2 control-label ewLabel"><?php echo $persona->fecha_nacimiento->FldCaption() ?></label>
 		<div class="col-sm-10"><div<?php echo $persona->fecha_nacimiento->CellAttributes() ?>>
 <span id="el_persona_fecha_nacimiento">
-<input type="text" data-field="x_fecha_nacimiento" name="x_fecha_nacimiento" id="x_fecha_nacimiento" placeholder="<?php echo ew_HtmlEncode($persona->fecha_nacimiento->PlaceHolder) ?>" value="<?php echo $persona->fecha_nacimiento->EditValue ?>"<?php echo $persona->fecha_nacimiento->EditAttributes() ?>>
-<?php if (!$persona->fecha_nacimiento->ReadOnly && !$persona->fecha_nacimiento->Disabled && @$persona->fecha_nacimiento->EditAttrs["readonly"] == "" && @$persona->fecha_nacimiento->EditAttrs["disabled"] == "") { ?>
+<input type="text" data-table="persona" data-field="x_fecha_nacimiento" data-format="7" name="x_fecha_nacimiento" id="x_fecha_nacimiento" placeholder="<?php echo ew_HtmlEncode($persona->fecha_nacimiento->getPlaceHolder()) ?>" value="<?php echo $persona->fecha_nacimiento->EditValue ?>"<?php echo $persona->fecha_nacimiento->EditAttributes() ?>>
+<?php if (!$persona->fecha_nacimiento->ReadOnly && !$persona->fecha_nacimiento->Disabled && !isset($persona->fecha_nacimiento->EditAttrs["readonly"]) && !isset($persona->fecha_nacimiento->EditAttrs["disabled"])) { ?>
 <script type="text/javascript">
 ew_CreateCalendar("fpersonaedit", "x_fecha_nacimiento", "%d/%m/%Y");
 </script>
@@ -1524,7 +1548,7 @@ ew_CreateCalendar("fpersonaedit", "x_fecha_nacimiento", "%d/%m/%Y");
 		<label id="elh_persona__email" for="x__email" class="col-sm-2 control-label ewLabel"><?php echo $persona->_email->FldCaption() ?></label>
 		<div class="col-sm-10"><div<?php echo $persona->_email->CellAttributes() ?>>
 <span id="el_persona__email">
-<input type="text" data-field="x__email" name="x__email" id="x__email" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($persona->_email->PlaceHolder) ?>" value="<?php echo $persona->_email->EditValue ?>"<?php echo $persona->_email->EditAttributes() ?>>
+<input type="text" data-table="persona" data-field="x__email" name="x__email" id="x__email" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($persona->_email->getPlaceHolder()) ?>" value="<?php echo $persona->_email->EditValue ?>"<?php echo $persona->_email->EditAttributes() ?>>
 </span>
 <?php echo $persona->_email->CustomMsg ?></div></div>
 	</div>
@@ -1534,21 +1558,26 @@ ew_CreateCalendar("fpersonaedit", "x_fecha_nacimiento", "%d/%m/%Y");
 		<label id="elh_persona_sexo" for="x_sexo" class="col-sm-2 control-label ewLabel"><?php echo $persona->sexo->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
 		<div class="col-sm-10"><div<?php echo $persona->sexo->CellAttributes() ?>>
 <span id="el_persona_sexo">
-<select data-field="x_sexo" id="x_sexo" name="x_sexo"<?php echo $persona->sexo->EditAttributes() ?>>
+<select data-table="persona" data-field="x_sexo" data-value-separator="<?php echo ew_HtmlEncode(is_array($persona->sexo->DisplayValueSeparator) ? json_encode($persona->sexo->DisplayValueSeparator) : $persona->sexo->DisplayValueSeparator) ?>" id="x_sexo" name="x_sexo"<?php echo $persona->sexo->EditAttributes() ?>>
 <?php
 if (is_array($persona->sexo->EditValue)) {
 	$arwrk = $persona->sexo->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($persona->sexo->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($persona->sexo->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $persona->sexo->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($persona->sexo->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($persona->sexo->CurrentValue) ?>" selected><?php echo $persona->sexo->CurrentValue ?></option>
+<?php
+    }
 }
 ?>
 </select>
@@ -1561,21 +1590,26 @@ if (is_array($persona->sexo->EditValue)) {
 		<label id="elh_persona_estado" for="x_estado" class="col-sm-2 control-label ewLabel"><?php echo $persona->estado->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
 		<div class="col-sm-10"><div<?php echo $persona->estado->CellAttributes() ?>>
 <span id="el_persona_estado">
-<select data-field="x_estado" id="x_estado" name="x_estado"<?php echo $persona->estado->EditAttributes() ?>>
+<select data-table="persona" data-field="x_estado" data-value-separator="<?php echo ew_HtmlEncode(is_array($persona->estado->DisplayValueSeparator) ? json_encode($persona->estado->DisplayValueSeparator) : $persona->estado->DisplayValueSeparator) ?>" id="x_estado" name="x_estado"<?php echo $persona->estado->EditAttributes() ?>>
 <?php
 if (is_array($persona->estado->EditValue)) {
 	$arwrk = $persona->estado->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($persona->estado->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($persona->estado->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $persona->estado->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($persona->estado->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($persona->estado->CurrentValue) ?>" selected><?php echo $persona->estado->CurrentValue ?></option>
+<?php
+    }
 }
 ?>
 </select>
@@ -1584,7 +1618,7 @@ if (is_array($persona->estado->EditValue)) {
 	</div>
 <?php } ?>
 </div>
-<input type="hidden" data-field="x_idpersona" name="x_idpersona" id="x_idpersona" value="<?php echo ew_HtmlEncode($persona->idpersona->CurrentValue) ?>">
+<input type="hidden" data-table="persona" data-field="x_idpersona" name="x_idpersona" id="x_idpersona" value="<?php echo ew_HtmlEncode($persona->idpersona->CurrentValue) ?>">
 <?php
 	if (in_array("cliente", explode(",", $persona->getCurrentDetailTable())) && $cliente->DetailEdit) {
 ?>
@@ -1612,6 +1646,7 @@ if (is_array($persona->estado->EditValue)) {
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">
 <button class="btn btn-primary ewButton" name="btnAction" id="btnAction" type="submit"><?php echo $Language->Phrase("SaveBtn") ?></button>
+<button class="btn btn-default ewButton" name="btnCancel" id="btnCancel" type="button" data-href="<?php echo $persona_edit->getReturnUrl() ?>"><?php echo $Language->Phrase("CancelBtn") ?></button>
 	</div>
 </div>
 </form>
@@ -1629,7 +1664,7 @@ if (EW_DEBUG_ENABLED)
 // document.write("page loaded");
 
 </script>
-<?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
+<?php include_once "footer.php" ?>
 <?php
 $persona_edit->Page_Terminate();
 ?>

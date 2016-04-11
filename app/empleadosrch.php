@@ -1,14 +1,13 @@
 <?php
 if (session_id() == "") session_start(); // Initialize Session data
 ob_start(); // Turn on output buffering
-$EW_RELATIVE_PATH = "";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "empleadoinfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "personainfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
+<?php include_once "ewcfg12.php" ?>
+<?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
+<?php include_once "phpfn12.php" ?>
+<?php include_once "empleadoinfo.php" ?>
+<?php include_once "personainfo.php" ?>
+<?php include_once "userfn12.php" ?>
 <?php
 
 //
@@ -74,6 +73,30 @@ class cempleado_search extends cempleado {
 
 	function setWarningMessage($v) {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
+	}
+
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
 	}
 
 	// Show message
@@ -156,6 +179,7 @@ class cempleado_search extends cempleado {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -168,7 +192,7 @@ class cempleado_search extends cempleado {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -189,6 +213,7 @@ class cempleado_search extends cempleado {
 	function __construct() {
 		global $conn, $Language;
 		$GLOBALS["Page"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -217,7 +242,7 @@ class cempleado_search extends cempleado {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 	}
 
 	// 
@@ -244,20 +269,6 @@ class cempleado_search extends cempleado {
 			exit();
 		}
 
-		// Process auto fill
-		if (@$_POST["ajax"] == "autofill") {
-			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
-			if ($results) {
-
-				// Clean output buffer
-				if (!EW_DEBUG_ENABLED && ob_get_length())
-					ob_end_clean();
-				echo $results;
-				$this->Page_Terminate();
-				exit();
-			}
-		}
-
 		// Create Token
 		$this->CreateToken();
 	}
@@ -266,7 +277,7 @@ class cempleado_search extends cempleado {
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Page Unload event
 		$this->Page_Unload();
@@ -294,7 +305,7 @@ class cempleado_search extends cempleado {
 		$this->Page_Redirecting($url);
 
 		 // Close connection
-		$conn->Close();
+		ew_CloseConn();
 
 		// Go to URL if specified
 		if ($url <> "") {
@@ -304,6 +315,7 @@ class cempleado_search extends cempleado {
 		}
 		exit();
 	}
+	var $FormClassName = "form-horizontal ewForm ewSearchForm";
 	var $IsModal = FALSE;
 	var $SearchLabelClass = "col-sm-3 control-label ewLabel";
 	var $SearchRightColumnClass = "col-sm-9";
@@ -434,7 +446,7 @@ class cempleado_search extends cempleado {
 		return is_numeric($Value);
 	}
 
-	//  Load search values for validation
+	// Load search values for validation
 	function LoadSearchValues() {
 		global $objForm;
 
@@ -475,8 +487,7 @@ class cempleado_search extends cempleado {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		// Call Row_Rendering event
@@ -495,99 +506,82 @@ class cempleado_search extends cempleado {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idempleado
-			$this->idempleado->ViewValue = $this->idempleado->CurrentValue;
-			$this->idempleado->ViewCustomAttributes = "";
+		// idempleado
+		$this->idempleado->ViewValue = $this->idempleado->CurrentValue;
+		$this->idempleado->ViewCustomAttributes = "";
 
-			// nit
-			$this->nit->ViewValue = $this->nit->CurrentValue;
-			$this->nit->ViewCustomAttributes = "";
+		// nit
+		$this->nit->ViewValue = $this->nit->CurrentValue;
+		$this->nit->ViewCustomAttributes = "";
 
-			// codigo
-			$this->codigo->ViewValue = $this->codigo->CurrentValue;
-			$this->codigo->ViewCustomAttributes = "";
+		// codigo
+		$this->codigo->ViewValue = $this->codigo->CurrentValue;
+		$this->codigo->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
 
-			// direccion
-			$this->direccion->ViewValue = $this->direccion->CurrentValue;
-			$this->direccion->ViewCustomAttributes = "";
+		// direccion
+		$this->direccion->ViewValue = $this->direccion->CurrentValue;
+		$this->direccion->ViewCustomAttributes = "";
 
-			// idpersona
-			if (strval($this->idpersona->CurrentValue) <> "") {
-				$sFilterWrk = "`idpersona`" . ew_SearchString("=", $this->idpersona->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idpersona`, `nombre` AS `DispFld`, `apellido` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `persona`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idpersona, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idpersona->ViewValue = $rswrk->fields('DispFld');
-					$this->idpersona->ViewValue .= ew_ValueSeparator(1,$this->idpersona) . $rswrk->fields('Disp2Fld');
-					$rswrk->Close();
-				} else {
-					$this->idpersona->ViewValue = $this->idpersona->CurrentValue;
-				}
+		// idpersona
+		if (strval($this->idpersona->CurrentValue) <> "") {
+			$sFilterWrk = "`idpersona`" . ew_SearchString("=", $this->idpersona->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idpersona`, `nombre` AS `DispFld`, `apellido` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `persona`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idpersona, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$arwrk[2] = $rswrk->fields('Disp2Fld');
+				$this->idpersona->ViewValue = $this->idpersona->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idpersona->ViewValue = NULL;
+				$this->idpersona->ViewValue = $this->idpersona->CurrentValue;
 			}
-			$this->idpersona->ViewCustomAttributes = "";
+		} else {
+			$this->idpersona->ViewValue = NULL;
+		}
+		$this->idpersona->ViewCustomAttributes = "";
 
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
+
+		// idempresa
+		if (strval($this->idempresa->CurrentValue) <> "") {
+			$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idempresa->ViewValue = $this->idempresa->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->estado->ViewValue = NULL;
+				$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
 			}
-			$this->estado->ViewCustomAttributes = "";
-
-			// idempresa
-			if (strval($this->idempresa->CurrentValue) <> "") {
-				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idempresa->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
-				}
-			} else {
-				$this->idempresa->ViewValue = NULL;
-			}
-			$this->idempresa->ViewCustomAttributes = "";
+		} else {
+			$this->idempresa->ViewValue = NULL;
+		}
+		$this->idempresa->ViewCustomAttributes = "";
 
 			// idempleado
 			$this->idempleado->LinkCustomAttributes = "";
@@ -666,22 +660,16 @@ class cempleado_search extends cempleado {
 			if (trim(strval($this->idpersona->AdvancedSearch->SearchValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idpersona`" . ew_SearchString("=", $this->idpersona->AdvancedSearch->SearchValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idpersona`" . ew_SearchString("=", $this->idpersona->AdvancedSearch->SearchValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idpersona`, `nombre` AS `DispFld`, `apellido` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `persona`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idpersona, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idpersona, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
@@ -689,29 +677,24 @@ class cempleado_search extends cempleado {
 
 			// estado
 			$this->estado->EditCustomAttributes = "";
-			$arwrk = array();
-			$arwrk[] = array($this->estado->FldTagValue(1), $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->FldTagValue(1));
-			$arwrk[] = array($this->estado->FldTagValue(2), $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->FldTagValue(2));
-			$this->estado->EditValue = $arwrk;
+			$this->estado->EditValue = $this->estado->Options(FALSE);
 
 			// idempresa
 			$this->idempresa->EditAttrs["class"] = "form-control";
 			$this->idempresa->EditCustomAttributes = "";
-			$sFilterWrk = "";
+			if (trim(strval($this->idempresa->AdvancedSearch->SearchValue)) == "") {
+				$sFilterWrk = "0=1";
+			} else {
+				$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->AdvancedSearch->SearchValue, EW_DATATYPE_NUMBER, "");
+			}
 			$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `empresa`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempresa, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
@@ -770,9 +753,10 @@ class cempleado_search extends cempleado {
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$Breadcrumb->Add("list", $this->TableVar, "empleadolist.php", "", $this->TableVar, TRUE);
+		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("empleadolist.php"), "", $this->TableVar, TRUE);
 		$PageId = "search";
-		$Breadcrumb->Add("search", $PageId, ew_CurrentUrl());
+		$Breadcrumb->Add("search", $PageId, $url);
 	}
 
 	// Page Load event
@@ -861,16 +845,16 @@ Page_Rendering();
 // Page Rendering event
 $empleado_search->Page_Render();
 ?>
-<?php include_once $EW_RELATIVE_PATH . "header.php" ?>
+<?php include_once "header.php" ?>
 <script type="text/javascript">
 
-// Page object
-var empleado_search = new ew_Page("empleado_search");
-empleado_search.PageID = "search"; // Page ID
-var EW_PAGE_ID = empleado_search.PageID; // For backward compatibility
-
 // Form object
-var fempleadosearch = new ew_Form("fempleadosearch");
+var CurrentPageID = EW_PAGE_ID = "search";
+<?php if ($empleado_search->IsModal) { ?>
+var CurrentAdvancedSearchForm = fempleadosearch = new ew_Form("fempleadosearch", "search");
+<?php } else { ?>
+var CurrentForm = fempleadosearch = new ew_Form("fempleadosearch", "search");
+<?php } ?>
 
 // Form_CustomValidate event
 fempleadosearch.Form_CustomValidate = 
@@ -888,8 +872,10 @@ fempleadosearch.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-fempleadosearch.Lists["x_idpersona"] = {"LinkField":"x_idpersona","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","x_apellido","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
-fempleadosearch.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":null,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+fempleadosearch.Lists["x_idpersona"] = {"LinkField":"x_idpersona","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","x_apellido","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fempleadosearch.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fempleadosearch.Lists["x_estado"].Options = <?php echo json_encode($empleado->estado->Options()) ?>;
+fempleadosearch.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
 // Form object for search
 // Validate function for search
@@ -898,14 +884,10 @@ fempleadosearch.Validate = function(fobj) {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	fobj = fobj || this.Form;
-	this.PostAutoSuggest();
 	var infix = "";
 	elm = this.GetElements("x" + infix + "_idempleado");
 	if (elm && !ew_CheckInteger(elm.value))
 		return this.OnError(elm, "<?php echo ew_JsEncode2($empleado->idempleado->FldErrMsg()) ?>");
-
-	// Set up row object
-	ew_ElementsToRow(fobj);
 
 	// Fire Form_CustomValidate event
 	if (!this.Form_CustomValidate(fobj))
@@ -928,7 +910,7 @@ fempleadosearch.Validate = function(fobj) {
 <?php
 $empleado_search->ShowMessage();
 ?>
-<form name="fempleadosearch" id="fempleadosearch" class="form-horizontal ewForm ewSearchForm" action="<?php echo ew_CurrentPage() ?>" method="post">
+<form name="fempleadosearch" id="fempleadosearch" class="<?php echo $empleado_search->FormClassName ?>" action="<?php echo ew_CurrentPage() ?>" method="post">
 <?php if ($empleado_search->CheckToken) { ?>
 <input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $empleado_search->Token ?>">
 <?php } ?>
@@ -945,7 +927,7 @@ $empleado_search->ShowMessage();
 		</label>
 		<div class="<?php echo $empleado_search->SearchRightColumnClass ?>"><div<?php echo $empleado->idempleado->CellAttributes() ?>>
 			<span id="el_empleado_idempleado">
-<input type="text" data-field="x_idempleado" name="x_idempleado" id="x_idempleado" placeholder="<?php echo ew_HtmlEncode($empleado->idempleado->PlaceHolder) ?>" value="<?php echo $empleado->idempleado->EditValue ?>"<?php echo $empleado->idempleado->EditAttributes() ?>>
+<input type="text" data-table="empleado" data-field="x_idempleado" name="x_idempleado" id="x_idempleado" placeholder="<?php echo ew_HtmlEncode($empleado->idempleado->getPlaceHolder()) ?>" value="<?php echo $empleado->idempleado->EditValue ?>"<?php echo $empleado->idempleado->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -957,7 +939,7 @@ $empleado_search->ShowMessage();
 		</label>
 		<div class="<?php echo $empleado_search->SearchRightColumnClass ?>"><div<?php echo $empleado->nit->CellAttributes() ?>>
 			<span id="el_empleado_nit">
-<input type="text" data-field="x_nit" name="x_nit" id="x_nit" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($empleado->nit->PlaceHolder) ?>" value="<?php echo $empleado->nit->EditValue ?>"<?php echo $empleado->nit->EditAttributes() ?>>
+<input type="text" data-table="empleado" data-field="x_nit" name="x_nit" id="x_nit" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($empleado->nit->getPlaceHolder()) ?>" value="<?php echo $empleado->nit->EditValue ?>"<?php echo $empleado->nit->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -969,7 +951,7 @@ $empleado_search->ShowMessage();
 		</label>
 		<div class="<?php echo $empleado_search->SearchRightColumnClass ?>"><div<?php echo $empleado->codigo->CellAttributes() ?>>
 			<span id="el_empleado_codigo">
-<input type="text" data-field="x_codigo" name="x_codigo" id="x_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($empleado->codigo->PlaceHolder) ?>" value="<?php echo $empleado->codigo->EditValue ?>"<?php echo $empleado->codigo->EditAttributes() ?>>
+<input type="text" data-table="empleado" data-field="x_codigo" name="x_codigo" id="x_codigo" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($empleado->codigo->getPlaceHolder()) ?>" value="<?php echo $empleado->codigo->EditValue ?>"<?php echo $empleado->codigo->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -981,7 +963,7 @@ $empleado_search->ShowMessage();
 		</label>
 		<div class="<?php echo $empleado_search->SearchRightColumnClass ?>"><div<?php echo $empleado->nombre->CellAttributes() ?>>
 			<span id="el_empleado_nombre">
-<input type="text" data-field="x_nombre" name="x_nombre" id="x_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($empleado->nombre->PlaceHolder) ?>" value="<?php echo $empleado->nombre->EditValue ?>"<?php echo $empleado->nombre->EditAttributes() ?>>
+<input type="text" data-table="empleado" data-field="x_nombre" name="x_nombre" id="x_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($empleado->nombre->getPlaceHolder()) ?>" value="<?php echo $empleado->nombre->EditValue ?>"<?php echo $empleado->nombre->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -993,7 +975,7 @@ $empleado_search->ShowMessage();
 		</label>
 		<div class="<?php echo $empleado_search->SearchRightColumnClass ?>"><div<?php echo $empleado->direccion->CellAttributes() ?>>
 			<span id="el_empleado_direccion">
-<input type="text" data-field="x_direccion" name="x_direccion" id="x_direccion" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($empleado->direccion->PlaceHolder) ?>" value="<?php echo $empleado->direccion->EditValue ?>"<?php echo $empleado->direccion->EditAttributes() ?>>
+<input type="text" data-table="empleado" data-field="x_direccion" name="x_direccion" id="x_direccion" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($empleado->direccion->getPlaceHolder()) ?>" value="<?php echo $empleado->direccion->EditValue ?>"<?php echo $empleado->direccion->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -1005,24 +987,26 @@ $empleado_search->ShowMessage();
 		</label>
 		<div class="<?php echo $empleado_search->SearchRightColumnClass ?>"><div<?php echo $empleado->idpersona->CellAttributes() ?>>
 			<span id="el_empleado_idpersona">
-<select data-field="x_idpersona" id="x_idpersona" name="x_idpersona"<?php echo $empleado->idpersona->EditAttributes() ?>>
+<select data-table="empleado" data-field="x_idpersona" data-value-separator="<?php echo ew_HtmlEncode(is_array($empleado->idpersona->DisplayValueSeparator) ? json_encode($empleado->idpersona->DisplayValueSeparator) : $empleado->idpersona->DisplayValueSeparator) ?>" id="x_idpersona" name="x_idpersona"<?php echo $empleado->idpersona->EditAttributes() ?>>
 <?php
 if (is_array($empleado->idpersona->EditValue)) {
 	$arwrk = $empleado->idpersona->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($empleado->idpersona->AdvancedSearch->SearchValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($empleado->idpersona->AdvancedSearch->SearchValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
-<?php if ($arwrk[$rowcntwrk][2] <> "") { ?>
-<?php echo ew_ValueSeparator(1,$empleado->idpersona) ?><?php echo $arwrk[$rowcntwrk][2] ?>
-<?php } ?>
+<?php echo $empleado->idpersona->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($empleado->idpersona->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($empleado->idpersona->CurrentValue) ?>" selected><?php echo $empleado->idpersona->CurrentValue ?></option>
+<?php
+    }
 }
 ?>
 </select>
@@ -1030,15 +1014,15 @@ if (is_array($empleado->idpersona->EditValue)) {
 $sSqlWrk = "SELECT `idpersona`, `nombre` AS `DispFld`, `apellido` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `persona`";
 $sWhereWrk = "";
 $lookuptblfilter = "`estado` = 'Activo'";
-if (strval($lookuptblfilter) <> "") {
-	ew_AddFilter($sWhereWrk, $lookuptblfilter);
-}
-
-// Call Lookup selecting
-$empleado->Lookup_Selecting($empleado->idpersona, $sWhereWrk);
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$empleado->idpersona->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$empleado->idpersona->LookupFilters += array("f0" => "`idpersona` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$empleado->Lookup_Selecting($empleado->idpersona, $sWhereWrk); // Call Lookup selecting
 if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $empleado->idpersona->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x_idpersona" id="s_x_idpersona" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idpersona` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x_idpersona" id="s_x_idpersona" value="<?php echo $empleado->idpersona->LookupFilterQuery() ?>">
 </span>
 		</div></div>
 	</div>
@@ -1050,27 +1034,29 @@ if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 		</label>
 		<div class="<?php echo $empleado_search->SearchRightColumnClass ?>"><div<?php echo $empleado->estado->CellAttributes() ?>>
 			<span id="el_empleado_estado">
-<div id="tp_x_estado" class="<?php echo EW_ITEM_TEMPLATE_CLASSNAME ?>"><input type="radio" name="x_estado" id="x_estado" value="{value}"<?php echo $empleado->estado->EditAttributes() ?>></div>
-<div id="dsl_x_estado" data-repeatcolumn="5" class="ewItemList">
+<div id="tp_x_estado" class="ewTemplate"><input type="radio" data-table="empleado" data-field="x_estado" data-value-separator="<?php echo ew_HtmlEncode(is_array($empleado->estado->DisplayValueSeparator) ? json_encode($empleado->estado->DisplayValueSeparator) : $empleado->estado->DisplayValueSeparator) ?>" name="x_estado" id="x_estado" value="{value}"<?php echo $empleado->estado->EditAttributes() ?>></div>
+<div id="dsl_x_estado" data-repeatcolumn="5" class="ewItemList" style="display: none;"><div>
 <?php
 $arwrk = $empleado->estado->EditValue;
 if (is_array($arwrk)) {
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($empleado->estado->AdvancedSearch->SearchValue) == strval($arwrk[$rowcntwrk][0])) ? " checked=\"checked\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
-
-		// Note: No spacing within the LABEL tag
+		$selwrk = (strval($empleado->estado->AdvancedSearch->SearchValue) == strval($arwrk[$rowcntwrk][0])) ? " checked" : "";
+		if ($selwrk <> "")
+			$emptywrk = FALSE;
 ?>
-<?php echo ew_RepeatColumnTable($rowswrk, $rowcntwrk, 5, 1) ?>
-<label class="radio-inline"><input type="radio" data-field="x_estado" name="x_estado" id="x_estado_<?php echo $rowcntwrk ?>" value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?><?php echo $empleado->estado->EditAttributes() ?>><?php echo $arwrk[$rowcntwrk][1] ?></label>
-<?php echo ew_RepeatColumnTable($rowswrk, $rowcntwrk, 5, 2) ?>
+<label class="radio-inline"><input type="radio" data-table="empleado" data-field="x_estado" name="x_estado" id="x_estado_<?php echo $rowcntwrk ?>" value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?><?php echo $empleado->estado->EditAttributes() ?>><?php echo $empleado->estado->DisplayValue($arwrk[$rowcntwrk]) ?></label>
 <?php
 	}
+	if ($emptywrk && strval($empleado->estado->CurrentValue) <> "") {
+?>
+<label class="radio-inline"><input type="radio" data-table="empleado" data-field="x_estado" name="x_estado" id="x_estado_<?php echo $rowswrk ?>" value="<?php echo ew_HtmlEncode($empleado->estado->CurrentValue) ?>" checked<?php echo $empleado->estado->EditAttributes() ?>><?php echo $empleado->estado->CurrentValue ?></label>
+<?php
+    }
 }
 ?>
-</div>
+</div></div>
 </span>
 		</div></div>
 	</div>
@@ -1082,27 +1068,42 @@ if (is_array($arwrk)) {
 		</label>
 		<div class="<?php echo $empleado_search->SearchRightColumnClass ?>"><div<?php echo $empleado->idempresa->CellAttributes() ?>>
 			<span id="el_empleado_idempresa">
-<select data-field="x_idempresa" id="x_idempresa" name="x_idempresa"<?php echo $empleado->idempresa->EditAttributes() ?>>
+<select data-table="empleado" data-field="x_idempresa" data-value-separator="<?php echo ew_HtmlEncode(is_array($empleado->idempresa->DisplayValueSeparator) ? json_encode($empleado->idempresa->DisplayValueSeparator) : $empleado->idempresa->DisplayValueSeparator) ?>" id="x_idempresa" name="x_idempresa"<?php echo $empleado->idempresa->EditAttributes() ?>>
 <?php
 if (is_array($empleado->idempresa->EditValue)) {
 	$arwrk = $empleado->idempresa->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($empleado->idempresa->AdvancedSearch->SearchValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($empleado->idempresa->AdvancedSearch->SearchValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $empleado->idempresa->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($empleado->idempresa->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($empleado->idempresa->CurrentValue) ?>" selected><?php echo $empleado->idempresa->CurrentValue ?></option>
+<?php
+    }
 }
 ?>
 </select>
-<script type="text/javascript">
-fempleadosearch.Lists["x_idempresa"].Options = <?php echo (is_array($empleado->idempresa->EditValue)) ? ew_ArrayToJson($empleado->idempresa->EditValue, 1) : "[]" ?>;
-</script>
+<?php
+$sSqlWrk = "SELECT `idempresa`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$empleado->idempresa->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$empleado->idempresa->LookupFilters += array("f0" => "`idempresa` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$empleado->Lookup_Selecting($empleado->idempresa, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $empleado->idempresa->LookupFilters["s"] .= $sSqlWrk;
+?>
+<input type="hidden" name="s_x_idempresa" id="s_x_idempresa" value="<?php echo $empleado->idempresa->LookupFilterQuery() ?>">
 </span>
 		</div></div>
 	</div>
@@ -1131,7 +1132,7 @@ if (EW_DEBUG_ENABLED)
 // document.write("page loaded");
 
 </script>
-<?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
+<?php include_once "footer.php" ?>
 <?php
 $empleado_search->Page_Terminate();
 ?>

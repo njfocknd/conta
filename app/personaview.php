@@ -1,17 +1,16 @@
 <?php
 if (session_id() == "") session_start(); // Initialize Session data
 ob_start(); // Turn on output buffering
-$EW_RELATIVE_PATH = "";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "personainfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "paisinfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "clientegridcls.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "empleadogridcls.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "proveedorgridcls.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
+<?php include_once "ewcfg12.php" ?>
+<?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
+<?php include_once "phpfn12.php" ?>
+<?php include_once "personainfo.php" ?>
+<?php include_once "paisinfo.php" ?>
+<?php include_once "clientegridcls.php" ?>
+<?php include_once "empleadogridcls.php" ?>
+<?php include_once "proveedorgridcls.php" ?>
+<?php include_once "userfn12.php" ?>
 <?php
 
 //
@@ -111,6 +110,30 @@ class cpersona_view extends cpersona {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
 	}
 
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
 	// Show message
 	function ShowMessage() {
 		$hidden = FALSE;
@@ -191,6 +214,7 @@ class cpersona_view extends cpersona {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -203,7 +227,7 @@ class cpersona_view extends cpersona {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -224,6 +248,7 @@ class cpersona_view extends cpersona {
 	function __construct() {
 		global $conn, $Language;
 		$GLOBALS["Page"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -264,7 +289,7 @@ class cpersona_view extends cpersona {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 
 		// Export options
 		$this->ExportOptions = new cListOptions();
@@ -301,44 +326,6 @@ class cpersona_view extends cpersona {
 			exit();
 		}
 
-		// Process auto fill
-		if (@$_POST["ajax"] == "autofill") {
-
-			// Process auto fill for detail table 'cliente'
-			if (@$_POST["grid"] == "fclientegrid") {
-				if (!isset($GLOBALS["cliente_grid"])) $GLOBALS["cliente_grid"] = new ccliente_grid;
-				$GLOBALS["cliente_grid"]->Page_Init();
-				$this->Page_Terminate();
-				exit();
-			}
-
-			// Process auto fill for detail table 'empleado'
-			if (@$_POST["grid"] == "fempleadogrid") {
-				if (!isset($GLOBALS["empleado_grid"])) $GLOBALS["empleado_grid"] = new cempleado_grid;
-				$GLOBALS["empleado_grid"]->Page_Init();
-				$this->Page_Terminate();
-				exit();
-			}
-
-			// Process auto fill for detail table 'proveedor'
-			if (@$_POST["grid"] == "fproveedorgrid") {
-				if (!isset($GLOBALS["proveedor_grid"])) $GLOBALS["proveedor_grid"] = new cproveedor_grid;
-				$GLOBALS["proveedor_grid"]->Page_Init();
-				$this->Page_Terminate();
-				exit();
-			}
-			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
-			if ($results) {
-
-				// Clean output buffer
-				if (!EW_DEBUG_ENABLED && ob_get_length())
-					ob_end_clean();
-				echo $results;
-				$this->Page_Terminate();
-				exit();
-			}
-		}
-
 		// Create Token
 		$this->CreateToken();
 	}
@@ -347,7 +334,7 @@ class cpersona_view extends cpersona {
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Page Unload event
 		$this->Page_Unload();
@@ -375,7 +362,7 @@ class cpersona_view extends cpersona {
 		$this->Page_Redirecting($url);
 
 		 // Close connection
-		$conn->Close();
+		ew_CloseConn();
 
 		// Go to URL if specified
 		if ($url <> "") {
@@ -416,6 +403,9 @@ class cpersona_view extends cpersona {
 			if (@$_GET["idpersona"] <> "") {
 				$this->idpersona->setQueryStringValue($_GET["idpersona"]);
 				$this->RecKey["idpersona"] = $this->idpersona->QueryStringValue;
+			} elseif (@$_POST["idpersona"] <> "") {
+				$this->idpersona->setFormValue($_POST["idpersona"]);
+				$this->RecKey["idpersona"] = $this->idpersona->FormValue;
 			} else {
 				$sReturnUrl = "personalist.php"; // Return to list
 			}
@@ -460,15 +450,6 @@ class cpersona_view extends cpersona {
 		$item = &$option->Add("edit");
 		$item->Body = "<a class=\"ewAction ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("ViewPageEditLink") . "</a>";
 		$item->Visible = ($this->EditUrl <> "");
-
-		// Show detail edit/copy
-		if ($this->getCurrentDetailTable() <> "") {
-
-			// Detail Edit
-			$item = &$option->Add("detailedit");
-			$item->Body = "<a class=\"ewAction ewDetailEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=" . $this->getCurrentDetailTable())) . "\">" . $Language->Phrase("MasterDetailEditLink") . "</a>";
-			$item->Visible = (TRUE);
-		}
 		$option = &$options["detail"];
 		$DetailTableLink = "";
 		$DetailViewTblVar = "";
@@ -477,8 +458,8 @@ class cpersona_view extends cpersona {
 
 		// "detail_cliente"
 		$item = &$option->Add("detail_cliente");
-		$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("cliente", "TblCaption");
-		$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("clientelist.php?" . EW_TABLE_SHOW_MASTER . "=persona&fk_idpersona=" . strval($this->idpersona->CurrentValue) . "") . "\">" . $body . "</a>";
+		$body = $Language->Phrase("ViewPageDetailLink") . $Language->TablePhrase("cliente", "TblCaption");
+		$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("clientelist.php?" . EW_TABLE_SHOW_MASTER . "=persona&fk_idpersona=" . urlencode(strval($this->idpersona->CurrentValue)) . "") . "\">" . $body . "</a>";
 		$links = "";
 		if ($GLOBALS["cliente_grid"] && $GLOBALS["cliente_grid"]->DetailView) {
 			$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=cliente")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
@@ -505,8 +486,8 @@ class cpersona_view extends cpersona {
 
 		// "detail_empleado"
 		$item = &$option->Add("detail_empleado");
-		$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("empleado", "TblCaption");
-		$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("empleadolist.php?" . EW_TABLE_SHOW_MASTER . "=persona&fk_idpersona=" . strval($this->idpersona->CurrentValue) . "") . "\">" . $body . "</a>";
+		$body = $Language->Phrase("ViewPageDetailLink") . $Language->TablePhrase("empleado", "TblCaption");
+		$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("empleadolist.php?" . EW_TABLE_SHOW_MASTER . "=persona&fk_idpersona=" . urlencode(strval($this->idpersona->CurrentValue)) . "") . "\">" . $body . "</a>";
 		$links = "";
 		if ($GLOBALS["empleado_grid"] && $GLOBALS["empleado_grid"]->DetailView) {
 			$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=empleado")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
@@ -533,8 +514,8 @@ class cpersona_view extends cpersona {
 
 		// "detail_proveedor"
 		$item = &$option->Add("detail_proveedor");
-		$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("proveedor", "TblCaption");
-		$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("proveedorlist.php?" . EW_TABLE_SHOW_MASTER . "=persona&fk_idpersona=" . strval($this->idpersona->CurrentValue) . "") . "\">" . $body . "</a>";
+		$body = $Language->Phrase("ViewPageDetailLink") . $Language->TablePhrase("proveedor", "TblCaption");
+		$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("proveedorlist.php?" . EW_TABLE_SHOW_MASTER . "=persona&fk_idpersona=" . urlencode(strval($this->idpersona->CurrentValue)) . "") . "\">" . $body . "</a>";
 		$links = "";
 		if ($GLOBALS["proveedor_grid"] && $GLOBALS["proveedor_grid"]->DetailView) {
 			$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=proveedor")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
@@ -645,7 +626,7 @@ class cpersona_view extends cpersona {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -654,8 +635,9 @@ class cpersona_view extends cpersona {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -666,7 +648,6 @@ class cpersona_view extends cpersona {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -706,8 +687,7 @@ class cpersona_view extends cpersona {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		$this->AddUrl = $this->GetAddUrl();
@@ -736,118 +716,87 @@ class cpersona_view extends cpersona {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idpersona
-			$this->idpersona->ViewValue = $this->idpersona->CurrentValue;
-			$this->idpersona->ViewCustomAttributes = "";
+		// idpersona
+		$this->idpersona->ViewValue = $this->idpersona->CurrentValue;
+		$this->idpersona->ViewCustomAttributes = "";
 
-			// tipo_persona
-			if (strval($this->tipo_persona->CurrentValue) <> "") {
-				switch ($this->tipo_persona->CurrentValue) {
-					case $this->tipo_persona->FldTagValue(1):
-						$this->tipo_persona->ViewValue = $this->tipo_persona->FldTagCaption(1) <> "" ? $this->tipo_persona->FldTagCaption(1) : $this->tipo_persona->CurrentValue;
-						break;
-					case $this->tipo_persona->FldTagValue(2):
-						$this->tipo_persona->ViewValue = $this->tipo_persona->FldTagCaption(2) <> "" ? $this->tipo_persona->FldTagCaption(2) : $this->tipo_persona->CurrentValue;
-						break;
-					default:
-						$this->tipo_persona->ViewValue = $this->tipo_persona->CurrentValue;
-				}
+		// tipo_persona
+		if (strval($this->tipo_persona->CurrentValue) <> "") {
+			$this->tipo_persona->ViewValue = $this->tipo_persona->OptionCaption($this->tipo_persona->CurrentValue);
+		} else {
+			$this->tipo_persona->ViewValue = NULL;
+		}
+		$this->tipo_persona->ViewCustomAttributes = "";
+
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
+
+		// apellido
+		$this->apellido->ViewValue = $this->apellido->CurrentValue;
+		$this->apellido->ViewCustomAttributes = "";
+
+		// direccion
+		$this->direccion->ViewValue = $this->direccion->CurrentValue;
+		$this->direccion->ViewCustomAttributes = "";
+
+		// cui
+		$this->cui->ViewValue = $this->cui->CurrentValue;
+		$this->cui->ViewCustomAttributes = "";
+
+		// idpais
+		if (strval($this->idpais->CurrentValue) <> "") {
+			$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idpais, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idpais->ViewValue = $this->idpais->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->tipo_persona->ViewValue = NULL;
+				$this->idpais->ViewValue = $this->idpais->CurrentValue;
 			}
-			$this->tipo_persona->ViewCustomAttributes = "";
+		} else {
+			$this->idpais->ViewValue = NULL;
+		}
+		$this->idpais->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
+		// fecha_nacimiento
+		$this->fecha_nacimiento->ViewValue = $this->fecha_nacimiento->CurrentValue;
+		$this->fecha_nacimiento->ViewValue = ew_FormatDateTime($this->fecha_nacimiento->ViewValue, 7);
+		$this->fecha_nacimiento->ViewCustomAttributes = "";
 
-			// apellido
-			$this->apellido->ViewValue = $this->apellido->CurrentValue;
-			$this->apellido->ViewCustomAttributes = "";
+		// email
+		$this->_email->ViewValue = $this->_email->CurrentValue;
+		$this->_email->ViewCustomAttributes = "";
 
-			// direccion
-			$this->direccion->ViewValue = $this->direccion->CurrentValue;
-			$this->direccion->ViewCustomAttributes = "";
+		// sexo
+		if (strval($this->sexo->CurrentValue) <> "") {
+			$this->sexo->ViewValue = $this->sexo->OptionCaption($this->sexo->CurrentValue);
+		} else {
+			$this->sexo->ViewValue = NULL;
+		}
+		$this->sexo->ViewCustomAttributes = "";
 
-			// cui
-			$this->cui->ViewValue = $this->cui->CurrentValue;
-			$this->cui->ViewCustomAttributes = "";
+		// fecha_insercion
+		$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
+		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
+		$this->fecha_insercion->ViewCustomAttributes = "";
 
-			// idpais
-			if (strval($this->idpais->CurrentValue) <> "") {
-				$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idpais, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idpais->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idpais->ViewValue = $this->idpais->CurrentValue;
-				}
-			} else {
-				$this->idpais->ViewValue = NULL;
-			}
-			$this->idpais->ViewCustomAttributes = "";
-
-			// fecha_nacimiento
-			$this->fecha_nacimiento->ViewValue = $this->fecha_nacimiento->CurrentValue;
-			$this->fecha_nacimiento->ViewValue = ew_FormatDateTime($this->fecha_nacimiento->ViewValue, 7);
-			$this->fecha_nacimiento->ViewCustomAttributes = "";
-
-			// email
-			$this->_email->ViewValue = $this->_email->CurrentValue;
-			$this->_email->ViewCustomAttributes = "";
-
-			// sexo
-			if (strval($this->sexo->CurrentValue) <> "") {
-				switch ($this->sexo->CurrentValue) {
-					case $this->sexo->FldTagValue(1):
-						$this->sexo->ViewValue = $this->sexo->FldTagCaption(1) <> "" ? $this->sexo->FldTagCaption(1) : $this->sexo->CurrentValue;
-						break;
-					case $this->sexo->FldTagValue(2):
-						$this->sexo->ViewValue = $this->sexo->FldTagCaption(2) <> "" ? $this->sexo->FldTagCaption(2) : $this->sexo->CurrentValue;
-						break;
-					default:
-						$this->sexo->ViewValue = $this->sexo->CurrentValue;
-				}
-			} else {
-				$this->sexo->ViewValue = NULL;
-			}
-			$this->sexo->ViewCustomAttributes = "";
-
-			// fecha_insercion
-			$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
-			$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
-			$this->fecha_insercion->ViewCustomAttributes = "";
-
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
-			} else {
-				$this->estado->ViewValue = NULL;
-			}
-			$this->estado->ViewCustomAttributes = "";
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
 			// idpersona
 			$this->idpersona->LinkCustomAttributes = "";
@@ -933,6 +882,24 @@ class cpersona_view extends cpersona {
 					$bValidMaster = FALSE;
 				}
 			}
+		} elseif (isset($_POST[EW_TABLE_SHOW_MASTER])) {
+			$sMasterTblVar = $_POST[EW_TABLE_SHOW_MASTER];
+			if ($sMasterTblVar == "") {
+				$bValidMaster = TRUE;
+				$this->DbMasterFilter = "";
+				$this->DbDetailFilter = "";
+			}
+			if ($sMasterTblVar == "pais") {
+				$bValidMaster = TRUE;
+				if (@$_POST["fk_idpais"] <> "") {
+					$GLOBALS["pais"]->idpais->setFormValue($_POST["fk_idpais"]);
+					$this->idpais->setFormValue($GLOBALS["pais"]->idpais->FormValue);
+					$this->idpais->setSessionValue($this->idpais->FormValue);
+					if (!is_numeric($GLOBALS["pais"]->idpais->FormValue)) $bValidMaster = FALSE;
+				} else {
+					$bValidMaster = FALSE;
+				}
+			}
 		}
 		if ($bValidMaster) {
 
@@ -946,10 +913,10 @@ class cpersona_view extends cpersona {
 
 			// Clear previous master key from Session
 			if ($sMasterTblVar <> "pais") {
-				if ($this->idpais->QueryStringValue == "") $this->idpais->setSessionValue("");
+				if ($this->idpais->CurrentValue == "") $this->idpais->setSessionValue("");
 			}
 		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 
@@ -1014,9 +981,10 @@ class cpersona_view extends cpersona {
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$Breadcrumb->Add("list", $this->TableVar, "personalist.php", "", $this->TableVar, TRUE);
+		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("personalist.php"), "", $this->TableVar, TRUE);
 		$PageId = "view";
-		$Breadcrumb->Add("view", $PageId, ew_CurrentUrl());
+		$Breadcrumb->Add("view", $PageId, $url);
 	}
 
 	// Page Load event
@@ -1124,16 +1092,12 @@ Page_Rendering();
 // Page Rendering event
 $persona_view->Page_Render();
 ?>
-<?php include_once $EW_RELATIVE_PATH . "header.php" ?>
+<?php include_once "header.php" ?>
 <script type="text/javascript">
 
-// Page object
-var persona_view = new ew_Page("persona_view");
-persona_view.PageID = "view"; // Page ID
-var EW_PAGE_ID = persona_view.PageID; // For backward compatibility
-
 // Form object
-var fpersonaview = new ew_Form("fpersonaview");
+var CurrentPageID = EW_PAGE_ID = "view";
+var CurrentForm = fpersonaview = new ew_Form("fpersonaview", "view");
 
 // Form_CustomValidate event
 fpersonaview.Form_CustomValidate = 
@@ -1151,7 +1115,13 @@ fpersonaview.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-fpersonaview.Lists["x_idpais"] = {"LinkField":"x_idpais","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+fpersonaview.Lists["x_tipo_persona"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fpersonaview.Lists["x_tipo_persona"].Options = <?php echo json_encode($persona->tipo_persona->Options()) ?>;
+fpersonaview.Lists["x_idpais"] = {"LinkField":"x_idpais","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fpersonaview.Lists["x_sexo"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fpersonaview.Lists["x_sexo"].Options = <?php echo json_encode($persona->sexo->Options()) ?>;
+fpersonaview.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fpersonaview.Lists["x_estado"].Options = <?php echo json_encode($persona->estado->Options()) ?>;
 
 // Form object for search
 </script>
@@ -1182,8 +1152,8 @@ $persona_view->ShowMessage();
 <?php if ($persona->idpersona->Visible) { // idpersona ?>
 	<tr id="r_idpersona">
 		<td><span id="elh_persona_idpersona"><?php echo $persona->idpersona->FldCaption() ?></span></td>
-		<td<?php echo $persona->idpersona->CellAttributes() ?>>
-<span id="el_persona_idpersona" class="form-group">
+		<td data-name="idpersona"<?php echo $persona->idpersona->CellAttributes() ?>>
+<span id="el_persona_idpersona">
 <span<?php echo $persona->idpersona->ViewAttributes() ?>>
 <?php echo $persona->idpersona->ViewValue ?></span>
 </span>
@@ -1193,8 +1163,8 @@ $persona_view->ShowMessage();
 <?php if ($persona->tipo_persona->Visible) { // tipo_persona ?>
 	<tr id="r_tipo_persona">
 		<td><span id="elh_persona_tipo_persona"><?php echo $persona->tipo_persona->FldCaption() ?></span></td>
-		<td<?php echo $persona->tipo_persona->CellAttributes() ?>>
-<span id="el_persona_tipo_persona" class="form-group">
+		<td data-name="tipo_persona"<?php echo $persona->tipo_persona->CellAttributes() ?>>
+<span id="el_persona_tipo_persona">
 <span<?php echo $persona->tipo_persona->ViewAttributes() ?>>
 <?php echo $persona->tipo_persona->ViewValue ?></span>
 </span>
@@ -1204,8 +1174,8 @@ $persona_view->ShowMessage();
 <?php if ($persona->nombre->Visible) { // nombre ?>
 	<tr id="r_nombre">
 		<td><span id="elh_persona_nombre"><?php echo $persona->nombre->FldCaption() ?></span></td>
-		<td<?php echo $persona->nombre->CellAttributes() ?>>
-<span id="el_persona_nombre" class="form-group">
+		<td data-name="nombre"<?php echo $persona->nombre->CellAttributes() ?>>
+<span id="el_persona_nombre">
 <span<?php echo $persona->nombre->ViewAttributes() ?>>
 <?php echo $persona->nombre->ViewValue ?></span>
 </span>
@@ -1215,8 +1185,8 @@ $persona_view->ShowMessage();
 <?php if ($persona->apellido->Visible) { // apellido ?>
 	<tr id="r_apellido">
 		<td><span id="elh_persona_apellido"><?php echo $persona->apellido->FldCaption() ?></span></td>
-		<td<?php echo $persona->apellido->CellAttributes() ?>>
-<span id="el_persona_apellido" class="form-group">
+		<td data-name="apellido"<?php echo $persona->apellido->CellAttributes() ?>>
+<span id="el_persona_apellido">
 <span<?php echo $persona->apellido->ViewAttributes() ?>>
 <?php echo $persona->apellido->ViewValue ?></span>
 </span>
@@ -1226,8 +1196,8 @@ $persona_view->ShowMessage();
 <?php if ($persona->cui->Visible) { // cui ?>
 	<tr id="r_cui">
 		<td><span id="elh_persona_cui"><?php echo $persona->cui->FldCaption() ?></span></td>
-		<td<?php echo $persona->cui->CellAttributes() ?>>
-<span id="el_persona_cui" class="form-group">
+		<td data-name="cui"<?php echo $persona->cui->CellAttributes() ?>>
+<span id="el_persona_cui">
 <span<?php echo $persona->cui->ViewAttributes() ?>>
 <?php echo $persona->cui->ViewValue ?></span>
 </span>
@@ -1237,8 +1207,8 @@ $persona_view->ShowMessage();
 <?php if ($persona->idpais->Visible) { // idpais ?>
 	<tr id="r_idpais">
 		<td><span id="elh_persona_idpais"><?php echo $persona->idpais->FldCaption() ?></span></td>
-		<td<?php echo $persona->idpais->CellAttributes() ?>>
-<span id="el_persona_idpais" class="form-group">
+		<td data-name="idpais"<?php echo $persona->idpais->CellAttributes() ?>>
+<span id="el_persona_idpais">
 <span<?php echo $persona->idpais->ViewAttributes() ?>>
 <?php echo $persona->idpais->ViewValue ?></span>
 </span>
@@ -1248,8 +1218,8 @@ $persona_view->ShowMessage();
 <?php if ($persona->fecha_nacimiento->Visible) { // fecha_nacimiento ?>
 	<tr id="r_fecha_nacimiento">
 		<td><span id="elh_persona_fecha_nacimiento"><?php echo $persona->fecha_nacimiento->FldCaption() ?></span></td>
-		<td<?php echo $persona->fecha_nacimiento->CellAttributes() ?>>
-<span id="el_persona_fecha_nacimiento" class="form-group">
+		<td data-name="fecha_nacimiento"<?php echo $persona->fecha_nacimiento->CellAttributes() ?>>
+<span id="el_persona_fecha_nacimiento">
 <span<?php echo $persona->fecha_nacimiento->ViewAttributes() ?>>
 <?php echo $persona->fecha_nacimiento->ViewValue ?></span>
 </span>
@@ -1259,8 +1229,8 @@ $persona_view->ShowMessage();
 <?php if ($persona->_email->Visible) { // email ?>
 	<tr id="r__email">
 		<td><span id="elh_persona__email"><?php echo $persona->_email->FldCaption() ?></span></td>
-		<td<?php echo $persona->_email->CellAttributes() ?>>
-<span id="el_persona__email" class="form-group">
+		<td data-name="_email"<?php echo $persona->_email->CellAttributes() ?>>
+<span id="el_persona__email">
 <span<?php echo $persona->_email->ViewAttributes() ?>>
 <?php echo $persona->_email->ViewValue ?></span>
 </span>
@@ -1270,8 +1240,8 @@ $persona_view->ShowMessage();
 <?php if ($persona->sexo->Visible) { // sexo ?>
 	<tr id="r_sexo">
 		<td><span id="elh_persona_sexo"><?php echo $persona->sexo->FldCaption() ?></span></td>
-		<td<?php echo $persona->sexo->CellAttributes() ?>>
-<span id="el_persona_sexo" class="form-group">
+		<td data-name="sexo"<?php echo $persona->sexo->CellAttributes() ?>>
+<span id="el_persona_sexo">
 <span<?php echo $persona->sexo->ViewAttributes() ?>>
 <?php echo $persona->sexo->ViewValue ?></span>
 </span>
@@ -1281,8 +1251,8 @@ $persona_view->ShowMessage();
 <?php if ($persona->fecha_insercion->Visible) { // fecha_insercion ?>
 	<tr id="r_fecha_insercion">
 		<td><span id="elh_persona_fecha_insercion"><?php echo $persona->fecha_insercion->FldCaption() ?></span></td>
-		<td<?php echo $persona->fecha_insercion->CellAttributes() ?>>
-<span id="el_persona_fecha_insercion" class="form-group">
+		<td data-name="fecha_insercion"<?php echo $persona->fecha_insercion->CellAttributes() ?>>
+<span id="el_persona_fecha_insercion">
 <span<?php echo $persona->fecha_insercion->ViewAttributes() ?>>
 <?php echo $persona->fecha_insercion->ViewValue ?></span>
 </span>
@@ -1292,8 +1262,8 @@ $persona_view->ShowMessage();
 <?php if ($persona->estado->Visible) { // estado ?>
 	<tr id="r_estado">
 		<td><span id="elh_persona_estado"><?php echo $persona->estado->FldCaption() ?></span></td>
-		<td<?php echo $persona->estado->CellAttributes() ?>>
-<span id="el_persona_estado" class="form-group">
+		<td data-name="estado"<?php echo $persona->estado->CellAttributes() ?>>
+<span id="el_persona_estado">
 <span<?php echo $persona->estado->ViewAttributes() ?>>
 <?php echo $persona->estado->ViewValue ?></span>
 </span>
@@ -1340,7 +1310,7 @@ if (EW_DEBUG_ENABLED)
 // document.write("page loaded");
 
 </script>
-<?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
+<?php include_once "footer.php" ?>
 <?php
 $persona_view->Page_Terminate();
 ?>

@@ -92,3 +92,10 @@ Calendar._TT["DEF_DATE_FORMAT"] = "%Y-%m-%d";
 Calendar._TT["TT_DATE_FORMAT"] = "%a, %b %e";
 
 Calendar._TT["WK"] = "Ted";
+Calendar._TT["TIME"] = "Time"; //***
+
+//***
+Calendar._TT["CLEAR"] = "Clear";
+Calendar._TT["CLEAR_TIME"] = "Clear time";
+Calendar._TT["NOW"] = "Now";
+Calendar._TT["RESET_TIME_TO_NOW"] = "Reset time to now";

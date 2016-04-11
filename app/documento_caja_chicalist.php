@@ -1,14 +1,13 @@
 <?php
 if (session_id() == "") session_start(); // Initialize Session data
 ob_start(); // Turn on output buffering
-$EW_RELATIVE_PATH = "";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "documento_caja_chicainfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "caja_chicainfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
+<?php include_once "ewcfg12.php" ?>
+<?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
+<?php include_once "phpfn12.php" ?>
+<?php include_once "documento_caja_chicainfo.php" ?>
+<?php include_once "caja_chicainfo.php" ?>
+<?php include_once "userfn12.php" ?>
 <?php
 
 //
@@ -116,6 +115,30 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
 	}
 
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
 	// Show message
 	function ShowMessage() {
 		$hidden = FALSE;
@@ -196,6 +219,7 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -208,7 +232,7 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -229,6 +253,7 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 	function __construct() {
 		global $conn, $Language;
 		$GLOBALS["Page"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -272,7 +297,7 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 
 		// List options
 		$this->ListOptions = new cListOptions();
@@ -293,6 +318,14 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		$this->OtherOptions['action'] = new cListOptions();
 		$this->OtherOptions['action']->Tag = "div";
 		$this->OtherOptions['action']->TagClassName = "ewActionOption";
+
+		// Filter options
+		$this->FilterOptions = new cListOptions();
+		$this->FilterOptions->Tag = "div";
+		$this->FilterOptions->TagClassName = "ewFilterOption fdocumento_caja_chicalistsrch";
+
+		// List actions
+		$this->ListActions = new cListActions();
 	}
 
 	// 
@@ -340,19 +373,30 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		// Create Token
 		$this->CreateToken();
 
+		// Set up master detail parameters
+		$this->SetUpMasterParms();
+
 		// Setup other options
 		$this->SetupOtherOptions();
 
-		// Set "checkbox" visible
-		if (count($this->CustomActions) > 0)
-			$this->ListOptions->Items["checkbox"]->Visible = TRUE;
+		// Set up custom action (compatible with old version)
+		foreach ($this->CustomActions as $name => $action)
+			$this->ListActions->Add($name, $action);
+
+		// Show checkbox column if multiple action
+		foreach ($this->ListActions->Items as $listaction) {
+			if ($listaction->Select == EW_ACTION_MULTIPLE && $listaction->Allow) {
+				$this->ListOptions->Items["checkbox"]->Visible = TRUE;
+				break;
+			}
+		}
 	}
 
 	//
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Page Unload event
 		$this->Page_Unload();
@@ -380,7 +424,7 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		$this->Page_Redirecting($url);
 
 		 // Close connection
-		$conn->Close();
+		ew_CloseConn();
 
 		// Go to URL if specified
 		if ($url <> "") {
@@ -396,6 +440,10 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 	var $ExportOptions; // Export options
 	var $SearchOptions; // Search options
 	var $OtherOptions = array(); // Other options
+	var $FilterOptions; // Filter options
+	var $ListActions; // List actions
+	var $SelectedCount = 0;
+	var $SelectedIndex = 0;
 	var $DisplayRecs = 20;
 	var $StartRec;
 	var $StopRec;
@@ -426,6 +474,7 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 	var $MultiSelectKey;
 	var $Command;
 	var $RestoreSearch = FALSE;
+	var $DetailPages;
 	var $Recordset;
 	var $OldRecordset;
 
@@ -444,14 +493,12 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		$this->Command = strtolower(@$_GET["cmd"]);
 		if ($this->IsPageRequest()) { // Validate request
 
-			// Process custom action first
-			$this->ProcessCustomAction();
+			// Process list action first
+			if ($this->ProcessListAction()) // Ajax request
+				$this->Page_Terminate();
 
 			// Handle reset command
 			$this->ResetCmd();
-
-			// Set up master detail parameters
-			$this->SetUpMasterParms();
 
 			// Set up Breadcrumb
 			if ($this->Export == "")
@@ -468,9 +515,11 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 				$this->ListOptions->UseButtonGroup = FALSE; // Disable button group
 			}
 
-			// Hide export options
-			if ($this->Export <> "" || $this->CurrentAction <> "")
+			// Hide options
+			if ($this->Export <> "" || $this->CurrentAction <> "") {
 				$this->ExportOptions->HideAllOptions();
+				$this->FilterOptions->HideAllOptions();
+			}
 
 			// Hide other options
 			if ($this->Export <> "") {
@@ -483,6 +532,9 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 
 			// Get basic search values
 			$this->LoadBasicSearchValues();
+
+			// Restore filter list
+			$this->RestoreFilterList();
 
 			// Restore search parms from Session if not searching / reset / export
 			if (($this->Export <> "" || $this->Command <> "search" && $this->Command <> "reset" && $this->Command <> "resetall") && $this->CheckSearchParms())
@@ -564,12 +616,14 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		$this->CurrentFilter = "";
 
 		// Load record count first
-		$bSelectLimit = EW_SELECT_LIMIT;
-		if ($bSelectLimit) {
-			$this->TotalRecs = $this->SelectRecordCount();
-		} else {
-			if ($this->Recordset = $this->LoadRecordset())
-				$this->TotalRecs = $this->Recordset->RecordCount();
+		if (!$this->IsAddOrEdit()) {
+			$bSelectLimit = $this->UseSelectLimit;
+			if ($bSelectLimit) {
+				$this->TotalRecs = $this->SelectRecordCount();
+			} else {
+				if ($this->Recordset = $this->LoadRecordset())
+					$this->TotalRecs = $this->Recordset->RecordCount();
+			}
 		}
 
 		// Search options
@@ -614,6 +668,122 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		return TRUE;
 	}
 
+	// Get list of filters
+	function GetFilterList() {
+
+		// Initialize
+		$sFilterList = "";
+		$sFilterList = ew_Concat($sFilterList, $this->iddocumento_caja_chica->AdvancedSearch->ToJSON(), ","); // Field iddocumento_caja_chica
+		$sFilterList = ew_Concat($sFilterList, $this->idcaja_chica->AdvancedSearch->ToJSON(), ","); // Field idcaja_chica
+		$sFilterList = ew_Concat($sFilterList, $this->tipo->AdvancedSearch->ToJSON(), ","); // Field tipo
+		$sFilterList = ew_Concat($sFilterList, $this->idtipo_documento->AdvancedSearch->ToJSON(), ","); // Field idtipo_documento
+		$sFilterList = ew_Concat($sFilterList, $this->serie->AdvancedSearch->ToJSON(), ","); // Field serie
+		$sFilterList = ew_Concat($sFilterList, $this->numero->AdvancedSearch->ToJSON(), ","); // Field numero
+		$sFilterList = ew_Concat($sFilterList, $this->fecha->AdvancedSearch->ToJSON(), ","); // Field fecha
+		$sFilterList = ew_Concat($sFilterList, $this->monto->AdvancedSearch->ToJSON(), ","); // Field monto
+		$sFilterList = ew_Concat($sFilterList, $this->estado->AdvancedSearch->ToJSON(), ","); // Field estado
+		$sFilterList = ew_Concat($sFilterList, $this->fecha_insercion->AdvancedSearch->ToJSON(), ","); // Field fecha_insercion
+		if ($this->BasicSearch->Keyword <> "") {
+			$sWrk = "\"" . EW_TABLE_BASIC_SEARCH . "\":\"" . ew_JsEncode2($this->BasicSearch->Keyword) . "\",\"" . EW_TABLE_BASIC_SEARCH_TYPE . "\":\"" . ew_JsEncode2($this->BasicSearch->Type) . "\"";
+			$sFilterList = ew_Concat($sFilterList, $sWrk, ",");
+		}
+
+		// Return filter list in json
+		return ($sFilterList <> "") ? "{" . $sFilterList . "}" : "null";
+	}
+
+	// Restore list of filters
+	function RestoreFilterList() {
+
+		// Return if not reset filter
+		if (@$_POST["cmd"] <> "resetfilter")
+			return FALSE;
+		$filter = json_decode(ew_StripSlashes(@$_POST["filter"]), TRUE);
+		$this->Command = "search";
+
+		// Field iddocumento_caja_chica
+		$this->iddocumento_caja_chica->AdvancedSearch->SearchValue = @$filter["x_iddocumento_caja_chica"];
+		$this->iddocumento_caja_chica->AdvancedSearch->SearchOperator = @$filter["z_iddocumento_caja_chica"];
+		$this->iddocumento_caja_chica->AdvancedSearch->SearchCondition = @$filter["v_iddocumento_caja_chica"];
+		$this->iddocumento_caja_chica->AdvancedSearch->SearchValue2 = @$filter["y_iddocumento_caja_chica"];
+		$this->iddocumento_caja_chica->AdvancedSearch->SearchOperator2 = @$filter["w_iddocumento_caja_chica"];
+		$this->iddocumento_caja_chica->AdvancedSearch->Save();
+
+		// Field idcaja_chica
+		$this->idcaja_chica->AdvancedSearch->SearchValue = @$filter["x_idcaja_chica"];
+		$this->idcaja_chica->AdvancedSearch->SearchOperator = @$filter["z_idcaja_chica"];
+		$this->idcaja_chica->AdvancedSearch->SearchCondition = @$filter["v_idcaja_chica"];
+		$this->idcaja_chica->AdvancedSearch->SearchValue2 = @$filter["y_idcaja_chica"];
+		$this->idcaja_chica->AdvancedSearch->SearchOperator2 = @$filter["w_idcaja_chica"];
+		$this->idcaja_chica->AdvancedSearch->Save();
+
+		// Field tipo
+		$this->tipo->AdvancedSearch->SearchValue = @$filter["x_tipo"];
+		$this->tipo->AdvancedSearch->SearchOperator = @$filter["z_tipo"];
+		$this->tipo->AdvancedSearch->SearchCondition = @$filter["v_tipo"];
+		$this->tipo->AdvancedSearch->SearchValue2 = @$filter["y_tipo"];
+		$this->tipo->AdvancedSearch->SearchOperator2 = @$filter["w_tipo"];
+		$this->tipo->AdvancedSearch->Save();
+
+		// Field idtipo_documento
+		$this->idtipo_documento->AdvancedSearch->SearchValue = @$filter["x_idtipo_documento"];
+		$this->idtipo_documento->AdvancedSearch->SearchOperator = @$filter["z_idtipo_documento"];
+		$this->idtipo_documento->AdvancedSearch->SearchCondition = @$filter["v_idtipo_documento"];
+		$this->idtipo_documento->AdvancedSearch->SearchValue2 = @$filter["y_idtipo_documento"];
+		$this->idtipo_documento->AdvancedSearch->SearchOperator2 = @$filter["w_idtipo_documento"];
+		$this->idtipo_documento->AdvancedSearch->Save();
+
+		// Field serie
+		$this->serie->AdvancedSearch->SearchValue = @$filter["x_serie"];
+		$this->serie->AdvancedSearch->SearchOperator = @$filter["z_serie"];
+		$this->serie->AdvancedSearch->SearchCondition = @$filter["v_serie"];
+		$this->serie->AdvancedSearch->SearchValue2 = @$filter["y_serie"];
+		$this->serie->AdvancedSearch->SearchOperator2 = @$filter["w_serie"];
+		$this->serie->AdvancedSearch->Save();
+
+		// Field numero
+		$this->numero->AdvancedSearch->SearchValue = @$filter["x_numero"];
+		$this->numero->AdvancedSearch->SearchOperator = @$filter["z_numero"];
+		$this->numero->AdvancedSearch->SearchCondition = @$filter["v_numero"];
+		$this->numero->AdvancedSearch->SearchValue2 = @$filter["y_numero"];
+		$this->numero->AdvancedSearch->SearchOperator2 = @$filter["w_numero"];
+		$this->numero->AdvancedSearch->Save();
+
+		// Field fecha
+		$this->fecha->AdvancedSearch->SearchValue = @$filter["x_fecha"];
+		$this->fecha->AdvancedSearch->SearchOperator = @$filter["z_fecha"];
+		$this->fecha->AdvancedSearch->SearchCondition = @$filter["v_fecha"];
+		$this->fecha->AdvancedSearch->SearchValue2 = @$filter["y_fecha"];
+		$this->fecha->AdvancedSearch->SearchOperator2 = @$filter["w_fecha"];
+		$this->fecha->AdvancedSearch->Save();
+
+		// Field monto
+		$this->monto->AdvancedSearch->SearchValue = @$filter["x_monto"];
+		$this->monto->AdvancedSearch->SearchOperator = @$filter["z_monto"];
+		$this->monto->AdvancedSearch->SearchCondition = @$filter["v_monto"];
+		$this->monto->AdvancedSearch->SearchValue2 = @$filter["y_monto"];
+		$this->monto->AdvancedSearch->SearchOperator2 = @$filter["w_monto"];
+		$this->monto->AdvancedSearch->Save();
+
+		// Field estado
+		$this->estado->AdvancedSearch->SearchValue = @$filter["x_estado"];
+		$this->estado->AdvancedSearch->SearchOperator = @$filter["z_estado"];
+		$this->estado->AdvancedSearch->SearchCondition = @$filter["v_estado"];
+		$this->estado->AdvancedSearch->SearchValue2 = @$filter["y_estado"];
+		$this->estado->AdvancedSearch->SearchOperator2 = @$filter["w_estado"];
+		$this->estado->AdvancedSearch->Save();
+
+		// Field fecha_insercion
+		$this->fecha_insercion->AdvancedSearch->SearchValue = @$filter["x_fecha_insercion"];
+		$this->fecha_insercion->AdvancedSearch->SearchOperator = @$filter["z_fecha_insercion"];
+		$this->fecha_insercion->AdvancedSearch->SearchCondition = @$filter["v_fecha_insercion"];
+		$this->fecha_insercion->AdvancedSearch->SearchValue2 = @$filter["y_fecha_insercion"];
+		$this->fecha_insercion->AdvancedSearch->SearchOperator2 = @$filter["w_fecha_insercion"];
+		$this->fecha_insercion->AdvancedSearch->Save();
+		$this->BasicSearch->setKeyword(@$filter[EW_TABLE_BASIC_SEARCH]);
+		$this->BasicSearch->setType(@$filter[EW_TABLE_BASIC_SEARCH_TYPE]);
+	}
+
 	// Return basic search SQL
 	function BasicSearchSQL($arKeywords, $type) {
 		$sWhere = "";
@@ -625,7 +795,6 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 	// Build basic search SQL
 	function BuildBasicSearchSql(&$Where, &$Fld, $arKeywords, $type) {
 		$sDefCond = ($type == "OR") ? "OR" : "AND";
-		$sCond = $sDefCond;
 		$arSQL = array(); // Array for SQL parts
 		$arCond = array(); // Array for search conditions
 		$cnt = count($arKeywords);
@@ -649,9 +818,10 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 						$sWrk = $Fld->FldExpression . " IS NULL";
 					} elseif ($Keyword == EW_NOT_NULL_VALUE) {
 						$sWrk = $Fld->FldExpression . " IS NOT NULL";
+					} elseif ($Fld->FldIsVirtual && $Fld->FldVirtualSearch) {
+						$sWrk = $Fld->FldVirtualExpression . ew_Like(ew_QuotedValue("%" . $Keyword . "%", EW_DATATYPE_STRING, $this->DBID), $this->DBID);
 					} elseif ($Fld->FldDataType != EW_DATATYPE_NUMBER || is_numeric($Keyword)) {
-						$sFldExpression = ($Fld->FldVirtualExpression <> $Fld->FldExpression) ? $Fld->FldVirtualExpression : $Fld->FldBasicSearchExpression;
-						$sWrk = $sFldExpression . ew_Like(ew_QuotedValue("%" . $Keyword . "%", EW_DATATYPE_STRING));
+						$sWrk = $Fld->FldBasicSearchExpression . ew_Like(ew_QuotedValue("%" . $Keyword . "%", EW_DATATYPE_STRING, $this->DBID), $this->DBID);
 					}
 					if ($sWrk <> "") {
 						$arSQL[$j] = $sWrk;
@@ -713,7 +883,18 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 				// Match individual keywords
 				if (strlen(trim($sSearch)) > 0)
 					$ar = array_merge($ar, explode(" ", trim($sSearch)));
-				$sSearchStr = $this->BasicSearchSQL($ar, $sSearchType);
+
+				// Search keyword in any fields
+				if (($sSearchType == "OR" || $sSearchType == "AND") && $this->BasicSearch->BasicSearchAnyFields) {
+					foreach ($ar as $sKeyword) {
+						if ($sKeyword <> "") {
+							if ($sSearchStr <> "") $sSearchStr .= " " . $sSearchType . " ";
+							$sSearchStr .= "(" . $this->BasicSearchSQL(array($sKeyword), $sSearchType) . ")";
+						}
+					}
+				} else {
+					$sSearchStr = $this->BasicSearchSQL($ar, $sSearchType);
+				}
 			} else {
 				$sSearchStr = $this->BasicSearchSQL(array($sSearch), $sSearchType);
 			}
@@ -853,6 +1034,14 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		$item->Visible = TRUE;
 		$item->OnLeft = FALSE;
 
+		// List actions
+		$item = &$this->ListOptions->Add("listactions");
+		$item->CssStyle = "white-space: nowrap;";
+		$item->OnLeft = FALSE;
+		$item->Visible = FALSE;
+		$item->ShowInButtonGroup = FALSE;
+		$item->ShowInDropDown = FALSE;
+
 		// "checkbox"
 		$item = &$this->ListOptions->Add("checkbox");
 		$item->Visible = FALSE;
@@ -897,9 +1086,38 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 			$oListOpt->Body = "";
 		}
 
+		// Set up list action buttons
+		$oListOpt = &$this->ListOptions->GetItem("listactions");
+		if ($oListOpt && $this->Export == "" && $this->CurrentAction == "") {
+			$body = "";
+			$links = array();
+			foreach ($this->ListActions->Items as $listaction) {
+				if ($listaction->Select == EW_ACTION_SINGLE && $listaction->Allow) {
+					$action = $listaction->Action;
+					$caption = $listaction->Caption;
+					$icon = ($listaction->Icon <> "") ? "<span class=\"" . ew_HtmlEncode(str_replace(" ewIcon", "", $listaction->Icon)) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\"></span> " : "";
+					$links[] = "<li><a class=\"ewAction ewListAction\" data-action=\"" . ew_HtmlEncode($action) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"\" onclick=\"ew_SubmitAction(event,jQuery.extend({key:" . $this->KeyToJson() . "}," . $listaction->ToJson(TRUE) . "));return false;\">" . $icon . $listaction->Caption . "</a></li>";
+					if (count($links) == 1) // Single button
+						$body = "<a class=\"ewAction ewListAction\" data-action=\"" . ew_HtmlEncode($action) . "\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"\" onclick=\"ew_SubmitAction(event,jQuery.extend({key:" . $this->KeyToJson() . "}," . $listaction->ToJson(TRUE) . "));return false;\">" . $Language->Phrase("ListActionButton") . "</a>";
+				}
+			}
+			if (count($links) > 1) { // More than one buttons, use dropdown
+				$body = "<button class=\"dropdown-toggle btn btn-default btn-sm ewActions\" title=\"" . ew_HtmlTitle($Language->Phrase("ListActionButton")) . "\" data-toggle=\"dropdown\">" . $Language->Phrase("ListActionButton") . "<b class=\"caret\"></b></button>";
+				$content = "";
+				foreach ($links as $link)
+					$content .= "<li>" . $link . "</li>";
+				$body .= "<ul class=\"dropdown-menu" . ($oListOpt->OnLeft ? "" : " dropdown-menu-right") . "\">". $content . "</ul>";
+				$body = "<div class=\"btn-group\">" . $body . "</div>";
+			}
+			if (count($links) > 0) {
+				$oListOpt->Body = $body;
+				$oListOpt->Visible = TRUE;
+			}
+		}
+
 		// "checkbox"
 		$oListOpt = &$this->ListOptions->Items["checkbox"];
-		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->iddocumento_caja_chica->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event, this);'>";
+		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->iddocumento_caja_chica->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event);'>";
 		$this->RenderListOptionsExt();
 
 		// Call ListOptions_Rendered event
@@ -931,6 +1149,22 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		$options["addedit"]->DropDownButtonPhrase = $Language->Phrase("ButtonAddEdit");
 		$options["detail"]->DropDownButtonPhrase = $Language->Phrase("ButtonDetails");
 		$options["action"]->DropDownButtonPhrase = $Language->Phrase("ButtonActions");
+
+		// Filter button
+		$item = &$this->FilterOptions->Add("savecurrentfilter");
+		$item->Body = "<a class=\"ewSaveFilter\" data-form=\"fdocumento_caja_chicalistsrch\" href=\"#\">" . $Language->Phrase("SaveCurrentFilter") . "</a>";
+		$item->Visible = TRUE;
+		$item = &$this->FilterOptions->Add("deletefilter");
+		$item->Body = "<a class=\"ewDeleteFilter\" data-form=\"fdocumento_caja_chicalistsrch\" href=\"#\">" . $Language->Phrase("DeleteFilter") . "</a>";
+		$item->Visible = TRUE;
+		$this->FilterOptions->UseDropDownButton = TRUE;
+		$this->FilterOptions->UseButtonGroup = !$this->FilterOptions->UseDropDownButton;
+		$this->FilterOptions->DropDownButtonPhrase = $Language->Phrase("Filters");
+
+		// Add group option item
+		$item = &$this->FilterOptions->Add($this->FilterOptions->GroupOptionName);
+		$item->Body = "";
+		$item->Visible = FALSE;
 	}
 
 	// Render other options
@@ -938,52 +1172,74 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		global $Language, $Security;
 		$options = &$this->OtherOptions;
 			$option = &$options["action"];
-			foreach ($this->CustomActions as $action => $name) {
 
-				// Add custom action
-				$item = &$option->Add("custom_" . $action);
-				$item->Body = "<a class=\"ewAction ewCustomAction\" href=\"\" onclick=\"ew_SubmitSelected(document.fdocumento_caja_chicalist, '" . ew_CurrentUrl() . "', null, '" . $action . "');return false;\">" . $name . "</a>";
+			// Set up list action buttons
+			foreach ($this->ListActions->Items as $listaction) {
+				if ($listaction->Select == EW_ACTION_MULTIPLE) {
+					$item = &$option->Add("custom_" . $listaction->Action);
+					$caption = $listaction->Caption;
+					$icon = ($listaction->Icon <> "") ? "<span class=\"" . ew_HtmlEncode($listaction->Icon) . "\" data-caption=\"" . ew_HtmlEncode($caption) . "\"></span> " : $caption;
+					$item->Body = "<a class=\"ewAction ewListAction\" title=\"" . ew_HtmlEncode($caption) . "\" data-caption=\"" . ew_HtmlEncode($caption) . "\" href=\"\" onclick=\"ew_SubmitAction(event,jQuery.extend({f:document.fdocumento_caja_chicalist}," . $listaction->ToJson(TRUE) . "));return false;\">" . $icon . "</a>";
+					$item->Visible = $listaction->Allow;
+				}
 			}
 
-			// Hide grid edit, multi-delete and multi-update
+			// Hide grid edit and other options
 			if ($this->TotalRecs <= 0) {
 				$option = &$options["addedit"];
 				$item = &$option->GetItem("gridedit");
 				if ($item) $item->Visible = FALSE;
 				$option = &$options["action"];
-				$item = &$option->GetItem("multidelete");
-				if ($item) $item->Visible = FALSE;
-				$item = &$option->GetItem("multiupdate");
-				if ($item) $item->Visible = FALSE;
+				$option->HideAllOptions();
 			}
 	}
 
-	// Process custom action
-	function ProcessCustomAction() {
-		global $conn, $Language, $Security;
+	// Process list action
+	function ProcessListAction() {
+		global $Language, $Security;
+		$userlist = "";
+		$user = "";
 		$sFilter = $this->GetKeyFilter();
 		$UserAction = @$_POST["useraction"];
 		if ($sFilter <> "" && $UserAction <> "") {
+
+			// Check permission first
+			$ActionCaption = $UserAction;
+			if (array_key_exists($UserAction, $this->ListActions->Items)) {
+				$ActionCaption = $this->ListActions->Items[$UserAction]->Caption;
+				if (!$this->ListActions->Items[$UserAction]->Allow) {
+					$errmsg = str_replace('%s', $ActionCaption, $Language->Phrase("CustomActionNotAllowed"));
+					if (@$_POST["ajax"] == $UserAction) // Ajax
+						echo "<p class=\"text-danger\">" . $errmsg . "</p>";
+					else
+						$this->setFailureMessage($errmsg);
+					return FALSE;
+				}
+			}
 			$this->CurrentFilter = $sFilter;
 			$sSql = $this->SQL();
-			$conn->raiseErrorFn = 'ew_ErrorFn';
+			$conn = &$this->Connection();
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 			$rs = $conn->Execute($sSql);
 			$conn->raiseErrorFn = '';
-			$rsuser = ($rs) ? $rs->GetRows() : array();
-			if ($rs)
-				$rs->Close();
+			$this->CurrentAction = $UserAction;
 
-			// Call row custom action event
-			if (count($rsuser) > 0) {
+			// Call row action event
+			if ($rs && !$rs->EOF) {
 				$conn->BeginTrans();
-				foreach ($rsuser as $row) {
+				$this->SelectedCount = $rs->RecordCount();
+				$this->SelectedIndex = 0;
+				while (!$rs->EOF) {
+					$this->SelectedIndex++;
+					$row = $rs->fields;
 					$Processed = $this->Row_CustomAction($UserAction, $row);
 					if (!$Processed) break;
+					$rs->MoveNext();
 				}
 				if ($Processed) {
 					$conn->CommitTrans(); // Commit the changes
 					if ($this->getSuccessMessage() == "")
-						$this->setSuccessMessage(str_replace('%s', $UserAction, $Language->Phrase("CustomActionCompleted"))); // Set up success message
+						$this->setSuccessMessage(str_replace('%s', $ActionCaption, $Language->Phrase("CustomActionCompleted"))); // Set up success message
 				} else {
 					$conn->RollbackTrans(); // Rollback changes
 
@@ -995,11 +1251,26 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 						$this->setFailureMessage($this->CancelMessage);
 						$this->CancelMessage = "";
 					} else {
-						$this->setFailureMessage(str_replace('%s', $UserAction, $Language->Phrase("CustomActionCancelled")));
+						$this->setFailureMessage(str_replace('%s', $ActionCaption, $Language->Phrase("CustomActionFailed")));
 					}
 				}
 			}
+			if ($rs)
+				$rs->Close();
+			$this->CurrentAction = ""; // Clear action
+			if (@$_POST["ajax"] == $UserAction) { // Ajax
+				if ($this->getSuccessMessage() <> "") {
+					echo "<p class=\"text-success\">" . $this->getSuccessMessage() . "</p>";
+					$this->ClearSuccessMessage(); // Clear message
+				}
+				if ($this->getFailureMessage() <> "") {
+					echo "<p class=\"text-danger\">" . $this->getFailureMessage() . "</p>";
+					$this->ClearFailureMessage(); // Clear message
+				}
+				return TRUE;
+			}
 		}
+		return FALSE; // Not ajax request
 	}
 
 	// Set up search options
@@ -1018,7 +1289,7 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		// Show all button
 		$item = &$this->SearchOptions->Add("showall");
 		$item->Body = "<a class=\"btn btn-default ewShowAll\" title=\"" . $Language->Phrase("ShowAll") . "\" data-caption=\"" . $Language->Phrase("ShowAll") . "\" href=\"" . $this->PageUrl() . "cmd=reset\">" . $Language->Phrase("ShowAllBtn") . "</a>";
-		$item->Visible = ($this->SearchWhere <> $this->DefaultSearchWhere);
+		$item->Visible = ($this->SearchWhere <> $this->DefaultSearchWhere && $this->SearchWhere <> "0=101");
 
 		// Button group for search
 		$this->SearchOptions->UseDropDownButton = FALSE;
@@ -1089,15 +1360,24 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 
 	// Load recordset
 	function LoadRecordset($offset = -1, $rowcnt = -1) {
-		global $conn;
 
 		// Load List page SQL
 		$sSql = $this->SelectSQL();
+		$conn = &$this->Connection();
 
 		// Load recordset
-		$conn->raiseErrorFn = 'ew_ErrorFn';
-		$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
-		$conn->raiseErrorFn = '';
+		$dbtype = ew_GetConnectionType($this->DBID);
+		if ($this->UseSelectLimit) {
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+			if ($dbtype == "MSSQL") {
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset, array("_hasOrderBy" => trim($this->getOrderBy()) || trim($this->getSessionOrderBy())));
+			} else {
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
+			}
+			$conn->raiseErrorFn = '';
+		} else {
+			$rs = ew_LoadRecordset($sSql, $conn);
+		}
 
 		// Call Recordset Selected event
 		$this->Recordset_Selected($rs);
@@ -1106,7 +1386,7 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -1115,8 +1395,9 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -1127,7 +1408,6 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -1175,7 +1455,8 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 		if ($bValidKey) {
 			$this->CurrentFilter = $this->KeyFilter();
 			$sSql = $this->SQL();
-			$this->OldRecordset = ew_LoadRecordset($sSql);
+			$conn = &$this->Connection();
+			$this->OldRecordset = ew_LoadRecordset($sSql, $conn);
 			$this->LoadRowValues($this->OldRecordset); // Load row values
 		} else {
 			$this->OldRecordset = NULL;
@@ -1185,8 +1466,7 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		$this->ViewUrl = $this->GetViewUrl();
@@ -1217,121 +1497,95 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// iddocumento_caja_chica
-			$this->iddocumento_caja_chica->ViewValue = $this->iddocumento_caja_chica->CurrentValue;
-			$this->iddocumento_caja_chica->ViewCustomAttributes = "";
+		// iddocumento_caja_chica
+		$this->iddocumento_caja_chica->ViewValue = $this->iddocumento_caja_chica->CurrentValue;
+		$this->iddocumento_caja_chica->ViewCustomAttributes = "";
 
-			// idcaja_chica
-			if (strval($this->idcaja_chica->CurrentValue) <> "") {
-				$sFilterWrk = "`idcaja_chica`" . ew_SearchString("=", $this->idcaja_chica->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idcaja_chica`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `caja_chica`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idcaja_chica, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idcaja_chica->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idcaja_chica->ViewValue = $this->idcaja_chica->CurrentValue;
-				}
+		// idcaja_chica
+		if (strval($this->idcaja_chica->CurrentValue) <> "") {
+			$sFilterWrk = "`idcaja_chica`" . ew_SearchString("=", $this->idcaja_chica->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idcaja_chica`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `caja_chica`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idcaja_chica, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idcaja_chica->ViewValue = $this->idcaja_chica->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idcaja_chica->ViewValue = NULL;
+				$this->idcaja_chica->ViewValue = $this->idcaja_chica->CurrentValue;
 			}
-			$this->idcaja_chica->ViewCustomAttributes = "";
+		} else {
+			$this->idcaja_chica->ViewValue = NULL;
+		}
+		$this->idcaja_chica->ViewCustomAttributes = "";
 
-			// tipo
-			if (strval($this->tipo->CurrentValue) <> "") {
-				switch ($this->tipo->CurrentValue) {
-					case $this->tipo->FldTagValue(1):
-						$this->tipo->ViewValue = $this->tipo->FldTagCaption(1) <> "" ? $this->tipo->FldTagCaption(1) : $this->tipo->CurrentValue;
-						break;
-					case $this->tipo->FldTagValue(2):
-						$this->tipo->ViewValue = $this->tipo->FldTagCaption(2) <> "" ? $this->tipo->FldTagCaption(2) : $this->tipo->CurrentValue;
-						break;
-					default:
-						$this->tipo->ViewValue = $this->tipo->CurrentValue;
-				}
+		// tipo
+		if (strval($this->tipo->CurrentValue) <> "") {
+			$this->tipo->ViewValue = $this->tipo->OptionCaption($this->tipo->CurrentValue);
+		} else {
+			$this->tipo->ViewValue = NULL;
+		}
+		$this->tipo->ViewCustomAttributes = "";
+
+		// idtipo_documento
+		if (strval($this->idtipo_documento->CurrentValue) <> "") {
+			$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idtipo_documento->ViewValue = $this->idtipo_documento->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->tipo->ViewValue = NULL;
+				$this->idtipo_documento->ViewValue = $this->idtipo_documento->CurrentValue;
 			}
-			$this->tipo->ViewCustomAttributes = "";
+		} else {
+			$this->idtipo_documento->ViewValue = NULL;
+		}
+		$this->idtipo_documento->ViewCustomAttributes = "";
 
-			// idtipo_documento
-			if (strval($this->idtipo_documento->CurrentValue) <> "") {
-				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
+		// serie
+		$this->serie->ViewValue = $this->serie->CurrentValue;
+		$this->serie->ViewCustomAttributes = "";
 
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idtipo_documento->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idtipo_documento->ViewValue = $this->idtipo_documento->CurrentValue;
-				}
-			} else {
-				$this->idtipo_documento->ViewValue = NULL;
-			}
-			$this->idtipo_documento->ViewCustomAttributes = "";
+		// numero
+		$this->numero->ViewValue = $this->numero->CurrentValue;
+		$this->numero->ViewCustomAttributes = "";
 
-			// serie
-			$this->serie->ViewValue = $this->serie->CurrentValue;
-			$this->serie->ViewCustomAttributes = "";
+		// fecha
+		$this->fecha->ViewValue = $this->fecha->CurrentValue;
+		$this->fecha->ViewValue = ew_FormatDateTime($this->fecha->ViewValue, 7);
+		$this->fecha->ViewCustomAttributes = "";
 
-			// numero
-			$this->numero->ViewValue = $this->numero->CurrentValue;
-			$this->numero->ViewCustomAttributes = "";
+		// monto
+		$this->monto->ViewValue = $this->monto->CurrentValue;
+		$this->monto->ViewCustomAttributes = "";
 
-			// fecha
-			$this->fecha->ViewValue = $this->fecha->CurrentValue;
-			$this->fecha->ViewValue = ew_FormatDateTime($this->fecha->ViewValue, 7);
-			$this->fecha->ViewCustomAttributes = "";
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
-			// monto
-			$this->monto->ViewValue = $this->monto->CurrentValue;
-			$this->monto->ViewCustomAttributes = "";
-
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
-			} else {
-				$this->estado->ViewValue = NULL;
-			}
-			$this->estado->ViewCustomAttributes = "";
-
-			// fecha_insercion
-			$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
-			$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
-			$this->fecha_insercion->ViewCustomAttributes = "";
+		// fecha_insercion
+		$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
+		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
+		$this->fecha_insercion->ViewCustomAttributes = "";
 
 			// tipo
 			$this->tipo->LinkCustomAttributes = "";
@@ -1392,8 +1646,32 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 					$bValidMaster = FALSE;
 				}
 			}
+		} elseif (isset($_POST[EW_TABLE_SHOW_MASTER])) {
+			$sMasterTblVar = $_POST[EW_TABLE_SHOW_MASTER];
+			if ($sMasterTblVar == "") {
+				$bValidMaster = TRUE;
+				$this->DbMasterFilter = "";
+				$this->DbDetailFilter = "";
+			}
+			if ($sMasterTblVar == "caja_chica") {
+				$bValidMaster = TRUE;
+				if (@$_POST["fk_idcaja_chica"] <> "") {
+					$GLOBALS["caja_chica"]->idcaja_chica->setFormValue($_POST["fk_idcaja_chica"]);
+					$this->idcaja_chica->setFormValue($GLOBALS["caja_chica"]->idcaja_chica->FormValue);
+					$this->idcaja_chica->setSessionValue($this->idcaja_chica->FormValue);
+					if (!is_numeric($GLOBALS["caja_chica"]->idcaja_chica->FormValue)) $bValidMaster = FALSE;
+				} else {
+					$bValidMaster = FALSE;
+				}
+			}
 		}
 		if ($bValidMaster) {
+
+			// Update URL
+			$this->AddUrl = $this->AddMasterUrl($this->AddUrl);
+			$this->InlineAddUrl = $this->AddMasterUrl($this->InlineAddUrl);
+			$this->GridAddUrl = $this->AddMasterUrl($this->GridAddUrl);
+			$this->GridEditUrl = $this->AddMasterUrl($this->GridEditUrl);
 
 			// Save current master table
 			$this->setCurrentMasterTable($sMasterTblVar);
@@ -1404,10 +1682,10 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 
 			// Clear previous master key from Session
 			if ($sMasterTblVar <> "caja_chica") {
-				if ($this->idcaja_chica->QueryStringValue == "") $this->idcaja_chica->setSessionValue("");
+				if ($this->idcaja_chica->CurrentValue == "") $this->idcaja_chica->setSessionValue("");
 			}
 		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 
@@ -1415,7 +1693,7 @@ class cdocumento_caja_chica_list extends cdocumento_caja_chica {
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$url = ew_CurrentUrl();
+		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
 		$url = preg_replace('/\?cmd=reset(all){0,1}$/i', '', $url); // Remove cmd=reset / cmd=resetall
 		$Breadcrumb->Add("list", $this->TableVar, $url, "", $this->TableVar, TRUE);
 	}
@@ -1558,16 +1836,12 @@ Page_Rendering();
 // Page Rendering event
 $documento_caja_chica_list->Page_Render();
 ?>
-<?php include_once $EW_RELATIVE_PATH . "header.php" ?>
+<?php include_once "header.php" ?>
 <script type="text/javascript">
 
-// Page object
-var documento_caja_chica_list = new ew_Page("documento_caja_chica_list");
-documento_caja_chica_list.PageID = "list"; // Page ID
-var EW_PAGE_ID = documento_caja_chica_list.PageID; // For backward compatibility
-
 // Form object
-var fdocumento_caja_chicalist = new ew_Form("fdocumento_caja_chicalist");
+var CurrentPageID = EW_PAGE_ID = "list";
+var CurrentForm = fdocumento_caja_chicalist = new ew_Form("fdocumento_caja_chicalist", "list");
 fdocumento_caja_chicalist.FormKeyCountName = '<?php echo $documento_caja_chica_list->FormKeyCountName ?>';
 
 // Form_CustomValidate event
@@ -1586,10 +1860,12 @@ fdocumento_caja_chicalist.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-fdocumento_caja_chicalist.Lists["x_idtipo_documento"] = {"LinkField":"x_idtipo_documento","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+fdocumento_caja_chicalist.Lists["x_tipo"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fdocumento_caja_chicalist.Lists["x_tipo"].Options = <?php echo json_encode($documento_caja_chica->tipo->Options()) ?>;
+fdocumento_caja_chicalist.Lists["x_idtipo_documento"] = {"LinkField":"x_idtipo_documento","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
 // Form object for search
-var fdocumento_caja_chicalistsrch = new ew_Form("fdocumento_caja_chicalistsrch");
+var CurrentSearchForm = fdocumento_caja_chicalistsrch = new ew_Form("fdocumento_caja_chicalistsrch");
 </script>
 <script type="text/javascript">
 
@@ -1597,11 +1873,14 @@ var fdocumento_caja_chicalistsrch = new ew_Form("fdocumento_caja_chicalistsrch")
 </script>
 <div class="ewToolbar">
 <?php $Breadcrumb->Render(); ?>
-<?php if ($documento_caja_chica_list->TotalRecs > 0 && $documento_caja_chica->getCurrentMasterTable() == "" && $documento_caja_chica_list->ExportOptions->Visible()) { ?>
+<?php if ($documento_caja_chica_list->TotalRecs > 0 && $documento_caja_chica_list->ExportOptions->Visible()) { ?>
 <?php $documento_caja_chica_list->ExportOptions->Render("body") ?>
 <?php } ?>
 <?php if ($documento_caja_chica_list->SearchOptions->Visible()) { ?>
 <?php $documento_caja_chica_list->SearchOptions->Render("body") ?>
+<?php } ?>
+<?php if ($documento_caja_chica_list->FilterOptions->Visible()) { ?>
+<?php $documento_caja_chica_list->FilterOptions->Render("body") ?>
 <?php } ?>
 <?php echo $Language->SelectionForm(); ?>
 <div class="clearfix"></div>
@@ -1613,21 +1892,19 @@ if ($documento_caja_chica_list->DbMasterFilter <> "" && $documento_caja_chica->g
 	if ($documento_caja_chica_list->MasterRecordExists) {
 		if ($documento_caja_chica->getCurrentMasterTable() == $documento_caja_chica->TableVar) $gsMasterReturnUrl .= "?" . EW_TABLE_SHOW_MASTER . "=";
 ?>
-<?php if ($documento_caja_chica_list->ExportOptions->Visible()) { ?>
-<div class="ewListExportOptions"><?php $documento_caja_chica_list->ExportOptions->Render("body") ?></div>
-<?php } ?>
-<?php include_once $EW_RELATIVE_PATH . "caja_chicamaster.php" ?>
+<?php include_once "caja_chicamaster.php" ?>
 <?php
 	}
 }
 ?>
 <?php } ?>
 <?php
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $documento_caja_chica_list->UseSelectLimit;
 	if ($bSelectLimit) {
-		$documento_caja_chica_list->TotalRecs = $documento_caja_chica->SelectRecordCount();
+		if ($documento_caja_chica_list->TotalRecs <= 0)
+			$documento_caja_chica_list->TotalRecs = $documento_caja_chica->SelectRecordCount();
 	} else {
-		if ($documento_caja_chica_list->Recordset = $documento_caja_chica_list->LoadRecordset())
+		if (!$documento_caja_chica_list->Recordset && ($documento_caja_chica_list->Recordset = $documento_caja_chica_list->LoadRecordset()))
 			$documento_caja_chica_list->TotalRecs = $documento_caja_chica_list->Recordset->RecordCount();
 	}
 	$documento_caja_chica_list->StartRec = 1;
@@ -1679,12 +1956,16 @@ $documento_caja_chica_list->RenderOtherOptions();
 $documento_caja_chica_list->ShowMessage();
 ?>
 <?php if ($documento_caja_chica_list->TotalRecs > 0 || $documento_caja_chica->CurrentAction <> "") { ?>
-<div class="ewGrid">
+<div class="panel panel-default ewGrid">
 <form name="fdocumento_caja_chicalist" id="fdocumento_caja_chicalist" class="form-inline ewForm ewListForm" action="<?php echo ew_CurrentPage() ?>" method="post">
 <?php if ($documento_caja_chica_list->CheckToken) { ?>
 <input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $documento_caja_chica_list->Token ?>">
 <?php } ?>
 <input type="hidden" name="t" value="documento_caja_chica">
+<?php if ($documento_caja_chica->getCurrentMasterTable() == "caja_chica" && $documento_caja_chica->CurrentAction <> "") { ?>
+<input type="hidden" name="<?php echo EW_TABLE_SHOW_MASTER ?>" value="caja_chica">
+<input type="hidden" name="fk_idcaja_chica" value="<?php echo $documento_caja_chica->idcaja_chica->getSessionValue() ?>">
+<?php } ?>
 <div id="gmp_documento_caja_chica" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
 <?php if ($documento_caja_chica_list->TotalRecs > 0) { ?>
 <table id="tbl_documento_caja_chicalist" class="table ewTable">
@@ -1692,6 +1973,9 @@ $documento_caja_chica_list->ShowMessage();
 <thead><!-- Table header -->
 	<tr class="ewTableHeader">
 <?php
+
+// Header row
+$documento_caja_chica_list->RowType = EW_ROWTYPE_HEADER;
 
 // Render list options
 $documento_caja_chica_list->RenderListOptions();
@@ -1775,7 +2059,7 @@ if ($documento_caja_chica->ExportAll && $documento_caja_chica->Export <> "") {
 $documento_caja_chica_list->RecCnt = $documento_caja_chica_list->StartRec - 1;
 if ($documento_caja_chica_list->Recordset && !$documento_caja_chica_list->Recordset->EOF) {
 	$documento_caja_chica_list->Recordset->MoveFirst();
-	$bSelectLimit = EW_SELECT_LIMIT;
+	$bSelectLimit = $documento_caja_chica_list->UseSelectLimit;
 	if (!$bSelectLimit && $documento_caja_chica_list->StartRec > 1)
 		$documento_caja_chica_list->Recordset->Move($documento_caja_chica_list->StartRec - 1);
 } elseif (!$documento_caja_chica->AllowAddDeleteRow && $documento_caja_chica_list->StopRec == 0) {
@@ -1820,38 +2104,50 @@ $documento_caja_chica_list->ListOptions->Render("body", "left", $documento_caja_
 ?>
 	<?php if ($documento_caja_chica->tipo->Visible) { // tipo ?>
 		<td data-name="tipo"<?php echo $documento_caja_chica->tipo->CellAttributes() ?>>
+<span id="el<?php echo $documento_caja_chica_list->RowCnt ?>_documento_caja_chica_tipo" class="documento_caja_chica_tipo">
 <span<?php echo $documento_caja_chica->tipo->ViewAttributes() ?>>
 <?php echo $documento_caja_chica->tipo->ListViewValue() ?></span>
+</span>
 <a id="<?php echo $documento_caja_chica_list->PageObjName . "_row_" . $documento_caja_chica_list->RowCnt ?>"></a></td>
 	<?php } ?>
 	<?php if ($documento_caja_chica->idtipo_documento->Visible) { // idtipo_documento ?>
 		<td data-name="idtipo_documento"<?php echo $documento_caja_chica->idtipo_documento->CellAttributes() ?>>
+<span id="el<?php echo $documento_caja_chica_list->RowCnt ?>_documento_caja_chica_idtipo_documento" class="documento_caja_chica_idtipo_documento">
 <span<?php echo $documento_caja_chica->idtipo_documento->ViewAttributes() ?>>
 <?php echo $documento_caja_chica->idtipo_documento->ListViewValue() ?></span>
+</span>
 </td>
 	<?php } ?>
 	<?php if ($documento_caja_chica->serie->Visible) { // serie ?>
 		<td data-name="serie"<?php echo $documento_caja_chica->serie->CellAttributes() ?>>
+<span id="el<?php echo $documento_caja_chica_list->RowCnt ?>_documento_caja_chica_serie" class="documento_caja_chica_serie">
 <span<?php echo $documento_caja_chica->serie->ViewAttributes() ?>>
 <?php echo $documento_caja_chica->serie->ListViewValue() ?></span>
+</span>
 </td>
 	<?php } ?>
 	<?php if ($documento_caja_chica->numero->Visible) { // numero ?>
 		<td data-name="numero"<?php echo $documento_caja_chica->numero->CellAttributes() ?>>
+<span id="el<?php echo $documento_caja_chica_list->RowCnt ?>_documento_caja_chica_numero" class="documento_caja_chica_numero">
 <span<?php echo $documento_caja_chica->numero->ViewAttributes() ?>>
 <?php echo $documento_caja_chica->numero->ListViewValue() ?></span>
+</span>
 </td>
 	<?php } ?>
 	<?php if ($documento_caja_chica->fecha->Visible) { // fecha ?>
 		<td data-name="fecha"<?php echo $documento_caja_chica->fecha->CellAttributes() ?>>
+<span id="el<?php echo $documento_caja_chica_list->RowCnt ?>_documento_caja_chica_fecha" class="documento_caja_chica_fecha">
 <span<?php echo $documento_caja_chica->fecha->ViewAttributes() ?>>
 <?php echo $documento_caja_chica->fecha->ListViewValue() ?></span>
+</span>
 </td>
 	<?php } ?>
 	<?php if ($documento_caja_chica->monto->Visible) { // monto ?>
 		<td data-name="monto"<?php echo $documento_caja_chica->monto->CellAttributes() ?>>
+<span id="el<?php echo $documento_caja_chica_list->RowCnt ?>_documento_caja_chica_monto" class="documento_caja_chica_monto">
 <span<?php echo $documento_caja_chica->monto->ViewAttributes() ?>>
 <?php echo $documento_caja_chica->monto->ListViewValue() ?></span>
+</span>
 </td>
 	<?php } ?>
 <?php
@@ -1880,7 +2176,7 @@ $documento_caja_chica_list->ListOptions->Render("body", "right", $documento_caja
 if ($documento_caja_chica_list->Recordset)
 	$documento_caja_chica_list->Recordset->Close();
 ?>
-<div class="ewGridLowerPanel">
+<div class="panel-footer ewGridLowerPanel">
 <?php if ($documento_caja_chica->CurrentAction <> "gridadd" && $documento_caja_chica->CurrentAction <> "gridedit") { ?>
 <form name="ewPagerForm" class="ewForm form-inline ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
 <?php if (!isset($documento_caja_chica_list->Pager)) $documento_caja_chica_list->Pager = new cPrevNextPager($documento_caja_chica_list->StartRec, $documento_caja_chica_list->DisplayRecs, $documento_caja_chica_list->TotalRecs) ?>
@@ -1951,6 +2247,7 @@ if ($documento_caja_chica_list->Recordset)
 <?php } ?>
 <script type="text/javascript">
 fdocumento_caja_chicalistsrch.Init();
+fdocumento_caja_chicalistsrch.FilterList = <?php echo $documento_caja_chica_list->GetFilterList() ?>;
 fdocumento_caja_chicalist.Init();
 </script>
 <?php
@@ -1964,7 +2261,7 @@ if (EW_DEBUG_ENABLED)
 // document.write("page loaded");
 
 </script>
-<?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
+<?php include_once "footer.php" ?>
 <?php
 $documento_caja_chica_list->Page_Terminate();
 ?>

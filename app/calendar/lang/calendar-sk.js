@@ -97,3 +97,10 @@ Calendar._TT["DEF_DATE_FORMAT"] = "$d. %m. %Y";
 Calendar._TT["TT_DATE_FORMAT"] = "%a, %e. %b";
 
 Calendar._TT["WK"] = "tĂ˝Ĺľ";
+Calendar._TT["TIME"] = "Time"; //***
+
+//***
+Calendar._TT["CLEAR"] = "Clear";
+Calendar._TT["CLEAR_TIME"] = "Clear time";
+Calendar._TT["NOW"] = "Now";
+Calendar._TT["RESET_TIME_TO_NOW"] = "Reset time to now";

@@ -1,13 +1,12 @@
 <?php
 if (session_id() == "") session_start(); // Initialize Session data
 ob_start(); // Turn on output buffering
-$EW_RELATIVE_PATH = "";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "configuracioninfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
+<?php include_once "ewcfg12.php" ?>
+<?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
+<?php include_once "phpfn12.php" ?>
+<?php include_once "configuracioninfo.php" ?>
+<?php include_once "userfn12.php" ?>
 <?php
 
 //
@@ -107,6 +106,30 @@ class cconfiguracion_view extends cconfiguracion {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
 	}
 
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
 	// Show message
 	function ShowMessage() {
 		$hidden = FALSE;
@@ -187,6 +210,7 @@ class cconfiguracion_view extends cconfiguracion {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -199,7 +223,7 @@ class cconfiguracion_view extends cconfiguracion {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -220,6 +244,7 @@ class cconfiguracion_view extends cconfiguracion {
 	function __construct() {
 		global $conn, $Language;
 		$GLOBALS["Page"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -257,7 +282,7 @@ class cconfiguracion_view extends cconfiguracion {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 
 		// Export options
 		$this->ExportOptions = new cListOptions();
@@ -294,20 +319,6 @@ class cconfiguracion_view extends cconfiguracion {
 			exit();
 		}
 
-		// Process auto fill
-		if (@$_POST["ajax"] == "autofill") {
-			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
-			if ($results) {
-
-				// Clean output buffer
-				if (!EW_DEBUG_ENABLED && ob_get_length())
-					ob_end_clean();
-				echo $results;
-				$this->Page_Terminate();
-				exit();
-			}
-		}
-
 		// Create Token
 		$this->CreateToken();
 	}
@@ -316,7 +327,7 @@ class cconfiguracion_view extends cconfiguracion {
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Page Unload event
 		$this->Page_Unload();
@@ -344,7 +355,7 @@ class cconfiguracion_view extends cconfiguracion {
 		$this->Page_Redirecting($url);
 
 		 // Close connection
-		$conn->Close();
+		ew_CloseConn();
 
 		// Go to URL if specified
 		if ($url <> "") {
@@ -382,6 +393,9 @@ class cconfiguracion_view extends cconfiguracion {
 			if (@$_GET["idconfiguracion"] <> "") {
 				$this->idconfiguracion->setQueryStringValue($_GET["idconfiguracion"]);
 				$this->RecKey["idconfiguracion"] = $this->idconfiguracion->QueryStringValue;
+			} elseif (@$_POST["idconfiguracion"] <> "") {
+				$this->idconfiguracion->setFormValue($_POST["idconfiguracion"]);
+				$this->RecKey["idconfiguracion"] = $this->idconfiguracion->FormValue;
 			} else {
 				$sReturnUrl = "configuracionlist.php"; // Return to list
 			}
@@ -473,7 +487,7 @@ class cconfiguracion_view extends cconfiguracion {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -482,8 +496,9 @@ class cconfiguracion_view extends cconfiguracion {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -494,7 +509,6 @@ class cconfiguracion_view extends cconfiguracion {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -522,8 +536,7 @@ class cconfiguracion_view extends cconfiguracion {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		$this->AddUrl = $this->GetAddUrl();
@@ -546,42 +559,33 @@ class cconfiguracion_view extends cconfiguracion {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idconfiguracion
-			$this->idconfiguracion->ViewValue = $this->idconfiguracion->CurrentValue;
-			$this->idconfiguracion->ViewCustomAttributes = "";
+		// idconfiguracion
+		$this->idconfiguracion->ViewValue = $this->idconfiguracion->CurrentValue;
+		$this->idconfiguracion->ViewCustomAttributes = "";
 
-			// codigo
-			$this->codigo->ViewValue = $this->codigo->CurrentValue;
-			$this->codigo->ViewCustomAttributes = "";
+		// codigo
+		$this->codigo->ViewValue = $this->codigo->CurrentValue;
+		$this->codigo->ViewCustomAttributes = "";
 
-			// valor
-			$this->valor->ViewValue = $this->valor->CurrentValue;
-			$this->valor->ViewCustomAttributes = "";
+		// valor
+		$this->valor->ViewValue = $this->valor->CurrentValue;
+		$this->valor->ViewCustomAttributes = "";
 
-			// descripcion
-			$this->descripcion->ViewValue = $this->descripcion->CurrentValue;
-			$this->descripcion->ViewCustomAttributes = "";
+		// descripcion
+		$this->descripcion->ViewValue = $this->descripcion->CurrentValue;
+		$this->descripcion->ViewCustomAttributes = "";
 
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
-			} else {
-				$this->estado->ViewValue = NULL;
-			}
-			$this->estado->ViewCustomAttributes = "";
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
-			// idempresa
-			$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
-			$this->idempresa->ViewCustomAttributes = "";
+		// idempresa
+		$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
+		$this->idempresa->ViewCustomAttributes = "";
 
 			// idconfiguracion
 			$this->idconfiguracion->LinkCustomAttributes = "";
@@ -623,9 +627,10 @@ class cconfiguracion_view extends cconfiguracion {
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$Breadcrumb->Add("list", $this->TableVar, "configuracionlist.php", "", $this->TableVar, TRUE);
+		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("configuracionlist.php"), "", $this->TableVar, TRUE);
 		$PageId = "view";
-		$Breadcrumb->Add("view", $PageId, ew_CurrentUrl());
+		$Breadcrumb->Add("view", $PageId, $url);
 	}
 
 	// Page Load event
@@ -733,16 +738,12 @@ Page_Rendering();
 // Page Rendering event
 $configuracion_view->Page_Render();
 ?>
-<?php include_once $EW_RELATIVE_PATH . "header.php" ?>
+<?php include_once "header.php" ?>
 <script type="text/javascript">
 
-// Page object
-var configuracion_view = new ew_Page("configuracion_view");
-configuracion_view.PageID = "view"; // Page ID
-var EW_PAGE_ID = configuracion_view.PageID; // For backward compatibility
-
 // Form object
-var fconfiguracionview = new ew_Form("fconfiguracionview");
+var CurrentPageID = EW_PAGE_ID = "view";
+var CurrentForm = fconfiguracionview = new ew_Form("fconfiguracionview", "view");
 
 // Form_CustomValidate event
 fconfiguracionview.Form_CustomValidate = 
@@ -760,8 +761,10 @@ fconfiguracionview.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-// Form object for search
+fconfiguracionview.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fconfiguracionview.Lists["x_estado"].Options = <?php echo json_encode($configuracion->estado->Options()) ?>;
 
+// Form object for search
 </script>
 <script type="text/javascript">
 
@@ -790,8 +793,8 @@ $configuracion_view->ShowMessage();
 <?php if ($configuracion->idconfiguracion->Visible) { // idconfiguracion ?>
 	<tr id="r_idconfiguracion">
 		<td><span id="elh_configuracion_idconfiguracion"><?php echo $configuracion->idconfiguracion->FldCaption() ?></span></td>
-		<td<?php echo $configuracion->idconfiguracion->CellAttributes() ?>>
-<span id="el_configuracion_idconfiguracion" class="form-group">
+		<td data-name="idconfiguracion"<?php echo $configuracion->idconfiguracion->CellAttributes() ?>>
+<span id="el_configuracion_idconfiguracion">
 <span<?php echo $configuracion->idconfiguracion->ViewAttributes() ?>>
 <?php echo $configuracion->idconfiguracion->ViewValue ?></span>
 </span>
@@ -801,8 +804,8 @@ $configuracion_view->ShowMessage();
 <?php if ($configuracion->codigo->Visible) { // codigo ?>
 	<tr id="r_codigo">
 		<td><span id="elh_configuracion_codigo"><?php echo $configuracion->codigo->FldCaption() ?></span></td>
-		<td<?php echo $configuracion->codigo->CellAttributes() ?>>
-<span id="el_configuracion_codigo" class="form-group">
+		<td data-name="codigo"<?php echo $configuracion->codigo->CellAttributes() ?>>
+<span id="el_configuracion_codigo">
 <span<?php echo $configuracion->codigo->ViewAttributes() ?>>
 <?php echo $configuracion->codigo->ViewValue ?></span>
 </span>
@@ -812,8 +815,8 @@ $configuracion_view->ShowMessage();
 <?php if ($configuracion->valor->Visible) { // valor ?>
 	<tr id="r_valor">
 		<td><span id="elh_configuracion_valor"><?php echo $configuracion->valor->FldCaption() ?></span></td>
-		<td<?php echo $configuracion->valor->CellAttributes() ?>>
-<span id="el_configuracion_valor" class="form-group">
+		<td data-name="valor"<?php echo $configuracion->valor->CellAttributes() ?>>
+<span id="el_configuracion_valor">
 <span<?php echo $configuracion->valor->ViewAttributes() ?>>
 <?php echo $configuracion->valor->ViewValue ?></span>
 </span>
@@ -823,8 +826,8 @@ $configuracion_view->ShowMessage();
 <?php if ($configuracion->descripcion->Visible) { // descripcion ?>
 	<tr id="r_descripcion">
 		<td><span id="elh_configuracion_descripcion"><?php echo $configuracion->descripcion->FldCaption() ?></span></td>
-		<td<?php echo $configuracion->descripcion->CellAttributes() ?>>
-<span id="el_configuracion_descripcion" class="form-group">
+		<td data-name="descripcion"<?php echo $configuracion->descripcion->CellAttributes() ?>>
+<span id="el_configuracion_descripcion">
 <span<?php echo $configuracion->descripcion->ViewAttributes() ?>>
 <?php echo $configuracion->descripcion->ViewValue ?></span>
 </span>
@@ -834,8 +837,8 @@ $configuracion_view->ShowMessage();
 <?php if ($configuracion->estado->Visible) { // estado ?>
 	<tr id="r_estado">
 		<td><span id="elh_configuracion_estado"><?php echo $configuracion->estado->FldCaption() ?></span></td>
-		<td<?php echo $configuracion->estado->CellAttributes() ?>>
-<span id="el_configuracion_estado" class="form-group">
+		<td data-name="estado"<?php echo $configuracion->estado->CellAttributes() ?>>
+<span id="el_configuracion_estado">
 <span<?php echo $configuracion->estado->ViewAttributes() ?>>
 <?php echo $configuracion->estado->ViewValue ?></span>
 </span>
@@ -845,8 +848,8 @@ $configuracion_view->ShowMessage();
 <?php if ($configuracion->idempresa->Visible) { // idempresa ?>
 	<tr id="r_idempresa">
 		<td><span id="elh_configuracion_idempresa"><?php echo $configuracion->idempresa->FldCaption() ?></span></td>
-		<td<?php echo $configuracion->idempresa->CellAttributes() ?>>
-<span id="el_configuracion_idempresa" class="form-group">
+		<td data-name="idempresa"<?php echo $configuracion->idempresa->CellAttributes() ?>>
+<span id="el_configuracion_idempresa">
 <span<?php echo $configuracion->idempresa->ViewAttributes() ?>>
 <?php echo $configuracion->idempresa->ViewValue ?></span>
 </span>
@@ -869,7 +872,7 @@ if (EW_DEBUG_ENABLED)
 // document.write("page loaded");
 
 </script>
-<?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
+<?php include_once "footer.php" ?>
 <?php
 $configuracion_view->Page_Terminate();
 ?>

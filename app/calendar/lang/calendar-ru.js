@@ -121,3 +121,9 @@ Calendar._TT["TT_DATE_FORMAT"] = "%e %b, %a";
 
 Calendar._TT["WK"] = "нед";
 Calendar._TT["TIME"] = "Время:";
+
+//***
+Calendar._TT["CLEAR"] = "Clear";
+Calendar._TT["CLEAR_TIME"] = "Clear time";
+Calendar._TT["NOW"] = "Now";
+Calendar._TT["RESET_TIME_TO_NOW"] = "Reset time to now";

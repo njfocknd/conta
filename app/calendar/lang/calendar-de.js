@@ -94,11 +94,15 @@ Calendar._TT["ABOUT_TIME"] = "\n\n" +
 "- oder klicken und festhalten f\u00fcr Schnellauswahl.";
 
 Calendar._TT["TOGGLE"] = "Ersten Tag der Woche w\u00e4hlen";
-Calendar._TT["PREV_YEAR"] = "Voriges Jahr (Festhalten f\u00fcr Schnellauswahl)";
-Calendar._TT["PREV_MONTH"] = "Voriger Monat (Festhalten f\u00fcr Schnellauswahl)";
+//Calendar._TT["PREV_YEAR"] = "Voriges Jahr (Festhalten f\u00fcr Schnellauswahl)";
+//Calendar._TT["PREV_MONTH"] = "Voriger Monat (Festhalten f\u00fcr Schnellauswahl)";
+//Calendar._TT["NEXT_MONTH"] = "N\u00e4chst. Monat (Festhalten f\u00fcr Schnellauswahl)";
+//Calendar._TT["NEXT_YEAR"] = "N\u00e4chst. Jahr (Festhalten f\u00fcr Schnellauswahl)";
+Calendar._TT["PREV_YEAR"] = "Voriges Jahr";
+Calendar._TT["PREV_MONTH"] = "Voriger Monat";
 Calendar._TT["GO_TODAY"] = "Heute ausw\u00e4hlen";
-Calendar._TT["NEXT_MONTH"] = "N\u00e4chst. Monat (Festhalten f\u00fcr Schnellauswahl)";
-Calendar._TT["NEXT_YEAR"] = "N\u00e4chst. Jahr (Festhalten f\u00fcr Schnellauswahl)";
+Calendar._TT["NEXT_MONTH"] = "N\u00e4chst. Monat";
+Calendar._TT["NEXT_YEAR"] = "N\u00e4chst. Jahr";
 Calendar._TT["SEL_DATE"] = "Datum ausw\u00e4hlen";
 Calendar._TT["DRAG_TO_MOVE"] = "Zum Bewegen festhalten";
 Calendar._TT["PART_TODAY"] = " (Heute)";
@@ -122,3 +126,9 @@ Calendar._TT["TT_DATE_FORMAT"] = "%a, %b %e";
 
 Calendar._TT["WK"] = "wk";
 Calendar._TT["TIME"] = "Zeit:";
+
+//***
+Calendar._TT["CLEAR"] = "Clear";
+Calendar._TT["CLEAR_TIME"] = "Clear time";
+Calendar._TT["NOW"] = "Now";
+Calendar._TT["RESET_TIME_TO_NOW"] = "Reset time to now";

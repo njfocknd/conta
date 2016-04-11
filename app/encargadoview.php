@@ -1,14 +1,13 @@
 <?php
 if (session_id() == "") session_start(); // Initialize Session data
 ob_start(); // Turn on output buffering
-$EW_RELATIVE_PATH = "";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "encargadoinfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "caja_chicainfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
+<?php include_once "ewcfg12.php" ?>
+<?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
+<?php include_once "phpfn12.php" ?>
+<?php include_once "encargadoinfo.php" ?>
+<?php include_once "caja_chicainfo.php" ?>
+<?php include_once "userfn12.php" ?>
 <?php
 
 //
@@ -108,6 +107,30 @@ class cencargado_view extends cencargado {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
 	}
 
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
 	// Show message
 	function ShowMessage() {
 		$hidden = FALSE;
@@ -188,6 +211,7 @@ class cencargado_view extends cencargado {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -200,7 +224,7 @@ class cencargado_view extends cencargado {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -221,6 +245,7 @@ class cencargado_view extends cencargado {
 	function __construct() {
 		global $conn, $Language;
 		$GLOBALS["Page"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -261,7 +286,7 @@ class cencargado_view extends cencargado {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 
 		// Export options
 		$this->ExportOptions = new cListOptions();
@@ -298,20 +323,6 @@ class cencargado_view extends cencargado {
 			exit();
 		}
 
-		// Process auto fill
-		if (@$_POST["ajax"] == "autofill") {
-			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
-			if ($results) {
-
-				// Clean output buffer
-				if (!EW_DEBUG_ENABLED && ob_get_length())
-					ob_end_clean();
-				echo $results;
-				$this->Page_Terminate();
-				exit();
-			}
-		}
-
 		// Create Token
 		$this->CreateToken();
 	}
@@ -320,7 +331,7 @@ class cencargado_view extends cencargado {
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Page Unload event
 		$this->Page_Unload();
@@ -348,7 +359,7 @@ class cencargado_view extends cencargado {
 		$this->Page_Redirecting($url);
 
 		 // Close connection
-		$conn->Close();
+		ew_CloseConn();
 
 		// Go to URL if specified
 		if ($url <> "") {
@@ -389,6 +400,9 @@ class cencargado_view extends cencargado {
 			if (@$_GET["idencargado"] <> "") {
 				$this->idencargado->setQueryStringValue($_GET["idencargado"]);
 				$this->RecKey["idencargado"] = $this->idencargado->QueryStringValue;
+			} elseif (@$_POST["idencargado"] <> "") {
+				$this->idencargado->setFormValue($_POST["idencargado"]);
+				$this->RecKey["idencargado"] = $this->idencargado->FormValue;
 			} else {
 				$sReturnUrl = "encargadolist.php"; // Return to list
 			}
@@ -470,7 +484,7 @@ class cencargado_view extends cencargado {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -479,8 +493,9 @@ class cencargado_view extends cencargado {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -491,7 +506,6 @@ class cencargado_view extends cencargado {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -523,8 +537,7 @@ class cencargado_view extends cencargado {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		$this->AddUrl = $this->GetAddUrl();
@@ -549,93 +562,80 @@ class cencargado_view extends cencargado {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idencargado
-			$this->idencargado->ViewValue = $this->idencargado->CurrentValue;
-			$this->idencargado->ViewCustomAttributes = "";
+		// idencargado
+		$this->idencargado->ViewValue = $this->idencargado->CurrentValue;
+		$this->idencargado->ViewCustomAttributes = "";
 
-			// idempleado
-			if (strval($this->idempleado->CurrentValue) <> "") {
-				$sFilterWrk = "`idempleado`" . ew_SearchString("=", $this->idempleado->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idempleado`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empleado`";
-			$sWhereWrk = "";
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idempleado, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idempleado->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idempleado->ViewValue = $this->idempleado->CurrentValue;
-				}
+		// idempleado
+		if (strval($this->idempleado->CurrentValue) <> "") {
+			$sFilterWrk = "`idempleado`" . ew_SearchString("=", $this->idempleado->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idempleado`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empleado`";
+		$sWhereWrk = "";
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idempleado, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idempleado->ViewValue = $this->idempleado->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idempleado->ViewValue = NULL;
+				$this->idempleado->ViewValue = $this->idempleado->CurrentValue;
 			}
-			$this->idempleado->ViewCustomAttributes = "";
+		} else {
+			$this->idempleado->ViewValue = NULL;
+		}
+		$this->idempleado->ViewCustomAttributes = "";
 
-			// tabla
-			$this->tabla->ViewValue = $this->tabla->CurrentValue;
-			$this->tabla->ViewCustomAttributes = "";
+		// tabla
+		$this->tabla->ViewValue = $this->tabla->CurrentValue;
+		$this->tabla->ViewCustomAttributes = "";
 
-			// idreferencia
-			if (strval($this->idreferencia->CurrentValue) <> "") {
-				$sFilterWrk = "`idcaja_chica`" . ew_SearchString("=", $this->idreferencia->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idcaja_chica`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `caja_chica`";
-			$sWhereWrk = "";
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idreferencia, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idreferencia->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idreferencia->ViewValue = $this->idreferencia->CurrentValue;
-				}
+		// idreferencia
+		if (strval($this->idreferencia->CurrentValue) <> "") {
+			$sFilterWrk = "`idcaja_chica`" . ew_SearchString("=", $this->idreferencia->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idcaja_chica`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `caja_chica`";
+		$sWhereWrk = "";
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idreferencia, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idreferencia->ViewValue = $this->idreferencia->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idreferencia->ViewValue = NULL;
+				$this->idreferencia->ViewValue = $this->idreferencia->CurrentValue;
 			}
-			$this->idreferencia->ViewCustomAttributes = "";
+		} else {
+			$this->idreferencia->ViewValue = NULL;
+		}
+		$this->idreferencia->ViewCustomAttributes = "";
 
-			// fecha_inicio
-			$this->fecha_inicio->ViewValue = $this->fecha_inicio->CurrentValue;
-			$this->fecha_inicio->ViewValue = ew_FormatDateTime($this->fecha_inicio->ViewValue, 7);
-			$this->fecha_inicio->ViewCustomAttributes = "";
+		// fecha_inicio
+		$this->fecha_inicio->ViewValue = $this->fecha_inicio->CurrentValue;
+		$this->fecha_inicio->ViewValue = ew_FormatDateTime($this->fecha_inicio->ViewValue, 7);
+		$this->fecha_inicio->ViewCustomAttributes = "";
 
-			// fecha_fin
-			$this->fecha_fin->ViewValue = $this->fecha_fin->CurrentValue;
-			$this->fecha_fin->ViewValue = ew_FormatDateTime($this->fecha_fin->ViewValue, 7);
-			$this->fecha_fin->ViewCustomAttributes = "";
+		// fecha_fin
+		$this->fecha_fin->ViewValue = $this->fecha_fin->CurrentValue;
+		$this->fecha_fin->ViewValue = ew_FormatDateTime($this->fecha_fin->ViewValue, 7);
+		$this->fecha_fin->ViewCustomAttributes = "";
 
-			// fecha_insercion
-			$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
-			$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
-			$this->fecha_insercion->ViewCustomAttributes = "";
+		// fecha_insercion
+		$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
+		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
+		$this->fecha_insercion->ViewCustomAttributes = "";
 
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
-			} else {
-				$this->estado->ViewValue = NULL;
-			}
-			$this->estado->ViewCustomAttributes = "";
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
 			// idencargado
 			$this->idencargado->LinkCustomAttributes = "";
@@ -706,6 +706,24 @@ class cencargado_view extends cencargado {
 					$bValidMaster = FALSE;
 				}
 			}
+		} elseif (isset($_POST[EW_TABLE_SHOW_MASTER])) {
+			$sMasterTblVar = $_POST[EW_TABLE_SHOW_MASTER];
+			if ($sMasterTblVar == "") {
+				$bValidMaster = TRUE;
+				$this->DbMasterFilter = "";
+				$this->DbDetailFilter = "";
+			}
+			if ($sMasterTblVar == "caja_chica") {
+				$bValidMaster = TRUE;
+				if (@$_POST["fk_idcaja_chica"] <> "") {
+					$GLOBALS["caja_chica"]->idcaja_chica->setFormValue($_POST["fk_idcaja_chica"]);
+					$this->idreferencia->setFormValue($GLOBALS["caja_chica"]->idcaja_chica->FormValue);
+					$this->idreferencia->setSessionValue($this->idreferencia->FormValue);
+					if (!is_numeric($GLOBALS["caja_chica"]->idcaja_chica->FormValue)) $bValidMaster = FALSE;
+				} else {
+					$bValidMaster = FALSE;
+				}
+			}
 		}
 		if ($bValidMaster) {
 
@@ -719,10 +737,10 @@ class cencargado_view extends cencargado {
 
 			// Clear previous master key from Session
 			if ($sMasterTblVar <> "caja_chica") {
-				if ($this->idreferencia->QueryStringValue == "") $this->idreferencia->setSessionValue("");
+				if ($this->idreferencia->CurrentValue == "") $this->idreferencia->setSessionValue("");
 			}
 		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 
@@ -730,9 +748,10 @@ class cencargado_view extends cencargado {
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$Breadcrumb->Add("list", $this->TableVar, "encargadolist.php", "", $this->TableVar, TRUE);
+		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("encargadolist.php"), "", $this->TableVar, TRUE);
 		$PageId = "view";
-		$Breadcrumb->Add("view", $PageId, ew_CurrentUrl());
+		$Breadcrumb->Add("view", $PageId, $url);
 	}
 
 	// Page Load event
@@ -840,16 +859,12 @@ Page_Rendering();
 // Page Rendering event
 $encargado_view->Page_Render();
 ?>
-<?php include_once $EW_RELATIVE_PATH . "header.php" ?>
+<?php include_once "header.php" ?>
 <script type="text/javascript">
 
-// Page object
-var encargado_view = new ew_Page("encargado_view");
-encargado_view.PageID = "view"; // Page ID
-var EW_PAGE_ID = encargado_view.PageID; // For backward compatibility
-
 // Form object
-var fencargadoview = new ew_Form("fencargadoview");
+var CurrentPageID = EW_PAGE_ID = "view";
+var CurrentForm = fencargadoview = new ew_Form("fencargadoview", "view");
 
 // Form_CustomValidate event
 fencargadoview.Form_CustomValidate = 
@@ -867,8 +882,10 @@ fencargadoview.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-fencargadoview.Lists["x_idempleado"] = {"LinkField":"x_idempleado","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
-fencargadoview.Lists["x_idreferencia"] = {"LinkField":"x_idcaja_chica","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+fencargadoview.Lists["x_idempleado"] = {"LinkField":"x_idempleado","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fencargadoview.Lists["x_idreferencia"] = {"LinkField":"x_idcaja_chica","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fencargadoview.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fencargadoview.Lists["x_estado"].Options = <?php echo json_encode($encargado->estado->Options()) ?>;
 
 // Form object for search
 </script>
@@ -899,8 +916,8 @@ $encargado_view->ShowMessage();
 <?php if ($encargado->idencargado->Visible) { // idencargado ?>
 	<tr id="r_idencargado">
 		<td><span id="elh_encargado_idencargado"><?php echo $encargado->idencargado->FldCaption() ?></span></td>
-		<td<?php echo $encargado->idencargado->CellAttributes() ?>>
-<span id="el_encargado_idencargado" class="form-group">
+		<td data-name="idencargado"<?php echo $encargado->idencargado->CellAttributes() ?>>
+<span id="el_encargado_idencargado">
 <span<?php echo $encargado->idencargado->ViewAttributes() ?>>
 <?php echo $encargado->idencargado->ViewValue ?></span>
 </span>
@@ -910,8 +927,8 @@ $encargado_view->ShowMessage();
 <?php if ($encargado->idempleado->Visible) { // idempleado ?>
 	<tr id="r_idempleado">
 		<td><span id="elh_encargado_idempleado"><?php echo $encargado->idempleado->FldCaption() ?></span></td>
-		<td<?php echo $encargado->idempleado->CellAttributes() ?>>
-<span id="el_encargado_idempleado" class="form-group">
+		<td data-name="idempleado"<?php echo $encargado->idempleado->CellAttributes() ?>>
+<span id="el_encargado_idempleado">
 <span<?php echo $encargado->idempleado->ViewAttributes() ?>>
 <?php echo $encargado->idempleado->ViewValue ?></span>
 </span>
@@ -921,8 +938,8 @@ $encargado_view->ShowMessage();
 <?php if ($encargado->tabla->Visible) { // tabla ?>
 	<tr id="r_tabla">
 		<td><span id="elh_encargado_tabla"><?php echo $encargado->tabla->FldCaption() ?></span></td>
-		<td<?php echo $encargado->tabla->CellAttributes() ?>>
-<span id="el_encargado_tabla" class="form-group">
+		<td data-name="tabla"<?php echo $encargado->tabla->CellAttributes() ?>>
+<span id="el_encargado_tabla">
 <span<?php echo $encargado->tabla->ViewAttributes() ?>>
 <?php echo $encargado->tabla->ViewValue ?></span>
 </span>
@@ -932,8 +949,8 @@ $encargado_view->ShowMessage();
 <?php if ($encargado->idreferencia->Visible) { // idreferencia ?>
 	<tr id="r_idreferencia">
 		<td><span id="elh_encargado_idreferencia"><?php echo $encargado->idreferencia->FldCaption() ?></span></td>
-		<td<?php echo $encargado->idreferencia->CellAttributes() ?>>
-<span id="el_encargado_idreferencia" class="form-group">
+		<td data-name="idreferencia"<?php echo $encargado->idreferencia->CellAttributes() ?>>
+<span id="el_encargado_idreferencia">
 <span<?php echo $encargado->idreferencia->ViewAttributes() ?>>
 <?php echo $encargado->idreferencia->ViewValue ?></span>
 </span>
@@ -943,8 +960,8 @@ $encargado_view->ShowMessage();
 <?php if ($encargado->fecha_inicio->Visible) { // fecha_inicio ?>
 	<tr id="r_fecha_inicio">
 		<td><span id="elh_encargado_fecha_inicio"><?php echo $encargado->fecha_inicio->FldCaption() ?></span></td>
-		<td<?php echo $encargado->fecha_inicio->CellAttributes() ?>>
-<span id="el_encargado_fecha_inicio" class="form-group">
+		<td data-name="fecha_inicio"<?php echo $encargado->fecha_inicio->CellAttributes() ?>>
+<span id="el_encargado_fecha_inicio">
 <span<?php echo $encargado->fecha_inicio->ViewAttributes() ?>>
 <?php echo $encargado->fecha_inicio->ViewValue ?></span>
 </span>
@@ -954,8 +971,8 @@ $encargado_view->ShowMessage();
 <?php if ($encargado->fecha_fin->Visible) { // fecha_fin ?>
 	<tr id="r_fecha_fin">
 		<td><span id="elh_encargado_fecha_fin"><?php echo $encargado->fecha_fin->FldCaption() ?></span></td>
-		<td<?php echo $encargado->fecha_fin->CellAttributes() ?>>
-<span id="el_encargado_fecha_fin" class="form-group">
+		<td data-name="fecha_fin"<?php echo $encargado->fecha_fin->CellAttributes() ?>>
+<span id="el_encargado_fecha_fin">
 <span<?php echo $encargado->fecha_fin->ViewAttributes() ?>>
 <?php echo $encargado->fecha_fin->ViewValue ?></span>
 </span>
@@ -965,8 +982,8 @@ $encargado_view->ShowMessage();
 <?php if ($encargado->fecha_insercion->Visible) { // fecha_insercion ?>
 	<tr id="r_fecha_insercion">
 		<td><span id="elh_encargado_fecha_insercion"><?php echo $encargado->fecha_insercion->FldCaption() ?></span></td>
-		<td<?php echo $encargado->fecha_insercion->CellAttributes() ?>>
-<span id="el_encargado_fecha_insercion" class="form-group">
+		<td data-name="fecha_insercion"<?php echo $encargado->fecha_insercion->CellAttributes() ?>>
+<span id="el_encargado_fecha_insercion">
 <span<?php echo $encargado->fecha_insercion->ViewAttributes() ?>>
 <?php echo $encargado->fecha_insercion->ViewValue ?></span>
 </span>
@@ -976,8 +993,8 @@ $encargado_view->ShowMessage();
 <?php if ($encargado->estado->Visible) { // estado ?>
 	<tr id="r_estado">
 		<td><span id="elh_encargado_estado"><?php echo $encargado->estado->FldCaption() ?></span></td>
-		<td<?php echo $encargado->estado->CellAttributes() ?>>
-<span id="el_encargado_estado" class="form-group">
+		<td data-name="estado"<?php echo $encargado->estado->CellAttributes() ?>>
+<span id="el_encargado_estado">
 <span<?php echo $encargado->estado->ViewAttributes() ?>>
 <?php echo $encargado->estado->ViewValue ?></span>
 </span>
@@ -1000,7 +1017,7 @@ if (EW_DEBUG_ENABLED)
 // document.write("page loaded");
 
 </script>
-<?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
+<?php include_once "footer.php" ?>
 <?php
 $encargado_view->Page_Terminate();
 ?>

@@ -1,15 +1,14 @@
 <?php
 if (session_id() == "") session_start(); // Initialize Session data
 ob_start(); // Turn on output buffering
-$EW_RELATIVE_PATH = "";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "tipo_documento_moduloinfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "moduloinfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "tipo_documentoinfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
+<?php include_once "ewcfg12.php" ?>
+<?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
+<?php include_once "phpfn12.php" ?>
+<?php include_once "tipo_documento_moduloinfo.php" ?>
+<?php include_once "moduloinfo.php" ?>
+<?php include_once "tipo_documentoinfo.php" ?>
+<?php include_once "userfn12.php" ?>
 <?php
 
 //
@@ -109,6 +108,30 @@ class ctipo_documento_modulo_view extends ctipo_documento_modulo {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
 	}
 
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
 	// Show message
 	function ShowMessage() {
 		$hidden = FALSE;
@@ -189,6 +212,7 @@ class ctipo_documento_modulo_view extends ctipo_documento_modulo {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -201,7 +225,7 @@ class ctipo_documento_modulo_view extends ctipo_documento_modulo {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -222,6 +246,7 @@ class ctipo_documento_modulo_view extends ctipo_documento_modulo {
 	function __construct() {
 		global $conn, $Language;
 		$GLOBALS["Page"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -265,7 +290,7 @@ class ctipo_documento_modulo_view extends ctipo_documento_modulo {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 
 		// Export options
 		$this->ExportOptions = new cListOptions();
@@ -302,20 +327,6 @@ class ctipo_documento_modulo_view extends ctipo_documento_modulo {
 			exit();
 		}
 
-		// Process auto fill
-		if (@$_POST["ajax"] == "autofill") {
-			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
-			if ($results) {
-
-				// Clean output buffer
-				if (!EW_DEBUG_ENABLED && ob_get_length())
-					ob_end_clean();
-				echo $results;
-				$this->Page_Terminate();
-				exit();
-			}
-		}
-
 		// Create Token
 		$this->CreateToken();
 	}
@@ -324,7 +335,7 @@ class ctipo_documento_modulo_view extends ctipo_documento_modulo {
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Page Unload event
 		$this->Page_Unload();
@@ -352,7 +363,7 @@ class ctipo_documento_modulo_view extends ctipo_documento_modulo {
 		$this->Page_Redirecting($url);
 
 		 // Close connection
-		$conn->Close();
+		ew_CloseConn();
 
 		// Go to URL if specified
 		if ($url <> "") {
@@ -393,6 +404,9 @@ class ctipo_documento_modulo_view extends ctipo_documento_modulo {
 			if (@$_GET["idtipo_documento_modulo"] <> "") {
 				$this->idtipo_documento_modulo->setQueryStringValue($_GET["idtipo_documento_modulo"]);
 				$this->RecKey["idtipo_documento_modulo"] = $this->idtipo_documento_modulo->QueryStringValue;
+			} elseif (@$_POST["idtipo_documento_modulo"] <> "") {
+				$this->idtipo_documento_modulo->setFormValue($_POST["idtipo_documento_modulo"]);
+				$this->RecKey["idtipo_documento_modulo"] = $this->idtipo_documento_modulo->FormValue;
 			} else {
 				$sReturnUrl = "tipo_documento_modulolist.php"; // Return to list
 			}
@@ -484,7 +498,7 @@ class ctipo_documento_modulo_view extends ctipo_documento_modulo {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -493,8 +507,9 @@ class ctipo_documento_modulo_view extends ctipo_documento_modulo {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -505,7 +520,6 @@ class ctipo_documento_modulo_view extends ctipo_documento_modulo {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -531,8 +545,7 @@ class ctipo_documento_modulo_view extends ctipo_documento_modulo {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		$this->AddUrl = $this->GetAddUrl();
@@ -554,87 +567,70 @@ class ctipo_documento_modulo_view extends ctipo_documento_modulo {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idtipo_documento_modulo
-			$this->idtipo_documento_modulo->ViewValue = $this->idtipo_documento_modulo->CurrentValue;
-			$this->idtipo_documento_modulo->ViewCustomAttributes = "";
+		// idtipo_documento_modulo
+		$this->idtipo_documento_modulo->ViewValue = $this->idtipo_documento_modulo->CurrentValue;
+		$this->idtipo_documento_modulo->ViewCustomAttributes = "";
 
-			// idtipo_documento
-			if (strval($this->idtipo_documento->CurrentValue) <> "") {
-				$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idtipo_documento->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idtipo_documento->ViewValue = $this->idtipo_documento->CurrentValue;
-				}
+		// idtipo_documento
+		if (strval($this->idtipo_documento->CurrentValue) <> "") {
+			$sFilterWrk = "`idtipo_documento`" . ew_SearchString("=", $this->idtipo_documento->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idtipo_documento`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `tipo_documento`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idtipo_documento, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idtipo_documento->ViewValue = $this->idtipo_documento->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idtipo_documento->ViewValue = NULL;
+				$this->idtipo_documento->ViewValue = $this->idtipo_documento->CurrentValue;
 			}
-			$this->idtipo_documento->ViewCustomAttributes = "";
+		} else {
+			$this->idtipo_documento->ViewValue = NULL;
+		}
+		$this->idtipo_documento->ViewCustomAttributes = "";
 
-			// idmodulo
-			if (strval($this->idmodulo->CurrentValue) <> "") {
-				$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `modulo`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idmodulo, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idmodulo->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idmodulo->ViewValue = $this->idmodulo->CurrentValue;
-				}
+		// idmodulo
+		if (strval($this->idmodulo->CurrentValue) <> "") {
+			$sFilterWrk = "`idmodulo`" . ew_SearchString("=", $this->idmodulo->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idmodulo`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `modulo`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idmodulo, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idmodulo->ViewValue = $this->idmodulo->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idmodulo->ViewValue = NULL;
+				$this->idmodulo->ViewValue = $this->idmodulo->CurrentValue;
 			}
-			$this->idmodulo->ViewCustomAttributes = "";
+		} else {
+			$this->idmodulo->ViewValue = NULL;
+		}
+		$this->idmodulo->ViewCustomAttributes = "";
 
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
-			} else {
-				$this->estado->ViewValue = NULL;
-			}
-			$this->estado->ViewCustomAttributes = "";
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
-			// fecha_insercion
-			$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
-			$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
-			$this->fecha_insercion->ViewCustomAttributes = "";
+		// fecha_insercion
+		$this->fecha_insercion->ViewValue = $this->fecha_insercion->CurrentValue;
+		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
+		$this->fecha_insercion->ViewCustomAttributes = "";
 
 			// idtipo_documento_modulo
 			$this->idtipo_documento_modulo->LinkCustomAttributes = "";
@@ -701,6 +697,35 @@ class ctipo_documento_modulo_view extends ctipo_documento_modulo {
 					$bValidMaster = FALSE;
 				}
 			}
+		} elseif (isset($_POST[EW_TABLE_SHOW_MASTER])) {
+			$sMasterTblVar = $_POST[EW_TABLE_SHOW_MASTER];
+			if ($sMasterTblVar == "") {
+				$bValidMaster = TRUE;
+				$this->DbMasterFilter = "";
+				$this->DbDetailFilter = "";
+			}
+			if ($sMasterTblVar == "tipo_documento") {
+				$bValidMaster = TRUE;
+				if (@$_POST["fk_idtipo_documento"] <> "") {
+					$GLOBALS["tipo_documento"]->idtipo_documento->setFormValue($_POST["fk_idtipo_documento"]);
+					$this->idtipo_documento->setFormValue($GLOBALS["tipo_documento"]->idtipo_documento->FormValue);
+					$this->idtipo_documento->setSessionValue($this->idtipo_documento->FormValue);
+					if (!is_numeric($GLOBALS["tipo_documento"]->idtipo_documento->FormValue)) $bValidMaster = FALSE;
+				} else {
+					$bValidMaster = FALSE;
+				}
+			}
+			if ($sMasterTblVar == "modulo") {
+				$bValidMaster = TRUE;
+				if (@$_POST["fk_idmodulo"] <> "") {
+					$GLOBALS["modulo"]->idmodulo->setFormValue($_POST["fk_idmodulo"]);
+					$this->idmodulo->setFormValue($GLOBALS["modulo"]->idmodulo->FormValue);
+					$this->idmodulo->setSessionValue($this->idmodulo->FormValue);
+					if (!is_numeric($GLOBALS["modulo"]->idmodulo->FormValue)) $bValidMaster = FALSE;
+				} else {
+					$bValidMaster = FALSE;
+				}
+			}
 		}
 		if ($bValidMaster) {
 
@@ -714,13 +739,13 @@ class ctipo_documento_modulo_view extends ctipo_documento_modulo {
 
 			// Clear previous master key from Session
 			if ($sMasterTblVar <> "tipo_documento") {
-				if ($this->idtipo_documento->QueryStringValue == "") $this->idtipo_documento->setSessionValue("");
+				if ($this->idtipo_documento->CurrentValue == "") $this->idtipo_documento->setSessionValue("");
 			}
 			if ($sMasterTblVar <> "modulo") {
-				if ($this->idmodulo->QueryStringValue == "") $this->idmodulo->setSessionValue("");
+				if ($this->idmodulo->CurrentValue == "") $this->idmodulo->setSessionValue("");
 			}
 		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 
@@ -728,9 +753,10 @@ class ctipo_documento_modulo_view extends ctipo_documento_modulo {
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$Breadcrumb->Add("list", $this->TableVar, "tipo_documento_modulolist.php", "", $this->TableVar, TRUE);
+		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("tipo_documento_modulolist.php"), "", $this->TableVar, TRUE);
 		$PageId = "view";
-		$Breadcrumb->Add("view", $PageId, ew_CurrentUrl());
+		$Breadcrumb->Add("view", $PageId, $url);
 	}
 
 	// Page Load event
@@ -838,16 +864,12 @@ Page_Rendering();
 // Page Rendering event
 $tipo_documento_modulo_view->Page_Render();
 ?>
-<?php include_once $EW_RELATIVE_PATH . "header.php" ?>
+<?php include_once "header.php" ?>
 <script type="text/javascript">
 
-// Page object
-var tipo_documento_modulo_view = new ew_Page("tipo_documento_modulo_view");
-tipo_documento_modulo_view.PageID = "view"; // Page ID
-var EW_PAGE_ID = tipo_documento_modulo_view.PageID; // For backward compatibility
-
 // Form object
-var ftipo_documento_moduloview = new ew_Form("ftipo_documento_moduloview");
+var CurrentPageID = EW_PAGE_ID = "view";
+var CurrentForm = ftipo_documento_moduloview = new ew_Form("ftipo_documento_moduloview", "view");
 
 // Form_CustomValidate event
 ftipo_documento_moduloview.Form_CustomValidate = 
@@ -865,8 +887,10 @@ ftipo_documento_moduloview.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-ftipo_documento_moduloview.Lists["x_idtipo_documento"] = {"LinkField":"x_idtipo_documento","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
-ftipo_documento_moduloview.Lists["x_idmodulo"] = {"LinkField":"x_idmodulo","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+ftipo_documento_moduloview.Lists["x_idtipo_documento"] = {"LinkField":"x_idtipo_documento","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+ftipo_documento_moduloview.Lists["x_idmodulo"] = {"LinkField":"x_idmodulo","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+ftipo_documento_moduloview.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+ftipo_documento_moduloview.Lists["x_estado"].Options = <?php echo json_encode($tipo_documento_modulo->estado->Options()) ?>;
 
 // Form object for search
 </script>
@@ -897,8 +921,8 @@ $tipo_documento_modulo_view->ShowMessage();
 <?php if ($tipo_documento_modulo->idtipo_documento_modulo->Visible) { // idtipo_documento_modulo ?>
 	<tr id="r_idtipo_documento_modulo">
 		<td><span id="elh_tipo_documento_modulo_idtipo_documento_modulo"><?php echo $tipo_documento_modulo->idtipo_documento_modulo->FldCaption() ?></span></td>
-		<td<?php echo $tipo_documento_modulo->idtipo_documento_modulo->CellAttributes() ?>>
-<span id="el_tipo_documento_modulo_idtipo_documento_modulo" class="form-group">
+		<td data-name="idtipo_documento_modulo"<?php echo $tipo_documento_modulo->idtipo_documento_modulo->CellAttributes() ?>>
+<span id="el_tipo_documento_modulo_idtipo_documento_modulo">
 <span<?php echo $tipo_documento_modulo->idtipo_documento_modulo->ViewAttributes() ?>>
 <?php echo $tipo_documento_modulo->idtipo_documento_modulo->ViewValue ?></span>
 </span>
@@ -908,8 +932,8 @@ $tipo_documento_modulo_view->ShowMessage();
 <?php if ($tipo_documento_modulo->idtipo_documento->Visible) { // idtipo_documento ?>
 	<tr id="r_idtipo_documento">
 		<td><span id="elh_tipo_documento_modulo_idtipo_documento"><?php echo $tipo_documento_modulo->idtipo_documento->FldCaption() ?></span></td>
-		<td<?php echo $tipo_documento_modulo->idtipo_documento->CellAttributes() ?>>
-<span id="el_tipo_documento_modulo_idtipo_documento" class="form-group">
+		<td data-name="idtipo_documento"<?php echo $tipo_documento_modulo->idtipo_documento->CellAttributes() ?>>
+<span id="el_tipo_documento_modulo_idtipo_documento">
 <span<?php echo $tipo_documento_modulo->idtipo_documento->ViewAttributes() ?>>
 <?php echo $tipo_documento_modulo->idtipo_documento->ViewValue ?></span>
 </span>
@@ -919,8 +943,8 @@ $tipo_documento_modulo_view->ShowMessage();
 <?php if ($tipo_documento_modulo->idmodulo->Visible) { // idmodulo ?>
 	<tr id="r_idmodulo">
 		<td><span id="elh_tipo_documento_modulo_idmodulo"><?php echo $tipo_documento_modulo->idmodulo->FldCaption() ?></span></td>
-		<td<?php echo $tipo_documento_modulo->idmodulo->CellAttributes() ?>>
-<span id="el_tipo_documento_modulo_idmodulo" class="form-group">
+		<td data-name="idmodulo"<?php echo $tipo_documento_modulo->idmodulo->CellAttributes() ?>>
+<span id="el_tipo_documento_modulo_idmodulo">
 <span<?php echo $tipo_documento_modulo->idmodulo->ViewAttributes() ?>>
 <?php echo $tipo_documento_modulo->idmodulo->ViewValue ?></span>
 </span>
@@ -930,8 +954,8 @@ $tipo_documento_modulo_view->ShowMessage();
 <?php if ($tipo_documento_modulo->estado->Visible) { // estado ?>
 	<tr id="r_estado">
 		<td><span id="elh_tipo_documento_modulo_estado"><?php echo $tipo_documento_modulo->estado->FldCaption() ?></span></td>
-		<td<?php echo $tipo_documento_modulo->estado->CellAttributes() ?>>
-<span id="el_tipo_documento_modulo_estado" class="form-group">
+		<td data-name="estado"<?php echo $tipo_documento_modulo->estado->CellAttributes() ?>>
+<span id="el_tipo_documento_modulo_estado">
 <span<?php echo $tipo_documento_modulo->estado->ViewAttributes() ?>>
 <?php echo $tipo_documento_modulo->estado->ViewValue ?></span>
 </span>
@@ -941,8 +965,8 @@ $tipo_documento_modulo_view->ShowMessage();
 <?php if ($tipo_documento_modulo->fecha_insercion->Visible) { // fecha_insercion ?>
 	<tr id="r_fecha_insercion">
 		<td><span id="elh_tipo_documento_modulo_fecha_insercion"><?php echo $tipo_documento_modulo->fecha_insercion->FldCaption() ?></span></td>
-		<td<?php echo $tipo_documento_modulo->fecha_insercion->CellAttributes() ?>>
-<span id="el_tipo_documento_modulo_fecha_insercion" class="form-group">
+		<td data-name="fecha_insercion"<?php echo $tipo_documento_modulo->fecha_insercion->CellAttributes() ?>>
+<span id="el_tipo_documento_modulo_fecha_insercion">
 <span<?php echo $tipo_documento_modulo->fecha_insercion->ViewAttributes() ?>>
 <?php echo $tipo_documento_modulo->fecha_insercion->ViewValue ?></span>
 </span>
@@ -965,7 +989,7 @@ if (EW_DEBUG_ENABLED)
 // document.write("page loaded");
 
 </script>
-<?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
+<?php include_once "footer.php" ?>
 <?php
 $tipo_documento_modulo_view->Page_Terminate();
 ?>

@@ -1,15 +1,14 @@
 <?php
 if (session_id() == "") session_start(); // Initialize Session data
 ob_start(); // Turn on output buffering
-$EW_RELATIVE_PATH = "";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "subgrupo_cuentainfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "grupo_cuentainfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "cuenta_mayor_principalgridcls.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
+<?php include_once "ewcfg12.php" ?>
+<?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
+<?php include_once "phpfn12.php" ?>
+<?php include_once "subgrupo_cuentainfo.php" ?>
+<?php include_once "grupo_cuentainfo.php" ?>
+<?php include_once "cuenta_mayor_principalgridcls.php" ?>
+<?php include_once "userfn12.php" ?>
 <?php
 
 //
@@ -109,6 +108,30 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
 	}
 
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
 	// Show message
 	function ShowMessage() {
 		$hidden = FALSE;
@@ -189,6 +212,7 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -201,7 +225,7 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -222,6 +246,7 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 	function __construct() {
 		global $conn, $Language;
 		$GLOBALS["Page"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -262,7 +287,7 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 
 		// Export options
 		$this->ExportOptions = new cListOptions();
@@ -299,28 +324,6 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 			exit();
 		}
 
-		// Process auto fill
-		if (@$_POST["ajax"] == "autofill") {
-
-			// Process auto fill for detail table 'cuenta_mayor_principal'
-			if (@$_POST["grid"] == "fcuenta_mayor_principalgrid") {
-				if (!isset($GLOBALS["cuenta_mayor_principal_grid"])) $GLOBALS["cuenta_mayor_principal_grid"] = new ccuenta_mayor_principal_grid;
-				$GLOBALS["cuenta_mayor_principal_grid"]->Page_Init();
-				$this->Page_Terminate();
-				exit();
-			}
-			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
-			if ($results) {
-
-				// Clean output buffer
-				if (!EW_DEBUG_ENABLED && ob_get_length())
-					ob_end_clean();
-				echo $results;
-				$this->Page_Terminate();
-				exit();
-			}
-		}
-
 		// Create Token
 		$this->CreateToken();
 	}
@@ -329,7 +332,7 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Page Unload event
 		$this->Page_Unload();
@@ -357,7 +360,7 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 		$this->Page_Redirecting($url);
 
 		 // Close connection
-		$conn->Close();
+		ew_CloseConn();
 
 		// Go to URL if specified
 		if ($url <> "") {
@@ -398,6 +401,9 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 			if (@$_GET["idsubgrupo_cuenta"] <> "") {
 				$this->idsubgrupo_cuenta->setQueryStringValue($_GET["idsubgrupo_cuenta"]);
 				$this->RecKey["idsubgrupo_cuenta"] = $this->idsubgrupo_cuenta->QueryStringValue;
+			} elseif (@$_POST["idsubgrupo_cuenta"] <> "") {
+				$this->idsubgrupo_cuenta->setFormValue($_POST["idsubgrupo_cuenta"]);
+				$this->RecKey["idsubgrupo_cuenta"] = $this->idsubgrupo_cuenta->FormValue;
 			} else {
 				$sReturnUrl = "subgrupo_cuentalist.php"; // Return to list
 			}
@@ -447,20 +453,6 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 		$item = &$option->Add("copy");
 		$item->Body = "<a class=\"ewAction ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("ViewPageCopyLink") . "</a>";
 		$item->Visible = ($this->CopyUrl <> "");
-
-		// Show detail edit/copy
-		if ($this->getCurrentDetailTable() <> "") {
-
-			// Detail Edit
-			$item = &$option->Add("detailedit");
-			$item->Body = "<a class=\"ewAction ewDetailEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=" . $this->getCurrentDetailTable())) . "\">" . $Language->Phrase("MasterDetailEditLink") . "</a>";
-			$item->Visible = (TRUE);
-
-			// Detail Copy
-			$item = &$option->Add("detailcopy");
-			$item->Body = "<a class=\"ewAction ewDetailCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailCopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->GetCopyUrl(EW_TABLE_SHOW_DETAIL . "=" . $this->getCurrentDetailTable())) . "\">" . $Language->Phrase("MasterDetailCopyLink") . "</a>";
-			$item->Visible = (TRUE);
-		}
 		$option = &$options["detail"];
 		$DetailTableLink = "";
 		$DetailViewTblVar = "";
@@ -469,8 +461,8 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 
 		// "detail_cuenta_mayor_principal"
 		$item = &$option->Add("detail_cuenta_mayor_principal");
-		$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("cuenta_mayor_principal", "TblCaption");
-		$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("cuenta_mayor_principallist.php?" . EW_TABLE_SHOW_MASTER . "=subgrupo_cuenta&fk_idsubgrupo_cuenta=" . strval($this->idsubgrupo_cuenta->CurrentValue) . "") . "\">" . $body . "</a>";
+		$body = $Language->Phrase("ViewPageDetailLink") . $Language->TablePhrase("cuenta_mayor_principal", "TblCaption");
+		$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("cuenta_mayor_principallist.php?" . EW_TABLE_SHOW_MASTER . "=subgrupo_cuenta&fk_idsubgrupo_cuenta=" . urlencode(strval($this->idsubgrupo_cuenta->CurrentValue)) . "") . "\">" . $body . "</a>";
 		$links = "";
 		if ($GLOBALS["cuenta_mayor_principal_grid"] && $GLOBALS["cuenta_mayor_principal_grid"]->DetailView) {
 			$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=cuenta_mayor_principal")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
@@ -586,7 +578,7 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -595,8 +587,9 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -607,7 +600,6 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -635,8 +627,7 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		$this->AddUrl = $this->GetAddUrl();
@@ -659,66 +650,53 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idsubgrupo_cuenta
-			$this->idsubgrupo_cuenta->ViewValue = $this->idsubgrupo_cuenta->CurrentValue;
-			$this->idsubgrupo_cuenta->ViewCustomAttributes = "";
+		// idsubgrupo_cuenta
+		$this->idsubgrupo_cuenta->ViewValue = $this->idsubgrupo_cuenta->CurrentValue;
+		$this->idsubgrupo_cuenta->ViewCustomAttributes = "";
 
-			// nomenclatura
-			$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
-			$this->nomenclatura->ViewCustomAttributes = "";
+		// nomenclatura
+		$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
+		$this->nomenclatura->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
 
-			// idgrupo_cuenta
-			if (strval($this->idgrupo_cuenta->CurrentValue) <> "") {
-				$sFilterWrk = "`idgrupo_cuenta`" . ew_SearchString("=", $this->idgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `grupo_cuenta`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idgrupo_cuenta, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idgrupo_cuenta->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idgrupo_cuenta->ViewValue = $this->idgrupo_cuenta->CurrentValue;
-				}
+		// idgrupo_cuenta
+		if (strval($this->idgrupo_cuenta->CurrentValue) <> "") {
+			$sFilterWrk = "`idgrupo_cuenta`" . ew_SearchString("=", $this->idgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `grupo_cuenta`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idgrupo_cuenta, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idgrupo_cuenta->ViewValue = $this->idgrupo_cuenta->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->idgrupo_cuenta->ViewValue = NULL;
+				$this->idgrupo_cuenta->ViewValue = $this->idgrupo_cuenta->CurrentValue;
 			}
-			$this->idgrupo_cuenta->ViewCustomAttributes = "";
+		} else {
+			$this->idgrupo_cuenta->ViewValue = NULL;
+		}
+		$this->idgrupo_cuenta->ViewCustomAttributes = "";
 
-			// definicion
-			$this->definicion->ViewValue = $this->definicion->CurrentValue;
-			$this->definicion->ViewCustomAttributes = "";
+		// definicion
+		$this->definicion->ViewValue = $this->definicion->CurrentValue;
+		$this->definicion->ViewCustomAttributes = "";
 
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
-			} else {
-				$this->estado->ViewValue = NULL;
-			}
-			$this->estado->ViewCustomAttributes = "";
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
 			// idsubgrupo_cuenta
 			$this->idsubgrupo_cuenta->LinkCustomAttributes = "";
@@ -779,6 +757,24 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 					$bValidMaster = FALSE;
 				}
 			}
+		} elseif (isset($_POST[EW_TABLE_SHOW_MASTER])) {
+			$sMasterTblVar = $_POST[EW_TABLE_SHOW_MASTER];
+			if ($sMasterTblVar == "") {
+				$bValidMaster = TRUE;
+				$this->DbMasterFilter = "";
+				$this->DbDetailFilter = "";
+			}
+			if ($sMasterTblVar == "grupo_cuenta") {
+				$bValidMaster = TRUE;
+				if (@$_POST["fk_idgrupo_cuenta"] <> "") {
+					$GLOBALS["grupo_cuenta"]->idgrupo_cuenta->setFormValue($_POST["fk_idgrupo_cuenta"]);
+					$this->idgrupo_cuenta->setFormValue($GLOBALS["grupo_cuenta"]->idgrupo_cuenta->FormValue);
+					$this->idgrupo_cuenta->setSessionValue($this->idgrupo_cuenta->FormValue);
+					if (!is_numeric($GLOBALS["grupo_cuenta"]->idgrupo_cuenta->FormValue)) $bValidMaster = FALSE;
+				} else {
+					$bValidMaster = FALSE;
+				}
+			}
 		}
 		if ($bValidMaster) {
 
@@ -792,10 +788,10 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 
 			// Clear previous master key from Session
 			if ($sMasterTblVar <> "grupo_cuenta") {
-				if ($this->idgrupo_cuenta->QueryStringValue == "") $this->idgrupo_cuenta->setSessionValue("");
+				if ($this->idgrupo_cuenta->CurrentValue == "") $this->idgrupo_cuenta->setSessionValue("");
 			}
 		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 
@@ -832,9 +828,10 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$Breadcrumb->Add("list", $this->TableVar, "subgrupo_cuentalist.php", "", $this->TableVar, TRUE);
+		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("subgrupo_cuentalist.php"), "", $this->TableVar, TRUE);
 		$PageId = "view";
-		$Breadcrumb->Add("view", $PageId, ew_CurrentUrl());
+		$Breadcrumb->Add("view", $PageId, $url);
 	}
 
 	// Page Load event
@@ -942,16 +939,12 @@ Page_Rendering();
 // Page Rendering event
 $subgrupo_cuenta_view->Page_Render();
 ?>
-<?php include_once $EW_RELATIVE_PATH . "header.php" ?>
+<?php include_once "header.php" ?>
 <script type="text/javascript">
 
-// Page object
-var subgrupo_cuenta_view = new ew_Page("subgrupo_cuenta_view");
-subgrupo_cuenta_view.PageID = "view"; // Page ID
-var EW_PAGE_ID = subgrupo_cuenta_view.PageID; // For backward compatibility
-
 // Form object
-var fsubgrupo_cuentaview = new ew_Form("fsubgrupo_cuentaview");
+var CurrentPageID = EW_PAGE_ID = "view";
+var CurrentForm = fsubgrupo_cuentaview = new ew_Form("fsubgrupo_cuentaview", "view");
 
 // Form_CustomValidate event
 fsubgrupo_cuentaview.Form_CustomValidate = 
@@ -969,7 +962,9 @@ fsubgrupo_cuentaview.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-fsubgrupo_cuentaview.Lists["x_idgrupo_cuenta"] = {"LinkField":"x_idgrupo_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+fsubgrupo_cuentaview.Lists["x_idgrupo_cuenta"] = {"LinkField":"x_idgrupo_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fsubgrupo_cuentaview.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fsubgrupo_cuentaview.Lists["x_estado"].Options = <?php echo json_encode($subgrupo_cuenta->estado->Options()) ?>;
 
 // Form object for search
 </script>
@@ -1000,8 +995,8 @@ $subgrupo_cuenta_view->ShowMessage();
 <?php if ($subgrupo_cuenta->idsubgrupo_cuenta->Visible) { // idsubgrupo_cuenta ?>
 	<tr id="r_idsubgrupo_cuenta">
 		<td><span id="elh_subgrupo_cuenta_idsubgrupo_cuenta"><?php echo $subgrupo_cuenta->idsubgrupo_cuenta->FldCaption() ?></span></td>
-		<td<?php echo $subgrupo_cuenta->idsubgrupo_cuenta->CellAttributes() ?>>
-<span id="el_subgrupo_cuenta_idsubgrupo_cuenta" class="form-group">
+		<td data-name="idsubgrupo_cuenta"<?php echo $subgrupo_cuenta->idsubgrupo_cuenta->CellAttributes() ?>>
+<span id="el_subgrupo_cuenta_idsubgrupo_cuenta">
 <span<?php echo $subgrupo_cuenta->idsubgrupo_cuenta->ViewAttributes() ?>>
 <?php echo $subgrupo_cuenta->idsubgrupo_cuenta->ViewValue ?></span>
 </span>
@@ -1011,8 +1006,8 @@ $subgrupo_cuenta_view->ShowMessage();
 <?php if ($subgrupo_cuenta->nomenclatura->Visible) { // nomenclatura ?>
 	<tr id="r_nomenclatura">
 		<td><span id="elh_subgrupo_cuenta_nomenclatura"><?php echo $subgrupo_cuenta->nomenclatura->FldCaption() ?></span></td>
-		<td<?php echo $subgrupo_cuenta->nomenclatura->CellAttributes() ?>>
-<span id="el_subgrupo_cuenta_nomenclatura" class="form-group">
+		<td data-name="nomenclatura"<?php echo $subgrupo_cuenta->nomenclatura->CellAttributes() ?>>
+<span id="el_subgrupo_cuenta_nomenclatura">
 <span<?php echo $subgrupo_cuenta->nomenclatura->ViewAttributes() ?>>
 <?php echo $subgrupo_cuenta->nomenclatura->ViewValue ?></span>
 </span>
@@ -1022,8 +1017,8 @@ $subgrupo_cuenta_view->ShowMessage();
 <?php if ($subgrupo_cuenta->nombre->Visible) { // nombre ?>
 	<tr id="r_nombre">
 		<td><span id="elh_subgrupo_cuenta_nombre"><?php echo $subgrupo_cuenta->nombre->FldCaption() ?></span></td>
-		<td<?php echo $subgrupo_cuenta->nombre->CellAttributes() ?>>
-<span id="el_subgrupo_cuenta_nombre" class="form-group">
+		<td data-name="nombre"<?php echo $subgrupo_cuenta->nombre->CellAttributes() ?>>
+<span id="el_subgrupo_cuenta_nombre">
 <span<?php echo $subgrupo_cuenta->nombre->ViewAttributes() ?>>
 <?php echo $subgrupo_cuenta->nombre->ViewValue ?></span>
 </span>
@@ -1033,8 +1028,8 @@ $subgrupo_cuenta_view->ShowMessage();
 <?php if ($subgrupo_cuenta->idgrupo_cuenta->Visible) { // idgrupo_cuenta ?>
 	<tr id="r_idgrupo_cuenta">
 		<td><span id="elh_subgrupo_cuenta_idgrupo_cuenta"><?php echo $subgrupo_cuenta->idgrupo_cuenta->FldCaption() ?></span></td>
-		<td<?php echo $subgrupo_cuenta->idgrupo_cuenta->CellAttributes() ?>>
-<span id="el_subgrupo_cuenta_idgrupo_cuenta" class="form-group">
+		<td data-name="idgrupo_cuenta"<?php echo $subgrupo_cuenta->idgrupo_cuenta->CellAttributes() ?>>
+<span id="el_subgrupo_cuenta_idgrupo_cuenta">
 <span<?php echo $subgrupo_cuenta->idgrupo_cuenta->ViewAttributes() ?>>
 <?php echo $subgrupo_cuenta->idgrupo_cuenta->ViewValue ?></span>
 </span>
@@ -1044,8 +1039,8 @@ $subgrupo_cuenta_view->ShowMessage();
 <?php if ($subgrupo_cuenta->definicion->Visible) { // definicion ?>
 	<tr id="r_definicion">
 		<td><span id="elh_subgrupo_cuenta_definicion"><?php echo $subgrupo_cuenta->definicion->FldCaption() ?></span></td>
-		<td<?php echo $subgrupo_cuenta->definicion->CellAttributes() ?>>
-<span id="el_subgrupo_cuenta_definicion" class="form-group">
+		<td data-name="definicion"<?php echo $subgrupo_cuenta->definicion->CellAttributes() ?>>
+<span id="el_subgrupo_cuenta_definicion">
 <span<?php echo $subgrupo_cuenta->definicion->ViewAttributes() ?>>
 <?php echo $subgrupo_cuenta->definicion->ViewValue ?></span>
 </span>
@@ -1055,8 +1050,8 @@ $subgrupo_cuenta_view->ShowMessage();
 <?php if ($subgrupo_cuenta->estado->Visible) { // estado ?>
 	<tr id="r_estado">
 		<td><span id="elh_subgrupo_cuenta_estado"><?php echo $subgrupo_cuenta->estado->FldCaption() ?></span></td>
-		<td<?php echo $subgrupo_cuenta->estado->CellAttributes() ?>>
-<span id="el_subgrupo_cuenta_estado" class="form-group">
+		<td data-name="estado"<?php echo $subgrupo_cuenta->estado->CellAttributes() ?>>
+<span id="el_subgrupo_cuenta_estado">
 <span<?php echo $subgrupo_cuenta->estado->ViewAttributes() ?>>
 <?php echo $subgrupo_cuenta->estado->ViewValue ?></span>
 </span>
@@ -1087,7 +1082,7 @@ if (EW_DEBUG_ENABLED)
 // document.write("page loaded");
 
 </script>
-<?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
+<?php include_once "footer.php" ?>
 <?php
 $subgrupo_cuenta_view->Page_Terminate();
 ?>

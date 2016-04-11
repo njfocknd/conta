@@ -2,11 +2,11 @@
 
 .calendar {
 	position: relative;
-	display: none;
-	font-size: 11px;
+	display: none;	
 	color: #000;
 	cursor: default;
-	font-family: tahoma, verdana, sans-serif;
+	/*font-size: 11px;
+	font-family: tahoma, verdana, sans-serif;*/
 	padding: 4px;
 	margin: 2px 0 0;
 	background-color: #ffffff;
@@ -18,11 +18,11 @@
 }
 
 .calendar table {
-	border: 1px solid #ccc;  
-	font-size: 11px;
+	border: 1px solid #ccc;	
 	color: #000;
 	cursor: default;
-	font-family: tahoma,verdana,sans-serif;
+	/*font-size: 11px;
+	font-family: tahoma,verdana,sans-serif;*/
 }
 
 /* Header part -- contains navigation buttons and day names. */

@@ -1,14 +1,13 @@
 <?php
 if (session_id() == "") session_start(); // Initialize Session data
 ob_start(); // Turn on output buffering
-$EW_RELATIVE_PATH = "";
 ?>
-<?php include_once $EW_RELATIVE_PATH . "ewcfg11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "ewmysql11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "phpfn11.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "cuentainfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "subcuentainfo.php" ?>
-<?php include_once $EW_RELATIVE_PATH . "userfn11.php" ?>
+<?php include_once "ewcfg12.php" ?>
+<?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
+<?php include_once "phpfn12.php" ?>
+<?php include_once "cuentainfo.php" ?>
+<?php include_once "subcuentainfo.php" ?>
+<?php include_once "userfn12.php" ?>
 <?php
 
 //
@@ -74,6 +73,30 @@ class ccuenta_add extends ccuenta {
 
 	function setWarningMessage($v) {
 		ew_AddMessage($_SESSION[EW_SESSION_WARNING_MESSAGE], $v);
+	}
+
+	// Methods to clear message
+	function ClearMessage() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+	}
+
+	function ClearFailureMessage() {
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+	}
+
+	function ClearSuccessMessage() {
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+	}
+
+	function ClearWarningMessage() {
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
+	}
+
+	function ClearMessages() {
+		$_SESSION[EW_SESSION_MESSAGE] = "";
+		$_SESSION[EW_SESSION_FAILURE_MESSAGE] = "";
+		$_SESSION[EW_SESSION_SUCCESS_MESSAGE] = "";
+		$_SESSION[EW_SESSION_WARNING_MESSAGE] = "";
 	}
 
 	// Show message
@@ -156,6 +179,7 @@ class ccuenta_add extends ccuenta {
 		}
 	}
 	var $Token = "";
+	var $TokenTimeout = 0;
 	var $CheckToken = EW_CHECK_TOKEN;
 	var $CheckTokenFn = "ew_CheckToken";
 	var $CreateTokenFn = "ew_CreateToken";
@@ -168,7 +192,7 @@ class ccuenta_add extends ccuenta {
 			return FALSE;
 		$fn = $this->CheckTokenFn;
 		if (is_callable($fn))
-			return $fn($_POST[EW_TOKEN_NAME]);
+			return $fn($_POST[EW_TOKEN_NAME], $this->TokenTimeout);
 		return FALSE;
 	}
 
@@ -189,6 +213,7 @@ class ccuenta_add extends ccuenta {
 	function __construct() {
 		global $conn, $Language;
 		$GLOBALS["Page"] = &$this;
+		$this->TokenTimeout = ew_SessionTimeoutTime();
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
@@ -217,7 +242,7 @@ class ccuenta_add extends ccuenta {
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
 
 		// Open connection
-		if (!isset($conn)) $conn = ew_Connect();
+		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 	}
 
 	// 
@@ -265,7 +290,7 @@ class ccuenta_add extends ccuenta {
 	// Page_Terminate
 	//
 	function Page_Terminate($url = "") {
-		global $conn, $gsExportFile, $gTmpImages;
+		global $gsExportFile, $gTmpImages;
 
 		// Page Unload event
 		$this->Page_Unload();
@@ -293,7 +318,7 @@ class ccuenta_add extends ccuenta {
 		$this->Page_Redirecting($url);
 
 		 // Close connection
-		$conn->Close();
+		ew_CloseConn();
 
 		// Go to URL if specified
 		if ($url <> "") {
@@ -303,6 +328,7 @@ class ccuenta_add extends ccuenta {
 		}
 		exit();
 	}
+	var $FormClassName = "form-horizontal ewForm ewAddForm";
 	var $DbMasterFilter = "";
 	var $DbDetailFilter = "";
 	var $StartRec;
@@ -339,7 +365,6 @@ class ccuenta_add extends ccuenta {
 				$this->CurrentAction = "C"; // Copy record
 			} else {
 				$this->CurrentAction = "I"; // Display blank record
-				$this->LoadDefaultValues(); // Load default values
 			}
 		}
 
@@ -354,6 +379,9 @@ class ccuenta_add extends ccuenta {
 				$this->RestoreFormValues(); // Restore form values
 				$this->setFailureMessage($gsFormError);
 			}
+		} else {
+			if ($this->CurrentAction == "I") // Load default values for blank record
+				$this->LoadDefaultValues();
 		}
 
 		// Perform action based on action code
@@ -372,8 +400,10 @@ class ccuenta_add extends ccuenta {
 					if ($this->getSuccessMessage() == "")
 						$this->setSuccessMessage($Language->Phrase("AddSuccess")); // Set up success message
 					$sReturnUrl = $this->getReturnUrl();
-					if (ew_GetPageName($sReturnUrl) == "cuentaview.php")
-						$sReturnUrl = $this->GetViewUrl(); // View paging, return to view page with keyurl directly
+					if (ew_GetPageName($sReturnUrl) == "cuentalist.php")
+						$sReturnUrl = $this->AddMasterUrl($sReturnUrl); // List page, return to list page with correct master key if necessary
+					elseif (ew_GetPageName($sReturnUrl) == "cuentaview.php")
+						$sReturnUrl = $this->GetViewUrl(); // View page, return to view page with keyurl directly
 					$this->Page_Terminate($sReturnUrl); // Clean up and return
 				} else {
 					$this->EventCancelled = TRUE; // Event cancelled
@@ -382,7 +412,7 @@ class ccuenta_add extends ccuenta {
 		}
 
 		// Render row based on row type
-		$this->RowType = EW_ROWTYPE_ADD;  // Render add type
+		$this->RowType = EW_ROWTYPE_ADD; // Render add type
 
 		// Render row
 		$this->ResetAttrs();
@@ -432,7 +462,7 @@ class ccuenta_add extends ccuenta {
 
 	// Load row based on key values
 	function LoadRow() {
-		global $conn, $Security, $Language;
+		global $Security, $Language;
 		$sFilter = $this->KeyFilter();
 
 		// Call Row Selecting event
@@ -441,8 +471,9 @@ class ccuenta_add extends ccuenta {
 		// Load SQL based on filter
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
+		$conn = &$this->Connection();
 		$res = FALSE;
-		$rs = ew_LoadRecordset($sSql);
+		$rs = ew_LoadRecordset($sSql, $conn);
 		if ($rs && !$rs->EOF) {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
@@ -453,7 +484,6 @@ class ccuenta_add extends ccuenta {
 
 	// Load row values from recordset
 	function LoadRowValues(&$rs) {
-		global $conn;
 		if (!$rs || $rs->EOF) return;
 
 		// Call Row Selected event
@@ -497,7 +527,8 @@ class ccuenta_add extends ccuenta {
 		if ($bValidKey) {
 			$this->CurrentFilter = $this->KeyFilter();
 			$sSql = $this->SQL();
-			$this->OldRecordset = ew_LoadRecordset($sSql);
+			$conn = &$this->Connection();
+			$this->OldRecordset = ew_LoadRecordset($sSql, $conn);
 			$this->LoadRowValues($this->OldRecordset); // Load row values
 		} else {
 			$this->OldRecordset = NULL;
@@ -507,8 +538,7 @@ class ccuenta_add extends ccuenta {
 
 	// Render row values based on field settings
 	function RenderRow() {
-		global $conn, $Security, $Language;
-		global $gsLanguage;
+		global $Security, $Language, $gsLanguage;
 
 		// Initialize URLs
 		// Call Row_Rendering event
@@ -527,74 +557,61 @@ class ccuenta_add extends ccuenta {
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-			// idcuenta
-			$this->idcuenta->ViewValue = $this->idcuenta->CurrentValue;
-			$this->idcuenta->ViewCustomAttributes = "";
+		// idcuenta
+		$this->idcuenta->ViewValue = $this->idcuenta->CurrentValue;
+		$this->idcuenta->ViewCustomAttributes = "";
 
-			// nomenclatura
-			$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
-			$this->nomenclatura->ViewCustomAttributes = "";
+		// nomenclatura
+		$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
+		$this->nomenclatura->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->ViewValue = $this->nombre->CurrentValue;
-			$this->nombre->ViewCustomAttributes = "";
+		// nombre
+		$this->nombre->ViewValue = $this->nombre->CurrentValue;
+		$this->nombre->ViewCustomAttributes = "";
 
-			// debe
-			$this->debe->ViewValue = $this->debe->CurrentValue;
-			$this->debe->ViewCustomAttributes = "";
+		// debe
+		$this->debe->ViewValue = $this->debe->CurrentValue;
+		$this->debe->ViewCustomAttributes = "";
 
-			// haber
-			$this->haber->ViewValue = $this->haber->CurrentValue;
-			$this->haber->ViewCustomAttributes = "";
+		// haber
+		$this->haber->ViewValue = $this->haber->CurrentValue;
+		$this->haber->ViewCustomAttributes = "";
 
-			// saldo
-			$this->saldo->ViewValue = $this->saldo->CurrentValue;
-			$this->saldo->ViewCustomAttributes = "";
+		// saldo
+		$this->saldo->ViewValue = $this->saldo->CurrentValue;
+		$this->saldo->ViewCustomAttributes = "";
 
-			// estado
-			if (strval($this->estado->CurrentValue) <> "") {
-				switch ($this->estado->CurrentValue) {
-					case $this->estado->FldTagValue(1):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(1) <> "" ? $this->estado->FldTagCaption(1) : $this->estado->CurrentValue;
-						break;
-					case $this->estado->FldTagValue(2):
-						$this->estado->ViewValue = $this->estado->FldTagCaption(2) <> "" ? $this->estado->FldTagCaption(2) : $this->estado->CurrentValue;
-						break;
-					default:
-						$this->estado->ViewValue = $this->estado->CurrentValue;
-				}
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
+
+		// idsubcuenta
+		if (strval($this->idsubcuenta->CurrentValue) <> "") {
+			$sFilterWrk = "`idsubcuenta`" . ew_SearchString("=", $this->idsubcuenta->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idsubcuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `subcuenta`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idsubcuenta, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idsubcuenta->ViewValue = $this->idsubcuenta->DisplayValue($arwrk);
+				$rswrk->Close();
 			} else {
-				$this->estado->ViewValue = NULL;
+				$this->idsubcuenta->ViewValue = $this->idsubcuenta->CurrentValue;
 			}
-			$this->estado->ViewCustomAttributes = "";
-
-			// idsubcuenta
-			if (strval($this->idsubcuenta->CurrentValue) <> "") {
-				$sFilterWrk = "`idsubcuenta`" . ew_SearchString("=", $this->idsubcuenta->CurrentValue, EW_DATATYPE_NUMBER);
-			$sSqlWrk = "SELECT `idsubcuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `subcuenta`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idsubcuenta, $sWhereWrk);
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idsubcuenta->ViewValue = $rswrk->fields('DispFld');
-					$rswrk->Close();
-				} else {
-					$this->idsubcuenta->ViewValue = $this->idsubcuenta->CurrentValue;
-				}
-			} else {
-				$this->idsubcuenta->ViewValue = NULL;
-			}
-			$this->idsubcuenta->ViewCustomAttributes = "";
+		} else {
+			$this->idsubcuenta->ViewValue = NULL;
+		}
+		$this->idsubcuenta->ViewCustomAttributes = "";
 
 			// nomenclatura
 			$this->nomenclatura->LinkCustomAttributes = "";
@@ -630,23 +647,19 @@ class ccuenta_add extends ccuenta {
 			if ($this->idsubcuenta->getSessionValue() <> "") {
 				$this->idsubcuenta->CurrentValue = $this->idsubcuenta->getSessionValue();
 			if (strval($this->idsubcuenta->CurrentValue) <> "") {
-				$sFilterWrk = "`idsubcuenta`" . ew_SearchString("=", $this->idsubcuenta->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idsubcuenta`" . ew_SearchString("=", $this->idsubcuenta->CurrentValue, EW_DATATYPE_NUMBER, "");
 			$sSqlWrk = "SELECT `idsubcuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `subcuenta`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idsubcuenta, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idsubcuenta, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = $conn->Execute($sSqlWrk);
+				$rswrk = Conn()->Execute($sSqlWrk);
 				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$this->idsubcuenta->ViewValue = $rswrk->fields('DispFld');
+					$arwrk = array();
+					$arwrk[1] = $rswrk->fields('DispFld');
+					$this->idsubcuenta->ViewValue = $this->idsubcuenta->DisplayValue($arwrk);
 					$rswrk->Close();
 				} else {
 					$this->idsubcuenta->ViewValue = $this->idsubcuenta->CurrentValue;
@@ -659,37 +672,34 @@ class ccuenta_add extends ccuenta {
 			if (trim(strval($this->idsubcuenta->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`idsubcuenta`" . ew_SearchString("=", $this->idsubcuenta->CurrentValue, EW_DATATYPE_NUMBER);
+				$sFilterWrk = "`idsubcuenta`" . ew_SearchString("=", $this->idsubcuenta->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
 			$sSqlWrk = "SELECT `idsubcuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `subcuenta`";
 			$sWhereWrk = "";
 			$lookuptblfilter = "`estado` = 'Activo'";
-			if (strval($lookuptblfilter) <> "") {
-				ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			}
-			if ($sFilterWrk <> "") {
-				ew_AddFilter($sWhereWrk, $sFilterWrk);
-			}
-
-			// Call Lookup selecting
-			$this->Lookup_Selecting($this->idsubcuenta, $sWhereWrk);
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idsubcuenta, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = $conn->Execute($sSqlWrk);
+			$rswrk = Conn()->Execute($sSqlWrk);
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
 			$this->idsubcuenta->EditValue = $arwrk;
 			}
 
-			// Edit refer script
+			// Add refer script
 			// nomenclatura
 
+			$this->nomenclatura->LinkCustomAttributes = "";
 			$this->nomenclatura->HrefValue = "";
 
 			// nombre
+			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
 
 			// idsubcuenta
+			$this->idsubcuenta->LinkCustomAttributes = "";
 			$this->idsubcuenta->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
@@ -731,7 +741,8 @@ class ccuenta_add extends ccuenta {
 
 	// Add record
 	function AddRow($rsold = NULL) {
-		global $conn, $Language, $Security;
+		global $Language, $Security;
+		$conn = &$this->Connection();
 
 		// Load db values from rsold
 		if ($rsold) {
@@ -752,10 +763,14 @@ class ccuenta_add extends ccuenta {
 		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
 		$bInsertRow = $this->Row_Inserting($rs, $rsnew);
 		if ($bInsertRow) {
-			$conn->raiseErrorFn = 'ew_ErrorFn';
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 			$AddRow = $this->Insert($rsnew);
 			$conn->raiseErrorFn = '';
 			if ($AddRow) {
+
+				// Get insert id if necessary
+				$this->idcuenta->setDbValue($conn->Insert_ID());
+				$rsnew['idcuenta'] = $this->idcuenta->DbValue;
 			}
 		} else {
 			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
@@ -768,12 +783,6 @@ class ccuenta_add extends ccuenta {
 				$this->setFailureMessage($Language->Phrase("InsertCancelled"));
 			}
 			$AddRow = FALSE;
-		}
-
-		// Get insert id if necessary
-		if ($AddRow) {
-			$this->idcuenta->setDbValue($conn->Insert_ID());
-			$rsnew['idcuenta'] = $this->idcuenta->DbValue;
 		}
 		if ($AddRow) {
 
@@ -807,6 +816,24 @@ class ccuenta_add extends ccuenta {
 					$bValidMaster = FALSE;
 				}
 			}
+		} elseif (isset($_POST[EW_TABLE_SHOW_MASTER])) {
+			$sMasterTblVar = $_POST[EW_TABLE_SHOW_MASTER];
+			if ($sMasterTblVar == "") {
+				$bValidMaster = TRUE;
+				$this->DbMasterFilter = "";
+				$this->DbDetailFilter = "";
+			}
+			if ($sMasterTblVar == "subcuenta") {
+				$bValidMaster = TRUE;
+				if (@$_POST["fk_idsubcuenta"] <> "") {
+					$GLOBALS["subcuenta"]->idsubcuenta->setFormValue($_POST["fk_idsubcuenta"]);
+					$this->idsubcuenta->setFormValue($GLOBALS["subcuenta"]->idsubcuenta->FormValue);
+					$this->idsubcuenta->setSessionValue($this->idsubcuenta->FormValue);
+					if (!is_numeric($GLOBALS["subcuenta"]->idsubcuenta->FormValue)) $bValidMaster = FALSE;
+				} else {
+					$bValidMaster = FALSE;
+				}
+			}
 		}
 		if ($bValidMaster) {
 
@@ -819,10 +846,10 @@ class ccuenta_add extends ccuenta {
 
 			// Clear previous master key from Session
 			if ($sMasterTblVar <> "subcuenta") {
-				if ($this->idsubcuenta->QueryStringValue == "") $this->idsubcuenta->setSessionValue("");
+				if ($this->idsubcuenta->CurrentValue == "") $this->idsubcuenta->setSessionValue("");
 			}
 		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); //  Get master filter
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 
@@ -830,9 +857,10 @@ class ccuenta_add extends ccuenta {
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
-		$Breadcrumb->Add("list", $this->TableVar, "cuentalist.php", "", $this->TableVar, TRUE);
+		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("cuentalist.php"), "", $this->TableVar, TRUE);
 		$PageId = ($this->CurrentAction == "C") ? "Copy" : "Add";
-		$Breadcrumb->Add("add", $PageId, ew_CurrentUrl());
+		$Breadcrumb->Add("add", $PageId, $url);
 	}
 
 	// Page Load event
@@ -921,23 +949,18 @@ Page_Rendering();
 // Page Rendering event
 $cuenta_add->Page_Render();
 ?>
-<?php include_once $EW_RELATIVE_PATH . "header.php" ?>
+<?php include_once "header.php" ?>
 <script type="text/javascript">
 
-// Page object
-var cuenta_add = new ew_Page("cuenta_add");
-cuenta_add.PageID = "add"; // Page ID
-var EW_PAGE_ID = cuenta_add.PageID; // For backward compatibility
-
 // Form object
-var fcuentaadd = new ew_Form("fcuentaadd");
+var CurrentPageID = EW_PAGE_ID = "add";
+var CurrentForm = fcuentaadd = new ew_Form("fcuentaadd", "add");
 
 // Validate form
 fcuentaadd.Validate = function() {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
-	this.PostAutoSuggest();
 	if ($fobj.find("#a_confirm").val() == "F")
 		return true;
 	var elm, felm, uelm, addcnt = 0;
@@ -951,9 +974,6 @@ fcuentaadd.Validate = function() {
 			elm = this.GetElements("x" + infix + "_idsubcuenta");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $cuenta->idsubcuenta->FldCaption(), $cuenta->idsubcuenta->ReqErrMsg)) ?>");
-
-			// Set up row object
-			ew_ElementsToRow(fobj);
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -987,7 +1007,7 @@ fcuentaadd.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-fcuentaadd.Lists["x_idsubcuenta"] = {"LinkField":"x_idsubcuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"FilterFields":[],"Options":[]};
+fcuentaadd.Lists["x_idsubcuenta"] = {"LinkField":"x_idsubcuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
 // Form object for search
 </script>
@@ -1004,19 +1024,23 @@ fcuentaadd.Lists["x_idsubcuenta"] = {"LinkField":"x_idsubcuenta","Ajax":true,"Au
 <?php
 $cuenta_add->ShowMessage();
 ?>
-<form name="fcuentaadd" id="fcuentaadd" class="form-horizontal ewForm ewAddForm" action="<?php echo ew_CurrentPage() ?>" method="post">
+<form name="fcuentaadd" id="fcuentaadd" class="<?php echo $cuenta_add->FormClassName ?>" action="<?php echo ew_CurrentPage() ?>" method="post">
 <?php if ($cuenta_add->CheckToken) { ?>
 <input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $cuenta_add->Token ?>">
 <?php } ?>
 <input type="hidden" name="t" value="cuenta">
 <input type="hidden" name="a_add" id="a_add" value="A">
+<?php if ($cuenta->getCurrentMasterTable() == "subcuenta") { ?>
+<input type="hidden" name="<?php echo EW_TABLE_SHOW_MASTER ?>" value="subcuenta">
+<input type="hidden" name="fk_idsubcuenta" value="<?php echo $cuenta->idsubcuenta->getSessionValue() ?>">
+<?php } ?>
 <div>
 <?php if ($cuenta->nomenclatura->Visible) { // nomenclatura ?>
 	<div id="r_nomenclatura" class="form-group">
 		<label id="elh_cuenta_nomenclatura" for="x_nomenclatura" class="col-sm-2 control-label ewLabel"><?php echo $cuenta->nomenclatura->FldCaption() ?></label>
 		<div class="col-sm-10"><div<?php echo $cuenta->nomenclatura->CellAttributes() ?>>
 <span id="el_cuenta_nomenclatura">
-<input type="text" data-field="x_nomenclatura" name="x_nomenclatura" id="x_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta->nomenclatura->PlaceHolder) ?>" value="<?php echo $cuenta->nomenclatura->EditValue ?>"<?php echo $cuenta->nomenclatura->EditAttributes() ?>>
+<input type="text" data-table="cuenta" data-field="x_nomenclatura" name="x_nomenclatura" id="x_nomenclatura" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta->nomenclatura->getPlaceHolder()) ?>" value="<?php echo $cuenta->nomenclatura->EditValue ?>"<?php echo $cuenta->nomenclatura->EditAttributes() ?>>
 </span>
 <?php echo $cuenta->nomenclatura->CustomMsg ?></div></div>
 	</div>
@@ -1026,7 +1050,7 @@ $cuenta_add->ShowMessage();
 		<label id="elh_cuenta_nombre" for="x_nombre" class="col-sm-2 control-label ewLabel"><?php echo $cuenta->nombre->FldCaption() ?></label>
 		<div class="col-sm-10"><div<?php echo $cuenta->nombre->CellAttributes() ?>>
 <span id="el_cuenta_nombre">
-<input type="text" data-field="x_nombre" name="x_nombre" id="x_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta->nombre->PlaceHolder) ?>" value="<?php echo $cuenta->nombre->EditValue ?>"<?php echo $cuenta->nombre->EditAttributes() ?>>
+<input type="text" data-table="cuenta" data-field="x_nombre" name="x_nombre" id="x_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($cuenta->nombre->getPlaceHolder()) ?>" value="<?php echo $cuenta->nombre->EditValue ?>"<?php echo $cuenta->nombre->EditAttributes() ?>>
 </span>
 <?php echo $cuenta->nombre->CustomMsg ?></div></div>
 	</div>
@@ -1043,21 +1067,26 @@ $cuenta_add->ShowMessage();
 <input type="hidden" id="x_idsubcuenta" name="x_idsubcuenta" value="<?php echo ew_HtmlEncode($cuenta->idsubcuenta->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el_cuenta_idsubcuenta">
-<select data-field="x_idsubcuenta" id="x_idsubcuenta" name="x_idsubcuenta"<?php echo $cuenta->idsubcuenta->EditAttributes() ?>>
+<select data-table="cuenta" data-field="x_idsubcuenta" data-value-separator="<?php echo ew_HtmlEncode(is_array($cuenta->idsubcuenta->DisplayValueSeparator) ? json_encode($cuenta->idsubcuenta->DisplayValueSeparator) : $cuenta->idsubcuenta->DisplayValueSeparator) ?>" id="x_idsubcuenta" name="x_idsubcuenta"<?php echo $cuenta->idsubcuenta->EditAttributes() ?>>
 <?php
 if (is_array($cuenta->idsubcuenta->EditValue)) {
 	$arwrk = $cuenta->idsubcuenta->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = (strval($cuenta->idsubcuenta->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " selected=\"selected\"" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;
+		$selwrk = ew_SameStr($cuenta->idsubcuenta->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $arwrk[$rowcntwrk][1] ?>
+<?php echo $cuenta->idsubcuenta->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
+	if ($emptywrk && strval($cuenta->idsubcuenta->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($cuenta->idsubcuenta->CurrentValue) ?>" selected><?php echo $cuenta->idsubcuenta->CurrentValue ?></option>
+<?php
+    }
 }
 ?>
 </select>
@@ -1065,15 +1094,15 @@ if (is_array($cuenta->idsubcuenta->EditValue)) {
 $sSqlWrk = "SELECT `idsubcuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `subcuenta`";
 $sWhereWrk = "";
 $lookuptblfilter = "`estado` = 'Activo'";
-if (strval($lookuptblfilter) <> "") {
-	ew_AddFilter($sWhereWrk, $lookuptblfilter);
-}
-
-// Call Lookup selecting
-$cuenta->Lookup_Selecting($cuenta->idsubcuenta, $sWhereWrk);
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$cuenta->idsubcuenta->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$cuenta->idsubcuenta->LookupFilters += array("f0" => "`idsubcuenta` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$cuenta->Lookup_Selecting($cuenta->idsubcuenta, $sWhereWrk); // Call Lookup selecting
 if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $cuenta->idsubcuenta->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x_idsubcuenta" id="s_x_idsubcuenta" value="s=<?php echo ew_Encrypt($sSqlWrk) ?>&amp;f0=<?php echo ew_Encrypt("`idsubcuenta` = {filter_value}"); ?>&amp;t0=3">
+<input type="hidden" name="s_x_idsubcuenta" id="s_x_idsubcuenta" value="<?php echo $cuenta->idsubcuenta->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
 <?php echo $cuenta->idsubcuenta->CustomMsg ?></div></div>
@@ -1083,6 +1112,7 @@ if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">
 <button class="btn btn-primary ewButton" name="btnAction" id="btnAction" type="submit"><?php echo $Language->Phrase("AddBtn") ?></button>
+<button class="btn btn-default ewButton" name="btnCancel" id="btnCancel" type="button" data-href="<?php echo $cuenta_add->getReturnUrl() ?>"><?php echo $Language->Phrase("CancelBtn") ?></button>
 	</div>
 </div>
 </form>
@@ -1100,7 +1130,7 @@ if (EW_DEBUG_ENABLED)
 // document.write("page loaded");
 
 </script>
-<?php include_once $EW_RELATIVE_PATH . "footer.php" ?>
+<?php include_once "footer.php" ?>
 <?php
 $cuenta_add->Page_Terminate();
 ?>
