@@ -592,6 +592,8 @@
 		<phrase id="or" value=" o "/>
 	</global>
 	<project><phrase id="footertext" value="Nexthor"/>
+<menu id="19"><phrase id="menutext" value="estado resultado detalle"/>
+</menu>
 <menu id="17"><phrase id="menutext" value="estado resultado"/>
 </menu>
 <menu id="15"><phrase id="menutext" value="Balance General"/>
@@ -605,6 +607,10 @@
 <menu id="13"><phrase id="menutext" value="Empresa"/>
 </menu>
 <menu id="14"><phrase id="menutext" value="Período Contable"/>
+</menu>
+<menu id="18"><phrase id="menutext" value="Clase de Cuenta Resultado"/>
+</menu>
+<menu id="20"><phrase id="menutext" value="Grupo de Cuenta Resultado"/>
 </menu>
 <menu id="1"><phrase id="menutext" value="Clase de Cuenta"/>
 </menu>
@@ -878,6 +884,56 @@
 <field id="dividendos"><phrase id="fldcaption" value="dividendos"/>
 </field>
 <field id="utilidades_retenidas"><phrase id="fldcaption" value="utilidades retenidas"/>
+</field>
+<field id="estado"><phrase id="fldcaption" value="estado"/>
+<phrase id="fldtagvalue1" value="Activo"/>
+<phrase id="fldtagcaption1" value="Activo"/>
+<phrase id="fldtagvalue2" value="Inactivo"/>
+<phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+</table>
+<table id="clase_resultado"><phrase id="tblcaption" value="Clase de Cuenta Resultado"/>
+<field id="idclase_resultado"><phrase id="fldcaption" value="ID Clase Resultado"/>
+</field>
+<field id="nombre"><phrase id="fldcaption" value="Nombre"/>
+</field>
+<field id="estado"><phrase id="fldcaption" value="Estado"/>
+<phrase id="fldtagvalue1" value="Activo"/>
+<phrase id="fldtagcaption1" value="Activo"/>
+<phrase id="fldtagvalue2" value="Inactivo"/>
+<phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+</table>
+<table id="estado_resultado_detalle"><phrase id="tblcaption" value="estado resultado detalle"/>
+<field id="idestado_resultado_detalle"><phrase id="fldcaption" value="idestado resultado detalle"/>
+</field>
+<field id="idestado_resultado"><phrase id="fldcaption" value="idestado resultado"/>
+</field>
+<field id="idclase_resultado"><phrase id="fldcaption" value="idclase resultado"/>
+</field>
+<field id="idgrupo_resultado"><phrase id="fldcaption" value="idgrupo resultado"/>
+</field>
+<field id="monto"><phrase id="fldcaption" value="monto"/>
+</field>
+<field id="estado"><phrase id="fldcaption" value="estado"/>
+<phrase id="fldtagvalue1" value="Activo"/>
+<phrase id="fldtagcaption1" value="Activo"/>
+<phrase id="fldtagvalue2" value="Inactivo"/>
+<phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+</table>
+<table id="grupo_resultado"><phrase id="tblcaption" value="Grupo de Cuenta Resultado"/>
+<field id="idgrupo_resultado"><phrase id="fldcaption" value="ID Grupo de Cuenta Resultado"/>
+</field>
+<field id="idclase_resultado"><phrase id="fldcaption" value="Clase "/>
+</field>
+<field id="nombre"><phrase id="fldcaption" value="Nombre"/>
+</field>
+<field id="estado"><phrase id="fldcaption" value="Estado"/>
+<phrase id="fldtagvalue1" value="Activo"/>
+<phrase id="fldtagcaption1" value="Activo"/>
+<phrase id="fldtagvalue2" value="Inactivo"/>
+<phrase id="fldtagcaption2" value="Inactivo"/>
 </field>
 </table>
 </project>

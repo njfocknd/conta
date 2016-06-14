@@ -19,6 +19,7 @@ class cestado_resultado extends cTable {
 	var $utilidad_neta;
 	var $dividendos;
 	var $utilidades_retenidas;
+	var $estado;
 
 	//
 	// Table class constructor
@@ -109,6 +110,11 @@ class cestado_resultado extends cTable {
 		$this->utilidades_retenidas = new cField('estado_resultado', 'estado_resultado', 'x_utilidades_retenidas', 'utilidades_retenidas', '`utilidades_retenidas`', '`utilidades_retenidas`', 131, -1, FALSE, '`utilidades_retenidas`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->utilidades_retenidas->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
 		$this->fields['utilidades_retenidas'] = &$this->utilidades_retenidas;
+
+		// estado
+		$this->estado = new cField('estado_resultado', 'estado_resultado', 'x_estado', 'estado', '`estado`', '`estado`', 202, -1, FALSE, '`estado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'RADIO');
+		$this->estado->OptionCount = 2;
+		$this->fields['estado'] = &$this->estado;
 	}
 
 	// Single column sort
@@ -597,6 +603,7 @@ class cestado_resultado extends cTable {
 		$this->utilidad_neta->setDbValue($rs->fields('utilidad_neta'));
 		$this->dividendos->setDbValue($rs->fields('dividendos'));
 		$this->utilidades_retenidas->setDbValue($rs->fields('utilidades_retenidas'));
+		$this->estado->setDbValue($rs->fields('estado'));
 	}
 
 	// Render list row values
@@ -619,6 +626,7 @@ class cestado_resultado extends cTable {
 		// utilidad_neta
 		// dividendos
 		// utilidades_retenidas
+		// estado
 		// idestado_resultado
 
 		$this->idestado_resultado->ViewValue = $this->idestado_resultado->CurrentValue;
@@ -667,6 +675,14 @@ class cestado_resultado extends cTable {
 		// utilidades_retenidas
 		$this->utilidades_retenidas->ViewValue = $this->utilidades_retenidas->CurrentValue;
 		$this->utilidades_retenidas->ViewCustomAttributes = "";
+
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
 		// idestado_resultado
 		$this->idestado_resultado->LinkCustomAttributes = "";
@@ -727,6 +743,11 @@ class cestado_resultado extends cTable {
 		$this->utilidades_retenidas->LinkCustomAttributes = "";
 		$this->utilidades_retenidas->HrefValue = "";
 		$this->utilidades_retenidas->TooltipValue = "";
+
+		// estado
+		$this->estado->LinkCustomAttributes = "";
+		$this->estado->HrefValue = "";
+		$this->estado->TooltipValue = "";
 
 		// Call Row Rendered event
 		$this->Row_Rendered();
@@ -820,6 +841,10 @@ class cestado_resultado extends cTable {
 		$this->utilidades_retenidas->PlaceHolder = ew_RemoveHtml($this->utilidades_retenidas->FldCaption());
 		if (strval($this->utilidades_retenidas->EditValue) <> "" && is_numeric($this->utilidades_retenidas->EditValue)) $this->utilidades_retenidas->EditValue = ew_FormatNumber($this->utilidades_retenidas->EditValue, -2, -1, -2, 0);
 
+		// estado
+		$this->estado->EditCustomAttributes = "";
+		$this->estado->EditValue = $this->estado->Options(FALSE);
+
 		// Call Row Rendered event
 		$this->Row_Rendered();
 	}
@@ -859,6 +884,7 @@ class cestado_resultado extends cTable {
 					if ($this->utilidad_neta->Exportable) $Doc->ExportCaption($this->utilidad_neta);
 					if ($this->dividendos->Exportable) $Doc->ExportCaption($this->dividendos);
 					if ($this->utilidades_retenidas->Exportable) $Doc->ExportCaption($this->utilidades_retenidas);
+					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
 				} else {
 					if ($this->idestado_resultado->Exportable) $Doc->ExportCaption($this->idestado_resultado);
 					if ($this->idempresa->Exportable) $Doc->ExportCaption($this->idempresa);
@@ -872,6 +898,7 @@ class cestado_resultado extends cTable {
 					if ($this->utilidad_neta->Exportable) $Doc->ExportCaption($this->utilidad_neta);
 					if ($this->dividendos->Exportable) $Doc->ExportCaption($this->dividendos);
 					if ($this->utilidades_retenidas->Exportable) $Doc->ExportCaption($this->utilidades_retenidas);
+					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
 				}
 				$Doc->EndExportRow();
 			}
@@ -915,6 +942,7 @@ class cestado_resultado extends cTable {
 						if ($this->utilidad_neta->Exportable) $Doc->ExportField($this->utilidad_neta);
 						if ($this->dividendos->Exportable) $Doc->ExportField($this->dividendos);
 						if ($this->utilidades_retenidas->Exportable) $Doc->ExportField($this->utilidades_retenidas);
+						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
 					} else {
 						if ($this->idestado_resultado->Exportable) $Doc->ExportField($this->idestado_resultado);
 						if ($this->idempresa->Exportable) $Doc->ExportField($this->idempresa);
@@ -928,6 +956,7 @@ class cestado_resultado extends cTable {
 						if ($this->utilidad_neta->Exportable) $Doc->ExportField($this->utilidad_neta);
 						if ($this->dividendos->Exportable) $Doc->ExportField($this->dividendos);
 						if ($this->utilidades_retenidas->Exportable) $Doc->ExportField($this->utilidades_retenidas);
+						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
 					}
 					$Doc->EndExportRow();
 				}

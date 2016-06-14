@@ -477,6 +477,9 @@ class cestado_resultado_edit extends cestado_resultado {
 		if (!$this->utilidades_retenidas->FldIsDetailKey) {
 			$this->utilidades_retenidas->setFormValue($objForm->GetValue("x_utilidades_retenidas"));
 		}
+		if (!$this->estado->FldIsDetailKey) {
+			$this->estado->setFormValue($objForm->GetValue("x_estado"));
+		}
 	}
 
 	// Restore form values
@@ -495,6 +498,7 @@ class cestado_resultado_edit extends cestado_resultado {
 		$this->utilidad_neta->CurrentValue = $this->utilidad_neta->FormValue;
 		$this->dividendos->CurrentValue = $this->dividendos->FormValue;
 		$this->utilidades_retenidas->CurrentValue = $this->utilidades_retenidas->FormValue;
+		$this->estado->CurrentValue = $this->estado->FormValue;
 	}
 
 	// Load row based on key values
@@ -538,6 +542,7 @@ class cestado_resultado_edit extends cestado_resultado {
 		$this->utilidad_neta->setDbValue($rs->fields('utilidad_neta'));
 		$this->dividendos->setDbValue($rs->fields('dividendos'));
 		$this->utilidades_retenidas->setDbValue($rs->fields('utilidades_retenidas'));
+		$this->estado->setDbValue($rs->fields('estado'));
 	}
 
 	// Load DbValue from recordset
@@ -556,6 +561,7 @@ class cestado_resultado_edit extends cestado_resultado {
 		$this->utilidad_neta->DbValue = $row['utilidad_neta'];
 		$this->dividendos->DbValue = $row['dividendos'];
 		$this->utilidades_retenidas->DbValue = $row['utilidades_retenidas'];
+		$this->estado->DbValue = $row['estado'];
 	}
 
 	// Render row values based on field settings
@@ -616,6 +622,7 @@ class cestado_resultado_edit extends cestado_resultado {
 		// utilidad_neta
 		// dividendos
 		// utilidades_retenidas
+		// estado
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -666,6 +673,14 @@ class cestado_resultado_edit extends cestado_resultado {
 		// utilidades_retenidas
 		$this->utilidades_retenidas->ViewValue = $this->utilidades_retenidas->CurrentValue;
 		$this->utilidades_retenidas->ViewCustomAttributes = "";
+
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
 			// idestado_resultado
 			$this->idestado_resultado->LinkCustomAttributes = "";
@@ -726,6 +741,11 @@ class cestado_resultado_edit extends cestado_resultado {
 			$this->utilidades_retenidas->LinkCustomAttributes = "";
 			$this->utilidades_retenidas->HrefValue = "";
 			$this->utilidades_retenidas->TooltipValue = "";
+
+			// estado
+			$this->estado->LinkCustomAttributes = "";
+			$this->estado->HrefValue = "";
+			$this->estado->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
 
 			// idestado_resultado
@@ -809,6 +829,10 @@ class cestado_resultado_edit extends cestado_resultado {
 			$this->utilidades_retenidas->PlaceHolder = ew_RemoveHtml($this->utilidades_retenidas->FldCaption());
 			if (strval($this->utilidades_retenidas->EditValue) <> "" && is_numeric($this->utilidades_retenidas->EditValue)) $this->utilidades_retenidas->EditValue = ew_FormatNumber($this->utilidades_retenidas->EditValue, -2, -1, -2, 0);
 
+			// estado
+			$this->estado->EditCustomAttributes = "";
+			$this->estado->EditValue = $this->estado->Options(FALSE);
+
 			// Edit refer script
 			// idestado_resultado
 
@@ -858,6 +882,10 @@ class cestado_resultado_edit extends cestado_resultado {
 			// utilidades_retenidas
 			$this->utilidades_retenidas->LinkCustomAttributes = "";
 			$this->utilidades_retenidas->HrefValue = "";
+
+			// estado
+			$this->estado->LinkCustomAttributes = "";
+			$this->estado->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
 			$this->RowType == EW_ROWTYPE_EDIT ||
@@ -946,6 +974,9 @@ class cestado_resultado_edit extends cestado_resultado {
 		if (!ew_CheckNumber($this->utilidades_retenidas->FormValue)) {
 			ew_AddMessage($gsFormError, $this->utilidades_retenidas->FldErrMsg());
 		}
+		if ($this->estado->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->estado->FldCaption(), $this->estado->ReqErrMsg));
+		}
 
 		// Return validate result
 		$ValidateForm = ($gsFormError == "");
@@ -1014,6 +1045,9 @@ class cestado_resultado_edit extends cestado_resultado {
 
 			// utilidades_retenidas
 			$this->utilidades_retenidas->SetDbValueDef($rsnew, $this->utilidades_retenidas->CurrentValue, 0, $this->utilidades_retenidas->ReadOnly);
+
+			// estado
+			$this->estado->SetDbValueDef($rsnew, $this->estado->CurrentValue, "", $this->estado->ReadOnly);
 
 			// Call Row Updating event
 			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
@@ -1231,6 +1265,9 @@ festado_resultadoedit.Validate = function() {
 			elm = this.GetElements("x" + infix + "_utilidades_retenidas");
 			if (elm && !ew_CheckNumber(elm.value))
 				return this.OnError(elm, "<?php echo ew_JsEncode2($estado_resultado->utilidades_retenidas->FldErrMsg()) ?>");
+			elm = this.GetElements("x" + infix + "_estado");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $estado_resultado->estado->FldCaption(), $estado_resultado->estado->ReqErrMsg)) ?>");
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -1264,8 +1301,10 @@ festado_resultadoedit.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-// Form object for search
+festado_resultadoedit.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+festado_resultadoedit.Lists["x_estado"].Options = <?php echo json_encode($estado_resultado->estado->Options()) ?>;
 
+// Form object for search
 </script>
 <script type="text/javascript">
 
@@ -1407,6 +1446,38 @@ $estado_resultado_edit->ShowMessage();
 <input type="text" data-table="estado_resultado" data-field="x_utilidades_retenidas" name="x_utilidades_retenidas" id="x_utilidades_retenidas" size="30" placeholder="<?php echo ew_HtmlEncode($estado_resultado->utilidades_retenidas->getPlaceHolder()) ?>" value="<?php echo $estado_resultado->utilidades_retenidas->EditValue ?>"<?php echo $estado_resultado->utilidades_retenidas->EditAttributes() ?>>
 </span>
 <?php echo $estado_resultado->utilidades_retenidas->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
+<?php if ($estado_resultado->estado->Visible) { // estado ?>
+	<div id="r_estado" class="form-group">
+		<label id="elh_estado_resultado_estado" class="col-sm-2 control-label ewLabel"><?php echo $estado_resultado->estado->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $estado_resultado->estado->CellAttributes() ?>>
+<span id="el_estado_resultado_estado">
+<div id="tp_x_estado" class="ewTemplate"><input type="radio" data-table="estado_resultado" data-field="x_estado" data-value-separator="<?php echo ew_HtmlEncode(is_array($estado_resultado->estado->DisplayValueSeparator) ? json_encode($estado_resultado->estado->DisplayValueSeparator) : $estado_resultado->estado->DisplayValueSeparator) ?>" name="x_estado" id="x_estado" value="{value}"<?php echo $estado_resultado->estado->EditAttributes() ?>></div>
+<div id="dsl_x_estado" data-repeatcolumn="5" class="ewItemList" style="display: none;"><div>
+<?php
+$arwrk = $estado_resultado->estado->EditValue;
+if (is_array($arwrk)) {
+	$rowswrk = count($arwrk);
+	$emptywrk = TRUE;
+	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
+		$selwrk = (strval($estado_resultado->estado->CurrentValue) == strval($arwrk[$rowcntwrk][0])) ? " checked" : "";
+		if ($selwrk <> "")
+			$emptywrk = FALSE;
+?>
+<label class="radio-inline"><input type="radio" data-table="estado_resultado" data-field="x_estado" name="x_estado" id="x_estado_<?php echo $rowcntwrk ?>" value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?><?php echo $estado_resultado->estado->EditAttributes() ?>><?php echo $estado_resultado->estado->DisplayValue($arwrk[$rowcntwrk]) ?></label>
+<?php
+	}
+	if ($emptywrk && strval($estado_resultado->estado->CurrentValue) <> "") {
+?>
+<label class="radio-inline"><input type="radio" data-table="estado_resultado" data-field="x_estado" name="x_estado" id="x_estado_<?php echo $rowswrk ?>" value="<?php echo ew_HtmlEncode($estado_resultado->estado->CurrentValue) ?>" checked<?php echo $estado_resultado->estado->EditAttributes() ?>><?php echo $estado_resultado->estado->CurrentValue ?></label>
+<?php
+    }
+}
+?>
+</div></div>
+</span>
+<?php echo $estado_resultado->estado->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
 </div>

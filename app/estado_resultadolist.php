@@ -521,8 +521,30 @@ class cestado_resultado_list extends cestado_resultado {
 					$option->HideAllOptions();
 			}
 
+			// Get default search criteria
+			ew_AddFilter($this->DefaultSearchWhere, $this->AdvancedSearchWhere(TRUE));
+
+			// Get and validate search values for advanced search
+			$this->LoadSearchValues(); // Get search values
+
+			// Restore filter list
+			$this->RestoreFilterList();
+			if (!$this->ValidateSearch())
+				$this->setFailureMessage($gsSearchError);
+
+			// Restore search parms from Session if not searching / reset / export
+			if (($this->Export <> "" || $this->Command <> "search" && $this->Command <> "reset" && $this->Command <> "resetall") && $this->CheckSearchParms())
+				$this->RestoreSearchParms();
+
+			// Call Recordset SearchValidated event
+			$this->Recordset_SearchValidated();
+
 			// Set up sorting order
 			$this->SetUpSortOrder();
+
+			// Get search criteria for advanced search
+			if ($gsSearchError == "")
+				$sSrchAdvanced = $this->AdvancedSearchWhere();
 		}
 
 		// Restore display records
@@ -534,6 +556,31 @@ class cestado_resultado_list extends cestado_resultado {
 
 		// Load Sorting Order
 		$this->LoadSortOrder();
+
+		// Load search default if no existing search criteria
+		if (!$this->CheckSearchParms()) {
+
+			// Load advanced search from default
+			if ($this->LoadAdvancedSearchDefault()) {
+				$sSrchAdvanced = $this->AdvancedSearchWhere();
+			}
+		}
+
+		// Build search criteria
+		ew_AddFilter($this->SearchWhere, $sSrchAdvanced);
+		ew_AddFilter($this->SearchWhere, $sSrchBasic);
+
+		// Call Recordset_Searching event
+		$this->Recordset_Searching($this->SearchWhere);
+
+		// Save search criteria
+		if ($this->Command == "search" && !$this->RestoreSearch) {
+			$this->setSearchWhere($this->SearchWhere); // Save to Session
+			$this->StartRec = 1; // Reset start record counter
+			$this->setStartRecordNumber($this->StartRec);
+		} else {
+			$this->SearchWhere = $this->getSearchWhere();
+		}
 
 		// Build filter
 		$sFilter = "";
@@ -597,6 +644,316 @@ class cestado_resultado_list extends cestado_resultado {
 		return TRUE;
 	}
 
+	// Get list of filters
+	function GetFilterList() {
+
+		// Initialize
+		$sFilterList = "";
+		$sFilterList = ew_Concat($sFilterList, $this->idestado_resultado->AdvancedSearch->ToJSON(), ","); // Field idestado_resultado
+		$sFilterList = ew_Concat($sFilterList, $this->idempresa->AdvancedSearch->ToJSON(), ","); // Field idempresa
+		$sFilterList = ew_Concat($sFilterList, $this->idperiodo_contable->AdvancedSearch->ToJSON(), ","); // Field idperiodo_contable
+		$sFilterList = ew_Concat($sFilterList, $this->venta_netas->AdvancedSearch->ToJSON(), ","); // Field venta_netas
+		$sFilterList = ew_Concat($sFilterList, $this->costo_ventas->AdvancedSearch->ToJSON(), ","); // Field costo_ventas
+		$sFilterList = ew_Concat($sFilterList, $this->depreciacion->AdvancedSearch->ToJSON(), ","); // Field depreciacion
+		$sFilterList = ew_Concat($sFilterList, $this->interes_pagado->AdvancedSearch->ToJSON(), ","); // Field interes_pagado
+		$sFilterList = ew_Concat($sFilterList, $this->utilidad_gravable->AdvancedSearch->ToJSON(), ","); // Field utilidad_gravable
+		$sFilterList = ew_Concat($sFilterList, $this->impuestos->AdvancedSearch->ToJSON(), ","); // Field impuestos
+		$sFilterList = ew_Concat($sFilterList, $this->utilidad_neta->AdvancedSearch->ToJSON(), ","); // Field utilidad_neta
+		$sFilterList = ew_Concat($sFilterList, $this->dividendos->AdvancedSearch->ToJSON(), ","); // Field dividendos
+		$sFilterList = ew_Concat($sFilterList, $this->utilidades_retenidas->AdvancedSearch->ToJSON(), ","); // Field utilidades_retenidas
+		$sFilterList = ew_Concat($sFilterList, $this->estado->AdvancedSearch->ToJSON(), ","); // Field estado
+
+		// Return filter list in json
+		return ($sFilterList <> "") ? "{" . $sFilterList . "}" : "null";
+	}
+
+	// Restore list of filters
+	function RestoreFilterList() {
+
+		// Return if not reset filter
+		if (@$_POST["cmd"] <> "resetfilter")
+			return FALSE;
+		$filter = json_decode(ew_StripSlashes(@$_POST["filter"]), TRUE);
+		$this->Command = "search";
+
+		// Field idestado_resultado
+		$this->idestado_resultado->AdvancedSearch->SearchValue = @$filter["x_idestado_resultado"];
+		$this->idestado_resultado->AdvancedSearch->SearchOperator = @$filter["z_idestado_resultado"];
+		$this->idestado_resultado->AdvancedSearch->SearchCondition = @$filter["v_idestado_resultado"];
+		$this->idestado_resultado->AdvancedSearch->SearchValue2 = @$filter["y_idestado_resultado"];
+		$this->idestado_resultado->AdvancedSearch->SearchOperator2 = @$filter["w_idestado_resultado"];
+		$this->idestado_resultado->AdvancedSearch->Save();
+
+		// Field idempresa
+		$this->idempresa->AdvancedSearch->SearchValue = @$filter["x_idempresa"];
+		$this->idempresa->AdvancedSearch->SearchOperator = @$filter["z_idempresa"];
+		$this->idempresa->AdvancedSearch->SearchCondition = @$filter["v_idempresa"];
+		$this->idempresa->AdvancedSearch->SearchValue2 = @$filter["y_idempresa"];
+		$this->idempresa->AdvancedSearch->SearchOperator2 = @$filter["w_idempresa"];
+		$this->idempresa->AdvancedSearch->Save();
+
+		// Field idperiodo_contable
+		$this->idperiodo_contable->AdvancedSearch->SearchValue = @$filter["x_idperiodo_contable"];
+		$this->idperiodo_contable->AdvancedSearch->SearchOperator = @$filter["z_idperiodo_contable"];
+		$this->idperiodo_contable->AdvancedSearch->SearchCondition = @$filter["v_idperiodo_contable"];
+		$this->idperiodo_contable->AdvancedSearch->SearchValue2 = @$filter["y_idperiodo_contable"];
+		$this->idperiodo_contable->AdvancedSearch->SearchOperator2 = @$filter["w_idperiodo_contable"];
+		$this->idperiodo_contable->AdvancedSearch->Save();
+
+		// Field venta_netas
+		$this->venta_netas->AdvancedSearch->SearchValue = @$filter["x_venta_netas"];
+		$this->venta_netas->AdvancedSearch->SearchOperator = @$filter["z_venta_netas"];
+		$this->venta_netas->AdvancedSearch->SearchCondition = @$filter["v_venta_netas"];
+		$this->venta_netas->AdvancedSearch->SearchValue2 = @$filter["y_venta_netas"];
+		$this->venta_netas->AdvancedSearch->SearchOperator2 = @$filter["w_venta_netas"];
+		$this->venta_netas->AdvancedSearch->Save();
+
+		// Field costo_ventas
+		$this->costo_ventas->AdvancedSearch->SearchValue = @$filter["x_costo_ventas"];
+		$this->costo_ventas->AdvancedSearch->SearchOperator = @$filter["z_costo_ventas"];
+		$this->costo_ventas->AdvancedSearch->SearchCondition = @$filter["v_costo_ventas"];
+		$this->costo_ventas->AdvancedSearch->SearchValue2 = @$filter["y_costo_ventas"];
+		$this->costo_ventas->AdvancedSearch->SearchOperator2 = @$filter["w_costo_ventas"];
+		$this->costo_ventas->AdvancedSearch->Save();
+
+		// Field depreciacion
+		$this->depreciacion->AdvancedSearch->SearchValue = @$filter["x_depreciacion"];
+		$this->depreciacion->AdvancedSearch->SearchOperator = @$filter["z_depreciacion"];
+		$this->depreciacion->AdvancedSearch->SearchCondition = @$filter["v_depreciacion"];
+		$this->depreciacion->AdvancedSearch->SearchValue2 = @$filter["y_depreciacion"];
+		$this->depreciacion->AdvancedSearch->SearchOperator2 = @$filter["w_depreciacion"];
+		$this->depreciacion->AdvancedSearch->Save();
+
+		// Field interes_pagado
+		$this->interes_pagado->AdvancedSearch->SearchValue = @$filter["x_interes_pagado"];
+		$this->interes_pagado->AdvancedSearch->SearchOperator = @$filter["z_interes_pagado"];
+		$this->interes_pagado->AdvancedSearch->SearchCondition = @$filter["v_interes_pagado"];
+		$this->interes_pagado->AdvancedSearch->SearchValue2 = @$filter["y_interes_pagado"];
+		$this->interes_pagado->AdvancedSearch->SearchOperator2 = @$filter["w_interes_pagado"];
+		$this->interes_pagado->AdvancedSearch->Save();
+
+		// Field utilidad_gravable
+		$this->utilidad_gravable->AdvancedSearch->SearchValue = @$filter["x_utilidad_gravable"];
+		$this->utilidad_gravable->AdvancedSearch->SearchOperator = @$filter["z_utilidad_gravable"];
+		$this->utilidad_gravable->AdvancedSearch->SearchCondition = @$filter["v_utilidad_gravable"];
+		$this->utilidad_gravable->AdvancedSearch->SearchValue2 = @$filter["y_utilidad_gravable"];
+		$this->utilidad_gravable->AdvancedSearch->SearchOperator2 = @$filter["w_utilidad_gravable"];
+		$this->utilidad_gravable->AdvancedSearch->Save();
+
+		// Field impuestos
+		$this->impuestos->AdvancedSearch->SearchValue = @$filter["x_impuestos"];
+		$this->impuestos->AdvancedSearch->SearchOperator = @$filter["z_impuestos"];
+		$this->impuestos->AdvancedSearch->SearchCondition = @$filter["v_impuestos"];
+		$this->impuestos->AdvancedSearch->SearchValue2 = @$filter["y_impuestos"];
+		$this->impuestos->AdvancedSearch->SearchOperator2 = @$filter["w_impuestos"];
+		$this->impuestos->AdvancedSearch->Save();
+
+		// Field utilidad_neta
+		$this->utilidad_neta->AdvancedSearch->SearchValue = @$filter["x_utilidad_neta"];
+		$this->utilidad_neta->AdvancedSearch->SearchOperator = @$filter["z_utilidad_neta"];
+		$this->utilidad_neta->AdvancedSearch->SearchCondition = @$filter["v_utilidad_neta"];
+		$this->utilidad_neta->AdvancedSearch->SearchValue2 = @$filter["y_utilidad_neta"];
+		$this->utilidad_neta->AdvancedSearch->SearchOperator2 = @$filter["w_utilidad_neta"];
+		$this->utilidad_neta->AdvancedSearch->Save();
+
+		// Field dividendos
+		$this->dividendos->AdvancedSearch->SearchValue = @$filter["x_dividendos"];
+		$this->dividendos->AdvancedSearch->SearchOperator = @$filter["z_dividendos"];
+		$this->dividendos->AdvancedSearch->SearchCondition = @$filter["v_dividendos"];
+		$this->dividendos->AdvancedSearch->SearchValue2 = @$filter["y_dividendos"];
+		$this->dividendos->AdvancedSearch->SearchOperator2 = @$filter["w_dividendos"];
+		$this->dividendos->AdvancedSearch->Save();
+
+		// Field utilidades_retenidas
+		$this->utilidades_retenidas->AdvancedSearch->SearchValue = @$filter["x_utilidades_retenidas"];
+		$this->utilidades_retenidas->AdvancedSearch->SearchOperator = @$filter["z_utilidades_retenidas"];
+		$this->utilidades_retenidas->AdvancedSearch->SearchCondition = @$filter["v_utilidades_retenidas"];
+		$this->utilidades_retenidas->AdvancedSearch->SearchValue2 = @$filter["y_utilidades_retenidas"];
+		$this->utilidades_retenidas->AdvancedSearch->SearchOperator2 = @$filter["w_utilidades_retenidas"];
+		$this->utilidades_retenidas->AdvancedSearch->Save();
+
+		// Field estado
+		$this->estado->AdvancedSearch->SearchValue = @$filter["x_estado"];
+		$this->estado->AdvancedSearch->SearchOperator = @$filter["z_estado"];
+		$this->estado->AdvancedSearch->SearchCondition = @$filter["v_estado"];
+		$this->estado->AdvancedSearch->SearchValue2 = @$filter["y_estado"];
+		$this->estado->AdvancedSearch->SearchOperator2 = @$filter["w_estado"];
+		$this->estado->AdvancedSearch->Save();
+	}
+
+	// Advanced search WHERE clause based on QueryString
+	function AdvancedSearchWhere($Default = FALSE) {
+		global $Security;
+		$sWhere = "";
+		$this->BuildSearchSql($sWhere, $this->idestado_resultado, $Default, FALSE); // idestado_resultado
+		$this->BuildSearchSql($sWhere, $this->idempresa, $Default, FALSE); // idempresa
+		$this->BuildSearchSql($sWhere, $this->idperiodo_contable, $Default, FALSE); // idperiodo_contable
+		$this->BuildSearchSql($sWhere, $this->venta_netas, $Default, FALSE); // venta_netas
+		$this->BuildSearchSql($sWhere, $this->costo_ventas, $Default, FALSE); // costo_ventas
+		$this->BuildSearchSql($sWhere, $this->depreciacion, $Default, FALSE); // depreciacion
+		$this->BuildSearchSql($sWhere, $this->interes_pagado, $Default, FALSE); // interes_pagado
+		$this->BuildSearchSql($sWhere, $this->utilidad_gravable, $Default, FALSE); // utilidad_gravable
+		$this->BuildSearchSql($sWhere, $this->impuestos, $Default, FALSE); // impuestos
+		$this->BuildSearchSql($sWhere, $this->utilidad_neta, $Default, FALSE); // utilidad_neta
+		$this->BuildSearchSql($sWhere, $this->dividendos, $Default, FALSE); // dividendos
+		$this->BuildSearchSql($sWhere, $this->utilidades_retenidas, $Default, FALSE); // utilidades_retenidas
+		$this->BuildSearchSql($sWhere, $this->estado, $Default, FALSE); // estado
+
+		// Set up search parm
+		if (!$Default && $sWhere <> "") {
+			$this->Command = "search";
+		}
+		if (!$Default && $this->Command == "search") {
+			$this->idestado_resultado->AdvancedSearch->Save(); // idestado_resultado
+			$this->idempresa->AdvancedSearch->Save(); // idempresa
+			$this->idperiodo_contable->AdvancedSearch->Save(); // idperiodo_contable
+			$this->venta_netas->AdvancedSearch->Save(); // venta_netas
+			$this->costo_ventas->AdvancedSearch->Save(); // costo_ventas
+			$this->depreciacion->AdvancedSearch->Save(); // depreciacion
+			$this->interes_pagado->AdvancedSearch->Save(); // interes_pagado
+			$this->utilidad_gravable->AdvancedSearch->Save(); // utilidad_gravable
+			$this->impuestos->AdvancedSearch->Save(); // impuestos
+			$this->utilidad_neta->AdvancedSearch->Save(); // utilidad_neta
+			$this->dividendos->AdvancedSearch->Save(); // dividendos
+			$this->utilidades_retenidas->AdvancedSearch->Save(); // utilidades_retenidas
+			$this->estado->AdvancedSearch->Save(); // estado
+		}
+		return $sWhere;
+	}
+
+	// Build search SQL
+	function BuildSearchSql(&$Where, &$Fld, $Default, $MultiValue) {
+		$FldParm = substr($Fld->FldVar, 2);
+		$FldVal = ($Default) ? $Fld->AdvancedSearch->SearchValueDefault : $Fld->AdvancedSearch->SearchValue; // @$_GET["x_$FldParm"]
+		$FldOpr = ($Default) ? $Fld->AdvancedSearch->SearchOperatorDefault : $Fld->AdvancedSearch->SearchOperator; // @$_GET["z_$FldParm"]
+		$FldCond = ($Default) ? $Fld->AdvancedSearch->SearchConditionDefault : $Fld->AdvancedSearch->SearchCondition; // @$_GET["v_$FldParm"]
+		$FldVal2 = ($Default) ? $Fld->AdvancedSearch->SearchValue2Default : $Fld->AdvancedSearch->SearchValue2; // @$_GET["y_$FldParm"]
+		$FldOpr2 = ($Default) ? $Fld->AdvancedSearch->SearchOperator2Default : $Fld->AdvancedSearch->SearchOperator2; // @$_GET["w_$FldParm"]
+		$sWrk = "";
+
+		//$FldVal = ew_StripSlashes($FldVal);
+		if (is_array($FldVal)) $FldVal = implode(",", $FldVal);
+
+		//$FldVal2 = ew_StripSlashes($FldVal2);
+		if (is_array($FldVal2)) $FldVal2 = implode(",", $FldVal2);
+		$FldOpr = strtoupper(trim($FldOpr));
+		if ($FldOpr == "") $FldOpr = "=";
+		$FldOpr2 = strtoupper(trim($FldOpr2));
+		if ($FldOpr2 == "") $FldOpr2 = "=";
+		if (EW_SEARCH_MULTI_VALUE_OPTION == 1 || $FldOpr <> "LIKE" ||
+			($FldOpr2 <> "LIKE" && $FldVal2 <> ""))
+			$MultiValue = FALSE;
+		if ($MultiValue) {
+			$sWrk1 = ($FldVal <> "") ? ew_GetMultiSearchSql($Fld, $FldOpr, $FldVal, $this->DBID) : ""; // Field value 1
+			$sWrk2 = ($FldVal2 <> "") ? ew_GetMultiSearchSql($Fld, $FldOpr2, $FldVal2, $this->DBID) : ""; // Field value 2
+			$sWrk = $sWrk1; // Build final SQL
+			if ($sWrk2 <> "")
+				$sWrk = ($sWrk <> "") ? "($sWrk) $FldCond ($sWrk2)" : $sWrk2;
+		} else {
+			$FldVal = $this->ConvertSearchValue($Fld, $FldVal);
+			$FldVal2 = $this->ConvertSearchValue($Fld, $FldVal2);
+			$sWrk = ew_GetSearchSql($Fld, $FldVal, $FldOpr, $FldCond, $FldVal2, $FldOpr2, $this->DBID);
+		}
+		ew_AddFilter($Where, $sWrk);
+	}
+
+	// Convert search value
+	function ConvertSearchValue(&$Fld, $FldVal) {
+		if ($FldVal == EW_NULL_VALUE || $FldVal == EW_NOT_NULL_VALUE)
+			return $FldVal;
+		$Value = $FldVal;
+		if ($Fld->FldDataType == EW_DATATYPE_BOOLEAN) {
+			if ($FldVal <> "") $Value = ($FldVal == "1" || strtolower(strval($FldVal)) == "y" || strtolower(strval($FldVal)) == "t") ? $Fld->TrueValue : $Fld->FalseValue;
+		} elseif ($Fld->FldDataType == EW_DATATYPE_DATE) {
+			if ($FldVal <> "") $Value = ew_UnFormatDateTime($FldVal, $Fld->FldDateTimeFormat);
+		}
+		return $Value;
+	}
+
+	// Check if search parm exists
+	function CheckSearchParms() {
+		if ($this->idestado_resultado->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->idempresa->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->idperiodo_contable->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->venta_netas->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->costo_ventas->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->depreciacion->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->interes_pagado->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->utilidad_gravable->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->impuestos->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->utilidad_neta->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->dividendos->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->utilidades_retenidas->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->estado->AdvancedSearch->IssetSession())
+			return TRUE;
+		return FALSE;
+	}
+
+	// Clear all search parameters
+	function ResetSearchParms() {
+
+		// Clear search WHERE clause
+		$this->SearchWhere = "";
+		$this->setSearchWhere($this->SearchWhere);
+
+		// Clear advanced search parameters
+		$this->ResetAdvancedSearchParms();
+	}
+
+	// Load advanced search default values
+	function LoadAdvancedSearchDefault() {
+		return FALSE;
+	}
+
+	// Clear all advanced search parameters
+	function ResetAdvancedSearchParms() {
+		$this->idestado_resultado->AdvancedSearch->UnsetSession();
+		$this->idempresa->AdvancedSearch->UnsetSession();
+		$this->idperiodo_contable->AdvancedSearch->UnsetSession();
+		$this->venta_netas->AdvancedSearch->UnsetSession();
+		$this->costo_ventas->AdvancedSearch->UnsetSession();
+		$this->depreciacion->AdvancedSearch->UnsetSession();
+		$this->interes_pagado->AdvancedSearch->UnsetSession();
+		$this->utilidad_gravable->AdvancedSearch->UnsetSession();
+		$this->impuestos->AdvancedSearch->UnsetSession();
+		$this->utilidad_neta->AdvancedSearch->UnsetSession();
+		$this->dividendos->AdvancedSearch->UnsetSession();
+		$this->utilidades_retenidas->AdvancedSearch->UnsetSession();
+		$this->estado->AdvancedSearch->UnsetSession();
+	}
+
+	// Restore all search parameters
+	function RestoreSearchParms() {
+		$this->RestoreSearch = TRUE;
+
+		// Restore advanced search values
+		$this->idestado_resultado->AdvancedSearch->Load();
+		$this->idempresa->AdvancedSearch->Load();
+		$this->idperiodo_contable->AdvancedSearch->Load();
+		$this->venta_netas->AdvancedSearch->Load();
+		$this->costo_ventas->AdvancedSearch->Load();
+		$this->depreciacion->AdvancedSearch->Load();
+		$this->interes_pagado->AdvancedSearch->Load();
+		$this->utilidad_gravable->AdvancedSearch->Load();
+		$this->impuestos->AdvancedSearch->Load();
+		$this->utilidad_neta->AdvancedSearch->Load();
+		$this->dividendos->AdvancedSearch->Load();
+		$this->utilidades_retenidas->AdvancedSearch->Load();
+		$this->estado->AdvancedSearch->Load();
+	}
+
 	// Set up sort parameters
 	function SetUpSortOrder() {
 
@@ -616,6 +973,7 @@ class cestado_resultado_list extends cestado_resultado {
 			$this->UpdateSort($this->utilidad_neta); // utilidad_neta
 			$this->UpdateSort($this->dividendos); // dividendos
 			$this->UpdateSort($this->utilidades_retenidas); // utilidades_retenidas
+			$this->UpdateSort($this->estado); // estado
 			$this->setStartRecordNumber(1); // Reset start position
 		}
 	}
@@ -640,6 +998,10 @@ class cestado_resultado_list extends cestado_resultado {
 		// Check if reset command
 		if (substr($this->Command,0,5) == "reset") {
 
+			// Reset search criteria
+			if ($this->Command == "reset" || $this->Command == "resetall")
+				$this->ResetSearchParms();
+
 			// Reset sorting order
 			if ($this->Command == "resetsort") {
 				$sOrderBy = "";
@@ -656,6 +1018,7 @@ class cestado_resultado_list extends cestado_resultado {
 				$this->utilidad_neta->setSort("");
 				$this->dividendos->setSort("");
 				$this->utilidades_retenidas->setSort("");
+				$this->estado->setSort("");
 			}
 
 			// Reset start position
@@ -833,10 +1196,10 @@ class cestado_resultado_list extends cestado_resultado {
 		// Filter button
 		$item = &$this->FilterOptions->Add("savecurrentfilter");
 		$item->Body = "<a class=\"ewSaveFilter\" data-form=\"festado_resultadolistsrch\" href=\"#\">" . $Language->Phrase("SaveCurrentFilter") . "</a>";
-		$item->Visible = FALSE;
+		$item->Visible = TRUE;
 		$item = &$this->FilterOptions->Add("deletefilter");
 		$item->Body = "<a class=\"ewDeleteFilter\" data-form=\"festado_resultadolistsrch\" href=\"#\">" . $Language->Phrase("DeleteFilter") . "</a>";
-		$item->Visible = FALSE;
+		$item->Visible = TRUE;
 		$this->FilterOptions->UseDropDownButton = TRUE;
 		$this->FilterOptions->UseButtonGroup = !$this->FilterOptions->UseDropDownButton;
 		$this->FilterOptions->DropDownButtonPhrase = $Language->Phrase("Filters");
@@ -960,6 +1323,17 @@ class cestado_resultado_list extends cestado_resultado {
 		$this->SearchOptions->Tag = "div";
 		$this->SearchOptions->TagClassName = "ewSearchOption";
 
+		// Search button
+		$item = &$this->SearchOptions->Add("searchtoggle");
+		$SearchToggleClass = ($this->SearchWhere <> "") ? " active" : " active";
+		$item->Body = "<button type=\"button\" class=\"btn btn-default ewSearchToggle" . $SearchToggleClass . "\" title=\"" . $Language->Phrase("SearchPanel") . "\" data-caption=\"" . $Language->Phrase("SearchPanel") . "\" data-toggle=\"button\" data-form=\"festado_resultadolistsrch\">" . $Language->Phrase("SearchBtn") . "</button>";
+		$item->Visible = TRUE;
+
+		// Show all button
+		$item = &$this->SearchOptions->Add("showall");
+		$item->Body = "<a class=\"btn btn-default ewShowAll\" title=\"" . $Language->Phrase("ShowAll") . "\" data-caption=\"" . $Language->Phrase("ShowAll") . "\" href=\"" . $this->PageUrl() . "cmd=reset\">" . $Language->Phrase("ShowAllBtn") . "</a>";
+		$item->Visible = ($this->SearchWhere <> $this->DefaultSearchWhere && $this->SearchWhere <> "0=101");
+
 		// Button group for search
 		$this->SearchOptions->UseDropDownButton = FALSE;
 		$this->SearchOptions->UseImageAndText = TRUE;
@@ -1018,6 +1392,78 @@ class cestado_resultado_list extends cestado_resultado {
 			$this->StartRec = intval(($this->StartRec-1)/$this->DisplayRecs)*$this->DisplayRecs+1; // Point to page boundary
 			$this->setStartRecordNumber($this->StartRec);
 		}
+	}
+
+	// Load search values for validation
+	function LoadSearchValues() {
+		global $objForm;
+
+		// Load search values
+		// idestado_resultado
+
+		$this->idestado_resultado->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_idestado_resultado"]);
+		if ($this->idestado_resultado->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->idestado_resultado->AdvancedSearch->SearchOperator = @$_GET["z_idestado_resultado"];
+
+		// idempresa
+		$this->idempresa->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_idempresa"]);
+		if ($this->idempresa->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->idempresa->AdvancedSearch->SearchOperator = @$_GET["z_idempresa"];
+
+		// idperiodo_contable
+		$this->idperiodo_contable->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_idperiodo_contable"]);
+		if ($this->idperiodo_contable->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->idperiodo_contable->AdvancedSearch->SearchOperator = @$_GET["z_idperiodo_contable"];
+
+		// venta_netas
+		$this->venta_netas->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_venta_netas"]);
+		if ($this->venta_netas->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->venta_netas->AdvancedSearch->SearchOperator = @$_GET["z_venta_netas"];
+
+		// costo_ventas
+		$this->costo_ventas->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_costo_ventas"]);
+		if ($this->costo_ventas->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->costo_ventas->AdvancedSearch->SearchOperator = @$_GET["z_costo_ventas"];
+
+		// depreciacion
+		$this->depreciacion->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_depreciacion"]);
+		if ($this->depreciacion->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->depreciacion->AdvancedSearch->SearchOperator = @$_GET["z_depreciacion"];
+
+		// interes_pagado
+		$this->interes_pagado->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_interes_pagado"]);
+		if ($this->interes_pagado->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->interes_pagado->AdvancedSearch->SearchOperator = @$_GET["z_interes_pagado"];
+
+		// utilidad_gravable
+		$this->utilidad_gravable->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_utilidad_gravable"]);
+		if ($this->utilidad_gravable->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->utilidad_gravable->AdvancedSearch->SearchOperator = @$_GET["z_utilidad_gravable"];
+
+		// impuestos
+		$this->impuestos->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_impuestos"]);
+		if ($this->impuestos->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->impuestos->AdvancedSearch->SearchOperator = @$_GET["z_impuestos"];
+
+		// utilidad_neta
+		$this->utilidad_neta->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_utilidad_neta"]);
+		if ($this->utilidad_neta->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->utilidad_neta->AdvancedSearch->SearchOperator = @$_GET["z_utilidad_neta"];
+
+		// dividendos
+		$this->dividendos->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_dividendos"]);
+		if ($this->dividendos->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->dividendos->AdvancedSearch->SearchOperator = @$_GET["z_dividendos"];
+
+		// utilidades_retenidas
+		$this->utilidades_retenidas->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_utilidades_retenidas"]);
+		if ($this->utilidades_retenidas->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->utilidades_retenidas->AdvancedSearch->SearchOperator = @$_GET["z_utilidades_retenidas"];
+
+		// estado
+		$this->estado->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_estado"]);
+		if ($this->estado->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->estado->AdvancedSearch->SearchOperator = @$_GET["z_estado"];
 	}
 
 	// Load recordset
@@ -1087,6 +1533,7 @@ class cestado_resultado_list extends cestado_resultado {
 		$this->utilidad_neta->setDbValue($rs->fields('utilidad_neta'));
 		$this->dividendos->setDbValue($rs->fields('dividendos'));
 		$this->utilidades_retenidas->setDbValue($rs->fields('utilidades_retenidas'));
+		$this->estado->setDbValue($rs->fields('estado'));
 	}
 
 	// Load DbValue from recordset
@@ -1105,6 +1552,7 @@ class cestado_resultado_list extends cestado_resultado {
 		$this->utilidad_neta->DbValue = $row['utilidad_neta'];
 		$this->dividendos->DbValue = $row['dividendos'];
 		$this->utilidades_retenidas->DbValue = $row['utilidades_retenidas'];
+		$this->estado->DbValue = $row['estado'];
 	}
 
 	// Load old record
@@ -1194,6 +1642,7 @@ class cestado_resultado_list extends cestado_resultado {
 		// utilidad_neta
 		// dividendos
 		// utilidades_retenidas
+		// estado
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -1244,6 +1693,14 @@ class cestado_resultado_list extends cestado_resultado {
 		// utilidades_retenidas
 		$this->utilidades_retenidas->ViewValue = $this->utilidades_retenidas->CurrentValue;
 		$this->utilidades_retenidas->ViewCustomAttributes = "";
+
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
 			// idestado_resultado
 			$this->idestado_resultado->LinkCustomAttributes = "";
@@ -1304,11 +1761,138 @@ class cestado_resultado_list extends cestado_resultado {
 			$this->utilidades_retenidas->LinkCustomAttributes = "";
 			$this->utilidades_retenidas->HrefValue = "";
 			$this->utilidades_retenidas->TooltipValue = "";
+
+			// estado
+			$this->estado->LinkCustomAttributes = "";
+			$this->estado->HrefValue = "";
+			$this->estado->TooltipValue = "";
+		} elseif ($this->RowType == EW_ROWTYPE_SEARCH) { // Search row
+
+			// idestado_resultado
+			$this->idestado_resultado->EditAttrs["class"] = "form-control";
+			$this->idestado_resultado->EditCustomAttributes = "";
+			$this->idestado_resultado->EditValue = ew_HtmlEncode($this->idestado_resultado->AdvancedSearch->SearchValue);
+			$this->idestado_resultado->PlaceHolder = ew_RemoveHtml($this->idestado_resultado->FldCaption());
+
+			// idempresa
+			$this->idempresa->EditAttrs["class"] = "form-control";
+			$this->idempresa->EditCustomAttributes = "";
+			$this->idempresa->EditValue = ew_HtmlEncode($this->idempresa->AdvancedSearch->SearchValue);
+			$this->idempresa->PlaceHolder = ew_RemoveHtml($this->idempresa->FldCaption());
+
+			// idperiodo_contable
+			$this->idperiodo_contable->EditAttrs["class"] = "form-control";
+			$this->idperiodo_contable->EditCustomAttributes = "";
+			$this->idperiodo_contable->EditValue = ew_HtmlEncode($this->idperiodo_contable->AdvancedSearch->SearchValue);
+			$this->idperiodo_contable->PlaceHolder = ew_RemoveHtml($this->idperiodo_contable->FldCaption());
+
+			// venta_netas
+			$this->venta_netas->EditAttrs["class"] = "form-control";
+			$this->venta_netas->EditCustomAttributes = "";
+			$this->venta_netas->EditValue = ew_HtmlEncode($this->venta_netas->AdvancedSearch->SearchValue);
+			$this->venta_netas->PlaceHolder = ew_RemoveHtml($this->venta_netas->FldCaption());
+
+			// costo_ventas
+			$this->costo_ventas->EditAttrs["class"] = "form-control";
+			$this->costo_ventas->EditCustomAttributes = "";
+			$this->costo_ventas->EditValue = ew_HtmlEncode($this->costo_ventas->AdvancedSearch->SearchValue);
+			$this->costo_ventas->PlaceHolder = ew_RemoveHtml($this->costo_ventas->FldCaption());
+
+			// depreciacion
+			$this->depreciacion->EditAttrs["class"] = "form-control";
+			$this->depreciacion->EditCustomAttributes = "";
+			$this->depreciacion->EditValue = ew_HtmlEncode($this->depreciacion->AdvancedSearch->SearchValue);
+			$this->depreciacion->PlaceHolder = ew_RemoveHtml($this->depreciacion->FldCaption());
+
+			// interes_pagado
+			$this->interes_pagado->EditAttrs["class"] = "form-control";
+			$this->interes_pagado->EditCustomAttributes = "";
+			$this->interes_pagado->EditValue = ew_HtmlEncode($this->interes_pagado->AdvancedSearch->SearchValue);
+			$this->interes_pagado->PlaceHolder = ew_RemoveHtml($this->interes_pagado->FldCaption());
+
+			// utilidad_gravable
+			$this->utilidad_gravable->EditAttrs["class"] = "form-control";
+			$this->utilidad_gravable->EditCustomAttributes = "";
+			$this->utilidad_gravable->EditValue = ew_HtmlEncode($this->utilidad_gravable->AdvancedSearch->SearchValue);
+			$this->utilidad_gravable->PlaceHolder = ew_RemoveHtml($this->utilidad_gravable->FldCaption());
+
+			// impuestos
+			$this->impuestos->EditAttrs["class"] = "form-control";
+			$this->impuestos->EditCustomAttributes = "";
+			$this->impuestos->EditValue = ew_HtmlEncode($this->impuestos->AdvancedSearch->SearchValue);
+			$this->impuestos->PlaceHolder = ew_RemoveHtml($this->impuestos->FldCaption());
+
+			// utilidad_neta
+			$this->utilidad_neta->EditAttrs["class"] = "form-control";
+			$this->utilidad_neta->EditCustomAttributes = "";
+			$this->utilidad_neta->EditValue = ew_HtmlEncode($this->utilidad_neta->AdvancedSearch->SearchValue);
+			$this->utilidad_neta->PlaceHolder = ew_RemoveHtml($this->utilidad_neta->FldCaption());
+
+			// dividendos
+			$this->dividendos->EditAttrs["class"] = "form-control";
+			$this->dividendos->EditCustomAttributes = "";
+			$this->dividendos->EditValue = ew_HtmlEncode($this->dividendos->AdvancedSearch->SearchValue);
+			$this->dividendos->PlaceHolder = ew_RemoveHtml($this->dividendos->FldCaption());
+
+			// utilidades_retenidas
+			$this->utilidades_retenidas->EditAttrs["class"] = "form-control";
+			$this->utilidades_retenidas->EditCustomAttributes = "";
+			$this->utilidades_retenidas->EditValue = ew_HtmlEncode($this->utilidades_retenidas->AdvancedSearch->SearchValue);
+			$this->utilidades_retenidas->PlaceHolder = ew_RemoveHtml($this->utilidades_retenidas->FldCaption());
+
+			// estado
+			$this->estado->EditCustomAttributes = "";
+			$this->estado->EditValue = $this->estado->Options(FALSE);
+		}
+		if ($this->RowType == EW_ROWTYPE_ADD ||
+			$this->RowType == EW_ROWTYPE_EDIT ||
+			$this->RowType == EW_ROWTYPE_SEARCH) { // Add / Edit / Search row
+			$this->SetupFieldTitles();
 		}
 
 		// Call Row Rendered event
 		if ($this->RowType <> EW_ROWTYPE_AGGREGATEINIT)
 			$this->Row_Rendered();
+	}
+
+	// Validate search
+	function ValidateSearch() {
+		global $gsSearchError;
+
+		// Initialize
+		$gsSearchError = "";
+
+		// Check if validation required
+		if (!EW_SERVER_VALIDATE)
+			return TRUE;
+
+		// Return validate result
+		$ValidateSearch = ($gsSearchError == "");
+
+		// Call Form_CustomValidate event
+		$sFormCustomError = "";
+		$ValidateSearch = $ValidateSearch && $this->Form_CustomValidate($sFormCustomError);
+		if ($sFormCustomError <> "") {
+			ew_AddMessage($gsSearchError, $sFormCustomError);
+		}
+		return $ValidateSearch;
+	}
+
+	// Load advanced search
+	function LoadAdvancedSearch() {
+		$this->idestado_resultado->AdvancedSearch->Load();
+		$this->idempresa->AdvancedSearch->Load();
+		$this->idperiodo_contable->AdvancedSearch->Load();
+		$this->venta_netas->AdvancedSearch->Load();
+		$this->costo_ventas->AdvancedSearch->Load();
+		$this->depreciacion->AdvancedSearch->Load();
+		$this->interes_pagado->AdvancedSearch->Load();
+		$this->utilidad_gravable->AdvancedSearch->Load();
+		$this->impuestos->AdvancedSearch->Load();
+		$this->utilidad_neta->AdvancedSearch->Load();
+		$this->dividendos->AdvancedSearch->Load();
+		$this->utilidades_retenidas->AdvancedSearch->Load();
+		$this->estado->AdvancedSearch->Load();
 	}
 
 	// Set up Breadcrumb
@@ -1482,8 +2066,43 @@ festado_resultadolist.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-// Form object for search
+festado_resultadolist.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+festado_resultadolist.Lists["x_estado"].Options = <?php echo json_encode($estado_resultado->estado->Options()) ?>;
 
+// Form object for search
+var CurrentSearchForm = festado_resultadolistsrch = new ew_Form("festado_resultadolistsrch");
+
+// Validate function for search
+festado_resultadolistsrch.Validate = function(fobj) {
+	if (!this.ValidateRequired)
+		return true; // Ignore validation
+	fobj = fobj || this.Form;
+	var infix = "";
+
+	// Fire Form_CustomValidate event
+	if (!this.Form_CustomValidate(fobj))
+		return false;
+	return true;
+}
+
+// Form_CustomValidate event
+festado_resultadolistsrch.Form_CustomValidate = 
+ function(fobj) { // DO NOT CHANGE THIS LINE!
+
+ 	// Your custom validation code here, return false if invalid. 
+ 	return true;
+ }
+
+// Use JavaScript validation or not
+<?php if (EW_CLIENT_VALIDATE) { ?>
+festado_resultadolistsrch.ValidateRequired = true; // Use JavaScript validation
+<?php } else { ?>
+festado_resultadolistsrch.ValidateRequired = false; // No JavaScript validation
+<?php } ?>
+
+// Dynamic selection lists
+festado_resultadolistsrch.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+festado_resultadolistsrch.Lists["x_estado"].Options = <?php echo json_encode($estado_resultado->estado->Options()) ?>;
 </script>
 <script type="text/javascript">
 
@@ -1493,6 +2112,12 @@ festado_resultadolist.ValidateRequired = false;
 <?php $Breadcrumb->Render(); ?>
 <?php if ($estado_resultado_list->TotalRecs > 0 && $estado_resultado_list->ExportOptions->Visible()) { ?>
 <?php $estado_resultado_list->ExportOptions->Render("body") ?>
+<?php } ?>
+<?php if ($estado_resultado_list->SearchOptions->Visible()) { ?>
+<?php $estado_resultado_list->SearchOptions->Render("body") ?>
+<?php } ?>
+<?php if ($estado_resultado_list->FilterOptions->Visible()) { ?>
+<?php $estado_resultado_list->FilterOptions->Render("body") ?>
 <?php } ?>
 <?php echo $Language->SelectionForm(); ?>
 <div class="clearfix"></div>
@@ -1523,6 +2148,64 @@ festado_resultadolist.ValidateRequired = false;
 	}
 $estado_resultado_list->RenderOtherOptions();
 ?>
+<?php if ($estado_resultado->Export == "" && $estado_resultado->CurrentAction == "") { ?>
+<form name="festado_resultadolistsrch" id="festado_resultadolistsrch" class="form-inline ewForm" action="<?php echo ew_CurrentPage() ?>">
+<?php $SearchPanelClass = ($estado_resultado_list->SearchWhere <> "") ? " in" : " in"; ?>
+<div id="festado_resultadolistsrch_SearchPanel" class="ewSearchPanel collapse<?php echo $SearchPanelClass ?>">
+<input type="hidden" name="cmd" value="search">
+<input type="hidden" name="t" value="estado_resultado">
+	<div class="ewBasicSearch">
+<?php
+if ($gsSearchError == "")
+	$estado_resultado_list->LoadAdvancedSearch(); // Load advanced search
+
+// Render for search
+$estado_resultado->RowType = EW_ROWTYPE_SEARCH;
+
+// Render row
+$estado_resultado->ResetAttrs();
+$estado_resultado_list->RenderRow();
+?>
+<div id="xsr_1" class="ewRow">
+<?php if ($estado_resultado->estado->Visible) { // estado ?>
+	<div id="xsc_estado" class="ewCell form-group">
+		<label class="ewSearchCaption ewLabel"><?php echo $estado_resultado->estado->FldCaption() ?></label>
+		<span class="ewSearchOperator"><?php echo $Language->Phrase("=") ?><input type="hidden" name="z_estado" id="z_estado" value="="></span>
+		<span class="ewSearchField">
+<div id="tp_x_estado" class="ewTemplate"><input type="radio" data-table="estado_resultado" data-field="x_estado" data-value-separator="<?php echo ew_HtmlEncode(is_array($estado_resultado->estado->DisplayValueSeparator) ? json_encode($estado_resultado->estado->DisplayValueSeparator) : $estado_resultado->estado->DisplayValueSeparator) ?>" name="x_estado" id="x_estado" value="{value}"<?php echo $estado_resultado->estado->EditAttributes() ?>></div>
+<div id="dsl_x_estado" data-repeatcolumn="5" class="ewItemList" style="display: none;"><div>
+<?php
+$arwrk = $estado_resultado->estado->EditValue;
+if (is_array($arwrk)) {
+	$rowswrk = count($arwrk);
+	$emptywrk = TRUE;
+	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
+		$selwrk = (strval($estado_resultado->estado->AdvancedSearch->SearchValue) == strval($arwrk[$rowcntwrk][0])) ? " checked" : "";
+		if ($selwrk <> "")
+			$emptywrk = FALSE;
+?>
+<label class="radio-inline"><input type="radio" data-table="estado_resultado" data-field="x_estado" name="x_estado" id="x_estado_<?php echo $rowcntwrk ?>" value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?><?php echo $estado_resultado->estado->EditAttributes() ?>><?php echo $estado_resultado->estado->DisplayValue($arwrk[$rowcntwrk]) ?></label>
+<?php
+	}
+	if ($emptywrk && strval($estado_resultado->estado->CurrentValue) <> "") {
+?>
+<label class="radio-inline"><input type="radio" data-table="estado_resultado" data-field="x_estado" name="x_estado" id="x_estado_<?php echo $rowswrk ?>" value="<?php echo ew_HtmlEncode($estado_resultado->estado->CurrentValue) ?>" checked<?php echo $estado_resultado->estado->EditAttributes() ?>><?php echo $estado_resultado->estado->CurrentValue ?></label>
+<?php
+    }
+}
+?>
+</div></div>
+</span>
+	</div>
+<?php } ?>
+</div>
+<div id="xsr_2" class="ewRow">
+	<button class="btn btn-primary ewButton" name="btnsubmit" id="btnsubmit" type="submit"><?php echo $Language->Phrase("QuickSearchBtn") ?></button>
+</div>
+	</div>
+</div>
+</form>
+<?php } ?>
 <?php $estado_resultado_list->ShowPageHeader(); ?>
 <?php
 $estado_resultado_list->ShowMessage();
@@ -1715,6 +2398,15 @@ $estado_resultado_list->ListOptions->Render("header", "left");
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
+<?php if ($estado_resultado->estado->Visible) { // estado ?>
+	<?php if ($estado_resultado->SortUrl($estado_resultado->estado) == "") { ?>
+		<th data-name="estado"><div id="elh_estado_resultado_estado" class="estado_resultado_estado"><div class="ewTableHeaderCaption"><?php echo $estado_resultado->estado->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="estado"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $estado_resultado->SortUrl($estado_resultado->estado) ?>',1);"><div id="elh_estado_resultado_estado" class="estado_resultado_estado">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $estado_resultado->estado->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($estado_resultado->estado->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($estado_resultado->estado->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
 <?php
 
 // Render list options (header, right)
@@ -1876,6 +2568,14 @@ $estado_resultado_list->ListOptions->Render("body", "left", $estado_resultado_li
 </span>
 </td>
 	<?php } ?>
+	<?php if ($estado_resultado->estado->Visible) { // estado ?>
+		<td data-name="estado"<?php echo $estado_resultado->estado->CellAttributes() ?>>
+<span id="el<?php echo $estado_resultado_list->RowCnt ?>_estado_resultado_estado" class="estado_resultado_estado">
+<span<?php echo $estado_resultado->estado->ViewAttributes() ?>>
+<?php echo $estado_resultado->estado->ListViewValue() ?></span>
+</span>
+</td>
+	<?php } ?>
 <?php
 
 // Render list options (body, right)
@@ -1972,6 +2672,8 @@ if ($estado_resultado_list->Recordset)
 <div class="clearfix"></div>
 <?php } ?>
 <script type="text/javascript">
+festado_resultadolistsrch.Init();
+festado_resultadolistsrch.FilterList = <?php echo $estado_resultado_list->GetFilterList() ?>;
 festado_resultadolist.Init();
 </script>
 <?php

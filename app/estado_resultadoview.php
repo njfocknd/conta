@@ -536,6 +536,7 @@ class cestado_resultado_view extends cestado_resultado {
 		$this->utilidad_neta->setDbValue($rs->fields('utilidad_neta'));
 		$this->dividendos->setDbValue($rs->fields('dividendos'));
 		$this->utilidades_retenidas->setDbValue($rs->fields('utilidades_retenidas'));
+		$this->estado->setDbValue($rs->fields('estado'));
 	}
 
 	// Load DbValue from recordset
@@ -554,6 +555,7 @@ class cestado_resultado_view extends cestado_resultado {
 		$this->utilidad_neta->DbValue = $row['utilidad_neta'];
 		$this->dividendos->DbValue = $row['dividendos'];
 		$this->utilidades_retenidas->DbValue = $row['utilidades_retenidas'];
+		$this->estado->DbValue = $row['estado'];
 	}
 
 	// Render row values based on field settings
@@ -620,6 +622,7 @@ class cestado_resultado_view extends cestado_resultado {
 		// utilidad_neta
 		// dividendos
 		// utilidades_retenidas
+		// estado
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -670,6 +673,14 @@ class cestado_resultado_view extends cestado_resultado {
 		// utilidades_retenidas
 		$this->utilidades_retenidas->ViewValue = $this->utilidades_retenidas->CurrentValue;
 		$this->utilidades_retenidas->ViewCustomAttributes = "";
+
+		// estado
+		if (strval($this->estado->CurrentValue) <> "") {
+			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
+		} else {
+			$this->estado->ViewValue = NULL;
+		}
+		$this->estado->ViewCustomAttributes = "";
 
 			// idestado_resultado
 			$this->idestado_resultado->LinkCustomAttributes = "";
@@ -730,6 +741,11 @@ class cestado_resultado_view extends cestado_resultado {
 			$this->utilidades_retenidas->LinkCustomAttributes = "";
 			$this->utilidades_retenidas->HrefValue = "";
 			$this->utilidades_retenidas->TooltipValue = "";
+
+			// estado
+			$this->estado->LinkCustomAttributes = "";
+			$this->estado->HrefValue = "";
+			$this->estado->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -875,8 +891,10 @@ festado_resultadoview.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-// Form object for search
+festado_resultadoview.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+festado_resultadoview.Lists["x_estado"].Options = <?php echo json_encode($estado_resultado->estado->Options()) ?>;
 
+// Form object for search
 </script>
 <script type="text/javascript">
 
@@ -1030,6 +1048,17 @@ $estado_resultado_view->ShowMessage();
 <span id="el_estado_resultado_utilidades_retenidas">
 <span<?php echo $estado_resultado->utilidades_retenidas->ViewAttributes() ?>>
 <?php echo $estado_resultado->utilidades_retenidas->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($estado_resultado->estado->Visible) { // estado ?>
+	<tr id="r_estado">
+		<td><span id="elh_estado_resultado_estado"><?php echo $estado_resultado->estado->FldCaption() ?></span></td>
+		<td data-name="estado"<?php echo $estado_resultado->estado->CellAttributes() ?>>
+<span id="el_estado_resultado_estado">
+<span<?php echo $estado_resultado->estado->ViewAttributes() ?>>
+<?php echo $estado_resultado->estado->ViewValue ?></span>
 </span>
 </td>
 	</tr>

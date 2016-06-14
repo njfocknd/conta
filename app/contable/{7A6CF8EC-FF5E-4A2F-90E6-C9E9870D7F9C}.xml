@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <configuration date="2016/06/13" author="e.World Technology Ltd.">
-<project id="{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}" file="E:\wamp\www\conta\pmp\contable.pmp" name="contable" product="PHPMaker" version="12.0" datetime="2016/06/13 21:02:38" languagefolder="phplang" userlevel="-2,&quot;Anonymous&quot;,0;">
+<project id="{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}" file="E:\wamp\www\conta\pmp\contable.pmp" name="contable" product="PHPMaker" version="12.0" datetime="2016/06/13 21:52:55" languagefolder="phplang" userlevel="-2,&quot;Anonymous&quot;,0;">
 <table id="clase_cuenta" name="clase_cuenta" caption="Clase de Cuenta" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
 <table id="cuenta" name="cuenta" caption="Cuenta" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
 <table id="cuenta_mayor_auxiliar" name="cuenta_mayor_auxiliar" caption="Cuenta Mayor Auxiliar" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
@@ -14,4 +14,7 @@
 <table id="balance_general" name="balance_general" caption="Balance General" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
 <table id="balance_general_detalle" name="balance_general_detalle" caption="Detalle del Balance General" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
 <table id="estado_resultado" name="estado_resultado" caption="estado resultado" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
+<table id="clase_resultado" name="clase_resultado" caption="Clase de Cuenta Resultado" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
+<table id="estado_resultado_detalle" name="estado_resultado_detalle" caption="estado resultado detalle" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
+<table id="grupo_resultado" name="grupo_resultado" caption="Grupo de Cuenta Resultado" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
 </project></configuration>
