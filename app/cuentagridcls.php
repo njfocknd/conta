@@ -861,14 +861,14 @@ class ccuenta_grid extends ccuenta {
 		if ($this->AllowAddDeleteRow) {
 			$item = &$this->ListOptions->Add("griddelete");
 			$item->CssStyle = "white-space: nowrap;";
-			$item->OnLeft = FALSE;
+			$item->OnLeft = TRUE;
 			$item->Visible = FALSE; // Default hidden
 		}
 
 		// Add group option item
 		$item = &$this->ListOptions->Add($this->ListOptions->GroupOptionName);
 		$item->Body = "";
-		$item->OnLeft = FALSE;
+		$item->OnLeft = TRUE;
 		$item->Visible = FALSE;
 
 		// Drop down button for ListOptions

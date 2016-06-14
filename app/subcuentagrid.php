@@ -141,6 +141,15 @@ $subcuenta_grid->ShowMessage();
 <?php if ($subcuenta_grid->TotalRecs > 0 || $subcuenta->CurrentAction <> "") { ?>
 <div class="panel panel-default ewGrid">
 <div id="fsubcuentagrid" class="ewForm form-inline">
+<?php if ($subcuenta_grid->ShowOtherOptions) { ?>
+<div class="panel-heading ewGridUpperPanel">
+<?php
+	foreach ($subcuenta_grid->OtherOptions as &$option)
+		$option->Render("body");
+?>
+</div>
+<div class="clearfix"></div>
+<?php } ?>
 <div id="gmp_subcuenta" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
 <table id="tbl_subcuentagrid" class="table ewTable">
 <?php echo $subcuenta->TableCustomInnerHtml ?>

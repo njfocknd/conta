@@ -139,6 +139,15 @@ $subgrupo_cuenta_grid->ShowMessage();
 <?php if ($subgrupo_cuenta_grid->TotalRecs > 0 || $subgrupo_cuenta->CurrentAction <> "") { ?>
 <div class="panel panel-default ewGrid">
 <div id="fsubgrupo_cuentagrid" class="ewForm form-inline">
+<?php if ($subgrupo_cuenta_grid->ShowOtherOptions) { ?>
+<div class="panel-heading ewGridUpperPanel">
+<?php
+	foreach ($subgrupo_cuenta_grid->OtherOptions as &$option)
+		$option->Render("body");
+?>
+</div>
+<div class="clearfix"></div>
+<?php } ?>
 <div id="gmp_subgrupo_cuenta" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
 <table id="tbl_subgrupo_cuentagrid" class="table ewTable">
 <?php echo $subgrupo_cuenta->TableCustomInnerHtml ?>

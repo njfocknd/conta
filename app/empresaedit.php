@@ -6,8 +6,7 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "empresainfo.php" ?>
-<?php include_once "sucursalgridcls.php" ?>
-<?php include_once "correlativogridcls.php" ?>
+<?php include_once "balance_generalgridcls.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -269,18 +268,10 @@ class cempresa_edit extends cempresa {
 		// Process auto fill
 		if (@$_POST["ajax"] == "autofill") {
 
-			// Process auto fill for detail table 'sucursal'
-			if (@$_POST["grid"] == "fsucursalgrid") {
-				if (!isset($GLOBALS["sucursal_grid"])) $GLOBALS["sucursal_grid"] = new csucursal_grid;
-				$GLOBALS["sucursal_grid"]->Page_Init();
-				$this->Page_Terminate();
-				exit();
-			}
-
-			// Process auto fill for detail table 'correlativo'
-			if (@$_POST["grid"] == "fcorrelativogrid") {
-				if (!isset($GLOBALS["correlativo_grid"])) $GLOBALS["correlativo_grid"] = new ccorrelativo_grid;
-				$GLOBALS["correlativo_grid"]->Page_Init();
+			// Process auto fill for detail table 'balance_general'
+			if (@$_POST["grid"] == "fbalance_generalgrid") {
+				if (!isset($GLOBALS["balance_general_grid"])) $GLOBALS["balance_general_grid"] = new cbalance_general_grid;
+				$GLOBALS["balance_general_grid"]->Page_Init();
 				$this->Page_Terminate();
 				exit();
 			}
@@ -474,17 +465,11 @@ class cempresa_edit extends cempresa {
 		if (!$this->nombre->FldIsDetailKey) {
 			$this->nombre->setFormValue($objForm->GetValue("x_nombre"));
 		}
-		if (!$this->direccion->FldIsDetailKey) {
-			$this->direccion->setFormValue($objForm->GetValue("x_direccion"));
-		}
-		if (!$this->nit->FldIsDetailKey) {
-			$this->nit->setFormValue($objForm->GetValue("x_nit"));
+		if (!$this->ticker->FldIsDetailKey) {
+			$this->ticker->setFormValue($objForm->GetValue("x_ticker"));
 		}
 		if (!$this->estado->FldIsDetailKey) {
 			$this->estado->setFormValue($objForm->GetValue("x_estado"));
-		}
-		if (!$this->idpais->FldIsDetailKey) {
-			$this->idpais->setFormValue($objForm->GetValue("x_idpais"));
 		}
 		if (!$this->idempresa->FldIsDetailKey)
 			$this->idempresa->setFormValue($objForm->GetValue("x_idempresa"));
@@ -496,10 +481,8 @@ class cempresa_edit extends cempresa {
 		$this->LoadRow();
 		$this->idempresa->CurrentValue = $this->idempresa->FormValue;
 		$this->nombre->CurrentValue = $this->nombre->FormValue;
-		$this->direccion->CurrentValue = $this->direccion->FormValue;
-		$this->nit->CurrentValue = $this->nit->FormValue;
+		$this->ticker->CurrentValue = $this->ticker->FormValue;
 		$this->estado->CurrentValue = $this->estado->FormValue;
-		$this->idpais->CurrentValue = $this->idpais->FormValue;
 	}
 
 	// Load row based on key values
@@ -533,10 +516,8 @@ class cempresa_edit extends cempresa {
 		$this->Row_Selected($row);
 		$this->idempresa->setDbValue($rs->fields('idempresa'));
 		$this->nombre->setDbValue($rs->fields('nombre'));
-		$this->direccion->setDbValue($rs->fields('direccion'));
-		$this->nit->setDbValue($rs->fields('nit'));
+		$this->ticker->setDbValue($rs->fields('ticker'));
 		$this->estado->setDbValue($rs->fields('estado'));
-		$this->idpais->setDbValue($rs->fields('idpais'));
 	}
 
 	// Load DbValue from recordset
@@ -545,10 +526,8 @@ class cempresa_edit extends cempresa {
 		$row = is_array($rs) ? $rs : $rs->fields;
 		$this->idempresa->DbValue = $row['idempresa'];
 		$this->nombre->DbValue = $row['nombre'];
-		$this->direccion->DbValue = $row['direccion'];
-		$this->nit->DbValue = $row['nit'];
+		$this->ticker->DbValue = $row['ticker'];
 		$this->estado->DbValue = $row['estado'];
-		$this->idpais->DbValue = $row['idpais'];
 	}
 
 	// Render row values based on field settings
@@ -563,10 +542,8 @@ class cempresa_edit extends cempresa {
 		// Common render codes for all row types
 		// idempresa
 		// nombre
-		// direccion
-		// nit
+		// ticker
 		// estado
-		// idpais
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -578,13 +555,9 @@ class cempresa_edit extends cempresa {
 		$this->nombre->ViewValue = $this->nombre->CurrentValue;
 		$this->nombre->ViewCustomAttributes = "";
 
-		// direccion
-		$this->direccion->ViewValue = $this->direccion->CurrentValue;
-		$this->direccion->ViewCustomAttributes = "";
-
-		// nit
-		$this->nit->ViewValue = $this->nit->CurrentValue;
-		$this->nit->ViewCustomAttributes = "";
+		// ticker
+		$this->ticker->ViewValue = $this->ticker->CurrentValue;
+		$this->ticker->ViewCustomAttributes = "";
 
 		// estado
 		if (strval($this->estado->CurrentValue) <> "") {
@@ -594,55 +567,20 @@ class cempresa_edit extends cempresa {
 		}
 		$this->estado->ViewCustomAttributes = "";
 
-		// idpais
-		if (strval($this->idpais->CurrentValue) <> "") {
-			$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
-		$sWhereWrk = "";
-		$lookuptblfilter = "`estado` = 'Activo'";
-		ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idpais, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-		$sSqlWrk .= " ORDER BY `nombre` ASC";
-			$rswrk = Conn()->Execute($sSqlWrk);
-			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$arwrk = array();
-				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idpais->ViewValue = $this->idpais->DisplayValue($arwrk);
-				$rswrk->Close();
-			} else {
-				$this->idpais->ViewValue = $this->idpais->CurrentValue;
-			}
-		} else {
-			$this->idpais->ViewValue = NULL;
-		}
-		$this->idpais->ViewCustomAttributes = "";
-
 			// nombre
 			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
 			$this->nombre->TooltipValue = "";
 
-			// direccion
-			$this->direccion->LinkCustomAttributes = "";
-			$this->direccion->HrefValue = "";
-			$this->direccion->TooltipValue = "";
-
-			// nit
-			$this->nit->LinkCustomAttributes = "";
-			$this->nit->HrefValue = "";
-			$this->nit->TooltipValue = "";
+			// ticker
+			$this->ticker->LinkCustomAttributes = "";
+			$this->ticker->HrefValue = "";
+			$this->ticker->TooltipValue = "";
 
 			// estado
 			$this->estado->LinkCustomAttributes = "";
 			$this->estado->HrefValue = "";
 			$this->estado->TooltipValue = "";
-
-			// idpais
-			$this->idpais->LinkCustomAttributes = "";
-			$this->idpais->HrefValue = "";
-			$this->idpais->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
 
 			// nombre
@@ -651,44 +589,16 @@ class cempresa_edit extends cempresa {
 			$this->nombre->EditValue = ew_HtmlEncode($this->nombre->CurrentValue);
 			$this->nombre->PlaceHolder = ew_RemoveHtml($this->nombre->FldCaption());
 
-			// direccion
-			$this->direccion->EditAttrs["class"] = "form-control";
-			$this->direccion->EditCustomAttributes = "";
-			$this->direccion->EditValue = ew_HtmlEncode($this->direccion->CurrentValue);
-			$this->direccion->PlaceHolder = ew_RemoveHtml($this->direccion->FldCaption());
-
-			// nit
-			$this->nit->EditAttrs["class"] = "form-control";
-			$this->nit->EditCustomAttributes = "";
-			$this->nit->EditValue = ew_HtmlEncode($this->nit->CurrentValue);
-			$this->nit->PlaceHolder = ew_RemoveHtml($this->nit->FldCaption());
+			// ticker
+			$this->ticker->EditAttrs["class"] = "form-control";
+			$this->ticker->EditCustomAttributes = "";
+			$this->ticker->EditValue = ew_HtmlEncode($this->ticker->CurrentValue);
+			$this->ticker->PlaceHolder = ew_RemoveHtml($this->ticker->FldCaption());
 
 			// estado
 			$this->estado->EditAttrs["class"] = "form-control";
 			$this->estado->EditCustomAttributes = "";
 			$this->estado->EditValue = $this->estado->Options(TRUE);
-
-			// idpais
-			$this->idpais->EditAttrs["class"] = "form-control";
-			$this->idpais->EditCustomAttributes = "";
-			if (trim(strval($this->idpais->CurrentValue)) == "") {
-				$sFilterWrk = "0=1";
-			} else {
-				$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER, "");
-			}
-			$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `pais`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			ew_AddFilter($sWhereWrk, $sFilterWrk);
-			$this->Lookup_Selecting($this->idpais, $sWhereWrk); // Call Lookup selecting
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$sSqlWrk .= " ORDER BY `nombre` ASC";
-			$rswrk = Conn()->Execute($sSqlWrk);
-			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
-			if ($rswrk) $rswrk->Close();
-			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
-			$this->idpais->EditValue = $arwrk;
 
 			// Edit refer script
 			// nombre
@@ -696,21 +606,13 @@ class cempresa_edit extends cempresa {
 			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
 
-			// direccion
-			$this->direccion->LinkCustomAttributes = "";
-			$this->direccion->HrefValue = "";
-
-			// nit
-			$this->nit->LinkCustomAttributes = "";
-			$this->nit->HrefValue = "";
+			// ticker
+			$this->ticker->LinkCustomAttributes = "";
+			$this->ticker->HrefValue = "";
 
 			// estado
 			$this->estado->LinkCustomAttributes = "";
 			$this->estado->HrefValue = "";
-
-			// idpais
-			$this->idpais->LinkCustomAttributes = "";
-			$this->idpais->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
 			$this->RowType == EW_ROWTYPE_EDIT ||
@@ -733,19 +635,21 @@ class cempresa_edit extends cempresa {
 		// Check if validation required
 		if (!EW_SERVER_VALIDATE)
 			return ($gsFormError == "");
+		if (!$this->nombre->FldIsDetailKey && !is_null($this->nombre->FormValue) && $this->nombre->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->nombre->FldCaption(), $this->nombre->ReqErrMsg));
+		}
+		if (!$this->ticker->FldIsDetailKey && !is_null($this->ticker->FormValue) && $this->ticker->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->ticker->FldCaption(), $this->ticker->ReqErrMsg));
+		}
 		if (!$this->estado->FldIsDetailKey && !is_null($this->estado->FormValue) && $this->estado->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->estado->FldCaption(), $this->estado->ReqErrMsg));
 		}
 
 		// Validate detail grid
 		$DetailTblVar = explode(",", $this->getCurrentDetailTable());
-		if (in_array("sucursal", $DetailTblVar) && $GLOBALS["sucursal"]->DetailEdit) {
-			if (!isset($GLOBALS["sucursal_grid"])) $GLOBALS["sucursal_grid"] = new csucursal_grid(); // get detail page object
-			$GLOBALS["sucursal_grid"]->ValidateGridForm();
-		}
-		if (in_array("correlativo", $DetailTblVar) && $GLOBALS["correlativo"]->DetailEdit) {
-			if (!isset($GLOBALS["correlativo_grid"])) $GLOBALS["correlativo_grid"] = new ccorrelativo_grid(); // get detail page object
-			$GLOBALS["correlativo_grid"]->ValidateGridForm();
+		if (in_array("balance_general", $DetailTblVar) && $GLOBALS["balance_general"]->DetailEdit) {
+			if (!isset($GLOBALS["balance_general_grid"])) $GLOBALS["balance_general_grid"] = new cbalance_general_grid(); // get detail page object
+			$GLOBALS["balance_general_grid"]->ValidateGridForm();
 		}
 
 		// Return validate result
@@ -766,6 +670,25 @@ class cempresa_edit extends cempresa {
 		$sFilter = $this->KeyFilter();
 		$sFilter = $this->ApplyUserIDFilters($sFilter);
 		$conn = &$this->Connection();
+		if ($this->ticker->CurrentValue <> "") { // Check field with unique index
+			$sFilterChk = "(`ticker` = '" . ew_AdjustSql($this->ticker->CurrentValue, $this->DBID) . "')";
+			$sFilterChk .= " AND NOT (" . $sFilter . ")";
+			$this->CurrentFilter = $sFilterChk;
+			$sSqlChk = $this->SQL();
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+			$rsChk = $conn->Execute($sSqlChk);
+			$conn->raiseErrorFn = '';
+			if ($rsChk === FALSE) {
+				return FALSE;
+			} elseif (!$rsChk->EOF) {
+				$sIdxErrMsg = str_replace("%f", $this->ticker->FldCaption(), $Language->Phrase("DupIndex"));
+				$sIdxErrMsg = str_replace("%v", $this->ticker->CurrentValue, $sIdxErrMsg);
+				$this->setFailureMessage($sIdxErrMsg);
+				$rsChk->Close();
+				return FALSE;
+			}
+			$rsChk->Close();
+		}
 		$this->CurrentFilter = $sFilter;
 		$sSql = $this->SQL();
 		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
@@ -788,19 +711,13 @@ class cempresa_edit extends cempresa {
 			$rsnew = array();
 
 			// nombre
-			$this->nombre->SetDbValueDef($rsnew, $this->nombre->CurrentValue, NULL, $this->nombre->ReadOnly);
+			$this->nombre->SetDbValueDef($rsnew, $this->nombre->CurrentValue, "", $this->nombre->ReadOnly);
 
-			// direccion
-			$this->direccion->SetDbValueDef($rsnew, $this->direccion->CurrentValue, NULL, $this->direccion->ReadOnly);
-
-			// nit
-			$this->nit->SetDbValueDef($rsnew, $this->nit->CurrentValue, NULL, $this->nit->ReadOnly);
+			// ticker
+			$this->ticker->SetDbValueDef($rsnew, $this->ticker->CurrentValue, "", $this->ticker->ReadOnly);
 
 			// estado
 			$this->estado->SetDbValueDef($rsnew, $this->estado->CurrentValue, "", $this->estado->ReadOnly);
-
-			// idpais
-			$this->idpais->SetDbValueDef($rsnew, $this->idpais->CurrentValue, NULL, $this->idpais->ReadOnly);
 
 			// Call Row Updating event
 			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
@@ -817,15 +734,9 @@ class cempresa_edit extends cempresa {
 				// Update detail records
 				$DetailTblVar = explode(",", $this->getCurrentDetailTable());
 				if ($EditRow) {
-					if (in_array("sucursal", $DetailTblVar) && $GLOBALS["sucursal"]->DetailEdit) {
-						if (!isset($GLOBALS["sucursal_grid"])) $GLOBALS["sucursal_grid"] = new csucursal_grid(); // Get detail page object
-						$EditRow = $GLOBALS["sucursal_grid"]->GridUpdate();
-					}
-				}
-				if ($EditRow) {
-					if (in_array("correlativo", $DetailTblVar) && $GLOBALS["correlativo"]->DetailEdit) {
-						if (!isset($GLOBALS["correlativo_grid"])) $GLOBALS["correlativo_grid"] = new ccorrelativo_grid(); // Get detail page object
-						$EditRow = $GLOBALS["correlativo_grid"]->GridUpdate();
+					if (in_array("balance_general", $DetailTblVar) && $GLOBALS["balance_general"]->DetailEdit) {
+						if (!isset($GLOBALS["balance_general_grid"])) $GLOBALS["balance_general_grid"] = new cbalance_general_grid(); // Get detail page object
+						$EditRow = $GLOBALS["balance_general_grid"]->GridUpdate();
 					}
 				}
 
@@ -870,34 +781,19 @@ class cempresa_edit extends cempresa {
 		}
 		if ($sDetailTblVar <> "") {
 			$DetailTblVar = explode(",", $sDetailTblVar);
-			if (in_array("sucursal", $DetailTblVar)) {
-				if (!isset($GLOBALS["sucursal_grid"]))
-					$GLOBALS["sucursal_grid"] = new csucursal_grid;
-				if ($GLOBALS["sucursal_grid"]->DetailEdit) {
-					$GLOBALS["sucursal_grid"]->CurrentMode = "edit";
-					$GLOBALS["sucursal_grid"]->CurrentAction = "gridedit";
+			if (in_array("balance_general", $DetailTblVar)) {
+				if (!isset($GLOBALS["balance_general_grid"]))
+					$GLOBALS["balance_general_grid"] = new cbalance_general_grid;
+				if ($GLOBALS["balance_general_grid"]->DetailEdit) {
+					$GLOBALS["balance_general_grid"]->CurrentMode = "edit";
+					$GLOBALS["balance_general_grid"]->CurrentAction = "gridedit";
 
 					// Save current master table to detail table
-					$GLOBALS["sucursal_grid"]->setCurrentMasterTable($this->TableVar);
-					$GLOBALS["sucursal_grid"]->setStartRecordNumber(1);
-					$GLOBALS["sucursal_grid"]->idempresa->FldIsDetailKey = TRUE;
-					$GLOBALS["sucursal_grid"]->idempresa->CurrentValue = $this->idempresa->CurrentValue;
-					$GLOBALS["sucursal_grid"]->idempresa->setSessionValue($GLOBALS["sucursal_grid"]->idempresa->CurrentValue);
-				}
-			}
-			if (in_array("correlativo", $DetailTblVar)) {
-				if (!isset($GLOBALS["correlativo_grid"]))
-					$GLOBALS["correlativo_grid"] = new ccorrelativo_grid;
-				if ($GLOBALS["correlativo_grid"]->DetailEdit) {
-					$GLOBALS["correlativo_grid"]->CurrentMode = "edit";
-					$GLOBALS["correlativo_grid"]->CurrentAction = "gridedit";
-
-					// Save current master table to detail table
-					$GLOBALS["correlativo_grid"]->setCurrentMasterTable($this->TableVar);
-					$GLOBALS["correlativo_grid"]->setStartRecordNumber(1);
-					$GLOBALS["correlativo_grid"]->idempresa->FldIsDetailKey = TRUE;
-					$GLOBALS["correlativo_grid"]->idempresa->CurrentValue = $this->idempresa->CurrentValue;
-					$GLOBALS["correlativo_grid"]->idempresa->setSessionValue($GLOBALS["correlativo_grid"]->idempresa->CurrentValue);
+					$GLOBALS["balance_general_grid"]->setCurrentMasterTable($this->TableVar);
+					$GLOBALS["balance_general_grid"]->setStartRecordNumber(1);
+					$GLOBALS["balance_general_grid"]->idempresa->FldIsDetailKey = TRUE;
+					$GLOBALS["balance_general_grid"]->idempresa->CurrentValue = $this->idempresa->CurrentValue;
+					$GLOBALS["balance_general_grid"]->idempresa->setSessionValue($GLOBALS["balance_general_grid"]->idempresa->CurrentValue);
 				}
 			}
 		}
@@ -1021,6 +917,12 @@ fempresaedit.Validate = function() {
 	for (var i = startcnt; i <= rowcnt; i++) {
 		var infix = ($k[0]) ? String(i) : "";
 		$fobj.data("rowindex", infix);
+			elm = this.GetElements("x" + infix + "_nombre");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $empresa->nombre->FldCaption(), $empresa->nombre->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_ticker");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $empresa->ticker->FldCaption(), $empresa->ticker->ReqErrMsg)) ?>");
 			elm = this.GetElements("x" + infix + "_estado");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $empresa->estado->FldCaption(), $empresa->estado->ReqErrMsg)) ?>");
@@ -1059,7 +961,6 @@ fempresaedit.ValidateRequired = false;
 // Dynamic selection lists
 fempresaedit.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 fempresaedit.Lists["x_estado"].Options = <?php echo json_encode($empresa->estado->Options()) ?>;
-fempresaedit.Lists["x_idpais"] = {"LinkField":"x_idpais","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
 // Form object for search
 </script>
@@ -1085,7 +986,7 @@ $empresa_edit->ShowMessage();
 <div>
 <?php if ($empresa->nombre->Visible) { // nombre ?>
 	<div id="r_nombre" class="form-group">
-		<label id="elh_empresa_nombre" for="x_nombre" class="col-sm-2 control-label ewLabel"><?php echo $empresa->nombre->FldCaption() ?></label>
+		<label id="elh_empresa_nombre" for="x_nombre" class="col-sm-2 control-label ewLabel"><?php echo $empresa->nombre->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
 		<div class="col-sm-10"><div<?php echo $empresa->nombre->CellAttributes() ?>>
 <span id="el_empresa_nombre">
 <input type="text" data-table="empresa" data-field="x_nombre" name="x_nombre" id="x_nombre" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($empresa->nombre->getPlaceHolder()) ?>" value="<?php echo $empresa->nombre->EditValue ?>"<?php echo $empresa->nombre->EditAttributes() ?>>
@@ -1093,24 +994,14 @@ $empresa_edit->ShowMessage();
 <?php echo $empresa->nombre->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
-<?php if ($empresa->direccion->Visible) { // direccion ?>
-	<div id="r_direccion" class="form-group">
-		<label id="elh_empresa_direccion" for="x_direccion" class="col-sm-2 control-label ewLabel"><?php echo $empresa->direccion->FldCaption() ?></label>
-		<div class="col-sm-10"><div<?php echo $empresa->direccion->CellAttributes() ?>>
-<span id="el_empresa_direccion">
-<input type="text" data-table="empresa" data-field="x_direccion" name="x_direccion" id="x_direccion" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($empresa->direccion->getPlaceHolder()) ?>" value="<?php echo $empresa->direccion->EditValue ?>"<?php echo $empresa->direccion->EditAttributes() ?>>
+<?php if ($empresa->ticker->Visible) { // ticker ?>
+	<div id="r_ticker" class="form-group">
+		<label id="elh_empresa_ticker" for="x_ticker" class="col-sm-2 control-label ewLabel"><?php echo $empresa->ticker->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $empresa->ticker->CellAttributes() ?>>
+<span id="el_empresa_ticker">
+<input type="text" data-table="empresa" data-field="x_ticker" name="x_ticker" id="x_ticker" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($empresa->ticker->getPlaceHolder()) ?>" value="<?php echo $empresa->ticker->EditValue ?>"<?php echo $empresa->ticker->EditAttributes() ?>>
 </span>
-<?php echo $empresa->direccion->CustomMsg ?></div></div>
-	</div>
-<?php } ?>
-<?php if ($empresa->nit->Visible) { // nit ?>
-	<div id="r_nit" class="form-group">
-		<label id="elh_empresa_nit" for="x_nit" class="col-sm-2 control-label ewLabel"><?php echo $empresa->nit->FldCaption() ?></label>
-		<div class="col-sm-10"><div<?php echo $empresa->nit->CellAttributes() ?>>
-<span id="el_empresa_nit">
-<input type="text" data-table="empresa" data-field="x_nit" name="x_nit" id="x_nit" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($empresa->nit->getPlaceHolder()) ?>" value="<?php echo $empresa->nit->EditValue ?>"<?php echo $empresa->nit->EditAttributes() ?>>
-</span>
-<?php echo $empresa->nit->CustomMsg ?></div></div>
+<?php echo $empresa->ticker->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
 <?php if ($empresa->estado->Visible) { // estado ?>
@@ -1145,69 +1036,15 @@ if (is_array($empresa->estado->EditValue)) {
 <?php echo $empresa->estado->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
-<?php if ($empresa->idpais->Visible) { // idpais ?>
-	<div id="r_idpais" class="form-group">
-		<label id="elh_empresa_idpais" for="x_idpais" class="col-sm-2 control-label ewLabel"><?php echo $empresa->idpais->FldCaption() ?></label>
-		<div class="col-sm-10"><div<?php echo $empresa->idpais->CellAttributes() ?>>
-<span id="el_empresa_idpais">
-<select data-table="empresa" data-field="x_idpais" data-value-separator="<?php echo ew_HtmlEncode(is_array($empresa->idpais->DisplayValueSeparator) ? json_encode($empresa->idpais->DisplayValueSeparator) : $empresa->idpais->DisplayValueSeparator) ?>" id="x_idpais" name="x_idpais"<?php echo $empresa->idpais->EditAttributes() ?>>
-<?php
-if (is_array($empresa->idpais->EditValue)) {
-	$arwrk = $empresa->idpais->EditValue;
-	$rowswrk = count($arwrk);
-	$emptywrk = TRUE;
-	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = ew_SameStr($empresa->idpais->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;		
-?>
-<option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $empresa->idpais->DisplayValue($arwrk[$rowcntwrk]) ?>
-</option>
-<?php
-	}
-	if ($emptywrk && strval($empresa->idpais->CurrentValue) <> "") {
-?>
-<option value="<?php echo ew_HtmlEncode($empresa->idpais->CurrentValue) ?>" selected><?php echo $empresa->idpais->CurrentValue ?></option>
-<?php
-    }
-}
-?>
-</select>
-<?php
-$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
-$sWhereWrk = "";
-$lookuptblfilter = "`estado` = 'Activo'";
-ew_AddFilter($sWhereWrk, $lookuptblfilter);
-$empresa->idpais->LookupFilters = array("s" => $sSqlWrk, "d" => "");
-$empresa->idpais->LookupFilters += array("f0" => "`idpais` = {filter_value}", "t0" => "3", "fn0" => "");
-$sSqlWrk = "";
-$empresa->Lookup_Selecting($empresa->idpais, $sWhereWrk); // Call Lookup selecting
-if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-$sSqlWrk .= " ORDER BY `nombre` ASC";
-if ($sSqlWrk <> "") $empresa->idpais->LookupFilters["s"] .= $sSqlWrk;
-?>
-<input type="hidden" name="s_x_idpais" id="s_x_idpais" value="<?php echo $empresa->idpais->LookupFilterQuery() ?>">
-</span>
-<?php echo $empresa->idpais->CustomMsg ?></div></div>
-	</div>
-<?php } ?>
 </div>
 <input type="hidden" data-table="empresa" data-field="x_idempresa" name="x_idempresa" id="x_idempresa" value="<?php echo ew_HtmlEncode($empresa->idempresa->CurrentValue) ?>">
 <?php
-	if (in_array("sucursal", explode(",", $empresa->getCurrentDetailTable())) && $sucursal->DetailEdit) {
+	if (in_array("balance_general", explode(",", $empresa->getCurrentDetailTable())) && $balance_general->DetailEdit) {
 ?>
 <?php if ($empresa->getCurrentDetailTable() <> "") { ?>
-<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("sucursal", "TblCaption") ?></h4>
+<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("balance_general", "TblCaption") ?></h4>
 <?php } ?>
-<?php include_once "sucursalgrid.php" ?>
-<?php } ?>
-<?php
-	if (in_array("correlativo", explode(",", $empresa->getCurrentDetailTable())) && $correlativo->DetailEdit) {
-?>
-<?php if ($empresa->getCurrentDetailTable() <> "") { ?>
-<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("correlativo", "TblCaption") ?></h4>
-<?php } ?>
-<?php include_once "correlativogrid.php" ?>
+<?php include_once "balance_generalgrid.php" ?>
 <?php } ?>
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">

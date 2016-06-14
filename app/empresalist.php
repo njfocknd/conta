@@ -6,8 +6,7 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "empresainfo.php" ?>
-<?php include_once "sucursalgridcls.php" ?>
-<?php include_once "correlativogridcls.php" ?>
+<?php include_once "balance_generalgridcls.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -357,18 +356,10 @@ class cempresa_list extends cempresa {
 		// Process auto fill
 		if (@$_POST["ajax"] == "autofill") {
 
-			// Process auto fill for detail table 'sucursal'
-			if (@$_POST["grid"] == "fsucursalgrid") {
-				if (!isset($GLOBALS["sucursal_grid"])) $GLOBALS["sucursal_grid"] = new csucursal_grid;
-				$GLOBALS["sucursal_grid"]->Page_Init();
-				$this->Page_Terminate();
-				exit();
-			}
-
-			// Process auto fill for detail table 'correlativo'
-			if (@$_POST["grid"] == "fcorrelativogrid") {
-				if (!isset($GLOBALS["correlativo_grid"])) $GLOBALS["correlativo_grid"] = new ccorrelativo_grid;
-				$GLOBALS["correlativo_grid"]->Page_Init();
+			// Process auto fill for detail table 'balance_general'
+			if (@$_POST["grid"] == "fbalance_generalgrid") {
+				if (!isset($GLOBALS["balance_general_grid"])) $GLOBALS["balance_general_grid"] = new cbalance_general_grid;
+				$GLOBALS["balance_general_grid"]->Page_Init();
 				$this->Page_Terminate();
 				exit();
 			}
@@ -538,28 +529,8 @@ class cempresa_list extends cempresa {
 					$option->HideAllOptions();
 			}
 
-			// Get default search criteria
-			ew_AddFilter($this->DefaultSearchWhere, $this->BasicSearchWhere(TRUE));
-
-			// Get basic search values
-			$this->LoadBasicSearchValues();
-
-			// Restore filter list
-			$this->RestoreFilterList();
-
-			// Restore search parms from Session if not searching / reset / export
-			if (($this->Export <> "" || $this->Command <> "search" && $this->Command <> "reset" && $this->Command <> "resetall") && $this->CheckSearchParms())
-				$this->RestoreSearchParms();
-
-			// Call Recordset SearchValidated event
-			$this->Recordset_SearchValidated();
-
 			// Set up sorting order
 			$this->SetUpSortOrder();
-
-			// Get basic search criteria
-			if ($gsSearchError == "")
-				$sSrchBasic = $this->BasicSearchWhere();
 		}
 
 		// Restore display records
@@ -571,31 +542,6 @@ class cempresa_list extends cempresa {
 
 		// Load Sorting Order
 		$this->LoadSortOrder();
-
-		// Load search default if no existing search criteria
-		if (!$this->CheckSearchParms()) {
-
-			// Load basic search from default
-			$this->BasicSearch->LoadDefault();
-			if ($this->BasicSearch->Keyword != "")
-				$sSrchBasic = $this->BasicSearchWhere();
-		}
-
-		// Build search criteria
-		ew_AddFilter($this->SearchWhere, $sSrchAdvanced);
-		ew_AddFilter($this->SearchWhere, $sSrchBasic);
-
-		// Call Recordset_Searching event
-		$this->Recordset_Searching($this->SearchWhere);
-
-		// Save search criteria
-		if ($this->Command == "search" && !$this->RestoreSearch) {
-			$this->setSearchWhere($this->SearchWhere); // Save to Session
-			$this->StartRec = 1; // Reset start record counter
-			$this->setStartRecordNumber($this->StartRec);
-		} else {
-			$this->SearchWhere = $this->getSearchWhere();
-		}
 
 		// Build filter
 		$sFilter = "";
@@ -659,248 +605,6 @@ class cempresa_list extends cempresa {
 		return TRUE;
 	}
 
-	// Get list of filters
-	function GetFilterList() {
-
-		// Initialize
-		$sFilterList = "";
-		$sFilterList = ew_Concat($sFilterList, $this->idempresa->AdvancedSearch->ToJSON(), ","); // Field idempresa
-		$sFilterList = ew_Concat($sFilterList, $this->nombre->AdvancedSearch->ToJSON(), ","); // Field nombre
-		$sFilterList = ew_Concat($sFilterList, $this->direccion->AdvancedSearch->ToJSON(), ","); // Field direccion
-		$sFilterList = ew_Concat($sFilterList, $this->nit->AdvancedSearch->ToJSON(), ","); // Field nit
-		$sFilterList = ew_Concat($sFilterList, $this->estado->AdvancedSearch->ToJSON(), ","); // Field estado
-		$sFilterList = ew_Concat($sFilterList, $this->idpais->AdvancedSearch->ToJSON(), ","); // Field idpais
-		if ($this->BasicSearch->Keyword <> "") {
-			$sWrk = "\"" . EW_TABLE_BASIC_SEARCH . "\":\"" . ew_JsEncode2($this->BasicSearch->Keyword) . "\",\"" . EW_TABLE_BASIC_SEARCH_TYPE . "\":\"" . ew_JsEncode2($this->BasicSearch->Type) . "\"";
-			$sFilterList = ew_Concat($sFilterList, $sWrk, ",");
-		}
-
-		// Return filter list in json
-		return ($sFilterList <> "") ? "{" . $sFilterList . "}" : "null";
-	}
-
-	// Restore list of filters
-	function RestoreFilterList() {
-
-		// Return if not reset filter
-		if (@$_POST["cmd"] <> "resetfilter")
-			return FALSE;
-		$filter = json_decode(ew_StripSlashes(@$_POST["filter"]), TRUE);
-		$this->Command = "search";
-
-		// Field idempresa
-		$this->idempresa->AdvancedSearch->SearchValue = @$filter["x_idempresa"];
-		$this->idempresa->AdvancedSearch->SearchOperator = @$filter["z_idempresa"];
-		$this->idempresa->AdvancedSearch->SearchCondition = @$filter["v_idempresa"];
-		$this->idempresa->AdvancedSearch->SearchValue2 = @$filter["y_idempresa"];
-		$this->idempresa->AdvancedSearch->SearchOperator2 = @$filter["w_idempresa"];
-		$this->idempresa->AdvancedSearch->Save();
-
-		// Field nombre
-		$this->nombre->AdvancedSearch->SearchValue = @$filter["x_nombre"];
-		$this->nombre->AdvancedSearch->SearchOperator = @$filter["z_nombre"];
-		$this->nombre->AdvancedSearch->SearchCondition = @$filter["v_nombre"];
-		$this->nombre->AdvancedSearch->SearchValue2 = @$filter["y_nombre"];
-		$this->nombre->AdvancedSearch->SearchOperator2 = @$filter["w_nombre"];
-		$this->nombre->AdvancedSearch->Save();
-
-		// Field direccion
-		$this->direccion->AdvancedSearch->SearchValue = @$filter["x_direccion"];
-		$this->direccion->AdvancedSearch->SearchOperator = @$filter["z_direccion"];
-		$this->direccion->AdvancedSearch->SearchCondition = @$filter["v_direccion"];
-		$this->direccion->AdvancedSearch->SearchValue2 = @$filter["y_direccion"];
-		$this->direccion->AdvancedSearch->SearchOperator2 = @$filter["w_direccion"];
-		$this->direccion->AdvancedSearch->Save();
-
-		// Field nit
-		$this->nit->AdvancedSearch->SearchValue = @$filter["x_nit"];
-		$this->nit->AdvancedSearch->SearchOperator = @$filter["z_nit"];
-		$this->nit->AdvancedSearch->SearchCondition = @$filter["v_nit"];
-		$this->nit->AdvancedSearch->SearchValue2 = @$filter["y_nit"];
-		$this->nit->AdvancedSearch->SearchOperator2 = @$filter["w_nit"];
-		$this->nit->AdvancedSearch->Save();
-
-		// Field estado
-		$this->estado->AdvancedSearch->SearchValue = @$filter["x_estado"];
-		$this->estado->AdvancedSearch->SearchOperator = @$filter["z_estado"];
-		$this->estado->AdvancedSearch->SearchCondition = @$filter["v_estado"];
-		$this->estado->AdvancedSearch->SearchValue2 = @$filter["y_estado"];
-		$this->estado->AdvancedSearch->SearchOperator2 = @$filter["w_estado"];
-		$this->estado->AdvancedSearch->Save();
-
-		// Field idpais
-		$this->idpais->AdvancedSearch->SearchValue = @$filter["x_idpais"];
-		$this->idpais->AdvancedSearch->SearchOperator = @$filter["z_idpais"];
-		$this->idpais->AdvancedSearch->SearchCondition = @$filter["v_idpais"];
-		$this->idpais->AdvancedSearch->SearchValue2 = @$filter["y_idpais"];
-		$this->idpais->AdvancedSearch->SearchOperator2 = @$filter["w_idpais"];
-		$this->idpais->AdvancedSearch->Save();
-		$this->BasicSearch->setKeyword(@$filter[EW_TABLE_BASIC_SEARCH]);
-		$this->BasicSearch->setType(@$filter[EW_TABLE_BASIC_SEARCH_TYPE]);
-	}
-
-	// Return basic search SQL
-	function BasicSearchSQL($arKeywords, $type) {
-		$sWhere = "";
-		$this->BuildBasicSearchSQL($sWhere, $this->nombre, $arKeywords, $type);
-		$this->BuildBasicSearchSQL($sWhere, $this->direccion, $arKeywords, $type);
-		$this->BuildBasicSearchSQL($sWhere, $this->nit, $arKeywords, $type);
-		return $sWhere;
-	}
-
-	// Build basic search SQL
-	function BuildBasicSearchSql(&$Where, &$Fld, $arKeywords, $type) {
-		$sDefCond = ($type == "OR") ? "OR" : "AND";
-		$arSQL = array(); // Array for SQL parts
-		$arCond = array(); // Array for search conditions
-		$cnt = count($arKeywords);
-		$j = 0; // Number of SQL parts
-		for ($i = 0; $i < $cnt; $i++) {
-			$Keyword = $arKeywords[$i];
-			$Keyword = trim($Keyword);
-			if (EW_BASIC_SEARCH_IGNORE_PATTERN <> "") {
-				$Keyword = preg_replace(EW_BASIC_SEARCH_IGNORE_PATTERN, "\\", $Keyword);
-				$ar = explode("\\", $Keyword);
-			} else {
-				$ar = array($Keyword);
-			}
-			foreach ($ar as $Keyword) {
-				if ($Keyword <> "") {
-					$sWrk = "";
-					if ($Keyword == "OR" && $type == "") {
-						if ($j > 0)
-							$arCond[$j-1] = "OR";
-					} elseif ($Keyword == EW_NULL_VALUE) {
-						$sWrk = $Fld->FldExpression . " IS NULL";
-					} elseif ($Keyword == EW_NOT_NULL_VALUE) {
-						$sWrk = $Fld->FldExpression . " IS NOT NULL";
-					} elseif ($Fld->FldIsVirtual && $Fld->FldVirtualSearch) {
-						$sWrk = $Fld->FldVirtualExpression . ew_Like(ew_QuotedValue("%" . $Keyword . "%", EW_DATATYPE_STRING, $this->DBID), $this->DBID);
-					} elseif ($Fld->FldDataType != EW_DATATYPE_NUMBER || is_numeric($Keyword)) {
-						$sWrk = $Fld->FldBasicSearchExpression . ew_Like(ew_QuotedValue("%" . $Keyword . "%", EW_DATATYPE_STRING, $this->DBID), $this->DBID);
-					}
-					if ($sWrk <> "") {
-						$arSQL[$j] = $sWrk;
-						$arCond[$j] = $sDefCond;
-						$j += 1;
-					}
-				}
-			}
-		}
-		$cnt = count($arSQL);
-		$bQuoted = FALSE;
-		$sSql = "";
-		if ($cnt > 0) {
-			for ($i = 0; $i < $cnt-1; $i++) {
-				if ($arCond[$i] == "OR") {
-					if (!$bQuoted) $sSql .= "(";
-					$bQuoted = TRUE;
-				}
-				$sSql .= $arSQL[$i];
-				if ($bQuoted && $arCond[$i] <> "OR") {
-					$sSql .= ")";
-					$bQuoted = FALSE;
-				}
-				$sSql .= " " . $arCond[$i] . " ";
-			}
-			$sSql .= $arSQL[$cnt-1];
-			if ($bQuoted)
-				$sSql .= ")";
-		}
-		if ($sSql <> "") {
-			if ($Where <> "") $Where .= " OR ";
-			$Where .=  "(" . $sSql . ")";
-		}
-	}
-
-	// Return basic search WHERE clause based on search keyword and type
-	function BasicSearchWhere($Default = FALSE) {
-		global $Security;
-		$sSearchStr = "";
-		$sSearchKeyword = ($Default) ? $this->BasicSearch->KeywordDefault : $this->BasicSearch->Keyword;
-		$sSearchType = ($Default) ? $this->BasicSearch->TypeDefault : $this->BasicSearch->Type;
-		if ($sSearchKeyword <> "") {
-			$sSearch = trim($sSearchKeyword);
-			if ($sSearchType <> "=") {
-				$ar = array();
-
-				// Match quoted keywords (i.e.: "...")
-				if (preg_match_all('/"([^"]*)"/i', $sSearch, $matches, PREG_SET_ORDER)) {
-					foreach ($matches as $match) {
-						$p = strpos($sSearch, $match[0]);
-						$str = substr($sSearch, 0, $p);
-						$sSearch = substr($sSearch, $p + strlen($match[0]));
-						if (strlen(trim($str)) > 0)
-							$ar = array_merge($ar, explode(" ", trim($str)));
-						$ar[] = $match[1]; // Save quoted keyword
-					}
-				}
-
-				// Match individual keywords
-				if (strlen(trim($sSearch)) > 0)
-					$ar = array_merge($ar, explode(" ", trim($sSearch)));
-
-				// Search keyword in any fields
-				if (($sSearchType == "OR" || $sSearchType == "AND") && $this->BasicSearch->BasicSearchAnyFields) {
-					foreach ($ar as $sKeyword) {
-						if ($sKeyword <> "") {
-							if ($sSearchStr <> "") $sSearchStr .= " " . $sSearchType . " ";
-							$sSearchStr .= "(" . $this->BasicSearchSQL(array($sKeyword), $sSearchType) . ")";
-						}
-					}
-				} else {
-					$sSearchStr = $this->BasicSearchSQL($ar, $sSearchType);
-				}
-			} else {
-				$sSearchStr = $this->BasicSearchSQL(array($sSearch), $sSearchType);
-			}
-			if (!$Default) $this->Command = "search";
-		}
-		if (!$Default && $this->Command == "search") {
-			$this->BasicSearch->setKeyword($sSearchKeyword);
-			$this->BasicSearch->setType($sSearchType);
-		}
-		return $sSearchStr;
-	}
-
-	// Check if search parm exists
-	function CheckSearchParms() {
-
-		// Check basic search
-		if ($this->BasicSearch->IssetSession())
-			return TRUE;
-		return FALSE;
-	}
-
-	// Clear all search parameters
-	function ResetSearchParms() {
-
-		// Clear search WHERE clause
-		$this->SearchWhere = "";
-		$this->setSearchWhere($this->SearchWhere);
-
-		// Clear basic search parameters
-		$this->ResetBasicSearchParms();
-	}
-
-	// Load advanced search default values
-	function LoadAdvancedSearchDefault() {
-		return FALSE;
-	}
-
-	// Clear all basic search parameters
-	function ResetBasicSearchParms() {
-		$this->BasicSearch->UnsetSession();
-	}
-
-	// Restore all search parameters
-	function RestoreSearchParms() {
-		$this->RestoreSearch = TRUE;
-
-		// Restore basic search values
-		$this->BasicSearch->Load();
-	}
-
 	// Set up sort parameters
 	function SetUpSortOrder() {
 
@@ -909,8 +613,7 @@ class cempresa_list extends cempresa {
 			$this->CurrentOrder = ew_StripSlashes(@$_GET["order"]);
 			$this->CurrentOrderType = @$_GET["ordertype"];
 			$this->UpdateSort($this->nombre); // nombre
-			$this->UpdateSort($this->direccion); // direccion
-			$this->UpdateSort($this->nit); // nit
+			$this->UpdateSort($this->ticker); // ticker
 			$this->setStartRecordNumber(1); // Reset start position
 		}
 	}
@@ -935,17 +638,12 @@ class cempresa_list extends cempresa {
 		// Check if reset command
 		if (substr($this->Command,0,5) == "reset") {
 
-			// Reset search criteria
-			if ($this->Command == "reset" || $this->Command == "resetall")
-				$this->ResetSearchParms();
-
 			// Reset sorting order
 			if ($this->Command == "resetsort") {
 				$sOrderBy = "";
 				$this->setSessionOrderBy($sOrderBy);
 				$this->nombre->setSort("");
-				$this->direccion->setSort("");
-				$this->nit->setSort("");
+				$this->ticker->setSort("");
 			}
 
 			// Reset start position
@@ -961,56 +659,47 @@ class cempresa_list extends cempresa {
 		// Add group option item
 		$item = &$this->ListOptions->Add($this->ListOptions->GroupOptionName);
 		$item->Body = "";
-		$item->OnLeft = FALSE;
+		$item->OnLeft = TRUE;
 		$item->Visible = FALSE;
 
 		// "view"
 		$item = &$this->ListOptions->Add("view");
 		$item->CssStyle = "white-space: nowrap;";
 		$item->Visible = TRUE;
-		$item->OnLeft = FALSE;
+		$item->OnLeft = TRUE;
 
 		// "edit"
 		$item = &$this->ListOptions->Add("edit");
 		$item->CssStyle = "white-space: nowrap;";
 		$item->Visible = TRUE;
-		$item->OnLeft = FALSE;
+		$item->OnLeft = TRUE;
 
-		// "detail_sucursal"
-		$item = &$this->ListOptions->Add("detail_sucursal");
+		// "detail_balance_general"
+		$item = &$this->ListOptions->Add("detail_balance_general");
 		$item->CssStyle = "white-space: nowrap;";
 		$item->Visible = TRUE && !$this->ShowMultipleDetails;
-		$item->OnLeft = FALSE;
+		$item->OnLeft = TRUE;
 		$item->ShowInButtonGroup = FALSE;
-		if (!isset($GLOBALS["sucursal_grid"])) $GLOBALS["sucursal_grid"] = new csucursal_grid;
-
-		// "detail_correlativo"
-		$item = &$this->ListOptions->Add("detail_correlativo");
-		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = TRUE && !$this->ShowMultipleDetails;
-		$item->OnLeft = FALSE;
-		$item->ShowInButtonGroup = FALSE;
-		if (!isset($GLOBALS["correlativo_grid"])) $GLOBALS["correlativo_grid"] = new ccorrelativo_grid;
+		if (!isset($GLOBALS["balance_general_grid"])) $GLOBALS["balance_general_grid"] = new cbalance_general_grid;
 
 		// Multiple details
 		if ($this->ShowMultipleDetails) {
 			$item = &$this->ListOptions->Add("details");
 			$item->CssStyle = "white-space: nowrap;";
 			$item->Visible = $this->ShowMultipleDetails;
-			$item->OnLeft = FALSE;
+			$item->OnLeft = TRUE;
 			$item->ShowInButtonGroup = FALSE;
 		}
 
 		// Set up detail pages
 		$pages = new cSubPages();
-		$pages->Add("sucursal");
-		$pages->Add("correlativo");
+		$pages->Add("balance_general");
 		$this->DetailPages = $pages;
 
 		// List actions
 		$item = &$this->ListOptions->Add("listactions");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->OnLeft = FALSE;
+		$item->OnLeft = TRUE;
 		$item->Visible = FALSE;
 		$item->ShowInButtonGroup = FALSE;
 		$item->ShowInDropDown = FALSE;
@@ -1018,8 +707,9 @@ class cempresa_list extends cempresa {
 		// "checkbox"
 		$item = &$this->ListOptions->Add("checkbox");
 		$item->Visible = FALSE;
-		$item->OnLeft = FALSE;
+		$item->OnLeft = TRUE;
 		$item->Header = "<input type=\"checkbox\" name=\"key\" id=\"key\" onclick=\"ew_SelectAllKey(this);\">";
+		$item->MoveTo(0);
 		$item->ShowInDropDown = FALSE;
 		$item->ShowInButtonGroup = FALSE;
 
@@ -1027,7 +717,7 @@ class cempresa_list extends cempresa {
 		$this->ListOptions->UseImageAndText = TRUE;
 		$this->ListOptions->UseDropDownButton = FALSE;
 		$this->ListOptions->DropDownButtonPhrase = $Language->Phrase("ButtonListOptions");
-		$this->ListOptions->UseButtonGroup = FALSE;
+		$this->ListOptions->UseButtonGroup = TRUE;
 		if ($this->ListOptions->UseButtonGroup && ew_IsMobile())
 			$this->ListOptions->UseDropDownButton = TRUE;
 		$this->ListOptions->ButtonClass = "btn-sm"; // Class for button group
@@ -1091,46 +781,21 @@ class cempresa_list extends cempresa {
 		$DetailCopyTblVar = "";
 		$DetailEditTblVar = "";
 
-		// "detail_sucursal"
-		$oListOpt = &$this->ListOptions->Items["detail_sucursal"];
+		// "detail_balance_general"
+		$oListOpt = &$this->ListOptions->Items["detail_balance_general"];
 		if (TRUE) {
-			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("sucursal", "TblCaption");
-			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("sucursallist.php?" . EW_TABLE_SHOW_MASTER . "=empresa&fk_idempresa=" . urlencode(strval($this->idempresa->CurrentValue)) . "") . "\">" . $body . "</a>";
+			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("balance_general", "TblCaption");
+			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("balance_generallist.php?" . EW_TABLE_SHOW_MASTER . "=empresa&fk_idempresa=" . urlencode(strval($this->idempresa->CurrentValue)) . "") . "\">" . $body . "</a>";
 			$links = "";
-			if ($GLOBALS["sucursal_grid"]->DetailView) {
-				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=sucursal")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+			if ($GLOBALS["balance_general_grid"]->DetailView) {
+				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=balance_general")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
 				if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
-				$DetailViewTblVar .= "sucursal";
+				$DetailViewTblVar .= "balance_general";
 			}
-			if ($GLOBALS["sucursal_grid"]->DetailEdit) {
-				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=sucursal")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+			if ($GLOBALS["balance_general_grid"]->DetailEdit) {
+				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=balance_general")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
 				if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
-				$DetailEditTblVar .= "sucursal";
-			}
-			if ($links <> "") {
-				$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
-				$body .= "<ul class=\"dropdown-menu\">". $links . "</ul>";
-			}
-			$body = "<div class=\"btn-group\">" . $body . "</div>";
-			$oListOpt->Body = $body;
-			if ($this->ShowMultipleDetails) $oListOpt->Visible = FALSE;
-		}
-
-		// "detail_correlativo"
-		$oListOpt = &$this->ListOptions->Items["detail_correlativo"];
-		if (TRUE) {
-			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("correlativo", "TblCaption");
-			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("correlativolist.php?" . EW_TABLE_SHOW_MASTER . "=empresa&fk_idempresa=" . urlencode(strval($this->idempresa->CurrentValue)) . "") . "\">" . $body . "</a>";
-			$links = "";
-			if ($GLOBALS["correlativo_grid"]->DetailView) {
-				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=correlativo")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
-				if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
-				$DetailViewTblVar .= "correlativo";
-			}
-			if ($GLOBALS["correlativo_grid"]->DetailEdit) {
-				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=correlativo")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
-				if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
-				$DetailEditTblVar .= "correlativo";
+				$DetailEditTblVar .= "balance_general";
 			}
 			if ($links <> "") {
 				$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
@@ -1185,23 +850,14 @@ class cempresa_list extends cempresa {
 		$item->Visible = ($this->AddUrl <> "");
 		$option = $options["detail"];
 		$DetailTableLink = "";
-		$item = &$option->Add("detailadd_sucursal");
-		$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=sucursal");
-		$caption = $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["sucursal"]->TableCaption();
+		$item = &$option->Add("detailadd_balance_general");
+		$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=balance_general");
+		$caption = $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["balance_general"]->TableCaption();
 		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $caption . "</a>";
-		$item->Visible = ($GLOBALS["sucursal"]->DetailAdd);
+		$item->Visible = ($GLOBALS["balance_general"]->DetailAdd);
 		if ($item->Visible) {
 			if ($DetailTableLink <> "") $DetailTableLink .= ",";
-			$DetailTableLink .= "sucursal";
-		}
-		$item = &$option->Add("detailadd_correlativo");
-		$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=correlativo");
-		$caption = $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["correlativo"]->TableCaption();
-		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $caption . "</a>";
-		$item->Visible = ($GLOBALS["correlativo"]->DetailAdd);
-		if ($item->Visible) {
-			if ($DetailTableLink <> "") $DetailTableLink .= ",";
-			$DetailTableLink .= "correlativo";
+			$DetailTableLink .= "balance_general";
 		}
 
 		// Add multiple details
@@ -1238,10 +894,10 @@ class cempresa_list extends cempresa {
 		// Filter button
 		$item = &$this->FilterOptions->Add("savecurrentfilter");
 		$item->Body = "<a class=\"ewSaveFilter\" data-form=\"fempresalistsrch\" href=\"#\">" . $Language->Phrase("SaveCurrentFilter") . "</a>";
-		$item->Visible = TRUE;
+		$item->Visible = FALSE;
 		$item = &$this->FilterOptions->Add("deletefilter");
 		$item->Body = "<a class=\"ewDeleteFilter\" data-form=\"fempresalistsrch\" href=\"#\">" . $Language->Phrase("DeleteFilter") . "</a>";
-		$item->Visible = TRUE;
+		$item->Visible = FALSE;
 		$this->FilterOptions->UseDropDownButton = TRUE;
 		$this->FilterOptions->UseButtonGroup = !$this->FilterOptions->UseDropDownButton;
 		$this->FilterOptions->DropDownButtonPhrase = $Language->Phrase("Filters");
@@ -1365,17 +1021,6 @@ class cempresa_list extends cempresa {
 		$this->SearchOptions->Tag = "div";
 		$this->SearchOptions->TagClassName = "ewSearchOption";
 
-		// Search button
-		$item = &$this->SearchOptions->Add("searchtoggle");
-		$SearchToggleClass = ($this->SearchWhere <> "") ? " active" : " active";
-		$item->Body = "<button type=\"button\" class=\"btn btn-default ewSearchToggle" . $SearchToggleClass . "\" title=\"" . $Language->Phrase("SearchPanel") . "\" data-caption=\"" . $Language->Phrase("SearchPanel") . "\" data-toggle=\"button\" data-form=\"fempresalistsrch\">" . $Language->Phrase("SearchBtn") . "</button>";
-		$item->Visible = TRUE;
-
-		// Show all button
-		$item = &$this->SearchOptions->Add("showall");
-		$item->Body = "<a class=\"btn btn-default ewShowAll\" title=\"" . $Language->Phrase("ShowAll") . "\" data-caption=\"" . $Language->Phrase("ShowAll") . "\" href=\"" . $this->PageUrl() . "cmd=reset\">" . $Language->Phrase("ShowAllBtn") . "</a>";
-		$item->Visible = ($this->SearchWhere <> $this->DefaultSearchWhere && $this->SearchWhere <> "0=101");
-
 		// Button group for search
 		$this->SearchOptions->UseDropDownButton = FALSE;
 		$this->SearchOptions->UseImageAndText = TRUE;
@@ -1436,13 +1081,6 @@ class cempresa_list extends cempresa {
 		}
 	}
 
-	// Load basic search values
-	function LoadBasicSearchValues() {
-		$this->BasicSearch->Keyword = @$_GET[EW_TABLE_BASIC_SEARCH];
-		if ($this->BasicSearch->Keyword <> "") $this->Command = "search";
-		$this->BasicSearch->Type = @$_GET[EW_TABLE_BASIC_SEARCH_TYPE];
-	}
-
 	// Load recordset
 	function LoadRecordset($offset = -1, $rowcnt = -1) {
 
@@ -1500,10 +1138,8 @@ class cempresa_list extends cempresa {
 		$this->Row_Selected($row);
 		$this->idempresa->setDbValue($rs->fields('idempresa'));
 		$this->nombre->setDbValue($rs->fields('nombre'));
-		$this->direccion->setDbValue($rs->fields('direccion'));
-		$this->nit->setDbValue($rs->fields('nit'));
+		$this->ticker->setDbValue($rs->fields('ticker'));
 		$this->estado->setDbValue($rs->fields('estado'));
-		$this->idpais->setDbValue($rs->fields('idpais'));
 	}
 
 	// Load DbValue from recordset
@@ -1512,10 +1148,8 @@ class cempresa_list extends cempresa {
 		$row = is_array($rs) ? $rs : $rs->fields;
 		$this->idempresa->DbValue = $row['idempresa'];
 		$this->nombre->DbValue = $row['nombre'];
-		$this->direccion->DbValue = $row['direccion'];
-		$this->nit->DbValue = $row['nit'];
+		$this->ticker->DbValue = $row['ticker'];
 		$this->estado->DbValue = $row['estado'];
-		$this->idpais->DbValue = $row['idpais'];
 	}
 
 	// Load old record
@@ -1559,10 +1193,8 @@ class cempresa_list extends cempresa {
 		// Common render codes for all row types
 		// idempresa
 		// nombre
-		// direccion
-		// nit
+		// ticker
 		// estado
-		// idpais
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -1574,13 +1206,9 @@ class cempresa_list extends cempresa {
 		$this->nombre->ViewValue = $this->nombre->CurrentValue;
 		$this->nombre->ViewCustomAttributes = "";
 
-		// direccion
-		$this->direccion->ViewValue = $this->direccion->CurrentValue;
-		$this->direccion->ViewCustomAttributes = "";
-
-		// nit
-		$this->nit->ViewValue = $this->nit->CurrentValue;
-		$this->nit->ViewCustomAttributes = "";
+		// ticker
+		$this->ticker->ViewValue = $this->ticker->CurrentValue;
+		$this->ticker->ViewCustomAttributes = "";
 
 		// estado
 		if (strval($this->estado->CurrentValue) <> "") {
@@ -1590,45 +1218,15 @@ class cempresa_list extends cempresa {
 		}
 		$this->estado->ViewCustomAttributes = "";
 
-		// idpais
-		if (strval($this->idpais->CurrentValue) <> "") {
-			$sFilterWrk = "`idpais`" . ew_SearchString("=", $this->idpais->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `idpais`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pais`";
-		$sWhereWrk = "";
-		$lookuptblfilter = "`estado` = 'Activo'";
-		ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idpais, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-		$sSqlWrk .= " ORDER BY `nombre` ASC";
-			$rswrk = Conn()->Execute($sSqlWrk);
-			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$arwrk = array();
-				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idpais->ViewValue = $this->idpais->DisplayValue($arwrk);
-				$rswrk->Close();
-			} else {
-				$this->idpais->ViewValue = $this->idpais->CurrentValue;
-			}
-		} else {
-			$this->idpais->ViewValue = NULL;
-		}
-		$this->idpais->ViewCustomAttributes = "";
-
 			// nombre
 			$this->nombre->LinkCustomAttributes = "";
 			$this->nombre->HrefValue = "";
 			$this->nombre->TooltipValue = "";
 
-			// direccion
-			$this->direccion->LinkCustomAttributes = "";
-			$this->direccion->HrefValue = "";
-			$this->direccion->TooltipValue = "";
-
-			// nit
-			$this->nit->LinkCustomAttributes = "";
-			$this->nit->HrefValue = "";
-			$this->nit->TooltipValue = "";
+			// ticker
+			$this->ticker->LinkCustomAttributes = "";
+			$this->ticker->HrefValue = "";
+			$this->ticker->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -1809,7 +1407,6 @@ fempresalist.ValidateRequired = false;
 // Dynamic selection lists
 // Form object for search
 
-var CurrentSearchForm = fempresalistsrch = new ew_Form("fempresalistsrch");
 </script>
 <script type="text/javascript">
 
@@ -1819,12 +1416,6 @@ var CurrentSearchForm = fempresalistsrch = new ew_Form("fempresalistsrch");
 <?php $Breadcrumb->Render(); ?>
 <?php if ($empresa_list->TotalRecs > 0 && $empresa_list->ExportOptions->Visible()) { ?>
 <?php $empresa_list->ExportOptions->Render("body") ?>
-<?php } ?>
-<?php if ($empresa_list->SearchOptions->Visible()) { ?>
-<?php $empresa_list->SearchOptions->Render("body") ?>
-<?php } ?>
-<?php if ($empresa_list->FilterOptions->Visible()) { ?>
-<?php $empresa_list->FilterOptions->Render("body") ?>
 <?php } ?>
 <?php echo $Language->SelectionForm(); ?>
 <div class="clearfix"></div>
@@ -1855,39 +1446,68 @@ var CurrentSearchForm = fempresalistsrch = new ew_Form("fempresalistsrch");
 	}
 $empresa_list->RenderOtherOptions();
 ?>
-<?php if ($empresa->Export == "" && $empresa->CurrentAction == "") { ?>
-<form name="fempresalistsrch" id="fempresalistsrch" class="form-inline ewForm" action="<?php echo ew_CurrentPage() ?>">
-<?php $SearchPanelClass = ($empresa_list->SearchWhere <> "") ? " in" : " in"; ?>
-<div id="fempresalistsrch_SearchPanel" class="ewSearchPanel collapse<?php echo $SearchPanelClass ?>">
-<input type="hidden" name="cmd" value="search">
-<input type="hidden" name="t" value="empresa">
-	<div class="ewBasicSearch">
-<div id="xsr_1" class="ewRow">
-	<div class="ewQuickSearch input-group">
-	<input type="text" name="<?php echo EW_TABLE_BASIC_SEARCH ?>" id="<?php echo EW_TABLE_BASIC_SEARCH ?>" class="form-control" value="<?php echo ew_HtmlEncode($empresa_list->BasicSearch->getKeyword()) ?>" placeholder="<?php echo ew_HtmlEncode($Language->Phrase("Search")) ?>">
-	<input type="hidden" name="<?php echo EW_TABLE_BASIC_SEARCH_TYPE ?>" id="<?php echo EW_TABLE_BASIC_SEARCH_TYPE ?>" value="<?php echo ew_HtmlEncode($empresa_list->BasicSearch->getType()) ?>">
-	<div class="input-group-btn">
-		<button type="button" data-toggle="dropdown" class="btn btn-default"><span id="searchtype"><?php echo $empresa_list->BasicSearch->getTypeNameShort() ?></span><span class="caret"></span></button>
-		<ul class="dropdown-menu pull-right" role="menu">
-			<li<?php if ($empresa_list->BasicSearch->getType() == "") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this)"><?php echo $Language->Phrase("QuickSearchAuto") ?></a></li>
-			<li<?php if ($empresa_list->BasicSearch->getType() == "=") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'=')"><?php echo $Language->Phrase("QuickSearchExact") ?></a></li>
-			<li<?php if ($empresa_list->BasicSearch->getType() == "AND") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'AND')"><?php echo $Language->Phrase("QuickSearchAll") ?></a></li>
-			<li<?php if ($empresa_list->BasicSearch->getType() == "OR") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'OR')"><?php echo $Language->Phrase("QuickSearchAny") ?></a></li>
-		</ul>
-	<button class="btn btn-primary ewButton" name="btnsubmit" id="btnsubmit" type="submit"><?php echo $Language->Phrase("QuickSearchBtn") ?></button>
-	</div>
-	</div>
-</div>
-	</div>
-</div>
-</form>
-<?php } ?>
 <?php $empresa_list->ShowPageHeader(); ?>
 <?php
 $empresa_list->ShowMessage();
 ?>
 <?php if ($empresa_list->TotalRecs > 0 || $empresa->CurrentAction <> "") { ?>
 <div class="panel panel-default ewGrid">
+<div class="panel-heading ewGridUpperPanel">
+<?php if ($empresa->CurrentAction <> "gridadd" && $empresa->CurrentAction <> "gridedit") { ?>
+<form name="ewPagerForm" class="form-inline ewForm ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
+<?php if (!isset($empresa_list->Pager)) $empresa_list->Pager = new cPrevNextPager($empresa_list->StartRec, $empresa_list->DisplayRecs, $empresa_list->TotalRecs) ?>
+<?php if ($empresa_list->Pager->RecordCount > 0) { ?>
+<div class="ewPager">
+<span><?php echo $Language->Phrase("Page") ?>&nbsp;</span>
+<div class="ewPrevNext"><div class="input-group">
+<div class="input-group-btn">
+<!--first page button-->
+	<?php if ($empresa_list->Pager->FirstButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerFirst") ?>" href="<?php echo $empresa_list->PageUrl() ?>start=<?php echo $empresa_list->Pager->FirstButton->Start ?>"><span class="icon-first ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerFirst") ?>"><span class="icon-first ewIcon"></span></a>
+	<?php } ?>
+<!--previous page button-->
+	<?php if ($empresa_list->Pager->PrevButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerPrevious") ?>" href="<?php echo $empresa_list->PageUrl() ?>start=<?php echo $empresa_list->Pager->PrevButton->Start ?>"><span class="icon-prev ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerPrevious") ?>"><span class="icon-prev ewIcon"></span></a>
+	<?php } ?>
+</div>
+<!--current page number-->
+	<input class="form-control input-sm" type="text" name="<?php echo EW_TABLE_PAGE_NO ?>" value="<?php echo $empresa_list->Pager->CurrentPage ?>">
+<div class="input-group-btn">
+<!--next page button-->
+	<?php if ($empresa_list->Pager->NextButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerNext") ?>" href="<?php echo $empresa_list->PageUrl() ?>start=<?php echo $empresa_list->Pager->NextButton->Start ?>"><span class="icon-next ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerNext") ?>"><span class="icon-next ewIcon"></span></a>
+	<?php } ?>
+<!--last page button-->
+	<?php if ($empresa_list->Pager->LastButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerLast") ?>" href="<?php echo $empresa_list->PageUrl() ?>start=<?php echo $empresa_list->Pager->LastButton->Start ?>"><span class="icon-last ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerLast") ?>"><span class="icon-last ewIcon"></span></a>
+	<?php } ?>
+</div>
+</div>
+</div>
+<span>&nbsp;<?php echo $Language->Phrase("of") ?>&nbsp;<?php echo $empresa_list->Pager->PageCount ?></span>
+</div>
+<div class="ewPager ewRec">
+	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $empresa_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $empresa_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $empresa_list->Pager->RecordCount ?></span>
+</div>
+<?php } ?>
+</form>
+<?php } ?>
+<div class="ewListOtherOptions">
+<?php
+	foreach ($empresa_list->OtherOptions as &$option)
+		$option->Render("body");
+?>
+</div>
+<div class="clearfix"></div>
+</div>
 <form name="fempresalist" id="fempresalist" class="form-inline ewForm ewListForm" action="<?php echo ew_CurrentPage() ?>" method="post">
 <?php if ($empresa_list->CheckToken) { ?>
 <input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $empresa_list->Token ?>">
@@ -1915,25 +1535,16 @@ $empresa_list->ListOptions->Render("header", "left");
 		<th data-name="nombre"><div id="elh_empresa_nombre" class="empresa_nombre"><div class="ewTableHeaderCaption"><?php echo $empresa->nombre->FldCaption() ?></div></div></th>
 	<?php } else { ?>
 		<th data-name="nombre"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $empresa->SortUrl($empresa->nombre) ?>',1);"><div id="elh_empresa_nombre" class="empresa_nombre">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $empresa->nombre->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($empresa->nombre->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($empresa->nombre->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $empresa->nombre->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($empresa->nombre->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($empresa->nombre->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
-<?php if ($empresa->direccion->Visible) { // direccion ?>
-	<?php if ($empresa->SortUrl($empresa->direccion) == "") { ?>
-		<th data-name="direccion"><div id="elh_empresa_direccion" class="empresa_direccion"><div class="ewTableHeaderCaption"><?php echo $empresa->direccion->FldCaption() ?></div></div></th>
+<?php if ($empresa->ticker->Visible) { // ticker ?>
+	<?php if ($empresa->SortUrl($empresa->ticker) == "") { ?>
+		<th data-name="ticker"><div id="elh_empresa_ticker" class="empresa_ticker"><div class="ewTableHeaderCaption"><?php echo $empresa->ticker->FldCaption() ?></div></div></th>
 	<?php } else { ?>
-		<th data-name="direccion"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $empresa->SortUrl($empresa->direccion) ?>',1);"><div id="elh_empresa_direccion" class="empresa_direccion">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $empresa->direccion->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($empresa->direccion->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($empresa->direccion->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($empresa->nit->Visible) { // nit ?>
-	<?php if ($empresa->SortUrl($empresa->nit) == "") { ?>
-		<th data-name="nit"><div id="elh_empresa_nit" class="empresa_nit"><div class="ewTableHeaderCaption"><?php echo $empresa->nit->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="nit"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $empresa->SortUrl($empresa->nit) ?>',1);"><div id="elh_empresa_nit" class="empresa_nit">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $empresa->nit->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($empresa->nit->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($empresa->nit->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+		<th data-name="ticker"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $empresa->SortUrl($empresa->ticker) ?>',1);"><div id="elh_empresa_ticker" class="empresa_ticker">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $empresa->ticker->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($empresa->ticker->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($empresa->ticker->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -2010,19 +1621,11 @@ $empresa_list->ListOptions->Render("body", "left", $empresa_list->RowCnt);
 </span>
 <a id="<?php echo $empresa_list->PageObjName . "_row_" . $empresa_list->RowCnt ?>"></a></td>
 	<?php } ?>
-	<?php if ($empresa->direccion->Visible) { // direccion ?>
-		<td data-name="direccion"<?php echo $empresa->direccion->CellAttributes() ?>>
-<span id="el<?php echo $empresa_list->RowCnt ?>_empresa_direccion" class="empresa_direccion">
-<span<?php echo $empresa->direccion->ViewAttributes() ?>>
-<?php echo $empresa->direccion->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($empresa->nit->Visible) { // nit ?>
-		<td data-name="nit"<?php echo $empresa->nit->CellAttributes() ?>>
-<span id="el<?php echo $empresa_list->RowCnt ?>_empresa_nit" class="empresa_nit">
-<span<?php echo $empresa->nit->ViewAttributes() ?>>
-<?php echo $empresa->nit->ListViewValue() ?></span>
+	<?php if ($empresa->ticker->Visible) { // ticker ?>
+		<td data-name="ticker"<?php echo $empresa->ticker->CellAttributes() ?>>
+<span id="el<?php echo $empresa_list->RowCnt ?>_empresa_ticker" class="empresa_ticker">
+<span<?php echo $empresa->ticker->ViewAttributes() ?>>
+<?php echo $empresa->ticker->ListViewValue() ?></span>
 </span>
 </td>
 	<?php } ?>
@@ -2122,8 +1725,6 @@ if ($empresa_list->Recordset)
 <div class="clearfix"></div>
 <?php } ?>
 <script type="text/javascript">
-fempresalistsrch.Init();
-fempresalistsrch.FilterList = <?php echo $empresa_list->GetFilterList() ?>;
 fempresalist.Init();
 </script>
 <?php

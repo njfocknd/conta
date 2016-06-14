@@ -52,7 +52,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`banco_BEFORE_INSERT` BEFORE INSERT ON `banco` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`banco_BEFORE_INSERT` BEFORE INSERT ON `banco` FOR EACH ROW
 BEGIN
 	set new.fecha_insercion = now();
 END */;;
@@ -70,7 +70,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`banco_BEFORE_UPDATE` BEFORE UPDATE ON `banco` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`banco_BEFORE_UPDATE` BEFORE UPDATE ON `banco` FOR EACH ROW
 BEGIN
 	if old.fecha_insercion != new.fecha_insercion then
 		set new.fecha_insercion = old.fecha_insercion;
@@ -123,7 +123,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`banco_cuenta_BEFORE_INSERT` BEFORE INSERT ON `banco_cuenta` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`banco_cuenta_BEFORE_INSERT` BEFORE INSERT ON `banco_cuenta` FOR EACH ROW
 BEGIN
 	set new.fecha_insercion = now();
 END */;;
@@ -141,7 +141,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`banco_cuenta_BEFORE_UPDATE` BEFORE UPDATE ON `banco_cuenta` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`banco_cuenta_BEFORE_UPDATE` BEFORE UPDATE ON `banco_cuenta` FOR EACH ROW
 BEGIN
 	if old.fecha_insercion != new.fecha_insercion then
 		set new.fecha_insercion = old.fecha_insercion;
@@ -198,7 +198,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`caja_chica_BEFORE_INSERT` BEFORE INSERT ON `caja_chica` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`caja_chica_BEFORE_INSERT` BEFORE INSERT ON `caja_chica` FOR EACH ROW
 BEGIN
 	set new.fecha_insercion = now();
 END */;;
@@ -216,7 +216,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`caja_chica_AFTER_INSERT` AFTER INSERT ON `caja_chica` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`caja_chica_AFTER_INSERT` AFTER INSERT ON `caja_chica` FOR EACH ROW
 BEGIN
 	INSERT INTO encargado (idempleado, tabla, idreferencia, fecha_inicio, fecha_insercion, estado) VALUES (new.idempleado, 'caja_chica', new.idcaja_chica, now(), now(), 'Activo');
 END */;;
@@ -234,7 +234,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`caja_chica_BEFORE_UPDATE` BEFORE UPDATE ON `caja_chica` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`caja_chica_BEFORE_UPDATE` BEFORE UPDATE ON `caja_chica` FOR EACH ROW
 BEGIN
 	if new.idempleado != old.idempleado then
 		update encargado set fecha_fin = now(), estado = 'Inactivo' where tabla = 'caja_chica' and idreferencia = new.idcaja_chica and estado = 'Activo';
@@ -287,7 +287,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`caja_chica_aplicacion_BEFORE_INSERT` BEFORE INSERT ON `caja_chica_aplicacion` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`caja_chica_aplicacion_BEFORE_INSERT` BEFORE INSERT ON `caja_chica_aplicacion` FOR EACH ROW
 BEGIN
 	set new.fecha_insercion = now();
     update caja_chica_detalle set monto_aplicado = monto_aplicado + new.monto where idcaja_chica_detalle = new.idcaja_chica_detalle;
@@ -306,7 +306,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`caja_chica_aplicacion_BEFORE_UPDATE` BEFORE UPDATE ON `caja_chica_aplicacion` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`caja_chica_aplicacion_BEFORE_UPDATE` BEFORE UPDATE ON `caja_chica_aplicacion` FOR EACH ROW
 BEGIN
 	declare s_monto_acumulado decimal(10,2) default 0;
     declare s_monto decimal(10,2) default 0;
@@ -387,7 +387,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`caja_chica_cheque_BEFORE_INSERT` BEFORE INSERT ON `caja_chica_cheque` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`caja_chica_cheque_BEFORE_INSERT` BEFORE INSERT ON `caja_chica_cheque` FOR EACH ROW
 BEGIN
 	set new.fecha_insercion = now();
     set new.status = 'Emitido';
@@ -406,7 +406,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`caja_chica_cheque_BEFORE_UPDATE` BEFORE UPDATE ON `caja_chica_cheque` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`caja_chica_cheque_BEFORE_UPDATE` BEFORE UPDATE ON `caja_chica_cheque` FOR EACH ROW
 BEGIN
 	declare s_idcaja_chica_detalle int default 0;
     
@@ -490,7 +490,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`caja_chica_detalle_BEFORE_INSERT` BEFORE INSERT ON `caja_chica_detalle` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`caja_chica_detalle_BEFORE_INSERT` BEFORE INSERT ON `caja_chica_detalle` FOR EACH ROW
 BEGIN
 	set new.fecha_insercion = now();
     set new.monto_aplicado = 0;
@@ -514,7 +514,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`caja_chica_detalle_BEFORE_UPDATE` BEFORE UPDATE ON `caja_chica_detalle` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`caja_chica_detalle_BEFORE_UPDATE` BEFORE UPDATE ON `caja_chica_detalle` FOR EACH ROW
 BEGIN
 	
     if new.estado != old.estado then
@@ -625,7 +625,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`cliente_BEFORE_INSERT` BEFORE INSERT ON `cliente` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`cliente_BEFORE_INSERT` BEFORE INSERT ON `cliente` FOR EACH ROW
 BEGIN
 	set new.codigo = concat(obtener_configuracion('codigo_cliente',new.idempresa), obtener_correlativo('codigo_cliente', new.idempresa));
 END */;;
@@ -643,7 +643,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`cliente_BEFORE_UPDATE` BEFORE UPDATE ON `cliente` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`cliente_BEFORE_UPDATE` BEFORE UPDATE ON `cliente` FOR EACH ROW
 BEGIN
 	set new.codigo = old.codigo;
 END */;;
@@ -752,7 +752,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`cuenta_BEFORE_UPDATE` BEFORE UPDATE ON `cuenta` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`cuenta_BEFORE_UPDATE` BEFORE UPDATE ON `cuenta` FOR EACH ROW
 BEGIN
 	set new.saldo = new.debe - new.haber;
 END */;;
@@ -866,7 +866,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`documento_cc_BEFORE_INSERT` BEFORE INSERT ON `documento_caja_chica` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`documento_cc_BEFORE_INSERT` BEFORE INSERT ON `documento_caja_chica` FOR EACH ROW
 BEGIN
 	set new.fecha_insercion = now();
 END */;;
@@ -884,7 +884,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`documento_cc_BEFORE_UPDATE` BEFORE UPDATE ON `documento_caja_chica` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`documento_cc_BEFORE_UPDATE` BEFORE UPDATE ON `documento_caja_chica` FOR EACH ROW
 BEGIN
 	if old.fecha_insercion != new.fecha_insercion then
 		set new.fecha_insercion = old.fecha_insercion;
@@ -938,7 +938,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`empleado_BEFORE_INSERT` BEFORE INSERT ON `empleado` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`empleado_BEFORE_INSERT` BEFORE INSERT ON `empleado` FOR EACH ROW
 BEGIN
 	set new.codigo = concat(obtener_configuracion('codigo_empleado',new.idempresa), obtener_correlativo('codigo_empleado', new.idempresa));
 END */;;
@@ -1018,7 +1018,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`encargado_BEFORE_INSERT` BEFORE INSERT ON `encargado` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`encargado_BEFORE_INSERT` BEFORE INSERT ON `encargado` FOR EACH ROW
 BEGIN
 	set new.fecha_insercion = now();
 END */;;
@@ -1036,7 +1036,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`encargado_BEFORE_UPDATE` BEFORE UPDATE ON `encargado` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`encargado_BEFORE_UPDATE` BEFORE UPDATE ON `encargado` FOR EACH ROW
 BEGIN
 	if old.fecha_insercion != new.fecha_insercion then
 		set new.fecha_insercion = old.fecha_insercion;
@@ -1112,7 +1112,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`modulo_BEFORE_INSERT` BEFORE INSERT ON `modulo` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`modulo_BEFORE_INSERT` BEFORE INSERT ON `modulo` FOR EACH ROW
 BEGIN
 	set new.fecha_insercion = now();
 END */;;
@@ -1130,7 +1130,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`modulo_BEFORE_UPDATE` BEFORE UPDATE ON `modulo` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`modulo_BEFORE_UPDATE` BEFORE UPDATE ON `modulo` FOR EACH ROW
 BEGIN
 	if old.fecha_insercion != new.fecha_insercion then
 		set new.fecha_insercion = old.fecha_insercion;
@@ -1176,7 +1176,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`pais_BEFORE_INSERT` BEFORE INSERT ON `pais` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`pais_BEFORE_INSERT` BEFORE INSERT ON `pais` FOR EACH ROW
 BEGIN
 	set new.fecha_insercion = now();
 END */;;
@@ -1223,7 +1223,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `contable`.`partida_BEFORE_INSERT` BEFORE INSERT ON `partida` FOR EACH ROW
+/*!50003 CREATE*/ /*!50017 */ /*!50003 TRIGGER `contable`.`partida_BEFORE_INSERT` BEFORE INSERT ON `partida` FOR EACH ROW
 BEGIN
 	call pr_cargar_cuenta(new.idcuenta_cargo,new.monto);
 	call pr_abonar_cuenta(new.idcuenta_abono,new.monto);
@@ -1279,7 +1279,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`persona_BEFORE_INSERT` BEFORE INSERT ON `persona` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`persona_BEFORE_INSERT` BEFORE INSERT ON `persona` FOR EACH ROW
 BEGIN
 	set new.fecha_insercion = now();
 END */;;
@@ -1329,7 +1329,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`proveedor_BEFORE_INSERT` BEFORE INSERT ON `proveedor` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`proveedor_BEFORE_INSERT` BEFORE INSERT ON `proveedor` FOR EACH ROW
 BEGIN
 	set new.codigo = concat(obtener_configuracion('codigo_proveedor',1), obtener_correlativo('codigo_proveedor', 1));
 	set new.fecha_insercion = now();
@@ -1348,7 +1348,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`proveedor_BEFORE_UPDATE` BEFORE UPDATE ON `proveedor` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`proveedor_BEFORE_UPDATE` BEFORE UPDATE ON `proveedor` FOR EACH ROW
 BEGIN
 	if old.fecha_insercion != new.fecha_insercion then
 		set new.fecha_insercion = old.fecha_insercion;
@@ -1461,7 +1461,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`sucursal_BEFORE_INSERT` BEFORE INSERT ON `sucursal` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`sucursal_BEFORE_INSERT` BEFORE INSERT ON `sucursal` FOR EACH ROW
 BEGIN
 	if new.casa_matriz = 'Si' then
 		set new.casa_matriz = validar_sucursal_casa_matriz(new.idempresa,0);
@@ -1481,7 +1481,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`sucursal_BEFORE_UPDATE` BEFORE UPDATE ON `sucursal` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`sucursal_BEFORE_UPDATE` BEFORE UPDATE ON `sucursal` FOR EACH ROW
 
 	if new.casa_matriz != old.casa_matriz then
 		if new.casa_matriz = 1 then
@@ -1528,7 +1528,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`tipo_documento_BEFORE_INSERT` BEFORE INSERT ON `tipo_documento` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`tipo_documento_BEFORE_INSERT` BEFORE INSERT ON `tipo_documento` FOR EACH ROW
 BEGIN
 	set new.fecha_insercion = now();
 END */;;
@@ -1546,7 +1546,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`tipo_documento_BEFORE_UPDATE` BEFORE UPDATE ON `tipo_documento` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`tipo_documento_BEFORE_UPDATE` BEFORE UPDATE ON `tipo_documento` FOR EACH ROW
 BEGIN
 	if old.fecha_insercion != new.fecha_insercion then
 		set new.fecha_insercion = old.fecha_insercion;
@@ -1597,7 +1597,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`tipo_documento_modulo_BEFORE_INSERT` BEFORE INSERT ON `tipo_documento_modulo` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`tipo_documento_modulo_BEFORE_INSERT` BEFORE INSERT ON `tipo_documento_modulo` FOR EACH ROW
 BEGIN
 	set new.fecha_insercion = now();
 END */;;
@@ -1615,7 +1615,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `contable`.`tipo_documento_modulo_BEFORE_UPDATE` BEFORE UPDATE ON `tipo_documento_modulo` FOR EACH ROW
+/*!50003 CREATE*/  /*!50003 TRIGGER `contable`.`tipo_documento_modulo_BEFORE_UPDATE` BEFORE UPDATE ON `tipo_documento_modulo` FOR EACH ROW
 BEGIN
 	if old.fecha_insercion != new.fecha_insercion then
 		set new.fecha_insercion = old.fecha_insercion;
@@ -1644,7 +1644,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-CREATE DEFINER=`root`@`localhost` FUNCTION `obtener_configuracion`(pcodigo varchar(45), pidempresa int) RETURNS varchar(45) CHARSET utf8 COLLATE utf8_spanish_ci
+CREATE  FUNCTION `obtener_configuracion`(pcodigo varchar(45), pidempresa int) RETURNS varchar(45) CHARSET utf8 COLLATE utf8_spanish_ci
 BEGIN
 	declare respuesta varchar(45) default '';
     select valor into respuesta from configuracion where codigo = pcodigo and idempresa = pidempresa;
@@ -1665,7 +1665,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-CREATE DEFINER=`root`@`localhost` FUNCTION `obtener_correlativo`(pcodigo varchar(45), pidempresa int) RETURNS int(11)
+CREATE  FUNCTION `obtener_correlativo`(pcodigo varchar(45), pidempresa int) RETURNS int(11)
 BEGIN
 	declare respuesta int default 0;
     select valor+1 into respuesta from correlativo where codigo = pcodigo and idempresa = pidempresa;
@@ -1692,7 +1692,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-CREATE DEFINER=`root`@`localhost` FUNCTION `validar_sucursal_casa_matriz`(pidempresa int, pidsucursal int) RETURNS int(11)
+CREATE  FUNCTION `validar_sucursal_casa_matriz`(pidempresa int, pidsucursal int) RETURNS int(11)
 BEGIN
 	declare respuesta int default 1;
     select count(*) into respuesta from sucursal where idempresa = pidempresa and idsucursal != pidsucursal and casa_matriz = 1;
@@ -1718,7 +1718,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-CREATE DEFINER=`root`@`%` PROCEDURE `pr_abonar_cuenta`(in p_idcuenta int, in p_monto decimal(10,2))
+CREATE  PROCEDURE `pr_abonar_cuenta`(in p_idcuenta int, in p_monto decimal(10,2))
 BEGIN
 	update cuenta set haber = haber + p_monto where idcuenta = p_idcuenta;
 END ;;
@@ -1737,7 +1737,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-CREATE DEFINER=`root`@`%` PROCEDURE `pr_cargar_cuenta`(in p_idcuenta int, in p_monto decimal(10,2))
+CREATE  PROCEDURE `pr_cargar_cuenta`(in p_idcuenta int, in p_monto decimal(10,2))
 BEGIN
 	update cuenta set debe = debe + p_monto where idcuenta = p_idcuenta;
 END ;;

@@ -139,6 +139,15 @@ $cuenta_mayor_auxiliar_grid->ShowMessage();
 <?php if ($cuenta_mayor_auxiliar_grid->TotalRecs > 0 || $cuenta_mayor_auxiliar->CurrentAction <> "") { ?>
 <div class="panel panel-default ewGrid">
 <div id="fcuenta_mayor_auxiliargrid" class="ewForm form-inline">
+<?php if ($cuenta_mayor_auxiliar_grid->ShowOtherOptions) { ?>
+<div class="panel-heading ewGridUpperPanel">
+<?php
+	foreach ($cuenta_mayor_auxiliar_grid->OtherOptions as &$option)
+		$option->Render("body");
+?>
+</div>
+<div class="clearfix"></div>
+<?php } ?>
 <div id="gmp_cuenta_mayor_auxiliar" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
 <table id="tbl_cuenta_mayor_auxiliargrid" class="table ewTable">
 <?php echo $cuenta_mayor_auxiliar->TableCustomInnerHtml ?>

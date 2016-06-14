@@ -1,8 +1,7 @@
 <?php
 
 // nombre
-// direccion
-// nit
+// ticker
 
 ?>
 <?php if ($empresa->Visible) { ?>
@@ -21,24 +20,13 @@
 </td>
 		</tr>
 <?php } ?>
-<?php if ($empresa->direccion->Visible) { // direccion ?>
-		<tr id="r_direccion">
-			<td><?php echo $empresa->direccion->FldCaption() ?></td>
-			<td<?php echo $empresa->direccion->CellAttributes() ?>>
-<span id="el_empresa_direccion">
-<span<?php echo $empresa->direccion->ViewAttributes() ?>>
-<?php echo $empresa->direccion->ListViewValue() ?></span>
-</span>
-</td>
-		</tr>
-<?php } ?>
-<?php if ($empresa->nit->Visible) { // nit ?>
-		<tr id="r_nit">
-			<td><?php echo $empresa->nit->FldCaption() ?></td>
-			<td<?php echo $empresa->nit->CellAttributes() ?>>
-<span id="el_empresa_nit">
-<span<?php echo $empresa->nit->ViewAttributes() ?>>
-<?php echo $empresa->nit->ListViewValue() ?></span>
+<?php if ($empresa->ticker->Visible) { // ticker ?>
+		<tr id="r_ticker">
+			<td><?php echo $empresa->ticker->FldCaption() ?></td>
+			<td<?php echo $empresa->ticker->CellAttributes() ?>>
+<span id="el_empresa_ticker">
+<span<?php echo $empresa->ticker->ViewAttributes() ?>>
+<?php echo $empresa->ticker->ListViewValue() ?></span>
 </span>
 </td>
 		</tr>
