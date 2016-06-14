@@ -7,7 +7,6 @@ ob_start(); // Turn on output buffering
 <?php include_once "phpfn12.php" ?>
 <?php include_once "cuenta_mayor_principalinfo.php" ?>
 <?php include_once "subgrupo_cuentainfo.php" ?>
-<?php include_once "cuenta_mayor_auxiliargridcls.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -271,14 +270,6 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 
 		// Process auto fill
 		if (@$_POST["ajax"] == "autofill") {
-
-			// Process auto fill for detail table 'cuenta_mayor_auxiliar'
-			if (@$_POST["grid"] == "fcuenta_mayor_auxiliargrid") {
-				if (!isset($GLOBALS["cuenta_mayor_auxiliar_grid"])) $GLOBALS["cuenta_mayor_auxiliar_grid"] = new ccuenta_mayor_auxiliar_grid;
-				$GLOBALS["cuenta_mayor_auxiliar_grid"]->Page_Init();
-				$this->Page_Terminate();
-				exit();
-			}
 			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
 			if ($results) {
 
@@ -380,9 +371,6 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 		// Set up Breadcrumb
 		$this->SetupBreadcrumb();
 
-		// Set up detail parameters
-		$this->SetUpDetailParms();
-
 		// Validate form if post back
 		if (@$_POST["a_add"] <> "") {
 			if (!$this->ValidateForm()) {
@@ -405,19 +393,13 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 					if ($this->getFailureMessage() == "") $this->setFailureMessage($Language->Phrase("NoRecord")); // No record found
 					$this->Page_Terminate("cuenta_mayor_principallist.php"); // No matching record, return to list
 				}
-
-				// Set up detail parameters
-				$this->SetUpDetailParms();
 				break;
 			case "A": // Add new record
 				$this->SendEmail = TRUE; // Send email on add success
 				if ($this->AddRow($this->OldRecordset)) { // Add successful
 					if ($this->getSuccessMessage() == "")
 						$this->setSuccessMessage($Language->Phrase("AddSuccess")); // Set up success message
-					if ($this->getCurrentDetailTable() <> "") // Master/detail add
-						$sReturnUrl = $this->GetDetailUrl();
-					else
-						$sReturnUrl = $this->getReturnUrl();
+					$sReturnUrl = $this->getReturnUrl();
 					if (ew_GetPageName($sReturnUrl) == "cuenta_mayor_principallist.php")
 						$sReturnUrl = $this->AddMasterUrl($sReturnUrl); // List page, return to list page with correct master key if necessary
 					elseif (ew_GetPageName($sReturnUrl) == "cuenta_mayor_principalview.php")
@@ -426,9 +408,6 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 				} else {
 					$this->EventCancelled = TRUE; // Event cancelled
 					$this->RestoreFormValues(); // Add failed, restore form values
-
-					// Set up detail parameters
-					$this->SetUpDetailParms();
 				}
 		}
 
@@ -765,13 +744,6 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->definicion->FldCaption(), $this->definicion->ReqErrMsg));
 		}
 
-		// Validate detail grid
-		$DetailTblVar = explode(",", $this->getCurrentDetailTable());
-		if (in_array("cuenta_mayor_auxiliar", $DetailTblVar) && $GLOBALS["cuenta_mayor_auxiliar"]->DetailAdd) {
-			if (!isset($GLOBALS["cuenta_mayor_auxiliar_grid"])) $GLOBALS["cuenta_mayor_auxiliar_grid"] = new ccuenta_mayor_auxiliar_grid(); // get detail page object
-			$GLOBALS["cuenta_mayor_auxiliar_grid"]->ValidateGridForm();
-		}
-
 		// Return validate result
 		$ValidateForm = ($gsFormError == "");
 
@@ -788,10 +760,6 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 	function AddRow($rsold = NULL) {
 		global $Language, $Security;
 		$conn = &$this->Connection();
-
-		// Begin transaction
-		if ($this->getCurrentDetailTable() <> "")
-			$conn->BeginTrans();
 
 		// Load db values from rsold
 		if ($rsold) {
@@ -835,27 +803,6 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 				$this->setFailureMessage($Language->Phrase("InsertCancelled"));
 			}
 			$AddRow = FALSE;
-		}
-
-		// Add detail records
-		if ($AddRow) {
-			$DetailTblVar = explode(",", $this->getCurrentDetailTable());
-			if (in_array("cuenta_mayor_auxiliar", $DetailTblVar) && $GLOBALS["cuenta_mayor_auxiliar"]->DetailAdd) {
-				$GLOBALS["cuenta_mayor_auxiliar"]->idcuenta_mayor_principal->setSessionValue($this->idcuenta_mayor_principal->CurrentValue); // Set master key
-				if (!isset($GLOBALS["cuenta_mayor_auxiliar_grid"])) $GLOBALS["cuenta_mayor_auxiliar_grid"] = new ccuenta_mayor_auxiliar_grid(); // Get detail page object
-				$AddRow = $GLOBALS["cuenta_mayor_auxiliar_grid"]->GridInsert();
-				if (!$AddRow)
-					$GLOBALS["cuenta_mayor_auxiliar"]->idcuenta_mayor_principal->setSessionValue(""); // Clear master key if insert failed
-			}
-		}
-
-		// Commit/Rollback transaction
-		if ($this->getCurrentDetailTable() <> "") {
-			if ($AddRow) {
-				$conn->CommitTrans(); // Commit transaction
-			} else {
-				$conn->RollbackTrans(); // Rollback transaction
-			}
 		}
 		if ($AddRow) {
 
@@ -924,39 +871,6 @@ class ccuenta_mayor_principal_add extends ccuenta_mayor_principal {
 		}
 		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
 		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
-	}
-
-	// Set up detail parms based on QueryString
-	function SetUpDetailParms() {
-
-		// Get the keys for master table
-		if (isset($_GET[EW_TABLE_SHOW_DETAIL])) {
-			$sDetailTblVar = $_GET[EW_TABLE_SHOW_DETAIL];
-			$this->setCurrentDetailTable($sDetailTblVar);
-		} else {
-			$sDetailTblVar = $this->getCurrentDetailTable();
-		}
-		if ($sDetailTblVar <> "") {
-			$DetailTblVar = explode(",", $sDetailTblVar);
-			if (in_array("cuenta_mayor_auxiliar", $DetailTblVar)) {
-				if (!isset($GLOBALS["cuenta_mayor_auxiliar_grid"]))
-					$GLOBALS["cuenta_mayor_auxiliar_grid"] = new ccuenta_mayor_auxiliar_grid;
-				if ($GLOBALS["cuenta_mayor_auxiliar_grid"]->DetailAdd) {
-					if ($this->CopyRecord)
-						$GLOBALS["cuenta_mayor_auxiliar_grid"]->CurrentMode = "copy";
-					else
-						$GLOBALS["cuenta_mayor_auxiliar_grid"]->CurrentMode = "add";
-					$GLOBALS["cuenta_mayor_auxiliar_grid"]->CurrentAction = "gridadd";
-
-					// Save current master table to detail table
-					$GLOBALS["cuenta_mayor_auxiliar_grid"]->setCurrentMasterTable($this->TableVar);
-					$GLOBALS["cuenta_mayor_auxiliar_grid"]->setStartRecordNumber(1);
-					$GLOBALS["cuenta_mayor_auxiliar_grid"]->idcuenta_mayor_principal->FldIsDetailKey = TRUE;
-					$GLOBALS["cuenta_mayor_auxiliar_grid"]->idcuenta_mayor_principal->CurrentValue = $this->idcuenta_mayor_principal->CurrentValue;
-					$GLOBALS["cuenta_mayor_auxiliar_grid"]->idcuenta_mayor_principal->setSessionValue($GLOBALS["cuenta_mayor_auxiliar_grid"]->idcuenta_mayor_principal->CurrentValue);
-				}
-			}
-		}
 	}
 
 	// Set up Breadcrumb
@@ -1234,14 +1148,6 @@ if ($sSqlWrk <> "") $cuenta_mayor_principal->idsubgrupo_cuenta->LookupFilters["s
 	</div>
 <?php } ?>
 </div>
-<?php
-	if (in_array("cuenta_mayor_auxiliar", explode(",", $cuenta_mayor_principal->getCurrentDetailTable())) && $cuenta_mayor_auxiliar->DetailAdd) {
-?>
-<?php if ($cuenta_mayor_principal->getCurrentDetailTable() <> "") { ?>
-<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("cuenta_mayor_auxiliar", "TblCaption") ?></h4>
-<?php } ?>
-<?php include_once "cuenta_mayor_auxiliargrid.php" ?>
-<?php } ?>
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">
 <button class="btn btn-primary ewButton" name="btnAction" id="btnAction" type="submit"><?php echo $Language->Phrase("AddBtn") ?></button>

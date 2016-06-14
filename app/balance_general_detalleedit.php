@@ -513,7 +513,6 @@ class cbalance_general_detalle_edit extends cbalance_general_detalle {
 		$this->idclase_cuenta->setDbValue($rs->fields('idclase_cuenta'));
 		$this->idgrupo_cuenta->setDbValue($rs->fields('idgrupo_cuenta'));
 		$this->idsubgrupo_cuenta->setDbValue($rs->fields('idsubgrupo_cuenta'));
-		$this->idcuenta_mayor_principal->setDbValue($rs->fields('idcuenta_mayor_principal'));
 		$this->monto->setDbValue($rs->fields('monto'));
 		$this->estado->setDbValue($rs->fields('estado'));
 		$this->fecha_insercion->setDbValue($rs->fields('fecha_insercion'));
@@ -528,7 +527,6 @@ class cbalance_general_detalle_edit extends cbalance_general_detalle {
 		$this->idclase_cuenta->DbValue = $row['idclase_cuenta'];
 		$this->idgrupo_cuenta->DbValue = $row['idgrupo_cuenta'];
 		$this->idsubgrupo_cuenta->DbValue = $row['idsubgrupo_cuenta'];
-		$this->idcuenta_mayor_principal->DbValue = $row['idcuenta_mayor_principal'];
 		$this->monto->DbValue = $row['monto'];
 		$this->estado->DbValue = $row['estado'];
 		$this->fecha_insercion->DbValue = $row['fecha_insercion'];
@@ -553,7 +551,6 @@ class cbalance_general_detalle_edit extends cbalance_general_detalle {
 		// idclase_cuenta
 		// idgrupo_cuenta
 		// idsubgrupo_cuenta
-		// idcuenta_mayor_principal
 		// monto
 		// estado
 		// fecha_insercion
@@ -661,31 +658,6 @@ class cbalance_general_detalle_edit extends cbalance_general_detalle {
 			$this->idsubgrupo_cuenta->ViewValue = NULL;
 		}
 		$this->idsubgrupo_cuenta->ViewCustomAttributes = "";
-
-		// idcuenta_mayor_principal
-		if (strval($this->idcuenta_mayor_principal->CurrentValue) <> "") {
-			$sFilterWrk = "`idcuenta_mayor_principal`" . ew_SearchString("=", $this->idcuenta_mayor_principal->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `idcuenta_mayor_principal`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta_mayor_principal`";
-		$sWhereWrk = "";
-		$lookuptblfilter = "`estado` = 'Activo'";
-		ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idcuenta_mayor_principal, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-		$sSqlWrk .= " ORDER BY `nomenclatura`";
-			$rswrk = Conn()->Execute($sSqlWrk);
-			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$arwrk = array();
-				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idcuenta_mayor_principal->ViewValue = $this->idcuenta_mayor_principal->DisplayValue($arwrk);
-				$rswrk->Close();
-			} else {
-				$this->idcuenta_mayor_principal->ViewValue = $this->idcuenta_mayor_principal->CurrentValue;
-			}
-		} else {
-			$this->idcuenta_mayor_principal->ViewValue = NULL;
-		}
-		$this->idcuenta_mayor_principal->ViewCustomAttributes = "";
 
 		// monto
 		$this->monto->ViewValue = $this->monto->CurrentValue;
@@ -1185,7 +1157,7 @@ fbalance_general_detalleedit.ValidateRequired = false;
 // Dynamic selection lists
 fbalance_general_detalleedit.Lists["x_idclase_cuenta"] = {"LinkField":"x_idclase_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":["x_idgrupo_cuenta"],"FilterFields":[],"Options":[],"Template":""};
 fbalance_general_detalleedit.Lists["x_idgrupo_cuenta"] = {"LinkField":"x_idgrupo_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":["x_idclase_cuenta"],"ChildFields":["x_idsubgrupo_cuenta"],"FilterFields":["x_idclase_cuenta"],"Options":[],"Template":""};
-fbalance_general_detalleedit.Lists["x_idsubgrupo_cuenta"] = {"LinkField":"x_idsubgrupo_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":["x_idgrupo_cuenta"],"ChildFields":["x_idcuenta_mayor_principal"],"FilterFields":["x_idgrupo_cuenta"],"Options":[],"Template":""};
+fbalance_general_detalleedit.Lists["x_idsubgrupo_cuenta"] = {"LinkField":"x_idsubgrupo_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":["x_idgrupo_cuenta"],"ChildFields":[],"FilterFields":["x_idgrupo_cuenta"],"Options":[],"Template":""};
 fbalance_general_detalleedit.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 fbalance_general_detalleedit.Lists["x_estado"].Options = <?php echo json_encode($balance_general_detalle->estado->Options()) ?>;
 

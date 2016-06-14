@@ -7,7 +7,6 @@ ob_start(); // Turn on output buffering
 <?php include_once "phpfn12.php" ?>
 <?php include_once "cuenta_mayor_principalinfo.php" ?>
 <?php include_once "subgrupo_cuentainfo.php" ?>
-<?php include_once "cuenta_mayor_auxiliargridcls.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -276,7 +275,7 @@ class ccuenta_mayor_principal_list extends ccuenta_mayor_principal {
 		$this->ExportXmlUrl = $this->PageUrl() . "export=xml";
 		$this->ExportCsvUrl = $this->PageUrl() . "export=csv";
 		$this->ExportPdfUrl = $this->PageUrl() . "export=pdf";
-		$this->AddUrl = "cuenta_mayor_principaladd.php?" . EW_TABLE_SHOW_DETAIL . "=";
+		$this->AddUrl = "cuenta_mayor_principaladd.php";
 		$this->InlineAddUrl = $this->PageUrl() . "a=add";
 		$this->GridAddUrl = $this->PageUrl() . "a=gridadd";
 		$this->GridEditUrl = $this->PageUrl() . "a=gridedit";
@@ -362,14 +361,6 @@ class ccuenta_mayor_principal_list extends ccuenta_mayor_principal {
 
 		// Process auto fill
 		if (@$_POST["ajax"] == "autofill") {
-
-			// Process auto fill for detail table 'cuenta_mayor_auxiliar'
-			if (@$_POST["grid"] == "fcuenta_mayor_auxiliargrid") {
-				if (!isset($GLOBALS["cuenta_mayor_auxiliar_grid"])) $GLOBALS["cuenta_mayor_auxiliar_grid"] = new ccuenta_mayor_auxiliar_grid;
-				$GLOBALS["cuenta_mayor_auxiliar_grid"]->Page_Init();
-				$this->Page_Terminate();
-				exit();
-			}
 			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
 			if ($results) {
 
@@ -1360,28 +1351,6 @@ class ccuenta_mayor_principal_list extends ccuenta_mayor_principal {
 		$item->Visible = TRUE;
 		$item->OnLeft = TRUE;
 
-		// "detail_cuenta_mayor_auxiliar"
-		$item = &$this->ListOptions->Add("detail_cuenta_mayor_auxiliar");
-		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = TRUE && !$this->ShowMultipleDetails;
-		$item->OnLeft = TRUE;
-		$item->ShowInButtonGroup = FALSE;
-		if (!isset($GLOBALS["cuenta_mayor_auxiliar_grid"])) $GLOBALS["cuenta_mayor_auxiliar_grid"] = new ccuenta_mayor_auxiliar_grid;
-
-		// Multiple details
-		if ($this->ShowMultipleDetails) {
-			$item = &$this->ListOptions->Add("details");
-			$item->CssStyle = "white-space: nowrap;";
-			$item->Visible = $this->ShowMultipleDetails;
-			$item->OnLeft = TRUE;
-			$item->ShowInButtonGroup = FALSE;
-		}
-
-		// Set up detail pages
-		$pages = new cSubPages();
-		$pages->Add("cuenta_mayor_auxiliar");
-		$this->DetailPages = $pages;
-
 		// List actions
 		$item = &$this->ListOptions->Add("listactions");
 		$item->CssStyle = "white-space: nowrap;";
@@ -1495,57 +1464,6 @@ class ccuenta_mayor_principal_list extends ccuenta_mayor_principal {
 				$oListOpt->Visible = TRUE;
 			}
 		}
-		$DetailViewTblVar = "";
-		$DetailCopyTblVar = "";
-		$DetailEditTblVar = "";
-
-		// "detail_cuenta_mayor_auxiliar"
-		$oListOpt = &$this->ListOptions->Items["detail_cuenta_mayor_auxiliar"];
-		if (TRUE) {
-			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("cuenta_mayor_auxiliar", "TblCaption");
-			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("cuenta_mayor_auxiliarlist.php?" . EW_TABLE_SHOW_MASTER . "=cuenta_mayor_principal&fk_idcuenta_mayor_principal=" . urlencode(strval($this->idcuenta_mayor_principal->CurrentValue)) . "") . "\">" . $body . "</a>";
-			$links = "";
-			if ($GLOBALS["cuenta_mayor_auxiliar_grid"]->DetailView) {
-				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=cuenta_mayor_auxiliar")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
-				if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
-				$DetailViewTblVar .= "cuenta_mayor_auxiliar";
-			}
-			if ($GLOBALS["cuenta_mayor_auxiliar_grid"]->DetailEdit) {
-				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=cuenta_mayor_auxiliar")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
-				if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
-				$DetailEditTblVar .= "cuenta_mayor_auxiliar";
-			}
-			if ($links <> "") {
-				$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
-				$body .= "<ul class=\"dropdown-menu\">". $links . "</ul>";
-			}
-			$body = "<div class=\"btn-group\">" . $body . "</div>";
-			$oListOpt->Body = $body;
-			if ($this->ShowMultipleDetails) $oListOpt->Visible = FALSE;
-		}
-		if ($this->ShowMultipleDetails) {
-			$body = $Language->Phrase("MultipleMasterDetails");
-			$body = "<div class=\"btn-group\">";
-			$links = "";
-			if ($DetailViewTblVar <> "") {
-				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailViewTblVar)) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
-			}
-			if ($DetailEditTblVar <> "") {
-				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailEditTblVar)) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
-			}
-			if ($DetailCopyTblVar <> "") {
-				$links .= "<li><a class=\"ewRowLink ewDetailCopy\" data-action=\"add\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->GetCopyUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailCopyTblVar)) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailCopyLink")) . "</a></li>";
-			}
-			if ($links <> "") {
-				$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewMasterDetail\" title=\"" . ew_HtmlTitle($Language->Phrase("MultipleMasterDetails")) . "\" data-toggle=\"dropdown\">" . $Language->Phrase("MultipleMasterDetails") . "<b class=\"caret\"></b></button>";
-				$body .= "<ul class=\"dropdown-menu ewMenu\">". $links . "</ul>";
-			}
-			$body .= "</div>";
-
-			// Multiple details
-			$oListOpt = &$this->ListOptions->Items["details"];
-			$oListOpt->Body = $body;
-		}
 
 		// "checkbox"
 		$oListOpt = &$this->ListOptions->Items["checkbox"];
@@ -1572,33 +1490,6 @@ class ccuenta_mayor_principal_list extends ccuenta_mayor_principal {
 		$item = &$option->Add("gridadd");
 		$item->Body = "<a class=\"ewAddEdit ewGridAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("GridAddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridAddLink")) . "\" href=\"" . ew_HtmlEncode($this->GridAddUrl) . "\">" . $Language->Phrase("GridAddLink") . "</a>";
 		$item->Visible = ($this->GridAddUrl <> "");
-		$option = $options["detail"];
-		$DetailTableLink = "";
-		$item = &$option->Add("detailadd_cuenta_mayor_auxiliar");
-		$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=cuenta_mayor_auxiliar");
-		$caption = $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["cuenta_mayor_auxiliar"]->TableCaption();
-		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $caption . "</a>";
-		$item->Visible = ($GLOBALS["cuenta_mayor_auxiliar"]->DetailAdd);
-		if ($item->Visible) {
-			if ($DetailTableLink <> "") $DetailTableLink .= ",";
-			$DetailTableLink .= "cuenta_mayor_auxiliar";
-		}
-
-		// Add multiple details
-		if ($this->ShowMultipleDetails) {
-			$item = &$option->Add("detailsadd");
-			$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailTableLink);
-			$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $Language->Phrase("AddMasterDetailLink") . "</a>";
-			$item->Visible = ($DetailTableLink <> "");
-
-			// Hide single master/detail items
-			$ar = explode(",", $DetailTableLink);
-			$cnt = count($ar);
-			for ($i = 0; $i < $cnt; $i++) {
-				if ($item = &$option->GetItem("detailadd_" . $ar[$i]))
-					$item->Visible = FALSE;
-			}
-		}
 
 		// Add grid edit
 		$option = $options["addedit"];

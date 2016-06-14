@@ -287,14 +287,6 @@ class ccuenta_mayor_principal_grid extends ccuenta_mayor_principal {
 
 		// Process auto fill
 		if (@$_POST["ajax"] == "autofill") {
-
-			// Process auto fill for detail table 'cuenta_mayor_auxiliar'
-			if (@$_POST["grid"] == "fcuenta_mayor_auxiliargrid") {
-				if (!isset($GLOBALS["cuenta_mayor_auxiliar_grid"])) $GLOBALS["cuenta_mayor_auxiliar_grid"] = new ccuenta_mayor_auxiliar_grid;
-				$GLOBALS["cuenta_mayor_auxiliar_grid"]->Page_Init();
-				$this->Page_Terminate();
-				exit();
-			}
 			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
 			if ($results) {
 

@@ -526,7 +526,6 @@ class cbalance_general_detalle_view extends cbalance_general_detalle {
 		$this->idclase_cuenta->setDbValue($rs->fields('idclase_cuenta'));
 		$this->idgrupo_cuenta->setDbValue($rs->fields('idgrupo_cuenta'));
 		$this->idsubgrupo_cuenta->setDbValue($rs->fields('idsubgrupo_cuenta'));
-		$this->idcuenta_mayor_principal->setDbValue($rs->fields('idcuenta_mayor_principal'));
 		$this->monto->setDbValue($rs->fields('monto'));
 		$this->estado->setDbValue($rs->fields('estado'));
 		$this->fecha_insercion->setDbValue($rs->fields('fecha_insercion'));
@@ -541,7 +540,6 @@ class cbalance_general_detalle_view extends cbalance_general_detalle {
 		$this->idclase_cuenta->DbValue = $row['idclase_cuenta'];
 		$this->idgrupo_cuenta->DbValue = $row['idgrupo_cuenta'];
 		$this->idsubgrupo_cuenta->DbValue = $row['idsubgrupo_cuenta'];
-		$this->idcuenta_mayor_principal->DbValue = $row['idcuenta_mayor_principal'];
 		$this->monto->DbValue = $row['monto'];
 		$this->estado->DbValue = $row['estado'];
 		$this->fecha_insercion->DbValue = $row['fecha_insercion'];
@@ -572,7 +570,6 @@ class cbalance_general_detalle_view extends cbalance_general_detalle {
 		// idclase_cuenta
 		// idgrupo_cuenta
 		// idsubgrupo_cuenta
-		// idcuenta_mayor_principal
 		// monto
 		// estado
 		// fecha_insercion
@@ -681,31 +678,6 @@ class cbalance_general_detalle_view extends cbalance_general_detalle {
 		}
 		$this->idsubgrupo_cuenta->ViewCustomAttributes = "";
 
-		// idcuenta_mayor_principal
-		if (strval($this->idcuenta_mayor_principal->CurrentValue) <> "") {
-			$sFilterWrk = "`idcuenta_mayor_principal`" . ew_SearchString("=", $this->idcuenta_mayor_principal->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `idcuenta_mayor_principal`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta_mayor_principal`";
-		$sWhereWrk = "";
-		$lookuptblfilter = "`estado` = 'Activo'";
-		ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idcuenta_mayor_principal, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-		$sSqlWrk .= " ORDER BY `nomenclatura`";
-			$rswrk = Conn()->Execute($sSqlWrk);
-			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$arwrk = array();
-				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idcuenta_mayor_principal->ViewValue = $this->idcuenta_mayor_principal->DisplayValue($arwrk);
-				$rswrk->Close();
-			} else {
-				$this->idcuenta_mayor_principal->ViewValue = $this->idcuenta_mayor_principal->CurrentValue;
-			}
-		} else {
-			$this->idcuenta_mayor_principal->ViewValue = NULL;
-		}
-		$this->idcuenta_mayor_principal->ViewCustomAttributes = "";
-
 		// monto
 		$this->monto->ViewValue = $this->monto->CurrentValue;
 		$this->monto->ViewValue = ew_FormatNumber($this->monto->ViewValue, 2, -1, -1, -1);
@@ -748,11 +720,6 @@ class cbalance_general_detalle_view extends cbalance_general_detalle {
 			$this->idsubgrupo_cuenta->LinkCustomAttributes = "";
 			$this->idsubgrupo_cuenta->HrefValue = "";
 			$this->idsubgrupo_cuenta->TooltipValue = "";
-
-			// idcuenta_mayor_principal
-			$this->idcuenta_mayor_principal->LinkCustomAttributes = "";
-			$this->idcuenta_mayor_principal->HrefValue = "";
-			$this->idcuenta_mayor_principal->TooltipValue = "";
 
 			// monto
 			$this->monto->LinkCustomAttributes = "";
@@ -977,8 +944,7 @@ fbalance_general_detalleview.ValidateRequired = false;
 fbalance_general_detalleview.Lists["x_idbalance_general"] = {"LinkField":"x_idbalance_general","Ajax":true,"AutoFill":false,"DisplayFields":["x_idempresa","x_idperioso_contable","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 fbalance_general_detalleview.Lists["x_idclase_cuenta"] = {"LinkField":"x_idclase_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":["x_idgrupo_cuenta"],"FilterFields":[],"Options":[],"Template":""};
 fbalance_general_detalleview.Lists["x_idgrupo_cuenta"] = {"LinkField":"x_idgrupo_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":["x_idsubgrupo_cuenta"],"FilterFields":[],"Options":[],"Template":""};
-fbalance_general_detalleview.Lists["x_idsubgrupo_cuenta"] = {"LinkField":"x_idsubgrupo_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":["x_idcuenta_mayor_principal"],"FilterFields":[],"Options":[],"Template":""};
-fbalance_general_detalleview.Lists["x_idcuenta_mayor_principal"] = {"LinkField":"x_idcuenta_mayor_principal","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fbalance_general_detalleview.Lists["x_idsubgrupo_cuenta"] = {"LinkField":"x_idsubgrupo_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 fbalance_general_detalleview.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 fbalance_general_detalleview.Lists["x_estado"].Options = <?php echo json_encode($balance_general_detalle->estado->Options()) ?>;
 
@@ -1059,17 +1025,6 @@ $balance_general_detalle_view->ShowMessage();
 <span id="el_balance_general_detalle_idsubgrupo_cuenta">
 <span<?php echo $balance_general_detalle->idsubgrupo_cuenta->ViewAttributes() ?>>
 <?php echo $balance_general_detalle->idsubgrupo_cuenta->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($balance_general_detalle->idcuenta_mayor_principal->Visible) { // idcuenta_mayor_principal ?>
-	<tr id="r_idcuenta_mayor_principal">
-		<td><span id="elh_balance_general_detalle_idcuenta_mayor_principal"><?php echo $balance_general_detalle->idcuenta_mayor_principal->FldCaption() ?></span></td>
-		<td data-name="idcuenta_mayor_principal"<?php echo $balance_general_detalle->idcuenta_mayor_principal->CellAttributes() ?>>
-<span id="el_balance_general_detalle_idcuenta_mayor_principal">
-<span<?php echo $balance_general_detalle->idcuenta_mayor_principal->ViewAttributes() ?>>
-<?php echo $balance_general_detalle->idcuenta_mayor_principal->ViewValue ?></span>
 </span>
 </td>
 	</tr>

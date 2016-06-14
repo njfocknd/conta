@@ -12,7 +12,6 @@ class cbalance_general_detalle extends cTable {
 	var $idclase_cuenta;
 	var $idgrupo_cuenta;
 	var $idsubgrupo_cuenta;
-	var $idcuenta_mayor_principal;
 	var $monto;
 	var $estado;
 	var $fecha_insercion;
@@ -71,11 +70,6 @@ class cbalance_general_detalle extends cTable {
 		$this->idsubgrupo_cuenta = new cField('balance_general_detalle', 'balance_general_detalle', 'x_idsubgrupo_cuenta', 'idsubgrupo_cuenta', '`idsubgrupo_cuenta`', '`idsubgrupo_cuenta`', 3, -1, FALSE, '`idsubgrupo_cuenta`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
 		$this->idsubgrupo_cuenta->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idsubgrupo_cuenta'] = &$this->idsubgrupo_cuenta;
-
-		// idcuenta_mayor_principal
-		$this->idcuenta_mayor_principal = new cField('balance_general_detalle', 'balance_general_detalle', 'x_idcuenta_mayor_principal', 'idcuenta_mayor_principal', '`idcuenta_mayor_principal`', '`idcuenta_mayor_principal`', 3, -1, FALSE, '`idcuenta_mayor_principal`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
-		$this->idcuenta_mayor_principal->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['idcuenta_mayor_principal'] = &$this->idcuenta_mayor_principal;
 
 		// monto
 		$this->monto = new cField('balance_general_detalle', 'balance_general_detalle', 'x_monto', 'monto', '`monto`', '`monto`', 131, -1, FALSE, '`monto`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
@@ -623,7 +617,6 @@ class cbalance_general_detalle extends cTable {
 		$this->idclase_cuenta->setDbValue($rs->fields('idclase_cuenta'));
 		$this->idgrupo_cuenta->setDbValue($rs->fields('idgrupo_cuenta'));
 		$this->idsubgrupo_cuenta->setDbValue($rs->fields('idsubgrupo_cuenta'));
-		$this->idcuenta_mayor_principal->setDbValue($rs->fields('idcuenta_mayor_principal'));
 		$this->monto->setDbValue($rs->fields('monto'));
 		$this->estado->setDbValue($rs->fields('estado'));
 		$this->fecha_insercion->setDbValue($rs->fields('fecha_insercion'));
@@ -642,7 +635,6 @@ class cbalance_general_detalle extends cTable {
 		// idclase_cuenta
 		// idgrupo_cuenta
 		// idsubgrupo_cuenta
-		// idcuenta_mayor_principal
 		// monto
 		// estado
 		// fecha_insercion
@@ -749,31 +741,6 @@ class cbalance_general_detalle extends cTable {
 		}
 		$this->idsubgrupo_cuenta->ViewCustomAttributes = "";
 
-		// idcuenta_mayor_principal
-		if (strval($this->idcuenta_mayor_principal->CurrentValue) <> "") {
-			$sFilterWrk = "`idcuenta_mayor_principal`" . ew_SearchString("=", $this->idcuenta_mayor_principal->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `idcuenta_mayor_principal`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta_mayor_principal`";
-		$sWhereWrk = "";
-		$lookuptblfilter = "`estado` = 'Activo'";
-		ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idcuenta_mayor_principal, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-		$sSqlWrk .= " ORDER BY `nomenclatura`";
-			$rswrk = Conn()->Execute($sSqlWrk);
-			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$arwrk = array();
-				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idcuenta_mayor_principal->ViewValue = $this->idcuenta_mayor_principal->DisplayValue($arwrk);
-				$rswrk->Close();
-			} else {
-				$this->idcuenta_mayor_principal->ViewValue = $this->idcuenta_mayor_principal->CurrentValue;
-			}
-		} else {
-			$this->idcuenta_mayor_principal->ViewValue = NULL;
-		}
-		$this->idcuenta_mayor_principal->ViewCustomAttributes = "";
-
 		// monto
 		$this->monto->ViewValue = $this->monto->CurrentValue;
 		$this->monto->ViewValue = ew_FormatNumber($this->monto->ViewValue, 2, -1, -1, -1);
@@ -816,11 +783,6 @@ class cbalance_general_detalle extends cTable {
 		$this->idsubgrupo_cuenta->LinkCustomAttributes = "";
 		$this->idsubgrupo_cuenta->HrefValue = "";
 		$this->idsubgrupo_cuenta->TooltipValue = "";
-
-		// idcuenta_mayor_principal
-		$this->idcuenta_mayor_principal->LinkCustomAttributes = "";
-		$this->idcuenta_mayor_principal->HrefValue = "";
-		$this->idcuenta_mayor_principal->TooltipValue = "";
 
 		// monto
 		$this->monto->LinkCustomAttributes = "";
@@ -895,10 +857,6 @@ class cbalance_general_detalle extends cTable {
 		$this->idsubgrupo_cuenta->EditAttrs["class"] = "form-control";
 		$this->idsubgrupo_cuenta->EditCustomAttributes = "";
 
-		// idcuenta_mayor_principal
-		$this->idcuenta_mayor_principal->EditAttrs["class"] = "form-control";
-		$this->idcuenta_mayor_principal->EditCustomAttributes = "";
-
 		// monto
 		$this->monto->EditAttrs["class"] = "form-control";
 		$this->monto->EditCustomAttributes = "";
@@ -949,7 +907,6 @@ class cbalance_general_detalle extends cTable {
 					if ($this->idclase_cuenta->Exportable) $Doc->ExportCaption($this->idclase_cuenta);
 					if ($this->idgrupo_cuenta->Exportable) $Doc->ExportCaption($this->idgrupo_cuenta);
 					if ($this->idsubgrupo_cuenta->Exportable) $Doc->ExportCaption($this->idsubgrupo_cuenta);
-					if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportCaption($this->idcuenta_mayor_principal);
 					if ($this->monto->Exportable) $Doc->ExportCaption($this->monto);
 					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
 					if ($this->fecha_insercion->Exportable) $Doc->ExportCaption($this->fecha_insercion);
@@ -959,7 +916,6 @@ class cbalance_general_detalle extends cTable {
 					if ($this->idclase_cuenta->Exportable) $Doc->ExportCaption($this->idclase_cuenta);
 					if ($this->idgrupo_cuenta->Exportable) $Doc->ExportCaption($this->idgrupo_cuenta);
 					if ($this->idsubgrupo_cuenta->Exportable) $Doc->ExportCaption($this->idsubgrupo_cuenta);
-					if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportCaption($this->idcuenta_mayor_principal);
 					if ($this->monto->Exportable) $Doc->ExportCaption($this->monto);
 					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
 					if ($this->fecha_insercion->Exportable) $Doc->ExportCaption($this->fecha_insercion);
@@ -999,7 +955,6 @@ class cbalance_general_detalle extends cTable {
 						if ($this->idclase_cuenta->Exportable) $Doc->ExportField($this->idclase_cuenta);
 						if ($this->idgrupo_cuenta->Exportable) $Doc->ExportField($this->idgrupo_cuenta);
 						if ($this->idsubgrupo_cuenta->Exportable) $Doc->ExportField($this->idsubgrupo_cuenta);
-						if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportField($this->idcuenta_mayor_principal);
 						if ($this->monto->Exportable) $Doc->ExportField($this->monto);
 						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
 						if ($this->fecha_insercion->Exportable) $Doc->ExportField($this->fecha_insercion);
@@ -1009,7 +964,6 @@ class cbalance_general_detalle extends cTable {
 						if ($this->idclase_cuenta->Exportable) $Doc->ExportField($this->idclase_cuenta);
 						if ($this->idgrupo_cuenta->Exportable) $Doc->ExportField($this->idgrupo_cuenta);
 						if ($this->idsubgrupo_cuenta->Exportable) $Doc->ExportField($this->idsubgrupo_cuenta);
-						if ($this->idcuenta_mayor_principal->Exportable) $Doc->ExportField($this->idcuenta_mayor_principal);
 						if ($this->monto->Exportable) $Doc->ExportField($this->monto);
 						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
 						if ($this->fecha_insercion->Exportable) $Doc->ExportField($this->fecha_insercion);

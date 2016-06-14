@@ -592,6 +592,8 @@
 		<phrase id="or" value=" o "/>
 	</global>
 	<project><phrase id="footertext" value="Nexthor"/>
+<menu id="17"><phrase id="menutext" value="estado resultado"/>
+</menu>
 <menu id="15"><phrase id="menutext" value="Balance General"/>
 </menu>
 <menu id="16"><phrase id="menutext" value="balance general detalle"/>
@@ -610,9 +612,9 @@
 </menu>
 <menu id="10"><phrase id="menutext" value="SubGrupo de Cuenta"/>
 </menu>
-<menu id="3"><phrase id="menutext" value="Cuenta Mayor Auxiliar"/>
-</menu>
 <menu id="4"><phrase id="menutext" value="Cuenta Mayor Principal"/>
+</menu>
+<menu id="3"><phrase id="menutext" value="Cuenta Mayor Auxiliar"/>
 </menu>
 <menu id="9"><phrase id="menutext" value="SubCuenta"/>
 </menu>
@@ -835,7 +837,11 @@
 </field>
 <field id="idbalance_general"><phrase id="fldcaption" value="Balance General"/>
 </field>
-<field id="idcuenta_mayor_principal"><phrase id="fldcaption" value="Cuenta"/>
+<field id="idclase_cuenta"><phrase id="fldcaption" value="Clase "/>
+</field>
+<field id="idgrupo_cuenta"><phrase id="fldcaption" value="Grupo"/>
+</field>
+<field id="idsubgrupo_cuenta"><phrase id="fldcaption" value="Subgrupo"/>
 </field>
 <field id="monto"><phrase id="fldcaption" value="Monto"/>
 </field>
@@ -847,11 +853,31 @@
 </field>
 <field id="fecha_insercion"><phrase id="fldcaption" value="Fecha Inserción"/>
 </field>
-<field id="idclase_cuenta"><phrase id="fldcaption" value="Clase "/>
+</table>
+<table id="estado_resultado"><phrase id="tblcaption" value="estado resultado"/>
+<field id="idestado_resultado"><phrase id="fldcaption" value="idestado resultado"/>
 </field>
-<field id="idgrupo_cuenta"><phrase id="fldcaption" value="Grupo"/>
+<field id="idempresa"><phrase id="fldcaption" value="idempresa"/>
 </field>
-<field id="idsubgrupo_cuenta"><phrase id="fldcaption" value="Subgrupo"/>
+<field id="idperiodo_contable"><phrase id="fldcaption" value="idperiodo contable"/>
+</field>
+<field id="venta_netas"><phrase id="fldcaption" value="venta netas"/>
+</field>
+<field id="costo_ventas"><phrase id="fldcaption" value="costo ventas"/>
+</field>
+<field id="depreciacion"><phrase id="fldcaption" value="depreciacion"/>
+</field>
+<field id="interes_pagado"><phrase id="fldcaption" value="interes pagado"/>
+</field>
+<field id="utilidad_gravable"><phrase id="fldcaption" value="utilidad gravable"/>
+</field>
+<field id="impuestos"><phrase id="fldcaption" value="impuestos"/>
+</field>
+<field id="utilidad_neta"><phrase id="fldcaption" value="utilidad neta"/>
+</field>
+<field id="dividendos"><phrase id="fldcaption" value="dividendos"/>
+</field>
+<field id="utilidades_retenidas"><phrase id="fldcaption" value="utilidades retenidas"/>
 </field>
 </table>
 </project>

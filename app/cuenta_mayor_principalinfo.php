@@ -136,30 +136,6 @@ class ccuenta_mayor_principal extends cTable {
 		return "`idsubgrupo_cuenta`=@idsubgrupo_cuenta@";
 	}
 
-	// Current detail table name
-	function getCurrentDetailTable() {
-		return @$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_DETAIL_TABLE];
-	}
-
-	function setCurrentDetailTable($v) {
-		$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_DETAIL_TABLE] = $v;
-	}
-
-	// Get detail url
-	function GetDetailUrl() {
-
-		// Detail url
-		$sDetailUrl = "";
-		if ($this->getCurrentDetailTable() == "cuenta_mayor_auxiliar") {
-			$sDetailUrl = $GLOBALS["cuenta_mayor_auxiliar"]->GetListUrl() . "?" . EW_TABLE_SHOW_MASTER . "=" . $this->TableVar;
-			$sDetailUrl .= "&fk_idcuenta_mayor_principal=" . urlencode($this->idcuenta_mayor_principal->CurrentValue);
-		}
-		if ($sDetailUrl == "") {
-			$sDetailUrl = "cuenta_mayor_principallist.php";
-		}
-		return $sDetailUrl;
-	}
-
 	// Table level SQL
 	var $_SqlFrom = "";
 
@@ -492,10 +468,7 @@ class ccuenta_mayor_principal extends cTable {
 
 	// Edit URL
 	function GetEditUrl($parm = "") {
-		if ($parm <> "")
-			$url = $this->KeyUrl("cuenta_mayor_principaledit.php", $this->UrlParm($parm));
-		else
-			$url = $this->KeyUrl("cuenta_mayor_principaledit.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+		$url = $this->KeyUrl("cuenta_mayor_principaledit.php", $this->UrlParm($parm));
 		return $this->AddMasterUrl($url);
 	}
 
@@ -507,10 +480,7 @@ class ccuenta_mayor_principal extends cTable {
 
 	// Copy URL
 	function GetCopyUrl($parm = "") {
-		if ($parm <> "")
-			$url = $this->KeyUrl("cuenta_mayor_principaladd.php", $this->UrlParm($parm));
-		else
-			$url = $this->KeyUrl("cuenta_mayor_principaladd.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+		$url = $this->KeyUrl("cuenta_mayor_principaladd.php", $this->UrlParm($parm));
 		return $this->AddMasterUrl($url);
 	}
 

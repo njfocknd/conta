@@ -431,7 +431,6 @@ class cbalance_general_detalle_add extends cbalance_general_detalle {
 		$this->idclase_cuenta->CurrentValue = 1;
 		$this->idgrupo_cuenta->CurrentValue = 1;
 		$this->idsubgrupo_cuenta->CurrentValue = 6;
-		$this->idcuenta_mayor_principal->CurrentValue = 6;
 		$this->monto->CurrentValue = 0.00;
 	}
 
@@ -449,9 +448,6 @@ class cbalance_general_detalle_add extends cbalance_general_detalle {
 		if (!$this->idsubgrupo_cuenta->FldIsDetailKey) {
 			$this->idsubgrupo_cuenta->setFormValue($objForm->GetValue("x_idsubgrupo_cuenta"));
 		}
-		if (!$this->idcuenta_mayor_principal->FldIsDetailKey) {
-			$this->idcuenta_mayor_principal->setFormValue($objForm->GetValue("x_idcuenta_mayor_principal"));
-		}
 		if (!$this->monto->FldIsDetailKey) {
 			$this->monto->setFormValue($objForm->GetValue("x_monto"));
 		}
@@ -464,7 +460,6 @@ class cbalance_general_detalle_add extends cbalance_general_detalle {
 		$this->idclase_cuenta->CurrentValue = $this->idclase_cuenta->FormValue;
 		$this->idgrupo_cuenta->CurrentValue = $this->idgrupo_cuenta->FormValue;
 		$this->idsubgrupo_cuenta->CurrentValue = $this->idsubgrupo_cuenta->FormValue;
-		$this->idcuenta_mayor_principal->CurrentValue = $this->idcuenta_mayor_principal->FormValue;
 		$this->monto->CurrentValue = $this->monto->FormValue;
 	}
 
@@ -502,7 +497,6 @@ class cbalance_general_detalle_add extends cbalance_general_detalle {
 		$this->idclase_cuenta->setDbValue($rs->fields('idclase_cuenta'));
 		$this->idgrupo_cuenta->setDbValue($rs->fields('idgrupo_cuenta'));
 		$this->idsubgrupo_cuenta->setDbValue($rs->fields('idsubgrupo_cuenta'));
-		$this->idcuenta_mayor_principal->setDbValue($rs->fields('idcuenta_mayor_principal'));
 		$this->monto->setDbValue($rs->fields('monto'));
 		$this->estado->setDbValue($rs->fields('estado'));
 		$this->fecha_insercion->setDbValue($rs->fields('fecha_insercion'));
@@ -517,7 +511,6 @@ class cbalance_general_detalle_add extends cbalance_general_detalle {
 		$this->idclase_cuenta->DbValue = $row['idclase_cuenta'];
 		$this->idgrupo_cuenta->DbValue = $row['idgrupo_cuenta'];
 		$this->idsubgrupo_cuenta->DbValue = $row['idsubgrupo_cuenta'];
-		$this->idcuenta_mayor_principal->DbValue = $row['idcuenta_mayor_principal'];
 		$this->monto->DbValue = $row['monto'];
 		$this->estado->DbValue = $row['estado'];
 		$this->fecha_insercion->DbValue = $row['fecha_insercion'];
@@ -565,7 +558,6 @@ class cbalance_general_detalle_add extends cbalance_general_detalle {
 		// idclase_cuenta
 		// idgrupo_cuenta
 		// idsubgrupo_cuenta
-		// idcuenta_mayor_principal
 		// monto
 		// estado
 		// fecha_insercion
@@ -674,31 +666,6 @@ class cbalance_general_detalle_add extends cbalance_general_detalle {
 		}
 		$this->idsubgrupo_cuenta->ViewCustomAttributes = "";
 
-		// idcuenta_mayor_principal
-		if (strval($this->idcuenta_mayor_principal->CurrentValue) <> "") {
-			$sFilterWrk = "`idcuenta_mayor_principal`" . ew_SearchString("=", $this->idcuenta_mayor_principal->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `idcuenta_mayor_principal`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta_mayor_principal`";
-		$sWhereWrk = "";
-		$lookuptblfilter = "`estado` = 'Activo'";
-		ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idcuenta_mayor_principal, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-		$sSqlWrk .= " ORDER BY `nomenclatura`";
-			$rswrk = Conn()->Execute($sSqlWrk);
-			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$arwrk = array();
-				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idcuenta_mayor_principal->ViewValue = $this->idcuenta_mayor_principal->DisplayValue($arwrk);
-				$rswrk->Close();
-			} else {
-				$this->idcuenta_mayor_principal->ViewValue = $this->idcuenta_mayor_principal->CurrentValue;
-			}
-		} else {
-			$this->idcuenta_mayor_principal->ViewValue = NULL;
-		}
-		$this->idcuenta_mayor_principal->ViewCustomAttributes = "";
-
 		// monto
 		$this->monto->ViewValue = $this->monto->CurrentValue;
 		$this->monto->ViewValue = ew_FormatNumber($this->monto->ViewValue, 2, -1, -1, -1);
@@ -731,11 +698,6 @@ class cbalance_general_detalle_add extends cbalance_general_detalle {
 			$this->idsubgrupo_cuenta->LinkCustomAttributes = "";
 			$this->idsubgrupo_cuenta->HrefValue = "";
 			$this->idsubgrupo_cuenta->TooltipValue = "";
-
-			// idcuenta_mayor_principal
-			$this->idcuenta_mayor_principal->LinkCustomAttributes = "";
-			$this->idcuenta_mayor_principal->HrefValue = "";
-			$this->idcuenta_mayor_principal->TooltipValue = "";
 
 			// monto
 			$this->monto->LinkCustomAttributes = "";
@@ -809,28 +771,6 @@ class cbalance_general_detalle_add extends cbalance_general_detalle {
 			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
 			$this->idsubgrupo_cuenta->EditValue = $arwrk;
 
-			// idcuenta_mayor_principal
-			$this->idcuenta_mayor_principal->EditAttrs["class"] = "form-control";
-			$this->idcuenta_mayor_principal->EditCustomAttributes = "";
-			if (trim(strval($this->idcuenta_mayor_principal->CurrentValue)) == "") {
-				$sFilterWrk = "0=1";
-			} else {
-				$sFilterWrk = "`idcuenta_mayor_principal`" . ew_SearchString("=", $this->idcuenta_mayor_principal->CurrentValue, EW_DATATYPE_NUMBER, "");
-			}
-			$sSqlWrk = "SELECT `idcuenta_mayor_principal`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, `idsubgrupo_cuenta` AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `cuenta_mayor_principal`";
-			$sWhereWrk = "";
-			$lookuptblfilter = "`estado` = 'Activo'";
-			ew_AddFilter($sWhereWrk, $lookuptblfilter);
-			ew_AddFilter($sWhereWrk, $sFilterWrk);
-			$this->Lookup_Selecting($this->idcuenta_mayor_principal, $sWhereWrk); // Call Lookup selecting
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$sSqlWrk .= " ORDER BY `nomenclatura`";
-			$rswrk = Conn()->Execute($sSqlWrk);
-			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
-			if ($rswrk) $rswrk->Close();
-			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
-			$this->idcuenta_mayor_principal->EditValue = $arwrk;
-
 			// monto
 			$this->monto->EditAttrs["class"] = "form-control";
 			$this->monto->EditCustomAttributes = "";
@@ -851,10 +791,6 @@ class cbalance_general_detalle_add extends cbalance_general_detalle {
 			// idsubgrupo_cuenta
 			$this->idsubgrupo_cuenta->LinkCustomAttributes = "";
 			$this->idsubgrupo_cuenta->HrefValue = "";
-
-			// idcuenta_mayor_principal
-			$this->idcuenta_mayor_principal->LinkCustomAttributes = "";
-			$this->idcuenta_mayor_principal->HrefValue = "";
 
 			// monto
 			$this->monto->LinkCustomAttributes = "";
@@ -889,9 +825,6 @@ class cbalance_general_detalle_add extends cbalance_general_detalle {
 		}
 		if (!$this->idsubgrupo_cuenta->FldIsDetailKey && !is_null($this->idsubgrupo_cuenta->FormValue) && $this->idsubgrupo_cuenta->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->idsubgrupo_cuenta->FldCaption(), $this->idsubgrupo_cuenta->ReqErrMsg));
-		}
-		if (!$this->idcuenta_mayor_principal->FldIsDetailKey && !is_null($this->idcuenta_mayor_principal->FormValue) && $this->idcuenta_mayor_principal->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->idcuenta_mayor_principal->FldCaption(), $this->idcuenta_mayor_principal->ReqErrMsg));
 		}
 		if (!$this->monto->FldIsDetailKey && !is_null($this->monto->FormValue) && $this->monto->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->monto->FldCaption(), $this->monto->ReqErrMsg));
@@ -931,9 +864,6 @@ class cbalance_general_detalle_add extends cbalance_general_detalle {
 
 		// idsubgrupo_cuenta
 		$this->idsubgrupo_cuenta->SetDbValueDef($rsnew, $this->idsubgrupo_cuenta->CurrentValue, 0, strval($this->idsubgrupo_cuenta->CurrentValue) == "");
-
-		// idcuenta_mayor_principal
-		$this->idcuenta_mayor_principal->SetDbValueDef($rsnew, $this->idcuenta_mayor_principal->CurrentValue, 0, strval($this->idcuenta_mayor_principal->CurrentValue) == "");
 
 		// monto
 		$this->monto->SetDbValueDef($rsnew, $this->monto->CurrentValue, 0, strval($this->monto->CurrentValue) == "");
@@ -1164,9 +1094,6 @@ fbalance_general_detalleadd.Validate = function() {
 			elm = this.GetElements("x" + infix + "_idsubgrupo_cuenta");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $balance_general_detalle->idsubgrupo_cuenta->FldCaption(), $balance_general_detalle->idsubgrupo_cuenta->ReqErrMsg)) ?>");
-			elm = this.GetElements("x" + infix + "_idcuenta_mayor_principal");
-			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $balance_general_detalle->idcuenta_mayor_principal->FldCaption(), $balance_general_detalle->idcuenta_mayor_principal->ReqErrMsg)) ?>");
 			elm = this.GetElements("x" + infix + "_monto");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $balance_general_detalle->monto->FldCaption(), $balance_general_detalle->monto->ReqErrMsg)) ?>");
@@ -1208,8 +1135,7 @@ fbalance_general_detalleadd.ValidateRequired = false;
 // Dynamic selection lists
 fbalance_general_detalleadd.Lists["x_idclase_cuenta"] = {"LinkField":"x_idclase_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":["x_idgrupo_cuenta"],"FilterFields":[],"Options":[],"Template":""};
 fbalance_general_detalleadd.Lists["x_idgrupo_cuenta"] = {"LinkField":"x_idgrupo_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":["x_idclase_cuenta"],"ChildFields":["x_idsubgrupo_cuenta"],"FilterFields":["x_idclase_cuenta"],"Options":[],"Template":""};
-fbalance_general_detalleadd.Lists["x_idsubgrupo_cuenta"] = {"LinkField":"x_idsubgrupo_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":["x_idgrupo_cuenta"],"ChildFields":["x_idcuenta_mayor_principal"],"FilterFields":["x_idgrupo_cuenta"],"Options":[],"Template":""};
-fbalance_general_detalleadd.Lists["x_idcuenta_mayor_principal"] = {"LinkField":"x_idcuenta_mayor_principal","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":["x_idsubgrupo_cuenta"],"ChildFields":[],"FilterFields":["x_idsubgrupo_cuenta"],"Options":[],"Template":""};
+fbalance_general_detalleadd.Lists["x_idsubgrupo_cuenta"] = {"LinkField":"x_idsubgrupo_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":["x_idgrupo_cuenta"],"ChildFields":[],"FilterFields":["x_idgrupo_cuenta"],"Options":[],"Template":""};
 
 // Form object for search
 </script>
@@ -1337,7 +1263,6 @@ if ($sSqlWrk <> "") $balance_general_detalle->idgrupo_cuenta->LookupFilters["s"]
 		<label id="elh_balance_general_detalle_idsubgrupo_cuenta" for="x_idsubgrupo_cuenta" class="col-sm-2 control-label ewLabel"><?php echo $balance_general_detalle->idsubgrupo_cuenta->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
 		<div class="col-sm-10"><div<?php echo $balance_general_detalle->idsubgrupo_cuenta->CellAttributes() ?>>
 <span id="el_balance_general_detalle_idsubgrupo_cuenta">
-<?php $balance_general_detalle->idsubgrupo_cuenta->EditAttrs["onchange"] = "ew_UpdateOpt.call(this); " . @$balance_general_detalle->idsubgrupo_cuenta->EditAttrs["onchange"]; ?>
 <select data-table="balance_general_detalle" data-field="x_idsubgrupo_cuenta" data-value-separator="<?php echo ew_HtmlEncode(is_array($balance_general_detalle->idsubgrupo_cuenta->DisplayValueSeparator) ? json_encode($balance_general_detalle->idsubgrupo_cuenta->DisplayValueSeparator) : $balance_general_detalle->idsubgrupo_cuenta->DisplayValueSeparator) ?>" id="x_idsubgrupo_cuenta" name="x_idsubgrupo_cuenta"<?php echo $balance_general_detalle->idsubgrupo_cuenta->EditAttributes() ?>>
 <?php
 if (is_array($balance_general_detalle->idsubgrupo_cuenta->EditValue)) {
@@ -1378,53 +1303,6 @@ if ($sSqlWrk <> "") $balance_general_detalle->idsubgrupo_cuenta->LookupFilters["
 <input type="hidden" name="s_x_idsubgrupo_cuenta" id="s_x_idsubgrupo_cuenta" value="<?php echo $balance_general_detalle->idsubgrupo_cuenta->LookupFilterQuery() ?>">
 </span>
 <?php echo $balance_general_detalle->idsubgrupo_cuenta->CustomMsg ?></div></div>
-	</div>
-<?php } ?>
-<?php if ($balance_general_detalle->idcuenta_mayor_principal->Visible) { // idcuenta_mayor_principal ?>
-	<div id="r_idcuenta_mayor_principal" class="form-group">
-		<label id="elh_balance_general_detalle_idcuenta_mayor_principal" for="x_idcuenta_mayor_principal" class="col-sm-2 control-label ewLabel"><?php echo $balance_general_detalle->idcuenta_mayor_principal->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
-		<div class="col-sm-10"><div<?php echo $balance_general_detalle->idcuenta_mayor_principal->CellAttributes() ?>>
-<span id="el_balance_general_detalle_idcuenta_mayor_principal">
-<select data-table="balance_general_detalle" data-field="x_idcuenta_mayor_principal" data-value-separator="<?php echo ew_HtmlEncode(is_array($balance_general_detalle->idcuenta_mayor_principal->DisplayValueSeparator) ? json_encode($balance_general_detalle->idcuenta_mayor_principal->DisplayValueSeparator) : $balance_general_detalle->idcuenta_mayor_principal->DisplayValueSeparator) ?>" id="x_idcuenta_mayor_principal" name="x_idcuenta_mayor_principal"<?php echo $balance_general_detalle->idcuenta_mayor_principal->EditAttributes() ?>>
-<?php
-if (is_array($balance_general_detalle->idcuenta_mayor_principal->EditValue)) {
-	$arwrk = $balance_general_detalle->idcuenta_mayor_principal->EditValue;
-	$rowswrk = count($arwrk);
-	$emptywrk = TRUE;
-	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = ew_SameStr($balance_general_detalle->idcuenta_mayor_principal->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;		
-?>
-<option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $balance_general_detalle->idcuenta_mayor_principal->DisplayValue($arwrk[$rowcntwrk]) ?>
-</option>
-<?php
-	}
-	if ($emptywrk && strval($balance_general_detalle->idcuenta_mayor_principal->CurrentValue) <> "") {
-?>
-<option value="<?php echo ew_HtmlEncode($balance_general_detalle->idcuenta_mayor_principal->CurrentValue) ?>" selected><?php echo $balance_general_detalle->idcuenta_mayor_principal->CurrentValue ?></option>
-<?php
-    }
-}
-?>
-</select>
-<?php
-$sSqlWrk = "SELECT `idcuenta_mayor_principal`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `cuenta_mayor_principal`";
-$sWhereWrk = "{filter}";
-$lookuptblfilter = "`estado` = 'Activo'";
-ew_AddFilter($sWhereWrk, $lookuptblfilter);
-$balance_general_detalle->idcuenta_mayor_principal->LookupFilters = array("s" => $sSqlWrk, "d" => "");
-$balance_general_detalle->idcuenta_mayor_principal->LookupFilters += array("f0" => "`idcuenta_mayor_principal` = {filter_value}", "t0" => "3", "fn0" => "");
-$balance_general_detalle->idcuenta_mayor_principal->LookupFilters += array("f1" => "`idsubgrupo_cuenta` IN ({filter_value})", "t1" => "3", "fn1" => "");
-$sSqlWrk = "";
-$balance_general_detalle->Lookup_Selecting($balance_general_detalle->idcuenta_mayor_principal, $sWhereWrk); // Call Lookup selecting
-if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-$sSqlWrk .= " ORDER BY `nomenclatura`";
-if ($sSqlWrk <> "") $balance_general_detalle->idcuenta_mayor_principal->LookupFilters["s"] .= $sSqlWrk;
-?>
-<input type="hidden" name="s_x_idcuenta_mayor_principal" id="s_x_idcuenta_mayor_principal" value="<?php echo $balance_general_detalle->idcuenta_mayor_principal->LookupFilterQuery() ?>">
-</span>
-<?php echo $balance_general_detalle->idcuenta_mayor_principal->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
 <?php if ($balance_general_detalle->monto->Visible) { // monto ?>

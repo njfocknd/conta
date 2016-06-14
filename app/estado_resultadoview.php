@@ -5,8 +5,7 @@ ob_start(); // Turn on output buffering
 <?php include_once "ewcfg12.php" ?>
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
-<?php include_once "cuenta_mayor_principalinfo.php" ?>
-<?php include_once "subgrupo_cuentainfo.php" ?>
+<?php include_once "estado_resultadoinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -14,9 +13,9 @@ ob_start(); // Turn on output buffering
 // Page class
 //
 
-$cuenta_mayor_principal_view = NULL; // Initialize page object first
+$estado_resultado_view = NULL; // Initialize page object first
 
-class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
+class cestado_resultado_view extends cestado_resultado {
 
 	// Page ID
 	var $PageID = 'view';
@@ -25,10 +24,10 @@ class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
 	var $ProjectID = "{7A6CF8EC-FF5E-4A2F-90E6-C9E9870D7F9C}";
 
 	// Table name
-	var $TableName = 'cuenta_mayor_principal';
+	var $TableName = 'estado_resultado';
 
 	// Page object name
-	var $PageObjName = 'cuenta_mayor_principal_view';
+	var $PageObjName = 'estado_resultado_view';
 
 	// Page name
 	function PageName() {
@@ -253,15 +252,15 @@ class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
 		// Parent constuctor
 		parent::__construct();
 
-		// Table object (cuenta_mayor_principal)
-		if (!isset($GLOBALS["cuenta_mayor_principal"]) || get_class($GLOBALS["cuenta_mayor_principal"]) == "ccuenta_mayor_principal") {
-			$GLOBALS["cuenta_mayor_principal"] = &$this;
-			$GLOBALS["Table"] = &$GLOBALS["cuenta_mayor_principal"];
+		// Table object (estado_resultado)
+		if (!isset($GLOBALS["estado_resultado"]) || get_class($GLOBALS["estado_resultado"]) == "cestado_resultado") {
+			$GLOBALS["estado_resultado"] = &$this;
+			$GLOBALS["Table"] = &$GLOBALS["estado_resultado"];
 		}
 		$KeyUrl = "";
-		if (@$_GET["idcuenta_mayor_principal"] <> "") {
-			$this->RecKey["idcuenta_mayor_principal"] = $_GET["idcuenta_mayor_principal"];
-			$KeyUrl .= "&amp;idcuenta_mayor_principal=" . urlencode($this->RecKey["idcuenta_mayor_principal"]);
+		if (@$_GET["idestado_resultado"] <> "") {
+			$this->RecKey["idestado_resultado"] = $_GET["idestado_resultado"];
+			$KeyUrl .= "&amp;idestado_resultado=" . urlencode($this->RecKey["idestado_resultado"]);
 		}
 		$this->ExportPrintUrl = $this->PageUrl() . "export=print" . $KeyUrl;
 		$this->ExportHtmlUrl = $this->PageUrl() . "export=html" . $KeyUrl;
@@ -271,16 +270,13 @@ class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
 		$this->ExportCsvUrl = $this->PageUrl() . "export=csv" . $KeyUrl;
 		$this->ExportPdfUrl = $this->PageUrl() . "export=pdf" . $KeyUrl;
 
-		// Table object (subgrupo_cuenta)
-		if (!isset($GLOBALS['subgrupo_cuenta'])) $GLOBALS['subgrupo_cuenta'] = new csubgrupo_cuenta();
-
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'view', TRUE);
 
 		// Table name (for backward compatibility)
 		if (!defined("EW_TABLE_NAME"))
-			define("EW_TABLE_NAME", 'cuenta_mayor_principal', TRUE);
+			define("EW_TABLE_NAME", 'estado_resultado', TRUE);
 
 		// Start timer
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
@@ -308,7 +304,7 @@ class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
-		$this->idcuenta_mayor_principal->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
+		$this->idestado_resultado->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 
 		// Global Page Loading event (in userfn*.php)
 		Page_Loading();
@@ -340,13 +336,13 @@ class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
 		Page_Unloaded();
 
 		// Export
-		global $EW_EXPORT, $cuenta_mayor_principal;
+		global $EW_EXPORT, $estado_resultado;
 		if ($this->CustomExport <> "" && $this->CustomExport == $this->Export && array_key_exists($this->CustomExport, $EW_EXPORT)) {
 				$sContent = ob_get_contents();
 			if ($gsExportFile == "") $gsExportFile = $this->TableVar;
 			$class = $EW_EXPORT[$this->CustomExport];
 			if (class_exists($class)) {
-				$doc = new $class($cuenta_mayor_principal);
+				$doc = new $class($estado_resultado);
 				$doc->Text = $sContent;
 				if ($this->Export == "email")
 					echo $this->ExportEmail($doc->Text);
@@ -390,21 +386,18 @@ class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
 		$sReturnUrl = "";
 		$bMatchRecord = FALSE;
 
-		// Set up master/detail parameters
-		$this->SetUpMasterParms();
-
 		// Set up Breadcrumb
 		if ($this->Export == "")
 			$this->SetupBreadcrumb();
 		if ($this->IsPageRequest()) { // Validate request
-			if (@$_GET["idcuenta_mayor_principal"] <> "") {
-				$this->idcuenta_mayor_principal->setQueryStringValue($_GET["idcuenta_mayor_principal"]);
-				$this->RecKey["idcuenta_mayor_principal"] = $this->idcuenta_mayor_principal->QueryStringValue;
-			} elseif (@$_POST["idcuenta_mayor_principal"] <> "") {
-				$this->idcuenta_mayor_principal->setFormValue($_POST["idcuenta_mayor_principal"]);
-				$this->RecKey["idcuenta_mayor_principal"] = $this->idcuenta_mayor_principal->FormValue;
+			if (@$_GET["idestado_resultado"] <> "") {
+				$this->idestado_resultado->setQueryStringValue($_GET["idestado_resultado"]);
+				$this->RecKey["idestado_resultado"] = $this->idestado_resultado->QueryStringValue;
+			} elseif (@$_POST["idestado_resultado"] <> "") {
+				$this->idestado_resultado->setFormValue($_POST["idestado_resultado"]);
+				$this->RecKey["idestado_resultado"] = $this->idestado_resultado->FormValue;
 			} else {
-				$sReturnUrl = "cuenta_mayor_principallist.php"; // Return to list
+				$sReturnUrl = "estado_resultadolist.php"; // Return to list
 			}
 
 			// Get action
@@ -414,11 +407,11 @@ class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
 					if (!$this->LoadRow()) { // Load record based on key
 						if ($this->getSuccessMessage() == "" && $this->getFailureMessage() == "")
 							$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record message
-						$sReturnUrl = "cuenta_mayor_principallist.php"; // No matching record, return to list
+						$sReturnUrl = "estado_resultadolist.php"; // No matching record, return to list
 					}
 			}
 		} else {
-			$sReturnUrl = "cuenta_mayor_principallist.php"; // Not page request, return to list
+			$sReturnUrl = "estado_resultadolist.php"; // Not page request, return to list
 		}
 		if ($sReturnUrl <> "")
 			$this->Page_Terminate($sReturnUrl);
@@ -444,6 +437,16 @@ class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
 		$item = &$option->Add("edit");
 		$item->Body = "<a class=\"ewAction ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("ViewPageEditLink") . "</a>";
 		$item->Visible = ($this->EditUrl <> "");
+
+		// Copy
+		$item = &$option->Add("copy");
+		$item->Body = "<a class=\"ewAction ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("ViewPageCopyLink") . "</a>";
+		$item->Visible = ($this->CopyUrl <> "");
+
+		// Delete
+		$item = &$option->Add("delete");
+		$item->Body = "<a class=\"ewAction ewDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageDeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageDeleteLink")) . "\" href=\"" . ew_HtmlEncode($this->DeleteUrl) . "\">" . $Language->Phrase("ViewPageDeleteLink") . "</a>";
+		$item->Visible = ($this->DeleteUrl <> "");
 
 		// Set up action default
 		$option = &$options["action"];
@@ -521,24 +524,36 @@ class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
 		// Call Row Selected event
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
-		$this->idcuenta_mayor_principal->setDbValue($rs->fields('idcuenta_mayor_principal'));
-		$this->nomenclatura->setDbValue($rs->fields('nomenclatura'));
-		$this->nombre->setDbValue($rs->fields('nombre'));
-		$this->idsubgrupo_cuenta->setDbValue($rs->fields('idsubgrupo_cuenta'));
-		$this->definicion->setDbValue($rs->fields('definicion'));
-		$this->estado->setDbValue($rs->fields('estado'));
+		$this->idestado_resultado->setDbValue($rs->fields('idestado_resultado'));
+		$this->idempresa->setDbValue($rs->fields('idempresa'));
+		$this->idperiodo_contable->setDbValue($rs->fields('idperiodo_contable'));
+		$this->venta_netas->setDbValue($rs->fields('venta_netas'));
+		$this->costo_ventas->setDbValue($rs->fields('costo_ventas'));
+		$this->depreciacion->setDbValue($rs->fields('depreciacion'));
+		$this->interes_pagado->setDbValue($rs->fields('interes_pagado'));
+		$this->utilidad_gravable->setDbValue($rs->fields('utilidad_gravable'));
+		$this->impuestos->setDbValue($rs->fields('impuestos'));
+		$this->utilidad_neta->setDbValue($rs->fields('utilidad_neta'));
+		$this->dividendos->setDbValue($rs->fields('dividendos'));
+		$this->utilidades_retenidas->setDbValue($rs->fields('utilidades_retenidas'));
 	}
 
 	// Load DbValue from recordset
 	function LoadDbValues(&$rs) {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
-		$this->idcuenta_mayor_principal->DbValue = $row['idcuenta_mayor_principal'];
-		$this->nomenclatura->DbValue = $row['nomenclatura'];
-		$this->nombre->DbValue = $row['nombre'];
-		$this->idsubgrupo_cuenta->DbValue = $row['idsubgrupo_cuenta'];
-		$this->definicion->DbValue = $row['definicion'];
-		$this->estado->DbValue = $row['estado'];
+		$this->idestado_resultado->DbValue = $row['idestado_resultado'];
+		$this->idempresa->DbValue = $row['idempresa'];
+		$this->idperiodo_contable->DbValue = $row['idperiodo_contable'];
+		$this->venta_netas->DbValue = $row['venta_netas'];
+		$this->costo_ventas->DbValue = $row['costo_ventas'];
+		$this->depreciacion->DbValue = $row['depreciacion'];
+		$this->interes_pagado->DbValue = $row['interes_pagado'];
+		$this->utilidad_gravable->DbValue = $row['utilidad_gravable'];
+		$this->impuestos->DbValue = $row['impuestos'];
+		$this->utilidad_neta->DbValue = $row['utilidad_neta'];
+		$this->dividendos->DbValue = $row['dividendos'];
+		$this->utilidades_retenidas->DbValue = $row['utilidades_retenidas'];
 	}
 
 	// Render row values based on field settings
@@ -553,96 +568,168 @@ class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
 		$this->ListUrl = $this->GetListUrl();
 		$this->SetupOtherOptions();
 
+		// Convert decimal values if posted back
+		if ($this->venta_netas->FormValue == $this->venta_netas->CurrentValue && is_numeric(ew_StrToFloat($this->venta_netas->CurrentValue)))
+			$this->venta_netas->CurrentValue = ew_StrToFloat($this->venta_netas->CurrentValue);
+
+		// Convert decimal values if posted back
+		if ($this->costo_ventas->FormValue == $this->costo_ventas->CurrentValue && is_numeric(ew_StrToFloat($this->costo_ventas->CurrentValue)))
+			$this->costo_ventas->CurrentValue = ew_StrToFloat($this->costo_ventas->CurrentValue);
+
+		// Convert decimal values if posted back
+		if ($this->depreciacion->FormValue == $this->depreciacion->CurrentValue && is_numeric(ew_StrToFloat($this->depreciacion->CurrentValue)))
+			$this->depreciacion->CurrentValue = ew_StrToFloat($this->depreciacion->CurrentValue);
+
+		// Convert decimal values if posted back
+		if ($this->interes_pagado->FormValue == $this->interes_pagado->CurrentValue && is_numeric(ew_StrToFloat($this->interes_pagado->CurrentValue)))
+			$this->interes_pagado->CurrentValue = ew_StrToFloat($this->interes_pagado->CurrentValue);
+
+		// Convert decimal values if posted back
+		if ($this->utilidad_gravable->FormValue == $this->utilidad_gravable->CurrentValue && is_numeric(ew_StrToFloat($this->utilidad_gravable->CurrentValue)))
+			$this->utilidad_gravable->CurrentValue = ew_StrToFloat($this->utilidad_gravable->CurrentValue);
+
+		// Convert decimal values if posted back
+		if ($this->impuestos->FormValue == $this->impuestos->CurrentValue && is_numeric(ew_StrToFloat($this->impuestos->CurrentValue)))
+			$this->impuestos->CurrentValue = ew_StrToFloat($this->impuestos->CurrentValue);
+
+		// Convert decimal values if posted back
+		if ($this->utilidad_neta->FormValue == $this->utilidad_neta->CurrentValue && is_numeric(ew_StrToFloat($this->utilidad_neta->CurrentValue)))
+			$this->utilidad_neta->CurrentValue = ew_StrToFloat($this->utilidad_neta->CurrentValue);
+
+		// Convert decimal values if posted back
+		if ($this->dividendos->FormValue == $this->dividendos->CurrentValue && is_numeric(ew_StrToFloat($this->dividendos->CurrentValue)))
+			$this->dividendos->CurrentValue = ew_StrToFloat($this->dividendos->CurrentValue);
+
+		// Convert decimal values if posted back
+		if ($this->utilidades_retenidas->FormValue == $this->utilidades_retenidas->CurrentValue && is_numeric(ew_StrToFloat($this->utilidades_retenidas->CurrentValue)))
+			$this->utilidades_retenidas->CurrentValue = ew_StrToFloat($this->utilidades_retenidas->CurrentValue);
+
 		// Call Row_Rendering event
 		$this->Row_Rendering();
 
 		// Common render codes for all row types
-		// idcuenta_mayor_principal
-		// nomenclatura
-		// nombre
-		// idsubgrupo_cuenta
-		// definicion
-		// estado
+		// idestado_resultado
+		// idempresa
+		// idperiodo_contable
+		// venta_netas
+		// costo_ventas
+		// depreciacion
+		// interes_pagado
+		// utilidad_gravable
+		// impuestos
+		// utilidad_neta
+		// dividendos
+		// utilidades_retenidas
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-		// idcuenta_mayor_principal
-		$this->idcuenta_mayor_principal->ViewValue = $this->idcuenta_mayor_principal->CurrentValue;
-		$this->idcuenta_mayor_principal->ViewCustomAttributes = "";
+		// idestado_resultado
+		$this->idestado_resultado->ViewValue = $this->idestado_resultado->CurrentValue;
+		$this->idestado_resultado->ViewCustomAttributes = "";
 
-		// nomenclatura
-		$this->nomenclatura->ViewValue = $this->nomenclatura->CurrentValue;
-		$this->nomenclatura->ViewCustomAttributes = "";
+		// idempresa
+		$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
+		$this->idempresa->ViewCustomAttributes = "";
 
-		// nombre
-		$this->nombre->ViewValue = $this->nombre->CurrentValue;
-		$this->nombre->ViewCustomAttributes = "";
+		// idperiodo_contable
+		$this->idperiodo_contable->ViewValue = $this->idperiodo_contable->CurrentValue;
+		$this->idperiodo_contable->ViewCustomAttributes = "";
 
-		// idsubgrupo_cuenta
-		if (strval($this->idsubgrupo_cuenta->CurrentValue) <> "") {
-			$sFilterWrk = "`idsubgrupo_cuenta`" . ew_SearchString("=", $this->idsubgrupo_cuenta->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `idsubgrupo_cuenta`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `subgrupo_cuenta`";
-		$sWhereWrk = "";
-		$lookuptblfilter = "`estado` = 'Activo'";
-		ew_AddFilter($sWhereWrk, $lookuptblfilter);
-		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idsubgrupo_cuenta, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = Conn()->Execute($sSqlWrk);
-			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$arwrk = array();
-				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idsubgrupo_cuenta->ViewValue = $this->idsubgrupo_cuenta->DisplayValue($arwrk);
-				$rswrk->Close();
-			} else {
-				$this->idsubgrupo_cuenta->ViewValue = $this->idsubgrupo_cuenta->CurrentValue;
-			}
-		} else {
-			$this->idsubgrupo_cuenta->ViewValue = NULL;
-		}
-		$this->idsubgrupo_cuenta->ViewCustomAttributes = "";
+		// venta_netas
+		$this->venta_netas->ViewValue = $this->venta_netas->CurrentValue;
+		$this->venta_netas->ViewCustomAttributes = "";
 
-		// definicion
-		$this->definicion->ViewValue = $this->definicion->CurrentValue;
-		$this->definicion->ViewCustomAttributes = "";
+		// costo_ventas
+		$this->costo_ventas->ViewValue = $this->costo_ventas->CurrentValue;
+		$this->costo_ventas->ViewCustomAttributes = "";
 
-		// estado
-		if (strval($this->estado->CurrentValue) <> "") {
-			$this->estado->ViewValue = $this->estado->OptionCaption($this->estado->CurrentValue);
-		} else {
-			$this->estado->ViewValue = NULL;
-		}
-		$this->estado->ViewCustomAttributes = "";
+		// depreciacion
+		$this->depreciacion->ViewValue = $this->depreciacion->CurrentValue;
+		$this->depreciacion->ViewCustomAttributes = "";
 
-			// idcuenta_mayor_principal
-			$this->idcuenta_mayor_principal->LinkCustomAttributes = "";
-			$this->idcuenta_mayor_principal->HrefValue = "";
-			$this->idcuenta_mayor_principal->TooltipValue = "";
+		// interes_pagado
+		$this->interes_pagado->ViewValue = $this->interes_pagado->CurrentValue;
+		$this->interes_pagado->ViewCustomAttributes = "";
 
-			// nomenclatura
-			$this->nomenclatura->LinkCustomAttributes = "";
-			$this->nomenclatura->HrefValue = "";
-			$this->nomenclatura->TooltipValue = "";
+		// utilidad_gravable
+		$this->utilidad_gravable->ViewValue = $this->utilidad_gravable->CurrentValue;
+		$this->utilidad_gravable->ViewCustomAttributes = "";
 
-			// nombre
-			$this->nombre->LinkCustomAttributes = "";
-			$this->nombre->HrefValue = "";
-			$this->nombre->TooltipValue = "";
+		// impuestos
+		$this->impuestos->ViewValue = $this->impuestos->CurrentValue;
+		$this->impuestos->ViewCustomAttributes = "";
 
-			// idsubgrupo_cuenta
-			$this->idsubgrupo_cuenta->LinkCustomAttributes = "";
-			$this->idsubgrupo_cuenta->HrefValue = "";
-			$this->idsubgrupo_cuenta->TooltipValue = "";
+		// utilidad_neta
+		$this->utilidad_neta->ViewValue = $this->utilidad_neta->CurrentValue;
+		$this->utilidad_neta->ViewCustomAttributes = "";
 
-			// definicion
-			$this->definicion->LinkCustomAttributes = "";
-			$this->definicion->HrefValue = "";
-			$this->definicion->TooltipValue = "";
+		// dividendos
+		$this->dividendos->ViewValue = $this->dividendos->CurrentValue;
+		$this->dividendos->ViewCustomAttributes = "";
 
-			// estado
-			$this->estado->LinkCustomAttributes = "";
-			$this->estado->HrefValue = "";
-			$this->estado->TooltipValue = "";
+		// utilidades_retenidas
+		$this->utilidades_retenidas->ViewValue = $this->utilidades_retenidas->CurrentValue;
+		$this->utilidades_retenidas->ViewCustomAttributes = "";
+
+			// idestado_resultado
+			$this->idestado_resultado->LinkCustomAttributes = "";
+			$this->idestado_resultado->HrefValue = "";
+			$this->idestado_resultado->TooltipValue = "";
+
+			// idempresa
+			$this->idempresa->LinkCustomAttributes = "";
+			$this->idempresa->HrefValue = "";
+			$this->idempresa->TooltipValue = "";
+
+			// idperiodo_contable
+			$this->idperiodo_contable->LinkCustomAttributes = "";
+			$this->idperiodo_contable->HrefValue = "";
+			$this->idperiodo_contable->TooltipValue = "";
+
+			// venta_netas
+			$this->venta_netas->LinkCustomAttributes = "";
+			$this->venta_netas->HrefValue = "";
+			$this->venta_netas->TooltipValue = "";
+
+			// costo_ventas
+			$this->costo_ventas->LinkCustomAttributes = "";
+			$this->costo_ventas->HrefValue = "";
+			$this->costo_ventas->TooltipValue = "";
+
+			// depreciacion
+			$this->depreciacion->LinkCustomAttributes = "";
+			$this->depreciacion->HrefValue = "";
+			$this->depreciacion->TooltipValue = "";
+
+			// interes_pagado
+			$this->interes_pagado->LinkCustomAttributes = "";
+			$this->interes_pagado->HrefValue = "";
+			$this->interes_pagado->TooltipValue = "";
+
+			// utilidad_gravable
+			$this->utilidad_gravable->LinkCustomAttributes = "";
+			$this->utilidad_gravable->HrefValue = "";
+			$this->utilidad_gravable->TooltipValue = "";
+
+			// impuestos
+			$this->impuestos->LinkCustomAttributes = "";
+			$this->impuestos->HrefValue = "";
+			$this->impuestos->TooltipValue = "";
+
+			// utilidad_neta
+			$this->utilidad_neta->LinkCustomAttributes = "";
+			$this->utilidad_neta->HrefValue = "";
+			$this->utilidad_neta->TooltipValue = "";
+
+			// dividendos
+			$this->dividendos->LinkCustomAttributes = "";
+			$this->dividendos->HrefValue = "";
+			$this->dividendos->TooltipValue = "";
+
+			// utilidades_retenidas
+			$this->utilidades_retenidas->LinkCustomAttributes = "";
+			$this->utilidades_retenidas->HrefValue = "";
+			$this->utilidades_retenidas->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -650,73 +737,12 @@ class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
 			$this->Row_Rendered();
 	}
 
-	// Set up master/detail based on QueryString
-	function SetUpMasterParms() {
-		$bValidMaster = FALSE;
-
-		// Get the keys for master table
-		if (isset($_GET[EW_TABLE_SHOW_MASTER])) {
-			$sMasterTblVar = $_GET[EW_TABLE_SHOW_MASTER];
-			if ($sMasterTblVar == "") {
-				$bValidMaster = TRUE;
-				$this->DbMasterFilter = "";
-				$this->DbDetailFilter = "";
-			}
-			if ($sMasterTblVar == "subgrupo_cuenta") {
-				$bValidMaster = TRUE;
-				if (@$_GET["fk_idsubgrupo_cuenta"] <> "") {
-					$GLOBALS["subgrupo_cuenta"]->idsubgrupo_cuenta->setQueryStringValue($_GET["fk_idsubgrupo_cuenta"]);
-					$this->idsubgrupo_cuenta->setQueryStringValue($GLOBALS["subgrupo_cuenta"]->idsubgrupo_cuenta->QueryStringValue);
-					$this->idsubgrupo_cuenta->setSessionValue($this->idsubgrupo_cuenta->QueryStringValue);
-					if (!is_numeric($GLOBALS["subgrupo_cuenta"]->idsubgrupo_cuenta->QueryStringValue)) $bValidMaster = FALSE;
-				} else {
-					$bValidMaster = FALSE;
-				}
-			}
-		} elseif (isset($_POST[EW_TABLE_SHOW_MASTER])) {
-			$sMasterTblVar = $_POST[EW_TABLE_SHOW_MASTER];
-			if ($sMasterTblVar == "") {
-				$bValidMaster = TRUE;
-				$this->DbMasterFilter = "";
-				$this->DbDetailFilter = "";
-			}
-			if ($sMasterTblVar == "subgrupo_cuenta") {
-				$bValidMaster = TRUE;
-				if (@$_POST["fk_idsubgrupo_cuenta"] <> "") {
-					$GLOBALS["subgrupo_cuenta"]->idsubgrupo_cuenta->setFormValue($_POST["fk_idsubgrupo_cuenta"]);
-					$this->idsubgrupo_cuenta->setFormValue($GLOBALS["subgrupo_cuenta"]->idsubgrupo_cuenta->FormValue);
-					$this->idsubgrupo_cuenta->setSessionValue($this->idsubgrupo_cuenta->FormValue);
-					if (!is_numeric($GLOBALS["subgrupo_cuenta"]->idsubgrupo_cuenta->FormValue)) $bValidMaster = FALSE;
-				} else {
-					$bValidMaster = FALSE;
-				}
-			}
-		}
-		if ($bValidMaster) {
-
-			// Save current master table
-			$this->setCurrentMasterTable($sMasterTblVar);
-			$this->setSessionWhere($this->GetDetailFilter());
-
-			// Reset start record counter (new master key)
-			$this->StartRec = 1;
-			$this->setStartRecordNumber($this->StartRec);
-
-			// Clear previous master key from Session
-			if ($sMasterTblVar <> "subgrupo_cuenta") {
-				if ($this->idsubgrupo_cuenta->CurrentValue == "") $this->idsubgrupo_cuenta->setSessionValue("");
-			}
-		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
-		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
-	}
-
 	// Set up Breadcrumb
 	function SetupBreadcrumb() {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
 		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
-		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("cuenta_mayor_principallist.php"), "", $this->TableVar, TRUE);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("estado_resultadolist.php"), "", $this->TableVar, TRUE);
 		$PageId = "view";
 		$Breadcrumb->Add("view", $PageId, $url);
 	}
@@ -812,29 +838,29 @@ class ccuenta_mayor_principal_view extends ccuenta_mayor_principal {
 <?php
 
 // Create page object
-if (!isset($cuenta_mayor_principal_view)) $cuenta_mayor_principal_view = new ccuenta_mayor_principal_view();
+if (!isset($estado_resultado_view)) $estado_resultado_view = new cestado_resultado_view();
 
 // Page init
-$cuenta_mayor_principal_view->Page_Init();
+$estado_resultado_view->Page_Init();
 
 // Page main
-$cuenta_mayor_principal_view->Page_Main();
+$estado_resultado_view->Page_Main();
 
 // Global Page Rendering event (in userfn*.php)
 Page_Rendering();
 
 // Page Rendering event
-$cuenta_mayor_principal_view->Page_Render();
+$estado_resultado_view->Page_Render();
 ?>
 <?php include_once "header.php" ?>
 <script type="text/javascript">
 
 // Form object
 var CurrentPageID = EW_PAGE_ID = "view";
-var CurrentForm = fcuenta_mayor_principalview = new ew_Form("fcuenta_mayor_principalview", "view");
+var CurrentForm = festado_resultadoview = new ew_Form("festado_resultadoview", "view");
 
 // Form_CustomValidate event
-fcuenta_mayor_principalview.Form_CustomValidate = 
+festado_resultadoview.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
 
  	// Your custom validation code here, return false if invalid. 
@@ -843,17 +869,14 @@ fcuenta_mayor_principalview.Form_CustomValidate =
 
 // Use JavaScript validation or not
 <?php if (EW_CLIENT_VALIDATE) { ?>
-fcuenta_mayor_principalview.ValidateRequired = true;
+festado_resultadoview.ValidateRequired = true;
 <?php } else { ?>
-fcuenta_mayor_principalview.ValidateRequired = false; 
+festado_resultadoview.ValidateRequired = false; 
 <?php } ?>
 
 // Dynamic selection lists
-fcuenta_mayor_principalview.Lists["x_idsubgrupo_cuenta"] = {"LinkField":"x_idsubgrupo_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
-fcuenta_mayor_principalview.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
-fcuenta_mayor_principalview.Lists["x_estado"].Options = <?php echo json_encode($cuenta_mayor_principal->estado->Options()) ?>;
-
 // Form object for search
+
 </script>
 <script type="text/javascript">
 
@@ -861,86 +884,152 @@ fcuenta_mayor_principalview.Lists["x_estado"].Options = <?php echo json_encode($
 </script>
 <div class="ewToolbar">
 <?php $Breadcrumb->Render(); ?>
-<?php $cuenta_mayor_principal_view->ExportOptions->Render("body") ?>
+<?php $estado_resultado_view->ExportOptions->Render("body") ?>
 <?php
-	foreach ($cuenta_mayor_principal_view->OtherOptions as &$option)
+	foreach ($estado_resultado_view->OtherOptions as &$option)
 		$option->Render("body");
 ?>
 <?php echo $Language->SelectionForm(); ?>
 <div class="clearfix"></div>
 </div>
-<?php $cuenta_mayor_principal_view->ShowPageHeader(); ?>
+<?php $estado_resultado_view->ShowPageHeader(); ?>
 <?php
-$cuenta_mayor_principal_view->ShowMessage();
+$estado_resultado_view->ShowMessage();
 ?>
-<form name="fcuenta_mayor_principalview" id="fcuenta_mayor_principalview" class="form-inline ewForm ewViewForm" action="<?php echo ew_CurrentPage() ?>" method="post">
-<?php if ($cuenta_mayor_principal_view->CheckToken) { ?>
-<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $cuenta_mayor_principal_view->Token ?>">
+<form name="festado_resultadoview" id="festado_resultadoview" class="form-inline ewForm ewViewForm" action="<?php echo ew_CurrentPage() ?>" method="post">
+<?php if ($estado_resultado_view->CheckToken) { ?>
+<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $estado_resultado_view->Token ?>">
 <?php } ?>
-<input type="hidden" name="t" value="cuenta_mayor_principal">
+<input type="hidden" name="t" value="estado_resultado">
 <table class="table table-bordered table-striped ewViewTable">
-<?php if ($cuenta_mayor_principal->idcuenta_mayor_principal->Visible) { // idcuenta_mayor_principal ?>
-	<tr id="r_idcuenta_mayor_principal">
-		<td><span id="elh_cuenta_mayor_principal_idcuenta_mayor_principal"><?php echo $cuenta_mayor_principal->idcuenta_mayor_principal->FldCaption() ?></span></td>
-		<td data-name="idcuenta_mayor_principal"<?php echo $cuenta_mayor_principal->idcuenta_mayor_principal->CellAttributes() ?>>
-<span id="el_cuenta_mayor_principal_idcuenta_mayor_principal">
-<span<?php echo $cuenta_mayor_principal->idcuenta_mayor_principal->ViewAttributes() ?>>
-<?php echo $cuenta_mayor_principal->idcuenta_mayor_principal->ViewValue ?></span>
+<?php if ($estado_resultado->idestado_resultado->Visible) { // idestado_resultado ?>
+	<tr id="r_idestado_resultado">
+		<td><span id="elh_estado_resultado_idestado_resultado"><?php echo $estado_resultado->idestado_resultado->FldCaption() ?></span></td>
+		<td data-name="idestado_resultado"<?php echo $estado_resultado->idestado_resultado->CellAttributes() ?>>
+<span id="el_estado_resultado_idestado_resultado">
+<span<?php echo $estado_resultado->idestado_resultado->ViewAttributes() ?>>
+<?php echo $estado_resultado->idestado_resultado->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($cuenta_mayor_principal->nomenclatura->Visible) { // nomenclatura ?>
-	<tr id="r_nomenclatura">
-		<td><span id="elh_cuenta_mayor_principal_nomenclatura"><?php echo $cuenta_mayor_principal->nomenclatura->FldCaption() ?></span></td>
-		<td data-name="nomenclatura"<?php echo $cuenta_mayor_principal->nomenclatura->CellAttributes() ?>>
-<span id="el_cuenta_mayor_principal_nomenclatura">
-<span<?php echo $cuenta_mayor_principal->nomenclatura->ViewAttributes() ?>>
-<?php echo $cuenta_mayor_principal->nomenclatura->ViewValue ?></span>
+<?php if ($estado_resultado->idempresa->Visible) { // idempresa ?>
+	<tr id="r_idempresa">
+		<td><span id="elh_estado_resultado_idempresa"><?php echo $estado_resultado->idempresa->FldCaption() ?></span></td>
+		<td data-name="idempresa"<?php echo $estado_resultado->idempresa->CellAttributes() ?>>
+<span id="el_estado_resultado_idempresa">
+<span<?php echo $estado_resultado->idempresa->ViewAttributes() ?>>
+<?php echo $estado_resultado->idempresa->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($cuenta_mayor_principal->nombre->Visible) { // nombre ?>
-	<tr id="r_nombre">
-		<td><span id="elh_cuenta_mayor_principal_nombre"><?php echo $cuenta_mayor_principal->nombre->FldCaption() ?></span></td>
-		<td data-name="nombre"<?php echo $cuenta_mayor_principal->nombre->CellAttributes() ?>>
-<span id="el_cuenta_mayor_principal_nombre">
-<span<?php echo $cuenta_mayor_principal->nombre->ViewAttributes() ?>>
-<?php echo $cuenta_mayor_principal->nombre->ViewValue ?></span>
+<?php if ($estado_resultado->idperiodo_contable->Visible) { // idperiodo_contable ?>
+	<tr id="r_idperiodo_contable">
+		<td><span id="elh_estado_resultado_idperiodo_contable"><?php echo $estado_resultado->idperiodo_contable->FldCaption() ?></span></td>
+		<td data-name="idperiodo_contable"<?php echo $estado_resultado->idperiodo_contable->CellAttributes() ?>>
+<span id="el_estado_resultado_idperiodo_contable">
+<span<?php echo $estado_resultado->idperiodo_contable->ViewAttributes() ?>>
+<?php echo $estado_resultado->idperiodo_contable->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($cuenta_mayor_principal->idsubgrupo_cuenta->Visible) { // idsubgrupo_cuenta ?>
-	<tr id="r_idsubgrupo_cuenta">
-		<td><span id="elh_cuenta_mayor_principal_idsubgrupo_cuenta"><?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->FldCaption() ?></span></td>
-		<td data-name="idsubgrupo_cuenta"<?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->CellAttributes() ?>>
-<span id="el_cuenta_mayor_principal_idsubgrupo_cuenta">
-<span<?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->ViewAttributes() ?>>
-<?php echo $cuenta_mayor_principal->idsubgrupo_cuenta->ViewValue ?></span>
+<?php if ($estado_resultado->venta_netas->Visible) { // venta_netas ?>
+	<tr id="r_venta_netas">
+		<td><span id="elh_estado_resultado_venta_netas"><?php echo $estado_resultado->venta_netas->FldCaption() ?></span></td>
+		<td data-name="venta_netas"<?php echo $estado_resultado->venta_netas->CellAttributes() ?>>
+<span id="el_estado_resultado_venta_netas">
+<span<?php echo $estado_resultado->venta_netas->ViewAttributes() ?>>
+<?php echo $estado_resultado->venta_netas->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($cuenta_mayor_principal->definicion->Visible) { // definicion ?>
-	<tr id="r_definicion">
-		<td><span id="elh_cuenta_mayor_principal_definicion"><?php echo $cuenta_mayor_principal->definicion->FldCaption() ?></span></td>
-		<td data-name="definicion"<?php echo $cuenta_mayor_principal->definicion->CellAttributes() ?>>
-<span id="el_cuenta_mayor_principal_definicion">
-<span<?php echo $cuenta_mayor_principal->definicion->ViewAttributes() ?>>
-<?php echo $cuenta_mayor_principal->definicion->ViewValue ?></span>
+<?php if ($estado_resultado->costo_ventas->Visible) { // costo_ventas ?>
+	<tr id="r_costo_ventas">
+		<td><span id="elh_estado_resultado_costo_ventas"><?php echo $estado_resultado->costo_ventas->FldCaption() ?></span></td>
+		<td data-name="costo_ventas"<?php echo $estado_resultado->costo_ventas->CellAttributes() ?>>
+<span id="el_estado_resultado_costo_ventas">
+<span<?php echo $estado_resultado->costo_ventas->ViewAttributes() ?>>
+<?php echo $estado_resultado->costo_ventas->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($cuenta_mayor_principal->estado->Visible) { // estado ?>
-	<tr id="r_estado">
-		<td><span id="elh_cuenta_mayor_principal_estado"><?php echo $cuenta_mayor_principal->estado->FldCaption() ?></span></td>
-		<td data-name="estado"<?php echo $cuenta_mayor_principal->estado->CellAttributes() ?>>
-<span id="el_cuenta_mayor_principal_estado">
-<span<?php echo $cuenta_mayor_principal->estado->ViewAttributes() ?>>
-<?php echo $cuenta_mayor_principal->estado->ViewValue ?></span>
+<?php if ($estado_resultado->depreciacion->Visible) { // depreciacion ?>
+	<tr id="r_depreciacion">
+		<td><span id="elh_estado_resultado_depreciacion"><?php echo $estado_resultado->depreciacion->FldCaption() ?></span></td>
+		<td data-name="depreciacion"<?php echo $estado_resultado->depreciacion->CellAttributes() ?>>
+<span id="el_estado_resultado_depreciacion">
+<span<?php echo $estado_resultado->depreciacion->ViewAttributes() ?>>
+<?php echo $estado_resultado->depreciacion->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($estado_resultado->interes_pagado->Visible) { // interes_pagado ?>
+	<tr id="r_interes_pagado">
+		<td><span id="elh_estado_resultado_interes_pagado"><?php echo $estado_resultado->interes_pagado->FldCaption() ?></span></td>
+		<td data-name="interes_pagado"<?php echo $estado_resultado->interes_pagado->CellAttributes() ?>>
+<span id="el_estado_resultado_interes_pagado">
+<span<?php echo $estado_resultado->interes_pagado->ViewAttributes() ?>>
+<?php echo $estado_resultado->interes_pagado->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($estado_resultado->utilidad_gravable->Visible) { // utilidad_gravable ?>
+	<tr id="r_utilidad_gravable">
+		<td><span id="elh_estado_resultado_utilidad_gravable"><?php echo $estado_resultado->utilidad_gravable->FldCaption() ?></span></td>
+		<td data-name="utilidad_gravable"<?php echo $estado_resultado->utilidad_gravable->CellAttributes() ?>>
+<span id="el_estado_resultado_utilidad_gravable">
+<span<?php echo $estado_resultado->utilidad_gravable->ViewAttributes() ?>>
+<?php echo $estado_resultado->utilidad_gravable->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($estado_resultado->impuestos->Visible) { // impuestos ?>
+	<tr id="r_impuestos">
+		<td><span id="elh_estado_resultado_impuestos"><?php echo $estado_resultado->impuestos->FldCaption() ?></span></td>
+		<td data-name="impuestos"<?php echo $estado_resultado->impuestos->CellAttributes() ?>>
+<span id="el_estado_resultado_impuestos">
+<span<?php echo $estado_resultado->impuestos->ViewAttributes() ?>>
+<?php echo $estado_resultado->impuestos->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($estado_resultado->utilidad_neta->Visible) { // utilidad_neta ?>
+	<tr id="r_utilidad_neta">
+		<td><span id="elh_estado_resultado_utilidad_neta"><?php echo $estado_resultado->utilidad_neta->FldCaption() ?></span></td>
+		<td data-name="utilidad_neta"<?php echo $estado_resultado->utilidad_neta->CellAttributes() ?>>
+<span id="el_estado_resultado_utilidad_neta">
+<span<?php echo $estado_resultado->utilidad_neta->ViewAttributes() ?>>
+<?php echo $estado_resultado->utilidad_neta->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($estado_resultado->dividendos->Visible) { // dividendos ?>
+	<tr id="r_dividendos">
+		<td><span id="elh_estado_resultado_dividendos"><?php echo $estado_resultado->dividendos->FldCaption() ?></span></td>
+		<td data-name="dividendos"<?php echo $estado_resultado->dividendos->CellAttributes() ?>>
+<span id="el_estado_resultado_dividendos">
+<span<?php echo $estado_resultado->dividendos->ViewAttributes() ?>>
+<?php echo $estado_resultado->dividendos->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($estado_resultado->utilidades_retenidas->Visible) { // utilidades_retenidas ?>
+	<tr id="r_utilidades_retenidas">
+		<td><span id="elh_estado_resultado_utilidades_retenidas"><?php echo $estado_resultado->utilidades_retenidas->FldCaption() ?></span></td>
+		<td data-name="utilidades_retenidas"<?php echo $estado_resultado->utilidades_retenidas->CellAttributes() ?>>
+<span id="el_estado_resultado_utilidades_retenidas">
+<span<?php echo $estado_resultado->utilidades_retenidas->ViewAttributes() ?>>
+<?php echo $estado_resultado->utilidades_retenidas->ViewValue ?></span>
 </span>
 </td>
 	</tr>
@@ -948,10 +1037,10 @@ $cuenta_mayor_principal_view->ShowMessage();
 </table>
 </form>
 <script type="text/javascript">
-fcuenta_mayor_principalview.Init();
+festado_resultadoview.Init();
 </script>
 <?php
-$cuenta_mayor_principal_view->ShowPageFooter();
+$estado_resultado_view->ShowPageFooter();
 if (EW_DEBUG_ENABLED)
 	echo ew_DebugMsg();
 ?>
@@ -963,5 +1052,5 @@ if (EW_DEBUG_ENABLED)
 </script>
 <?php include_once "footer.php" ?>
 <?php
-$cuenta_mayor_principal_view->Page_Terminate();
+$estado_resultado_view->Page_Terminate();
 ?>
