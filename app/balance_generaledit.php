@@ -7,7 +7,6 @@ ob_start(); // Turn on output buffering
 <?php include_once "phpfn12.php" ?>
 <?php include_once "balance_generalinfo.php" ?>
 <?php include_once "empresainfo.php" ?>
-<?php include_once "periodo_contableinfo.php" ?>
 <?php include_once "balance_general_detallegridcls.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
@@ -231,9 +230,6 @@ class cbalance_general_edit extends cbalance_general {
 
 		// Table object (empresa)
 		if (!isset($GLOBALS['empresa'])) $GLOBALS['empresa'] = new cempresa();
-
-		// Table object (periodo_contable)
-		if (!isset($GLOBALS['periodo_contable'])) $GLOBALS['periodo_contable'] = new cperiodo_contable();
 
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
@@ -473,6 +469,9 @@ class cbalance_general_edit extends cbalance_general {
 
 		// Load from form
 		global $objForm;
+		if (!$this->idperiodo_contable->FldIsDetailKey) {
+			$this->idperiodo_contable->setFormValue($objForm->GetValue("x_idperiodo_contable"));
+		}
 		if (!$this->activo_circulante->FldIsDetailKey) {
 			$this->activo_circulante->setFormValue($objForm->GetValue("x_activo_circulante"));
 		}
@@ -500,6 +499,7 @@ class cbalance_general_edit extends cbalance_general {
 		global $objForm;
 		$this->LoadRow();
 		$this->idbalance_general->CurrentValue = $this->idbalance_general->FormValue;
+		$this->idperiodo_contable->CurrentValue = $this->idperiodo_contable->FormValue;
 		$this->activo_circulante->CurrentValue = $this->activo_circulante->FormValue;
 		$this->activo_fijo->CurrentValue = $this->activo_fijo->FormValue;
 		$this->pasivo_circulante->CurrentValue = $this->pasivo_circulante->FormValue;
@@ -539,7 +539,7 @@ class cbalance_general_edit extends cbalance_general {
 		$this->Row_Selected($row);
 		$this->idbalance_general->setDbValue($rs->fields('idbalance_general'));
 		$this->idempresa->setDbValue($rs->fields('idempresa'));
-		$this->idperioso_contable->setDbValue($rs->fields('idperioso_contable'));
+		$this->idperiodo_contable->setDbValue($rs->fields('idperiodo_contable'));
 		$this->activo_circulante->setDbValue($rs->fields('activo_circulante'));
 		$this->activo_fijo->setDbValue($rs->fields('activo_fijo'));
 		$this->pasivo_circulante->setDbValue($rs->fields('pasivo_circulante'));
@@ -555,7 +555,7 @@ class cbalance_general_edit extends cbalance_general {
 		$row = is_array($rs) ? $rs : $rs->fields;
 		$this->idbalance_general->DbValue = $row['idbalance_general'];
 		$this->idempresa->DbValue = $row['idempresa'];
-		$this->idperioso_contable->DbValue = $row['idperioso_contable'];
+		$this->idperiodo_contable->DbValue = $row['idperiodo_contable'];
 		$this->activo_circulante->DbValue = $row['activo_circulante'];
 		$this->activo_fijo->DbValue = $row['activo_fijo'];
 		$this->pasivo_circulante->DbValue = $row['pasivo_circulante'];
@@ -597,7 +597,7 @@ class cbalance_general_edit extends cbalance_general {
 		// Common render codes for all row types
 		// idbalance_general
 		// idempresa
-		// idperioso_contable
+		// idperiodo_contable
 		// activo_circulante
 		// activo_fijo
 		// pasivo_circulante
@@ -634,28 +634,29 @@ class cbalance_general_edit extends cbalance_general {
 		}
 		$this->idempresa->ViewCustomAttributes = "";
 
-		// idperioso_contable
-		if (strval($this->idperioso_contable->CurrentValue) <> "") {
-			$sFilterWrk = "`idperiodo_contable`" . ew_SearchString("=", $this->idperioso_contable->CurrentValue, EW_DATATYPE_NUMBER, "");
+		// idperiodo_contable
+		if (strval($this->idperiodo_contable->CurrentValue) <> "") {
+			$sFilterWrk = "`idperiodo_contable`" . ew_SearchString("=", $this->idperiodo_contable->CurrentValue, EW_DATATYPE_NUMBER, "");
 		$sSqlWrk = "SELECT `idperiodo_contable`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `periodo_contable`";
 		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
 		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idperioso_contable, $sWhereWrk); // Call Lookup selecting
+		$this->Lookup_Selecting($this->idperiodo_contable, $sWhereWrk); // Call Lookup selecting
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-		$sSqlWrk .= " ORDER BY `nombre`";
 			$rswrk = Conn()->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
 				$arwrk = array();
 				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idperioso_contable->ViewValue = $this->idperioso_contable->DisplayValue($arwrk);
+				$this->idperiodo_contable->ViewValue = $this->idperiodo_contable->DisplayValue($arwrk);
 				$rswrk->Close();
 			} else {
-				$this->idperioso_contable->ViewValue = $this->idperioso_contable->CurrentValue;
+				$this->idperiodo_contable->ViewValue = $this->idperiodo_contable->CurrentValue;
 			}
 		} else {
-			$this->idperioso_contable->ViewValue = NULL;
+			$this->idperiodo_contable->ViewValue = NULL;
 		}
-		$this->idperioso_contable->ViewCustomAttributes = "";
+		$this->idperiodo_contable->ViewCustomAttributes = "";
 
 		// activo_circulante
 		$this->activo_circulante->ViewValue = $this->activo_circulante->CurrentValue;
@@ -690,6 +691,11 @@ class cbalance_general_edit extends cbalance_general {
 		$this->fecha_insercion->ViewValue = ew_FormatDateTime($this->fecha_insercion->ViewValue, 7);
 		$this->fecha_insercion->ViewCustomAttributes = "";
 
+			// idperiodo_contable
+			$this->idperiodo_contable->LinkCustomAttributes = "";
+			$this->idperiodo_contable->HrefValue = "";
+			$this->idperiodo_contable->TooltipValue = "";
+
 			// activo_circulante
 			$this->activo_circulante->LinkCustomAttributes = "";
 			$this->activo_circulante->HrefValue = "";
@@ -720,6 +726,27 @@ class cbalance_general_edit extends cbalance_general {
 			$this->estado->HrefValue = "";
 			$this->estado->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
+
+			// idperiodo_contable
+			$this->idperiodo_contable->EditAttrs["class"] = "form-control";
+			$this->idperiodo_contable->EditCustomAttributes = "";
+			if (trim(strval($this->idperiodo_contable->CurrentValue)) == "") {
+				$sFilterWrk = "0=1";
+			} else {
+				$sFilterWrk = "`idperiodo_contable`" . ew_SearchString("=", $this->idperiodo_contable->CurrentValue, EW_DATATYPE_NUMBER, "");
+			}
+			$sSqlWrk = "SELECT `idperiodo_contable`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `periodo_contable`";
+			$sWhereWrk = "";
+			$lookuptblfilter = "`estado` = 'Activo'";
+			ew_AddFilter($sWhereWrk, $lookuptblfilter);
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->idperiodo_contable, $sWhereWrk); // Call Lookup selecting
+			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
+			if ($rswrk) $rswrk->Close();
+			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
+			$this->idperiodo_contable->EditValue = $arwrk;
 
 			// activo_circulante
 			$this->activo_circulante->EditAttrs["class"] = "form-control";
@@ -761,8 +788,12 @@ class cbalance_general_edit extends cbalance_general {
 			$this->estado->EditValue = $this->estado->Options(FALSE);
 
 			// Edit refer script
-			// activo_circulante
+			// idperiodo_contable
 
+			$this->idperiodo_contable->LinkCustomAttributes = "";
+			$this->idperiodo_contable->HrefValue = "";
+
+			// activo_circulante
 			$this->activo_circulante->LinkCustomAttributes = "";
 			$this->activo_circulante->HrefValue = "";
 
@@ -807,6 +838,9 @@ class cbalance_general_edit extends cbalance_general {
 		// Check if validation required
 		if (!EW_SERVER_VALIDATE)
 			return ($gsFormError == "");
+		if (!$this->idperiodo_contable->FldIsDetailKey && !is_null($this->idperiodo_contable->FormValue) && $this->idperiodo_contable->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->idperiodo_contable->FldCaption(), $this->idperiodo_contable->ReqErrMsg));
+		}
 		if (!$this->activo_circulante->FldIsDetailKey && !is_null($this->activo_circulante->FormValue) && $this->activo_circulante->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->activo_circulante->FldCaption(), $this->activo_circulante->ReqErrMsg));
 		}
@@ -886,6 +920,9 @@ class cbalance_general_edit extends cbalance_general {
 			$rsold = &$rs->fields;
 			$this->LoadDbValues($rsold);
 			$rsnew = array();
+
+			// idperiodo_contable
+			$this->idperiodo_contable->SetDbValueDef($rsnew, $this->idperiodo_contable->CurrentValue, 0, $this->idperiodo_contable->ReadOnly);
 
 			// activo_circulante
 			$this->activo_circulante->SetDbValueDef($rsnew, $this->activo_circulante->CurrentValue, 0, $this->activo_circulante->ReadOnly);
@@ -978,17 +1015,6 @@ class cbalance_general_edit extends cbalance_general {
 					$bValidMaster = FALSE;
 				}
 			}
-			if ($sMasterTblVar == "periodo_contable") {
-				$bValidMaster = TRUE;
-				if (@$_GET["fk_idperiodo_contable"] <> "") {
-					$GLOBALS["periodo_contable"]->idperiodo_contable->setQueryStringValue($_GET["fk_idperiodo_contable"]);
-					$this->idperioso_contable->setQueryStringValue($GLOBALS["periodo_contable"]->idperiodo_contable->QueryStringValue);
-					$this->idperioso_contable->setSessionValue($this->idperioso_contable->QueryStringValue);
-					if (!is_numeric($GLOBALS["periodo_contable"]->idperiodo_contable->QueryStringValue)) $bValidMaster = FALSE;
-				} else {
-					$bValidMaster = FALSE;
-				}
-			}
 		} elseif (isset($_POST[EW_TABLE_SHOW_MASTER])) {
 			$sMasterTblVar = $_POST[EW_TABLE_SHOW_MASTER];
 			if ($sMasterTblVar == "") {
@@ -1007,17 +1033,6 @@ class cbalance_general_edit extends cbalance_general {
 					$bValidMaster = FALSE;
 				}
 			}
-			if ($sMasterTblVar == "periodo_contable") {
-				$bValidMaster = TRUE;
-				if (@$_POST["fk_idperiodo_contable"] <> "") {
-					$GLOBALS["periodo_contable"]->idperiodo_contable->setFormValue($_POST["fk_idperiodo_contable"]);
-					$this->idperioso_contable->setFormValue($GLOBALS["periodo_contable"]->idperiodo_contable->FormValue);
-					$this->idperioso_contable->setSessionValue($this->idperioso_contable->FormValue);
-					if (!is_numeric($GLOBALS["periodo_contable"]->idperiodo_contable->FormValue)) $bValidMaster = FALSE;
-				} else {
-					$bValidMaster = FALSE;
-				}
-			}
 		}
 		if ($bValidMaster) {
 
@@ -1032,9 +1047,6 @@ class cbalance_general_edit extends cbalance_general {
 			// Clear previous master key from Session
 			if ($sMasterTblVar <> "empresa") {
 				if ($this->idempresa->CurrentValue == "") $this->idempresa->setSessionValue("");
-			}
-			if ($sMasterTblVar <> "periodo_contable") {
-				if ($this->idperioso_contable->CurrentValue == "") $this->idperioso_contable->setSessionValue("");
 			}
 		}
 		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
@@ -1189,6 +1201,9 @@ fbalance_generaledit.Validate = function() {
 	for (var i = startcnt; i <= rowcnt; i++) {
 		var infix = ($k[0]) ? String(i) : "";
 		$fobj.data("rowindex", infix);
+			elm = this.GetElements("x" + infix + "_idperiodo_contable");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $balance_general->idperiodo_contable->FldCaption(), $balance_general->idperiodo_contable->ReqErrMsg)) ?>");
 			elm = this.GetElements("x" + infix + "_activo_circulante");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $balance_general->activo_circulante->FldCaption(), $balance_general->activo_circulante->ReqErrMsg)) ?>");
@@ -1255,6 +1270,7 @@ fbalance_generaledit.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
+fbalance_generaledit.Lists["x_idperiodo_contable"] = {"LinkField":"x_idperiodo_contable","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 fbalance_generaledit.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 fbalance_generaledit.Lists["x_estado"].Options = <?php echo json_encode($balance_general->estado->Options()) ?>;
 
@@ -1283,11 +1299,52 @@ $balance_general_edit->ShowMessage();
 <input type="hidden" name="<?php echo EW_TABLE_SHOW_MASTER ?>" value="empresa">
 <input type="hidden" name="fk_idempresa" value="<?php echo $balance_general->idempresa->getSessionValue() ?>">
 <?php } ?>
-<?php if ($balance_general->getCurrentMasterTable() == "periodo_contable") { ?>
-<input type="hidden" name="<?php echo EW_TABLE_SHOW_MASTER ?>" value="periodo_contable">
-<input type="hidden" name="fk_idperiodo_contable" value="<?php echo $balance_general->idperioso_contable->getSessionValue() ?>">
-<?php } ?>
 <div>
+<?php if ($balance_general->idperiodo_contable->Visible) { // idperiodo_contable ?>
+	<div id="r_idperiodo_contable" class="form-group">
+		<label id="elh_balance_general_idperiodo_contable" for="x_idperiodo_contable" class="col-sm-2 control-label ewLabel"><?php echo $balance_general->idperiodo_contable->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $balance_general->idperiodo_contable->CellAttributes() ?>>
+<span id="el_balance_general_idperiodo_contable">
+<select data-table="balance_general" data-field="x_idperiodo_contable" data-value-separator="<?php echo ew_HtmlEncode(is_array($balance_general->idperiodo_contable->DisplayValueSeparator) ? json_encode($balance_general->idperiodo_contable->DisplayValueSeparator) : $balance_general->idperiodo_contable->DisplayValueSeparator) ?>" id="x_idperiodo_contable" name="x_idperiodo_contable"<?php echo $balance_general->idperiodo_contable->EditAttributes() ?>>
+<?php
+if (is_array($balance_general->idperiodo_contable->EditValue)) {
+	$arwrk = $balance_general->idperiodo_contable->EditValue;
+	$rowswrk = count($arwrk);
+	$emptywrk = TRUE;
+	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
+		$selwrk = ew_SameStr($balance_general->idperiodo_contable->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
+?>
+<option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
+<?php echo $balance_general->idperiodo_contable->DisplayValue($arwrk[$rowcntwrk]) ?>
+</option>
+<?php
+	}
+	if ($emptywrk && strval($balance_general->idperiodo_contable->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($balance_general->idperiodo_contable->CurrentValue) ?>" selected><?php echo $balance_general->idperiodo_contable->CurrentValue ?></option>
+<?php
+    }
+}
+?>
+</select>
+<?php
+$sSqlWrk = "SELECT `idperiodo_contable`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `periodo_contable`";
+$sWhereWrk = "";
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$balance_general->idperiodo_contable->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$balance_general->idperiodo_contable->LookupFilters += array("f0" => "`idperiodo_contable` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$balance_general->Lookup_Selecting($balance_general->idperiodo_contable, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $balance_general->idperiodo_contable->LookupFilters["s"] .= $sSqlWrk;
+?>
+<input type="hidden" name="s_x_idperiodo_contable" id="s_x_idperiodo_contable" value="<?php echo $balance_general->idperiodo_contable->LookupFilterQuery() ?>">
+</span>
+<?php echo $balance_general->idperiodo_contable->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
 <?php if ($balance_general->activo_circulante->Visible) { // activo_circulante ?>
 	<div id="r_activo_circulante" class="form-group">
 		<label id="elh_balance_general_activo_circulante" for="x_activo_circulante" class="col-sm-2 control-label ewLabel"><?php echo $balance_general->activo_circulante->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>

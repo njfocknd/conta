@@ -6,6 +6,7 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "estado_resultadoinfo.php" ?>
+<?php include_once "estado_resultado_detallegridcls.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -420,6 +421,9 @@ class cestado_resultado_view extends cestado_resultado {
 		$this->RowType = EW_ROWTYPE_VIEW;
 		$this->ResetAttrs();
 		$this->RenderRow();
+
+		// Set up detail parameters
+		$this->SetUpDetailParms();
 	}
 
 	// Set up other options
@@ -437,16 +441,76 @@ class cestado_resultado_view extends cestado_resultado {
 		$item = &$option->Add("edit");
 		$item->Body = "<a class=\"ewAction ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("ViewPageEditLink") . "</a>";
 		$item->Visible = ($this->EditUrl <> "");
+		$option = &$options["detail"];
+		$DetailTableLink = "";
+		$DetailViewTblVar = "";
+		$DetailCopyTblVar = "";
+		$DetailEditTblVar = "";
 
-		// Copy
-		$item = &$option->Add("copy");
-		$item->Body = "<a class=\"ewAction ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("ViewPageCopyLink") . "</a>";
-		$item->Visible = ($this->CopyUrl <> "");
+		// "detail_estado_resultado_detalle"
+		$item = &$option->Add("detail_estado_resultado_detalle");
+		$body = $Language->Phrase("ViewPageDetailLink") . $Language->TablePhrase("estado_resultado_detalle", "TblCaption");
+		$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("estado_resultado_detallelist.php?" . EW_TABLE_SHOW_MASTER . "=estado_resultado&fk_idestado_resultado=" . urlencode(strval($this->idestado_resultado->CurrentValue)) . "") . "\">" . $body . "</a>";
+		$links = "";
+		if ($GLOBALS["estado_resultado_detalle_grid"] && $GLOBALS["estado_resultado_detalle_grid"]->DetailView) {
+			$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=estado_resultado_detalle")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+			if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
+			$DetailViewTblVar .= "estado_resultado_detalle";
+		}
+		if ($GLOBALS["estado_resultado_detalle_grid"] && $GLOBALS["estado_resultado_detalle_grid"]->DetailEdit) {
+			$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=estado_resultado_detalle")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+			if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
+			$DetailEditTblVar .= "estado_resultado_detalle";
+		}
+		if ($links <> "") {
+			$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
+			$body .= "<ul class=\"dropdown-menu\">". $links . "</ul>";
+		}
+		$body = "<div class=\"btn-group\">" . $body . "</div>";
+		$item->Body = $body;
+		$item->Visible = TRUE;
+		if ($item->Visible) {
+			if ($DetailTableLink <> "") $DetailTableLink .= ",";
+			$DetailTableLink .= "estado_resultado_detalle";
+		}
+		if ($this->ShowMultipleDetails) $item->Visible = FALSE;
 
-		// Delete
-		$item = &$option->Add("delete");
-		$item->Body = "<a class=\"ewAction ewDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageDeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageDeleteLink")) . "\" href=\"" . ew_HtmlEncode($this->DeleteUrl) . "\">" . $Language->Phrase("ViewPageDeleteLink") . "</a>";
-		$item->Visible = ($this->DeleteUrl <> "");
+		// Multiple details
+		if ($this->ShowMultipleDetails) {
+			$body = $Language->Phrase("MultipleMasterDetails");
+			$body = "<div class=\"btn-group\">";
+			$links = "";
+			if ($DetailViewTblVar <> "") {
+				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailViewTblVar)) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+			}
+			if ($DetailEditTblVar <> "") {
+				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailEditTblVar)) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+			}
+			if ($DetailCopyTblVar <> "") {
+				$links .= "<li><a class=\"ewRowLink ewDetailCopy\" data-action=\"add\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->GetCopyUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailCopyTblVar)) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailCopyLink")) . "</a></li>";
+			}
+			if ($links <> "") {
+				$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewMasterDetail\" title=\"" . ew_HtmlTitle($Language->Phrase("MultipleMasterDetails")) . "\" data-toggle=\"dropdown\">" . $Language->Phrase("MultipleMasterDetails") . "<b class=\"caret\"></b></button>";
+				$body .= "<ul class=\"dropdown-menu ewMenu\">". $links . "</ul>";
+			}
+			$body .= "</div>";
+
+			// Multiple details
+			$oListOpt = &$option->Add("details");
+			$oListOpt->Body = $body;
+		}
+
+		// Set up detail default
+		$option = &$options["detail"];
+		$options["detail"]->DropDownButtonPhrase = $Language->Phrase("ButtonDetails");
+		$option->UseImageAndText = TRUE;
+		$ar = explode(",", $DetailTableLink);
+		$cnt = count($ar);
+		$option->UseDropDownButton = ($cnt > 1);
+		$option->UseButtonGroup = TRUE;
+		$item = &$option->Add($option->GroupOptionName);
+		$item->Body = "";
+		$item->Visible = FALSE;
 
 		// Set up action default
 		$option = &$options["action"];
@@ -531,11 +595,10 @@ class cestado_resultado_view extends cestado_resultado {
 		$this->costo_ventas->setDbValue($rs->fields('costo_ventas'));
 		$this->depreciacion->setDbValue($rs->fields('depreciacion'));
 		$this->interes_pagado->setDbValue($rs->fields('interes_pagado'));
-		$this->utilidad_gravable->setDbValue($rs->fields('utilidad_gravable'));
 		$this->impuestos->setDbValue($rs->fields('impuestos'));
-		$this->utilidad_neta->setDbValue($rs->fields('utilidad_neta'));
 		$this->dividendos->setDbValue($rs->fields('dividendos'));
 		$this->utilidades_retenidas->setDbValue($rs->fields('utilidades_retenidas'));
+		$this->utilidad_neta->setDbValue($rs->fields('utilidad_neta'));
 		$this->estado->setDbValue($rs->fields('estado'));
 	}
 
@@ -550,11 +613,10 @@ class cestado_resultado_view extends cestado_resultado {
 		$this->costo_ventas->DbValue = $row['costo_ventas'];
 		$this->depreciacion->DbValue = $row['depreciacion'];
 		$this->interes_pagado->DbValue = $row['interes_pagado'];
-		$this->utilidad_gravable->DbValue = $row['utilidad_gravable'];
 		$this->impuestos->DbValue = $row['impuestos'];
-		$this->utilidad_neta->DbValue = $row['utilidad_neta'];
 		$this->dividendos->DbValue = $row['dividendos'];
 		$this->utilidades_retenidas->DbValue = $row['utilidades_retenidas'];
+		$this->utilidad_neta->DbValue = $row['utilidad_neta'];
 		$this->estado->DbValue = $row['estado'];
 	}
 
@@ -587,16 +649,8 @@ class cestado_resultado_view extends cestado_resultado {
 			$this->interes_pagado->CurrentValue = ew_StrToFloat($this->interes_pagado->CurrentValue);
 
 		// Convert decimal values if posted back
-		if ($this->utilidad_gravable->FormValue == $this->utilidad_gravable->CurrentValue && is_numeric(ew_StrToFloat($this->utilidad_gravable->CurrentValue)))
-			$this->utilidad_gravable->CurrentValue = ew_StrToFloat($this->utilidad_gravable->CurrentValue);
-
-		// Convert decimal values if posted back
 		if ($this->impuestos->FormValue == $this->impuestos->CurrentValue && is_numeric(ew_StrToFloat($this->impuestos->CurrentValue)))
 			$this->impuestos->CurrentValue = ew_StrToFloat($this->impuestos->CurrentValue);
-
-		// Convert decimal values if posted back
-		if ($this->utilidad_neta->FormValue == $this->utilidad_neta->CurrentValue && is_numeric(ew_StrToFloat($this->utilidad_neta->CurrentValue)))
-			$this->utilidad_neta->CurrentValue = ew_StrToFloat($this->utilidad_neta->CurrentValue);
 
 		// Convert decimal values if posted back
 		if ($this->dividendos->FormValue == $this->dividendos->CurrentValue && is_numeric(ew_StrToFloat($this->dividendos->CurrentValue)))
@@ -605,6 +659,10 @@ class cestado_resultado_view extends cestado_resultado {
 		// Convert decimal values if posted back
 		if ($this->utilidades_retenidas->FormValue == $this->utilidades_retenidas->CurrentValue && is_numeric(ew_StrToFloat($this->utilidades_retenidas->CurrentValue)))
 			$this->utilidades_retenidas->CurrentValue = ew_StrToFloat($this->utilidades_retenidas->CurrentValue);
+
+		// Convert decimal values if posted back
+		if ($this->utilidad_neta->FormValue == $this->utilidad_neta->CurrentValue && is_numeric(ew_StrToFloat($this->utilidad_neta->CurrentValue)))
+			$this->utilidad_neta->CurrentValue = ew_StrToFloat($this->utilidad_neta->CurrentValue);
 
 		// Call Row_Rendering event
 		$this->Row_Rendering();
@@ -617,11 +675,10 @@ class cestado_resultado_view extends cestado_resultado {
 		// costo_ventas
 		// depreciacion
 		// interes_pagado
-		// utilidad_gravable
 		// impuestos
-		// utilidad_neta
 		// dividendos
 		// utilidades_retenidas
+		// utilidad_neta
 		// estado
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
@@ -631,11 +688,51 @@ class cestado_resultado_view extends cestado_resultado {
 		$this->idestado_resultado->ViewCustomAttributes = "";
 
 		// idempresa
-		$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
+		if (strval($this->idempresa->CurrentValue) <> "") {
+			$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idempresa`, `ticker` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idempresa->ViewValue = $this->idempresa->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
+			}
+		} else {
+			$this->idempresa->ViewValue = NULL;
+		}
 		$this->idempresa->ViewCustomAttributes = "";
 
 		// idperiodo_contable
-		$this->idperiodo_contable->ViewValue = $this->idperiodo_contable->CurrentValue;
+		if (strval($this->idperiodo_contable->CurrentValue) <> "") {
+			$sFilterWrk = "`idperiodo_contable`" . ew_SearchString("=", $this->idperiodo_contable->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idperiodo_contable`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `periodo_contable`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idperiodo_contable, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idperiodo_contable->ViewValue = $this->idperiodo_contable->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->idperiodo_contable->ViewValue = $this->idperiodo_contable->CurrentValue;
+			}
+		} else {
+			$this->idperiodo_contable->ViewValue = NULL;
+		}
 		$this->idperiodo_contable->ViewCustomAttributes = "";
 
 		// venta_netas
@@ -654,17 +751,9 @@ class cestado_resultado_view extends cestado_resultado {
 		$this->interes_pagado->ViewValue = $this->interes_pagado->CurrentValue;
 		$this->interes_pagado->ViewCustomAttributes = "";
 
-		// utilidad_gravable
-		$this->utilidad_gravable->ViewValue = $this->utilidad_gravable->CurrentValue;
-		$this->utilidad_gravable->ViewCustomAttributes = "";
-
 		// impuestos
 		$this->impuestos->ViewValue = $this->impuestos->CurrentValue;
 		$this->impuestos->ViewCustomAttributes = "";
-
-		// utilidad_neta
-		$this->utilidad_neta->ViewValue = $this->utilidad_neta->CurrentValue;
-		$this->utilidad_neta->ViewCustomAttributes = "";
 
 		// dividendos
 		$this->dividendos->ViewValue = $this->dividendos->CurrentValue;
@@ -673,6 +762,10 @@ class cestado_resultado_view extends cestado_resultado {
 		// utilidades_retenidas
 		$this->utilidades_retenidas->ViewValue = $this->utilidades_retenidas->CurrentValue;
 		$this->utilidades_retenidas->ViewCustomAttributes = "";
+
+		// utilidad_neta
+		$this->utilidad_neta->ViewValue = $this->utilidad_neta->CurrentValue;
+		$this->utilidad_neta->ViewCustomAttributes = "";
 
 		// estado
 		if (strval($this->estado->CurrentValue) <> "") {
@@ -717,20 +810,10 @@ class cestado_resultado_view extends cestado_resultado {
 			$this->interes_pagado->HrefValue = "";
 			$this->interes_pagado->TooltipValue = "";
 
-			// utilidad_gravable
-			$this->utilidad_gravable->LinkCustomAttributes = "";
-			$this->utilidad_gravable->HrefValue = "";
-			$this->utilidad_gravable->TooltipValue = "";
-
 			// impuestos
 			$this->impuestos->LinkCustomAttributes = "";
 			$this->impuestos->HrefValue = "";
 			$this->impuestos->TooltipValue = "";
-
-			// utilidad_neta
-			$this->utilidad_neta->LinkCustomAttributes = "";
-			$this->utilidad_neta->HrefValue = "";
-			$this->utilidad_neta->TooltipValue = "";
 
 			// dividendos
 			$this->dividendos->LinkCustomAttributes = "";
@@ -742,6 +825,11 @@ class cestado_resultado_view extends cestado_resultado {
 			$this->utilidades_retenidas->HrefValue = "";
 			$this->utilidades_retenidas->TooltipValue = "";
 
+			// utilidad_neta
+			$this->utilidad_neta->LinkCustomAttributes = "";
+			$this->utilidad_neta->HrefValue = "";
+			$this->utilidad_neta->TooltipValue = "";
+
 			// estado
 			$this->estado->LinkCustomAttributes = "";
 			$this->estado->HrefValue = "";
@@ -751,6 +839,35 @@ class cestado_resultado_view extends cestado_resultado {
 		// Call Row Rendered event
 		if ($this->RowType <> EW_ROWTYPE_AGGREGATEINIT)
 			$this->Row_Rendered();
+	}
+
+	// Set up detail parms based on QueryString
+	function SetUpDetailParms() {
+
+		// Get the keys for master table
+		if (isset($_GET[EW_TABLE_SHOW_DETAIL])) {
+			$sDetailTblVar = $_GET[EW_TABLE_SHOW_DETAIL];
+			$this->setCurrentDetailTable($sDetailTblVar);
+		} else {
+			$sDetailTblVar = $this->getCurrentDetailTable();
+		}
+		if ($sDetailTblVar <> "") {
+			$DetailTblVar = explode(",", $sDetailTblVar);
+			if (in_array("estado_resultado_detalle", $DetailTblVar)) {
+				if (!isset($GLOBALS["estado_resultado_detalle_grid"]))
+					$GLOBALS["estado_resultado_detalle_grid"] = new cestado_resultado_detalle_grid;
+				if ($GLOBALS["estado_resultado_detalle_grid"]->DetailView) {
+					$GLOBALS["estado_resultado_detalle_grid"]->CurrentMode = "view";
+
+					// Save current master table to detail table
+					$GLOBALS["estado_resultado_detalle_grid"]->setCurrentMasterTable($this->TableVar);
+					$GLOBALS["estado_resultado_detalle_grid"]->setStartRecordNumber(1);
+					$GLOBALS["estado_resultado_detalle_grid"]->idestado_resultado->FldIsDetailKey = TRUE;
+					$GLOBALS["estado_resultado_detalle_grid"]->idestado_resultado->CurrentValue = $this->idestado_resultado->CurrentValue;
+					$GLOBALS["estado_resultado_detalle_grid"]->idestado_resultado->setSessionValue($GLOBALS["estado_resultado_detalle_grid"]->idestado_resultado->CurrentValue);
+				}
+			}
+		}
 	}
 
 	// Set up Breadcrumb
@@ -891,6 +1008,8 @@ festado_resultadoview.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
+festado_resultadoview.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"AutoFill":false,"DisplayFields":["x_ticker","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+festado_resultadoview.Lists["x_idperiodo_contable"] = {"LinkField":"x_idperiodo_contable","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 festado_resultadoview.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 festado_resultadoview.Lists["x_estado"].Options = <?php echo json_encode($estado_resultado->estado->Options()) ?>;
 
@@ -997,17 +1116,6 @@ $estado_resultado_view->ShowMessage();
 </td>
 	</tr>
 <?php } ?>
-<?php if ($estado_resultado->utilidad_gravable->Visible) { // utilidad_gravable ?>
-	<tr id="r_utilidad_gravable">
-		<td><span id="elh_estado_resultado_utilidad_gravable"><?php echo $estado_resultado->utilidad_gravable->FldCaption() ?></span></td>
-		<td data-name="utilidad_gravable"<?php echo $estado_resultado->utilidad_gravable->CellAttributes() ?>>
-<span id="el_estado_resultado_utilidad_gravable">
-<span<?php echo $estado_resultado->utilidad_gravable->ViewAttributes() ?>>
-<?php echo $estado_resultado->utilidad_gravable->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
 <?php if ($estado_resultado->impuestos->Visible) { // impuestos ?>
 	<tr id="r_impuestos">
 		<td><span id="elh_estado_resultado_impuestos"><?php echo $estado_resultado->impuestos->FldCaption() ?></span></td>
@@ -1015,17 +1123,6 @@ $estado_resultado_view->ShowMessage();
 <span id="el_estado_resultado_impuestos">
 <span<?php echo $estado_resultado->impuestos->ViewAttributes() ?>>
 <?php echo $estado_resultado->impuestos->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($estado_resultado->utilidad_neta->Visible) { // utilidad_neta ?>
-	<tr id="r_utilidad_neta">
-		<td><span id="elh_estado_resultado_utilidad_neta"><?php echo $estado_resultado->utilidad_neta->FldCaption() ?></span></td>
-		<td data-name="utilidad_neta"<?php echo $estado_resultado->utilidad_neta->CellAttributes() ?>>
-<span id="el_estado_resultado_utilidad_neta">
-<span<?php echo $estado_resultado->utilidad_neta->ViewAttributes() ?>>
-<?php echo $estado_resultado->utilidad_neta->ViewValue ?></span>
 </span>
 </td>
 	</tr>
@@ -1052,6 +1149,17 @@ $estado_resultado_view->ShowMessage();
 </td>
 	</tr>
 <?php } ?>
+<?php if ($estado_resultado->utilidad_neta->Visible) { // utilidad_neta ?>
+	<tr id="r_utilidad_neta">
+		<td><span id="elh_estado_resultado_utilidad_neta"><?php echo $estado_resultado->utilidad_neta->FldCaption() ?></span></td>
+		<td data-name="utilidad_neta"<?php echo $estado_resultado->utilidad_neta->CellAttributes() ?>>
+<span id="el_estado_resultado_utilidad_neta">
+<span<?php echo $estado_resultado->utilidad_neta->ViewAttributes() ?>>
+<?php echo $estado_resultado->utilidad_neta->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
 <?php if ($estado_resultado->estado->Visible) { // estado ?>
 	<tr id="r_estado">
 		<td><span id="elh_estado_resultado_estado"><?php echo $estado_resultado->estado->FldCaption() ?></span></td>
@@ -1064,6 +1172,14 @@ $estado_resultado_view->ShowMessage();
 	</tr>
 <?php } ?>
 </table>
+<?php
+	if (in_array("estado_resultado_detalle", explode(",", $estado_resultado->getCurrentDetailTable())) && $estado_resultado_detalle->DetailView) {
+?>
+<?php if ($estado_resultado->getCurrentDetailTable() <> "") { ?>
+<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("estado_resultado_detalle", "TblCaption") ?></h4>
+<?php } ?>
+<?php include_once "estado_resultado_detallegrid.php" ?>
+<?php } ?>
 </form>
 <script type="text/javascript">
 festado_resultadoview.Init();

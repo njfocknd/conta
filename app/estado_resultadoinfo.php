@@ -14,11 +14,10 @@ class cestado_resultado extends cTable {
 	var $costo_ventas;
 	var $depreciacion;
 	var $interes_pagado;
-	var $utilidad_gravable;
 	var $impuestos;
-	var $utilidad_neta;
 	var $dividendos;
 	var $utilidades_retenidas;
+	var $utilidad_neta;
 	var $estado;
 
 	//
@@ -57,12 +56,12 @@ class cestado_resultado extends cTable {
 		$this->fields['idestado_resultado'] = &$this->idestado_resultado;
 
 		// idempresa
-		$this->idempresa = new cField('estado_resultado', 'estado_resultado', 'x_idempresa', 'idempresa', '`idempresa`', '`idempresa`', 3, -1, FALSE, '`idempresa`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->idempresa = new cField('estado_resultado', 'estado_resultado', 'x_idempresa', 'idempresa', '`idempresa`', '`idempresa`', 3, -1, FALSE, '`idempresa`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
 		$this->idempresa->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idempresa'] = &$this->idempresa;
 
 		// idperiodo_contable
-		$this->idperiodo_contable = new cField('estado_resultado', 'estado_resultado', 'x_idperiodo_contable', 'idperiodo_contable', '`idperiodo_contable`', '`idperiodo_contable`', 3, -1, FALSE, '`idperiodo_contable`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->idperiodo_contable = new cField('estado_resultado', 'estado_resultado', 'x_idperiodo_contable', 'idperiodo_contable', '`idperiodo_contable`', '`idperiodo_contable`', 3, -1, FALSE, '`idperiodo_contable`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
 		$this->idperiodo_contable->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idperiodo_contable'] = &$this->idperiodo_contable;
 
@@ -86,20 +85,10 @@ class cestado_resultado extends cTable {
 		$this->interes_pagado->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
 		$this->fields['interes_pagado'] = &$this->interes_pagado;
 
-		// utilidad_gravable
-		$this->utilidad_gravable = new cField('estado_resultado', 'estado_resultado', 'x_utilidad_gravable', 'utilidad_gravable', '`utilidad_gravable`', '`utilidad_gravable`', 131, -1, FALSE, '`utilidad_gravable`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->utilidad_gravable->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
-		$this->fields['utilidad_gravable'] = &$this->utilidad_gravable;
-
 		// impuestos
 		$this->impuestos = new cField('estado_resultado', 'estado_resultado', 'x_impuestos', 'impuestos', '`impuestos`', '`impuestos`', 131, -1, FALSE, '`impuestos`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->impuestos->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
 		$this->fields['impuestos'] = &$this->impuestos;
-
-		// utilidad_neta
-		$this->utilidad_neta = new cField('estado_resultado', 'estado_resultado', 'x_utilidad_neta', 'utilidad_neta', '`utilidad_neta`', '`utilidad_neta`', 131, -1, FALSE, '`utilidad_neta`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->utilidad_neta->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
-		$this->fields['utilidad_neta'] = &$this->utilidad_neta;
 
 		// dividendos
 		$this->dividendos = new cField('estado_resultado', 'estado_resultado', 'x_dividendos', 'dividendos', '`dividendos`', '`dividendos`', 131, -1, FALSE, '`dividendos`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
@@ -111,8 +100,13 @@ class cestado_resultado extends cTable {
 		$this->utilidades_retenidas->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
 		$this->fields['utilidades_retenidas'] = &$this->utilidades_retenidas;
 
+		// utilidad_neta
+		$this->utilidad_neta = new cField('estado_resultado', 'estado_resultado', 'x_utilidad_neta', 'utilidad_neta', '`utilidad_neta`', '`utilidad_neta`', 131, -1, FALSE, '`utilidad_neta`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->utilidad_neta->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
+		$this->fields['utilidad_neta'] = &$this->utilidad_neta;
+
 		// estado
-		$this->estado = new cField('estado_resultado', 'estado_resultado', 'x_estado', 'estado', '`estado`', '`estado`', 202, -1, FALSE, '`estado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'RADIO');
+		$this->estado = new cField('estado_resultado', 'estado_resultado', 'x_estado', 'estado', '`estado`', '`estado`', 202, -1, FALSE, '`estado`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
 		$this->estado->OptionCount = 2;
 		$this->fields['estado'] = &$this->estado;
 	}
@@ -132,6 +126,30 @@ class cestado_resultado extends cTable {
 		} else {
 			$ofld->setSort("");
 		}
+	}
+
+	// Current detail table name
+	function getCurrentDetailTable() {
+		return @$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_DETAIL_TABLE];
+	}
+
+	function setCurrentDetailTable($v) {
+		$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_DETAIL_TABLE] = $v;
+	}
+
+	// Get detail url
+	function GetDetailUrl() {
+
+		// Detail url
+		$sDetailUrl = "";
+		if ($this->getCurrentDetailTable() == "estado_resultado_detalle") {
+			$sDetailUrl = $GLOBALS["estado_resultado_detalle"]->GetListUrl() . "?" . EW_TABLE_SHOW_MASTER . "=" . $this->TableVar;
+			$sDetailUrl .= "&fk_idestado_resultado=" . urlencode($this->idestado_resultado->CurrentValue);
+		}
+		if ($sDetailUrl == "") {
+			$sDetailUrl = "estado_resultadolist.php";
+		}
+		return $sDetailUrl;
 	}
 
 	// Table level SQL
@@ -165,7 +183,7 @@ class cestado_resultado extends cTable {
 
 	function getSqlWhere() { // Where
 		$sWhere = ($this->_SqlWhere <> "") ? $this->_SqlWhere : "";
-		$this->TableFilter = "";
+		$this->TableFilter = "`estado`= 'Activo'";
 		ew_AddFilter($sWhere, $this->TableFilter);
 		return $sWhere;
 	}
@@ -466,7 +484,10 @@ class cestado_resultado extends cTable {
 
 	// Edit URL
 	function GetEditUrl($parm = "") {
-		$url = $this->KeyUrl("estado_resultadoedit.php", $this->UrlParm($parm));
+		if ($parm <> "")
+			$url = $this->KeyUrl("estado_resultadoedit.php", $this->UrlParm($parm));
+		else
+			$url = $this->KeyUrl("estado_resultadoedit.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
 		return $this->AddMasterUrl($url);
 	}
 
@@ -478,7 +499,10 @@ class cestado_resultado extends cTable {
 
 	// Copy URL
 	function GetCopyUrl($parm = "") {
-		$url = $this->KeyUrl("estado_resultadoadd.php", $this->UrlParm($parm));
+		if ($parm <> "")
+			$url = $this->KeyUrl("estado_resultadoadd.php", $this->UrlParm($parm));
+		else
+			$url = $this->KeyUrl("estado_resultadoadd.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
 		return $this->AddMasterUrl($url);
 	}
 
@@ -598,11 +622,10 @@ class cestado_resultado extends cTable {
 		$this->costo_ventas->setDbValue($rs->fields('costo_ventas'));
 		$this->depreciacion->setDbValue($rs->fields('depreciacion'));
 		$this->interes_pagado->setDbValue($rs->fields('interes_pagado'));
-		$this->utilidad_gravable->setDbValue($rs->fields('utilidad_gravable'));
 		$this->impuestos->setDbValue($rs->fields('impuestos'));
-		$this->utilidad_neta->setDbValue($rs->fields('utilidad_neta'));
 		$this->dividendos->setDbValue($rs->fields('dividendos'));
 		$this->utilidades_retenidas->setDbValue($rs->fields('utilidades_retenidas'));
+		$this->utilidad_neta->setDbValue($rs->fields('utilidad_neta'));
 		$this->estado->setDbValue($rs->fields('estado'));
 	}
 
@@ -621,11 +644,10 @@ class cestado_resultado extends cTable {
 		// costo_ventas
 		// depreciacion
 		// interes_pagado
-		// utilidad_gravable
 		// impuestos
-		// utilidad_neta
 		// dividendos
 		// utilidades_retenidas
+		// utilidad_neta
 		// estado
 		// idestado_resultado
 
@@ -633,11 +655,51 @@ class cestado_resultado extends cTable {
 		$this->idestado_resultado->ViewCustomAttributes = "";
 
 		// idempresa
-		$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
+		if (strval($this->idempresa->CurrentValue) <> "") {
+			$sFilterWrk = "`idempresa`" . ew_SearchString("=", $this->idempresa->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idempresa`, `ticker` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `empresa`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idempresa, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idempresa->ViewValue = $this->idempresa->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->idempresa->ViewValue = $this->idempresa->CurrentValue;
+			}
+		} else {
+			$this->idempresa->ViewValue = NULL;
+		}
 		$this->idempresa->ViewCustomAttributes = "";
 
 		// idperiodo_contable
-		$this->idperiodo_contable->ViewValue = $this->idperiodo_contable->CurrentValue;
+		if (strval($this->idperiodo_contable->CurrentValue) <> "") {
+			$sFilterWrk = "`idperiodo_contable`" . ew_SearchString("=", $this->idperiodo_contable->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `idperiodo_contable`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `periodo_contable`";
+		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->idperiodo_contable, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->idperiodo_contable->ViewValue = $this->idperiodo_contable->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->idperiodo_contable->ViewValue = $this->idperiodo_contable->CurrentValue;
+			}
+		} else {
+			$this->idperiodo_contable->ViewValue = NULL;
+		}
 		$this->idperiodo_contable->ViewCustomAttributes = "";
 
 		// venta_netas
@@ -656,17 +718,9 @@ class cestado_resultado extends cTable {
 		$this->interes_pagado->ViewValue = $this->interes_pagado->CurrentValue;
 		$this->interes_pagado->ViewCustomAttributes = "";
 
-		// utilidad_gravable
-		$this->utilidad_gravable->ViewValue = $this->utilidad_gravable->CurrentValue;
-		$this->utilidad_gravable->ViewCustomAttributes = "";
-
 		// impuestos
 		$this->impuestos->ViewValue = $this->impuestos->CurrentValue;
 		$this->impuestos->ViewCustomAttributes = "";
-
-		// utilidad_neta
-		$this->utilidad_neta->ViewValue = $this->utilidad_neta->CurrentValue;
-		$this->utilidad_neta->ViewCustomAttributes = "";
 
 		// dividendos
 		$this->dividendos->ViewValue = $this->dividendos->CurrentValue;
@@ -675,6 +729,10 @@ class cestado_resultado extends cTable {
 		// utilidades_retenidas
 		$this->utilidades_retenidas->ViewValue = $this->utilidades_retenidas->CurrentValue;
 		$this->utilidades_retenidas->ViewCustomAttributes = "";
+
+		// utilidad_neta
+		$this->utilidad_neta->ViewValue = $this->utilidad_neta->CurrentValue;
+		$this->utilidad_neta->ViewCustomAttributes = "";
 
 		// estado
 		if (strval($this->estado->CurrentValue) <> "") {
@@ -719,20 +777,10 @@ class cestado_resultado extends cTable {
 		$this->interes_pagado->HrefValue = "";
 		$this->interes_pagado->TooltipValue = "";
 
-		// utilidad_gravable
-		$this->utilidad_gravable->LinkCustomAttributes = "";
-		$this->utilidad_gravable->HrefValue = "";
-		$this->utilidad_gravable->TooltipValue = "";
-
 		// impuestos
 		$this->impuestos->LinkCustomAttributes = "";
 		$this->impuestos->HrefValue = "";
 		$this->impuestos->TooltipValue = "";
-
-		// utilidad_neta
-		$this->utilidad_neta->LinkCustomAttributes = "";
-		$this->utilidad_neta->HrefValue = "";
-		$this->utilidad_neta->TooltipValue = "";
 
 		// dividendos
 		$this->dividendos->LinkCustomAttributes = "";
@@ -743,6 +791,11 @@ class cestado_resultado extends cTable {
 		$this->utilidades_retenidas->LinkCustomAttributes = "";
 		$this->utilidades_retenidas->HrefValue = "";
 		$this->utilidades_retenidas->TooltipValue = "";
+
+		// utilidad_neta
+		$this->utilidad_neta->LinkCustomAttributes = "";
+		$this->utilidad_neta->HrefValue = "";
+		$this->utilidad_neta->TooltipValue = "";
 
 		// estado
 		$this->estado->LinkCustomAttributes = "";
@@ -769,14 +822,10 @@ class cestado_resultado extends cTable {
 		// idempresa
 		$this->idempresa->EditAttrs["class"] = "form-control";
 		$this->idempresa->EditCustomAttributes = "";
-		$this->idempresa->EditValue = $this->idempresa->CurrentValue;
-		$this->idempresa->PlaceHolder = ew_RemoveHtml($this->idempresa->FldCaption());
 
 		// idperiodo_contable
 		$this->idperiodo_contable->EditAttrs["class"] = "form-control";
 		$this->idperiodo_contable->EditCustomAttributes = "";
-		$this->idperiodo_contable->EditValue = $this->idperiodo_contable->CurrentValue;
-		$this->idperiodo_contable->PlaceHolder = ew_RemoveHtml($this->idperiodo_contable->FldCaption());
 
 		// venta_netas
 		$this->venta_netas->EditAttrs["class"] = "form-control";
@@ -806,26 +855,12 @@ class cestado_resultado extends cTable {
 		$this->interes_pagado->PlaceHolder = ew_RemoveHtml($this->interes_pagado->FldCaption());
 		if (strval($this->interes_pagado->EditValue) <> "" && is_numeric($this->interes_pagado->EditValue)) $this->interes_pagado->EditValue = ew_FormatNumber($this->interes_pagado->EditValue, -2, -1, -2, 0);
 
-		// utilidad_gravable
-		$this->utilidad_gravable->EditAttrs["class"] = "form-control";
-		$this->utilidad_gravable->EditCustomAttributes = "";
-		$this->utilidad_gravable->EditValue = $this->utilidad_gravable->CurrentValue;
-		$this->utilidad_gravable->PlaceHolder = ew_RemoveHtml($this->utilidad_gravable->FldCaption());
-		if (strval($this->utilidad_gravable->EditValue) <> "" && is_numeric($this->utilidad_gravable->EditValue)) $this->utilidad_gravable->EditValue = ew_FormatNumber($this->utilidad_gravable->EditValue, -2, -1, -2, 0);
-
 		// impuestos
 		$this->impuestos->EditAttrs["class"] = "form-control";
 		$this->impuestos->EditCustomAttributes = "";
 		$this->impuestos->EditValue = $this->impuestos->CurrentValue;
 		$this->impuestos->PlaceHolder = ew_RemoveHtml($this->impuestos->FldCaption());
 		if (strval($this->impuestos->EditValue) <> "" && is_numeric($this->impuestos->EditValue)) $this->impuestos->EditValue = ew_FormatNumber($this->impuestos->EditValue, -2, -1, -2, 0);
-
-		// utilidad_neta
-		$this->utilidad_neta->EditAttrs["class"] = "form-control";
-		$this->utilidad_neta->EditCustomAttributes = "";
-		$this->utilidad_neta->EditValue = $this->utilidad_neta->CurrentValue;
-		$this->utilidad_neta->PlaceHolder = ew_RemoveHtml($this->utilidad_neta->FldCaption());
-		if (strval($this->utilidad_neta->EditValue) <> "" && is_numeric($this->utilidad_neta->EditValue)) $this->utilidad_neta->EditValue = ew_FormatNumber($this->utilidad_neta->EditValue, -2, -1, -2, 0);
 
 		// dividendos
 		$this->dividendos->EditAttrs["class"] = "form-control";
@@ -841,9 +876,17 @@ class cestado_resultado extends cTable {
 		$this->utilidades_retenidas->PlaceHolder = ew_RemoveHtml($this->utilidades_retenidas->FldCaption());
 		if (strval($this->utilidades_retenidas->EditValue) <> "" && is_numeric($this->utilidades_retenidas->EditValue)) $this->utilidades_retenidas->EditValue = ew_FormatNumber($this->utilidades_retenidas->EditValue, -2, -1, -2, 0);
 
+		// utilidad_neta
+		$this->utilidad_neta->EditAttrs["class"] = "form-control";
+		$this->utilidad_neta->EditCustomAttributes = "";
+		$this->utilidad_neta->EditValue = $this->utilidad_neta->CurrentValue;
+		$this->utilidad_neta->PlaceHolder = ew_RemoveHtml($this->utilidad_neta->FldCaption());
+		if (strval($this->utilidad_neta->EditValue) <> "" && is_numeric($this->utilidad_neta->EditValue)) $this->utilidad_neta->EditValue = ew_FormatNumber($this->utilidad_neta->EditValue, -2, -1, -2, 0);
+
 		// estado
+		$this->estado->EditAttrs["class"] = "form-control";
 		$this->estado->EditCustomAttributes = "";
-		$this->estado->EditValue = $this->estado->Options(FALSE);
+		$this->estado->EditValue = $this->estado->Options(TRUE);
 
 		// Call Row Rendered event
 		$this->Row_Rendered();
@@ -879,11 +922,10 @@ class cestado_resultado extends cTable {
 					if ($this->costo_ventas->Exportable) $Doc->ExportCaption($this->costo_ventas);
 					if ($this->depreciacion->Exportable) $Doc->ExportCaption($this->depreciacion);
 					if ($this->interes_pagado->Exportable) $Doc->ExportCaption($this->interes_pagado);
-					if ($this->utilidad_gravable->Exportable) $Doc->ExportCaption($this->utilidad_gravable);
 					if ($this->impuestos->Exportable) $Doc->ExportCaption($this->impuestos);
-					if ($this->utilidad_neta->Exportable) $Doc->ExportCaption($this->utilidad_neta);
 					if ($this->dividendos->Exportable) $Doc->ExportCaption($this->dividendos);
 					if ($this->utilidades_retenidas->Exportable) $Doc->ExportCaption($this->utilidades_retenidas);
+					if ($this->utilidad_neta->Exportable) $Doc->ExportCaption($this->utilidad_neta);
 					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
 				} else {
 					if ($this->idestado_resultado->Exportable) $Doc->ExportCaption($this->idestado_resultado);
@@ -893,11 +935,10 @@ class cestado_resultado extends cTable {
 					if ($this->costo_ventas->Exportable) $Doc->ExportCaption($this->costo_ventas);
 					if ($this->depreciacion->Exportable) $Doc->ExportCaption($this->depreciacion);
 					if ($this->interes_pagado->Exportable) $Doc->ExportCaption($this->interes_pagado);
-					if ($this->utilidad_gravable->Exportable) $Doc->ExportCaption($this->utilidad_gravable);
 					if ($this->impuestos->Exportable) $Doc->ExportCaption($this->impuestos);
-					if ($this->utilidad_neta->Exportable) $Doc->ExportCaption($this->utilidad_neta);
 					if ($this->dividendos->Exportable) $Doc->ExportCaption($this->dividendos);
 					if ($this->utilidades_retenidas->Exportable) $Doc->ExportCaption($this->utilidades_retenidas);
+					if ($this->utilidad_neta->Exportable) $Doc->ExportCaption($this->utilidad_neta);
 					if ($this->estado->Exportable) $Doc->ExportCaption($this->estado);
 				}
 				$Doc->EndExportRow();
@@ -937,11 +978,10 @@ class cestado_resultado extends cTable {
 						if ($this->costo_ventas->Exportable) $Doc->ExportField($this->costo_ventas);
 						if ($this->depreciacion->Exportable) $Doc->ExportField($this->depreciacion);
 						if ($this->interes_pagado->Exportable) $Doc->ExportField($this->interes_pagado);
-						if ($this->utilidad_gravable->Exportable) $Doc->ExportField($this->utilidad_gravable);
 						if ($this->impuestos->Exportable) $Doc->ExportField($this->impuestos);
-						if ($this->utilidad_neta->Exportable) $Doc->ExportField($this->utilidad_neta);
 						if ($this->dividendos->Exportable) $Doc->ExportField($this->dividendos);
 						if ($this->utilidades_retenidas->Exportable) $Doc->ExportField($this->utilidades_retenidas);
+						if ($this->utilidad_neta->Exportable) $Doc->ExportField($this->utilidad_neta);
 						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
 					} else {
 						if ($this->idestado_resultado->Exportable) $Doc->ExportField($this->idestado_resultado);
@@ -951,11 +991,10 @@ class cestado_resultado extends cTable {
 						if ($this->costo_ventas->Exportable) $Doc->ExportField($this->costo_ventas);
 						if ($this->depreciacion->Exportable) $Doc->ExportField($this->depreciacion);
 						if ($this->interes_pagado->Exportable) $Doc->ExportField($this->interes_pagado);
-						if ($this->utilidad_gravable->Exportable) $Doc->ExportField($this->utilidad_gravable);
 						if ($this->impuestos->Exportable) $Doc->ExportField($this->impuestos);
-						if ($this->utilidad_neta->Exportable) $Doc->ExportField($this->utilidad_neta);
 						if ($this->dividendos->Exportable) $Doc->ExportField($this->dividendos);
 						if ($this->utilidades_retenidas->Exportable) $Doc->ExportField($this->utilidades_retenidas);
+						if ($this->utilidad_neta->Exportable) $Doc->ExportField($this->utilidad_neta);
 						if ($this->estado->Exportable) $Doc->ExportField($this->estado);
 					}
 					$Doc->EndExportRow();

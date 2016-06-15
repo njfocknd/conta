@@ -1,7 +1,7 @@
 <?php
 
 // idempresa
-// idperioso_contable
+// idperiodo_contable
 // activo_circulante
 // activo_fijo
 // pasivo_circulante
@@ -25,13 +25,13 @@
 </td>
 		</tr>
 <?php } ?>
-<?php if ($balance_general->idperioso_contable->Visible) { // idperioso_contable ?>
-		<tr id="r_idperioso_contable">
-			<td><?php echo $balance_general->idperioso_contable->FldCaption() ?></td>
-			<td<?php echo $balance_general->idperioso_contable->CellAttributes() ?>>
-<span id="el_balance_general_idperioso_contable">
-<span<?php echo $balance_general->idperioso_contable->ViewAttributes() ?>>
-<?php echo $balance_general->idperioso_contable->ListViewValue() ?></span>
+<?php if ($balance_general->idperiodo_contable->Visible) { // idperiodo_contable ?>
+		<tr id="r_idperiodo_contable">
+			<td><?php echo $balance_general->idperiodo_contable->FldCaption() ?></td>
+			<td<?php echo $balance_general->idperiodo_contable->CellAttributes() ?>>
+<span id="el_balance_general_idperiodo_contable">
+<span<?php echo $balance_general->idperiodo_contable->ViewAttributes() ?>>
+<?php echo $balance_general->idperiodo_contable->ListViewValue() ?></span>
 </span>
 </td>
 		</tr>

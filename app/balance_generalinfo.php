@@ -9,7 +9,7 @@ $balance_general = NULL;
 class cbalance_general extends cTable {
 	var $idbalance_general;
 	var $idempresa;
-	var $idperioso_contable;
+	var $idperiodo_contable;
 	var $activo_circulante;
 	var $activo_fijo;
 	var $pasivo_circulante;
@@ -58,10 +58,10 @@ class cbalance_general extends cTable {
 		$this->idempresa->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['idempresa'] = &$this->idempresa;
 
-		// idperioso_contable
-		$this->idperioso_contable = new cField('balance_general', 'balance_general', 'x_idperioso_contable', 'idperioso_contable', '`idperioso_contable`', '`idperioso_contable`', 3, -1, FALSE, '`idperioso_contable`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
-		$this->idperioso_contable->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['idperioso_contable'] = &$this->idperioso_contable;
+		// idperiodo_contable
+		$this->idperiodo_contable = new cField('balance_general', 'balance_general', 'x_idperiodo_contable', 'idperiodo_contable', '`idperiodo_contable`', '`idperiodo_contable`', 3, -1, FALSE, '`idperiodo_contable`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
+		$this->idperiodo_contable->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
+		$this->fields['idperiodo_contable'] = &$this->idperiodo_contable;
 
 		// activo_circulante
 		$this->activo_circulante = new cField('balance_general', 'balance_general', 'x_activo_circulante', 'activo_circulante', '`activo_circulante`', '`activo_circulante`', 131, -1, FALSE, '`activo_circulante`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
@@ -136,12 +136,6 @@ class cbalance_general extends cTable {
 			else
 				return "";
 		}
-		if ($this->getCurrentMasterTable() == "periodo_contable") {
-			if ($this->idperioso_contable->getSessionValue() <> "")
-				$sMasterFilter .= "`idperiodo_contable`=" . ew_QuotedValue($this->idperioso_contable->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
-			else
-				return "";
-		}
 		return $sMasterFilter;
 	}
 
@@ -156,12 +150,6 @@ class cbalance_general extends cTable {
 			else
 				return "";
 		}
-		if ($this->getCurrentMasterTable() == "periodo_contable") {
-			if ($this->idperioso_contable->getSessionValue() <> "")
-				$sDetailFilter .= "`idperioso_contable`=" . ew_QuotedValue($this->idperioso_contable->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
-			else
-				return "";
-		}
 		return $sDetailFilter;
 	}
 
@@ -173,16 +161,6 @@ class cbalance_general extends cTable {
 	// Detail filter
 	function SqlDetailFilter_empresa() {
 		return "`idempresa`=@idempresa@";
-	}
-
-	// Master filter
-	function SqlMasterFilter_periodo_contable() {
-		return "`idperiodo_contable`=@idperiodo_contable@";
-	}
-
-	// Detail filter
-	function SqlDetailFilter_periodo_contable() {
-		return "`idperioso_contable`=@idperioso_contable@";
 	}
 
 	// Current detail table name
@@ -580,10 +558,6 @@ class cbalance_general extends cTable {
 			$url .= (strpos($url, "?") !== FALSE ? "&" : "?") . EW_TABLE_SHOW_MASTER . "=" . $this->getCurrentMasterTable();
 			$url .= "&fk_idempresa=" . urlencode($this->idempresa->CurrentValue);
 		}
-		if ($this->getCurrentMasterTable() == "periodo_contable" && strpos($url, EW_TABLE_SHOW_MASTER . "=") === FALSE) {
-			$url .= (strpos($url, "?") !== FALSE ? "&" : "?") . EW_TABLE_SHOW_MASTER . "=" . $this->getCurrentMasterTable();
-			$url .= "&fk_idperiodo_contable=" . urlencode($this->idperioso_contable->CurrentValue);
-		}
 		return $url;
 	}
 
@@ -682,7 +656,7 @@ class cbalance_general extends cTable {
 	function LoadListRowValues(&$rs) {
 		$this->idbalance_general->setDbValue($rs->fields('idbalance_general'));
 		$this->idempresa->setDbValue($rs->fields('idempresa'));
-		$this->idperioso_contable->setDbValue($rs->fields('idperioso_contable'));
+		$this->idperiodo_contable->setDbValue($rs->fields('idperiodo_contable'));
 		$this->activo_circulante->setDbValue($rs->fields('activo_circulante'));
 		$this->activo_fijo->setDbValue($rs->fields('activo_fijo'));
 		$this->pasivo_circulante->setDbValue($rs->fields('pasivo_circulante'));
@@ -702,7 +676,7 @@ class cbalance_general extends cTable {
    // Common render codes
 		// idbalance_general
 		// idempresa
-		// idperioso_contable
+		// idperiodo_contable
 		// activo_circulante
 		// activo_fijo
 		// pasivo_circulante
@@ -737,28 +711,29 @@ class cbalance_general extends cTable {
 		}
 		$this->idempresa->ViewCustomAttributes = "";
 
-		// idperioso_contable
-		if (strval($this->idperioso_contable->CurrentValue) <> "") {
-			$sFilterWrk = "`idperiodo_contable`" . ew_SearchString("=", $this->idperioso_contable->CurrentValue, EW_DATATYPE_NUMBER, "");
+		// idperiodo_contable
+		if (strval($this->idperiodo_contable->CurrentValue) <> "") {
+			$sFilterWrk = "`idperiodo_contable`" . ew_SearchString("=", $this->idperiodo_contable->CurrentValue, EW_DATATYPE_NUMBER, "");
 		$sSqlWrk = "SELECT `idperiodo_contable`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `periodo_contable`";
 		$sWhereWrk = "";
+		$lookuptblfilter = "`estado` = 'Activo'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
 		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idperioso_contable, $sWhereWrk); // Call Lookup selecting
+		$this->Lookup_Selecting($this->idperiodo_contable, $sWhereWrk); // Call Lookup selecting
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-		$sSqlWrk .= " ORDER BY `nombre`";
 			$rswrk = Conn()->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
 				$arwrk = array();
 				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idperioso_contable->ViewValue = $this->idperioso_contable->DisplayValue($arwrk);
+				$this->idperiodo_contable->ViewValue = $this->idperiodo_contable->DisplayValue($arwrk);
 				$rswrk->Close();
 			} else {
-				$this->idperioso_contable->ViewValue = $this->idperioso_contable->CurrentValue;
+				$this->idperiodo_contable->ViewValue = $this->idperiodo_contable->CurrentValue;
 			}
 		} else {
-			$this->idperioso_contable->ViewValue = NULL;
+			$this->idperiodo_contable->ViewValue = NULL;
 		}
-		$this->idperioso_contable->ViewCustomAttributes = "";
+		$this->idperiodo_contable->ViewCustomAttributes = "";
 
 		// activo_circulante
 		$this->activo_circulante->ViewValue = $this->activo_circulante->CurrentValue;
@@ -803,10 +778,10 @@ class cbalance_general extends cTable {
 		$this->idempresa->HrefValue = "";
 		$this->idempresa->TooltipValue = "";
 
-		// idperioso_contable
-		$this->idperioso_contable->LinkCustomAttributes = "";
-		$this->idperioso_contable->HrefValue = "";
-		$this->idperioso_contable->TooltipValue = "";
+		// idperiodo_contable
+		$this->idperiodo_contable->LinkCustomAttributes = "";
+		$this->idperiodo_contable->HrefValue = "";
+		$this->idperiodo_contable->TooltipValue = "";
 
 		// activo_circulante
 		$this->activo_circulante->LinkCustomAttributes = "";
@@ -888,34 +863,9 @@ class cbalance_general extends cTable {
 		} else {
 		}
 
-		// idperioso_contable
-		$this->idperioso_contable->EditAttrs["class"] = "form-control";
-		$this->idperioso_contable->EditCustomAttributes = "";
-		if ($this->idperioso_contable->getSessionValue() <> "") {
-			$this->idperioso_contable->CurrentValue = $this->idperioso_contable->getSessionValue();
-		if (strval($this->idperioso_contable->CurrentValue) <> "") {
-			$sFilterWrk = "`idperiodo_contable`" . ew_SearchString("=", $this->idperioso_contable->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `idperiodo_contable`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `periodo_contable`";
-		$sWhereWrk = "";
-		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->idperioso_contable, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-		$sSqlWrk .= " ORDER BY `nombre`";
-			$rswrk = Conn()->Execute($sSqlWrk);
-			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$arwrk = array();
-				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->idperioso_contable->ViewValue = $this->idperioso_contable->DisplayValue($arwrk);
-				$rswrk->Close();
-			} else {
-				$this->idperioso_contable->ViewValue = $this->idperioso_contable->CurrentValue;
-			}
-		} else {
-			$this->idperioso_contable->ViewValue = NULL;
-		}
-		$this->idperioso_contable->ViewCustomAttributes = "";
-		} else {
-		}
+		// idperiodo_contable
+		$this->idperiodo_contable->EditAttrs["class"] = "form-control";
+		$this->idperiodo_contable->EditCustomAttributes = "";
 
 		// activo_circulante
 		$this->activo_circulante->EditAttrs["class"] = "form-control";
@@ -991,7 +941,7 @@ class cbalance_general extends cTable {
 				if ($ExportPageType == "view") {
 					if ($this->idbalance_general->Exportable) $Doc->ExportCaption($this->idbalance_general);
 					if ($this->idempresa->Exportable) $Doc->ExportCaption($this->idempresa);
-					if ($this->idperioso_contable->Exportable) $Doc->ExportCaption($this->idperioso_contable);
+					if ($this->idperiodo_contable->Exportable) $Doc->ExportCaption($this->idperiodo_contable);
 					if ($this->activo_circulante->Exportable) $Doc->ExportCaption($this->activo_circulante);
 					if ($this->activo_fijo->Exportable) $Doc->ExportCaption($this->activo_fijo);
 					if ($this->pasivo_circulante->Exportable) $Doc->ExportCaption($this->pasivo_circulante);
@@ -1002,7 +952,7 @@ class cbalance_general extends cTable {
 				} else {
 					if ($this->idbalance_general->Exportable) $Doc->ExportCaption($this->idbalance_general);
 					if ($this->idempresa->Exportable) $Doc->ExportCaption($this->idempresa);
-					if ($this->idperioso_contable->Exportable) $Doc->ExportCaption($this->idperioso_contable);
+					if ($this->idperiodo_contable->Exportable) $Doc->ExportCaption($this->idperiodo_contable);
 					if ($this->activo_circulante->Exportable) $Doc->ExportCaption($this->activo_circulante);
 					if ($this->activo_fijo->Exportable) $Doc->ExportCaption($this->activo_fijo);
 					if ($this->pasivo_circulante->Exportable) $Doc->ExportCaption($this->pasivo_circulante);
@@ -1043,7 +993,7 @@ class cbalance_general extends cTable {
 					if ($ExportPageType == "view") {
 						if ($this->idbalance_general->Exportable) $Doc->ExportField($this->idbalance_general);
 						if ($this->idempresa->Exportable) $Doc->ExportField($this->idempresa);
-						if ($this->idperioso_contable->Exportable) $Doc->ExportField($this->idperioso_contable);
+						if ($this->idperiodo_contable->Exportable) $Doc->ExportField($this->idperiodo_contable);
 						if ($this->activo_circulante->Exportable) $Doc->ExportField($this->activo_circulante);
 						if ($this->activo_fijo->Exportable) $Doc->ExportField($this->activo_fijo);
 						if ($this->pasivo_circulante->Exportable) $Doc->ExportField($this->pasivo_circulante);
@@ -1054,7 +1004,7 @@ class cbalance_general extends cTable {
 					} else {
 						if ($this->idbalance_general->Exportable) $Doc->ExportField($this->idbalance_general);
 						if ($this->idempresa->Exportable) $Doc->ExportField($this->idempresa);
-						if ($this->idperioso_contable->Exportable) $Doc->ExportField($this->idperioso_contable);
+						if ($this->idperiodo_contable->Exportable) $Doc->ExportField($this->idperiodo_contable);
 						if ($this->activo_circulante->Exportable) $Doc->ExportField($this->activo_circulante);
 						if ($this->activo_fijo->Exportable) $Doc->ExportField($this->activo_fijo);
 						if ($this->pasivo_circulante->Exportable) $Doc->ExportField($this->pasivo_circulante);

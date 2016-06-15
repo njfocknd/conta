@@ -43,9 +43,9 @@ fbalance_generalgrid.Validate = function() {
 			elm = this.GetElements("x" + infix + "_idempresa");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $balance_general->idempresa->FldCaption(), $balance_general->idempresa->ReqErrMsg)) ?>");
-			elm = this.GetElements("x" + infix + "_idperioso_contable");
+			elm = this.GetElements("x" + infix + "_idperiodo_contable");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $balance_general->idperioso_contable->FldCaption(), $balance_general->idperioso_contable->ReqErrMsg)) ?>");
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $balance_general->idperiodo_contable->FldCaption(), $balance_general->idperiodo_contable->ReqErrMsg)) ?>");
 			elm = this.GetElements("x" + infix + "_activo_circulante");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $balance_general->activo_circulante->FldCaption(), $balance_general->activo_circulante->ReqErrMsg)) ?>");
@@ -89,7 +89,7 @@ fbalance_generalgrid.Validate = function() {
 fbalance_generalgrid.EmptyRow = function(infix) {
 	var fobj = this.Form;
 	if (ew_ValueChanged(fobj, infix, "idempresa", false)) return false;
-	if (ew_ValueChanged(fobj, infix, "idperioso_contable", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "idperiodo_contable", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "activo_circulante", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "activo_fijo", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "pasivo_circulante", false)) return false;
@@ -115,7 +115,7 @@ fbalance_generalgrid.ValidateRequired = false;
 
 // Dynamic selection lists
 fbalance_generalgrid.Lists["x_idempresa"] = {"LinkField":"x_idempresa","Ajax":true,"AutoFill":false,"DisplayFields":["x_ticker","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
-fbalance_generalgrid.Lists["x_idperioso_contable"] = {"LinkField":"x_idperiodo_contable","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fbalance_generalgrid.Lists["x_idperiodo_contable"] = {"LinkField":"x_idperiodo_contable","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
 // Form object for search
 </script>
@@ -205,12 +205,12 @@ $balance_general_grid->ListOptions->Render("header", "left");
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
-<?php if ($balance_general->idperioso_contable->Visible) { // idperioso_contable ?>
-	<?php if ($balance_general->SortUrl($balance_general->idperioso_contable) == "") { ?>
-		<th data-name="idperioso_contable"><div id="elh_balance_general_idperioso_contable" class="balance_general_idperioso_contable"><div class="ewTableHeaderCaption"><?php echo $balance_general->idperioso_contable->FldCaption() ?></div></div></th>
+<?php if ($balance_general->idperiodo_contable->Visible) { // idperiodo_contable ?>
+	<?php if ($balance_general->SortUrl($balance_general->idperiodo_contable) == "") { ?>
+		<th data-name="idperiodo_contable"><div id="elh_balance_general_idperiodo_contable" class="balance_general_idperiodo_contable"><div class="ewTableHeaderCaption"><?php echo $balance_general->idperiodo_contable->FldCaption() ?></div></div></th>
 	<?php } else { ?>
-		<th data-name="idperioso_contable"><div><div id="elh_balance_general_idperioso_contable" class="balance_general_idperioso_contable">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $balance_general->idperioso_contable->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($balance_general->idperioso_contable->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($balance_general->idperioso_contable->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+		<th data-name="idperiodo_contable"><div><div id="elh_balance_general_idperiodo_contable" class="balance_general_idperiodo_contable">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $balance_general->idperiodo_contable->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($balance_general->idperiodo_contable->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($balance_general->idperiodo_contable->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -482,112 +482,98 @@ if ($sSqlWrk <> "") $balance_general->idempresa->LookupFilters["s"] .= $sSqlWrk;
 <?php if ($balance_general->RowType == EW_ROWTYPE_EDIT || $balance_general->CurrentMode == "edit") { ?>
 <input type="hidden" data-table="balance_general" data-field="x_idbalance_general" name="x<?php echo $balance_general_grid->RowIndex ?>_idbalance_general" id="x<?php echo $balance_general_grid->RowIndex ?>_idbalance_general" value="<?php echo ew_HtmlEncode($balance_general->idbalance_general->CurrentValue) ?>">
 <?php } ?>
-	<?php if ($balance_general->idperioso_contable->Visible) { // idperioso_contable ?>
-		<td data-name="idperioso_contable"<?php echo $balance_general->idperioso_contable->CellAttributes() ?>>
+	<?php if ($balance_general->idperiodo_contable->Visible) { // idperiodo_contable ?>
+		<td data-name="idperiodo_contable"<?php echo $balance_general->idperiodo_contable->CellAttributes() ?>>
 <?php if ($balance_general->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<?php if ($balance_general->idperioso_contable->getSessionValue() <> "") { ?>
-<span id="el<?php echo $balance_general_grid->RowCnt ?>_balance_general_idperioso_contable" class="form-group balance_general_idperioso_contable">
-<span<?php echo $balance_general->idperioso_contable->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $balance_general->idperioso_contable->ViewValue ?></p></span>
-</span>
-<input type="hidden" id="x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" name="x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" value="<?php echo ew_HtmlEncode($balance_general->idperioso_contable->CurrentValue) ?>">
-<?php } else { ?>
-<span id="el<?php echo $balance_general_grid->RowCnt ?>_balance_general_idperioso_contable" class="form-group balance_general_idperioso_contable">
-<select data-table="balance_general" data-field="x_idperioso_contable" data-value-separator="<?php echo ew_HtmlEncode(is_array($balance_general->idperioso_contable->DisplayValueSeparator) ? json_encode($balance_general->idperioso_contable->DisplayValueSeparator) : $balance_general->idperioso_contable->DisplayValueSeparator) ?>" id="x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" name="x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable"<?php echo $balance_general->idperioso_contable->EditAttributes() ?>>
+<span id="el<?php echo $balance_general_grid->RowCnt ?>_balance_general_idperiodo_contable" class="form-group balance_general_idperiodo_contable">
+<select data-table="balance_general" data-field="x_idperiodo_contable" data-value-separator="<?php echo ew_HtmlEncode(is_array($balance_general->idperiodo_contable->DisplayValueSeparator) ? json_encode($balance_general->idperiodo_contable->DisplayValueSeparator) : $balance_general->idperiodo_contable->DisplayValueSeparator) ?>" id="x<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable" name="x<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable"<?php echo $balance_general->idperiodo_contable->EditAttributes() ?>>
 <?php
-if (is_array($balance_general->idperioso_contable->EditValue)) {
-	$arwrk = $balance_general->idperioso_contable->EditValue;
+if (is_array($balance_general->idperiodo_contable->EditValue)) {
+	$arwrk = $balance_general->idperiodo_contable->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = ew_SameStr($balance_general->idperioso_contable->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		$selwrk = ew_SameStr($balance_general->idperiodo_contable->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
 		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $balance_general->idperioso_contable->DisplayValue($arwrk[$rowcntwrk]) ?>
+<?php echo $balance_general->idperiodo_contable->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
-	if ($emptywrk && strval($balance_general->idperioso_contable->CurrentValue) <> "") {
+	if ($emptywrk && strval($balance_general->idperiodo_contable->CurrentValue) <> "") {
 ?>
-<option value="<?php echo ew_HtmlEncode($balance_general->idperioso_contable->CurrentValue) ?>" selected><?php echo $balance_general->idperioso_contable->CurrentValue ?></option>
+<option value="<?php echo ew_HtmlEncode($balance_general->idperiodo_contable->CurrentValue) ?>" selected><?php echo $balance_general->idperiodo_contable->CurrentValue ?></option>
 <?php
     }
 }
-if (@$emptywrk) $balance_general->idperioso_contable->OldValue = "";
+if (@$emptywrk) $balance_general->idperiodo_contable->OldValue = "";
 ?>
 </select>
 <?php
 $sSqlWrk = "SELECT `idperiodo_contable`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `periodo_contable`";
 $sWhereWrk = "";
-$balance_general->idperioso_contable->LookupFilters = array("s" => $sSqlWrk, "d" => "");
-$balance_general->idperioso_contable->LookupFilters += array("f0" => "`idperiodo_contable` = {filter_value}", "t0" => "3", "fn0" => "");
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$balance_general->idperiodo_contable->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$balance_general->idperiodo_contable->LookupFilters += array("f0" => "`idperiodo_contable` = {filter_value}", "t0" => "3", "fn0" => "");
 $sSqlWrk = "";
-$balance_general->Lookup_Selecting($balance_general->idperioso_contable, $sWhereWrk); // Call Lookup selecting
+$balance_general->Lookup_Selecting($balance_general->idperiodo_contable, $sWhereWrk); // Call Lookup selecting
 if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-$sSqlWrk .= " ORDER BY `nombre`";
-if ($sSqlWrk <> "") $balance_general->idperioso_contable->LookupFilters["s"] .= $sSqlWrk;
+if ($sSqlWrk <> "") $balance_general->idperiodo_contable->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" id="s_x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" value="<?php echo $balance_general->idperioso_contable->LookupFilterQuery() ?>">
+<input type="hidden" name="s_x<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable" id="s_x<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable" value="<?php echo $balance_general->idperiodo_contable->LookupFilterQuery() ?>">
 </span>
-<?php } ?>
-<input type="hidden" data-table="balance_general" data-field="x_idperioso_contable" name="o<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" id="o<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" value="<?php echo ew_HtmlEncode($balance_general->idperioso_contable->OldValue) ?>">
+<input type="hidden" data-table="balance_general" data-field="x_idperiodo_contable" name="o<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable" id="o<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable" value="<?php echo ew_HtmlEncode($balance_general->idperiodo_contable->OldValue) ?>">
 <?php } ?>
 <?php if ($balance_general->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
-<?php if ($balance_general->idperioso_contable->getSessionValue() <> "") { ?>
-<span id="el<?php echo $balance_general_grid->RowCnt ?>_balance_general_idperioso_contable" class="form-group balance_general_idperioso_contable">
-<span<?php echo $balance_general->idperioso_contable->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $balance_general->idperioso_contable->ViewValue ?></p></span>
-</span>
-<input type="hidden" id="x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" name="x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" value="<?php echo ew_HtmlEncode($balance_general->idperioso_contable->CurrentValue) ?>">
-<?php } else { ?>
-<span id="el<?php echo $balance_general_grid->RowCnt ?>_balance_general_idperioso_contable" class="form-group balance_general_idperioso_contable">
-<select data-table="balance_general" data-field="x_idperioso_contable" data-value-separator="<?php echo ew_HtmlEncode(is_array($balance_general->idperioso_contable->DisplayValueSeparator) ? json_encode($balance_general->idperioso_contable->DisplayValueSeparator) : $balance_general->idperioso_contable->DisplayValueSeparator) ?>" id="x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" name="x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable"<?php echo $balance_general->idperioso_contable->EditAttributes() ?>>
+<span id="el<?php echo $balance_general_grid->RowCnt ?>_balance_general_idperiodo_contable" class="form-group balance_general_idperiodo_contable">
+<select data-table="balance_general" data-field="x_idperiodo_contable" data-value-separator="<?php echo ew_HtmlEncode(is_array($balance_general->idperiodo_contable->DisplayValueSeparator) ? json_encode($balance_general->idperiodo_contable->DisplayValueSeparator) : $balance_general->idperiodo_contable->DisplayValueSeparator) ?>" id="x<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable" name="x<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable"<?php echo $balance_general->idperiodo_contable->EditAttributes() ?>>
 <?php
-if (is_array($balance_general->idperioso_contable->EditValue)) {
-	$arwrk = $balance_general->idperioso_contable->EditValue;
+if (is_array($balance_general->idperiodo_contable->EditValue)) {
+	$arwrk = $balance_general->idperiodo_contable->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = ew_SameStr($balance_general->idperioso_contable->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		$selwrk = ew_SameStr($balance_general->idperiodo_contable->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
 		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $balance_general->idperioso_contable->DisplayValue($arwrk[$rowcntwrk]) ?>
+<?php echo $balance_general->idperiodo_contable->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
-	if ($emptywrk && strval($balance_general->idperioso_contable->CurrentValue) <> "") {
+	if ($emptywrk && strval($balance_general->idperiodo_contable->CurrentValue) <> "") {
 ?>
-<option value="<?php echo ew_HtmlEncode($balance_general->idperioso_contable->CurrentValue) ?>" selected><?php echo $balance_general->idperioso_contable->CurrentValue ?></option>
+<option value="<?php echo ew_HtmlEncode($balance_general->idperiodo_contable->CurrentValue) ?>" selected><?php echo $balance_general->idperiodo_contable->CurrentValue ?></option>
 <?php
     }
 }
-if (@$emptywrk) $balance_general->idperioso_contable->OldValue = "";
+if (@$emptywrk) $balance_general->idperiodo_contable->OldValue = "";
 ?>
 </select>
 <?php
 $sSqlWrk = "SELECT `idperiodo_contable`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `periodo_contable`";
 $sWhereWrk = "";
-$balance_general->idperioso_contable->LookupFilters = array("s" => $sSqlWrk, "d" => "");
-$balance_general->idperioso_contable->LookupFilters += array("f0" => "`idperiodo_contable` = {filter_value}", "t0" => "3", "fn0" => "");
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$balance_general->idperiodo_contable->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$balance_general->idperiodo_contable->LookupFilters += array("f0" => "`idperiodo_contable` = {filter_value}", "t0" => "3", "fn0" => "");
 $sSqlWrk = "";
-$balance_general->Lookup_Selecting($balance_general->idperioso_contable, $sWhereWrk); // Call Lookup selecting
+$balance_general->Lookup_Selecting($balance_general->idperiodo_contable, $sWhereWrk); // Call Lookup selecting
 if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-$sSqlWrk .= " ORDER BY `nombre`";
-if ($sSqlWrk <> "") $balance_general->idperioso_contable->LookupFilters["s"] .= $sSqlWrk;
+if ($sSqlWrk <> "") $balance_general->idperiodo_contable->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" id="s_x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" value="<?php echo $balance_general->idperioso_contable->LookupFilterQuery() ?>">
+<input type="hidden" name="s_x<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable" id="s_x<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable" value="<?php echo $balance_general->idperiodo_contable->LookupFilterQuery() ?>">
 </span>
-<?php } ?>
 <?php } ?>
 <?php if ($balance_general->RowType == EW_ROWTYPE_VIEW) { // View record ?>
-<span id="el<?php echo $balance_general_grid->RowCnt ?>_balance_general_idperioso_contable" class="balance_general_idperioso_contable">
-<span<?php echo $balance_general->idperioso_contable->ViewAttributes() ?>>
-<?php echo $balance_general->idperioso_contable->ListViewValue() ?></span>
+<span id="el<?php echo $balance_general_grid->RowCnt ?>_balance_general_idperiodo_contable" class="balance_general_idperiodo_contable">
+<span<?php echo $balance_general->idperiodo_contable->ViewAttributes() ?>>
+<?php echo $balance_general->idperiodo_contable->ListViewValue() ?></span>
 </span>
-<input type="hidden" data-table="balance_general" data-field="x_idperioso_contable" name="x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" id="x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" value="<?php echo ew_HtmlEncode($balance_general->idperioso_contable->FormValue) ?>">
-<input type="hidden" data-table="balance_general" data-field="x_idperioso_contable" name="o<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" id="o<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" value="<?php echo ew_HtmlEncode($balance_general->idperioso_contable->OldValue) ?>">
+<input type="hidden" data-table="balance_general" data-field="x_idperiodo_contable" name="x<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable" id="x<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable" value="<?php echo ew_HtmlEncode($balance_general->idperiodo_contable->FormValue) ?>">
+<input type="hidden" data-table="balance_general" data-field="x_idperiodo_contable" name="o<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable" id="o<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable" value="<?php echo ew_HtmlEncode($balance_general->idperiodo_contable->OldValue) ?>">
 <?php } ?>
 </td>
 	<?php } ?>
@@ -806,63 +792,56 @@ if ($sSqlWrk <> "") $balance_general->idempresa->LookupFilters["s"] .= $sSqlWrk;
 <input type="hidden" data-table="balance_general" data-field="x_idempresa" name="o<?php echo $balance_general_grid->RowIndex ?>_idempresa" id="o<?php echo $balance_general_grid->RowIndex ?>_idempresa" value="<?php echo ew_HtmlEncode($balance_general->idempresa->OldValue) ?>">
 </td>
 	<?php } ?>
-	<?php if ($balance_general->idperioso_contable->Visible) { // idperioso_contable ?>
-		<td data-name="idperioso_contable">
+	<?php if ($balance_general->idperiodo_contable->Visible) { // idperiodo_contable ?>
+		<td data-name="idperiodo_contable">
 <?php if ($balance_general->CurrentAction <> "F") { ?>
-<?php if ($balance_general->idperioso_contable->getSessionValue() <> "") { ?>
-<span id="el$rowindex$_balance_general_idperioso_contable" class="form-group balance_general_idperioso_contable">
-<span<?php echo $balance_general->idperioso_contable->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $balance_general->idperioso_contable->ViewValue ?></p></span>
-</span>
-<input type="hidden" id="x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" name="x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" value="<?php echo ew_HtmlEncode($balance_general->idperioso_contable->CurrentValue) ?>">
-<?php } else { ?>
-<span id="el$rowindex$_balance_general_idperioso_contable" class="form-group balance_general_idperioso_contable">
-<select data-table="balance_general" data-field="x_idperioso_contable" data-value-separator="<?php echo ew_HtmlEncode(is_array($balance_general->idperioso_contable->DisplayValueSeparator) ? json_encode($balance_general->idperioso_contable->DisplayValueSeparator) : $balance_general->idperioso_contable->DisplayValueSeparator) ?>" id="x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" name="x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable"<?php echo $balance_general->idperioso_contable->EditAttributes() ?>>
+<span id="el$rowindex$_balance_general_idperiodo_contable" class="form-group balance_general_idperiodo_contable">
+<select data-table="balance_general" data-field="x_idperiodo_contable" data-value-separator="<?php echo ew_HtmlEncode(is_array($balance_general->idperiodo_contable->DisplayValueSeparator) ? json_encode($balance_general->idperiodo_contable->DisplayValueSeparator) : $balance_general->idperiodo_contable->DisplayValueSeparator) ?>" id="x<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable" name="x<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable"<?php echo $balance_general->idperiodo_contable->EditAttributes() ?>>
 <?php
-if (is_array($balance_general->idperioso_contable->EditValue)) {
-	$arwrk = $balance_general->idperioso_contable->EditValue;
+if (is_array($balance_general->idperiodo_contable->EditValue)) {
+	$arwrk = $balance_general->idperiodo_contable->EditValue;
 	$rowswrk = count($arwrk);
 	$emptywrk = TRUE;
 	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = ew_SameStr($balance_general->idperioso_contable->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		$selwrk = ew_SameStr($balance_general->idperiodo_contable->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
 		if ($selwrk <> "") $emptywrk = FALSE;		
 ?>
 <option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $balance_general->idperioso_contable->DisplayValue($arwrk[$rowcntwrk]) ?>
+<?php echo $balance_general->idperiodo_contable->DisplayValue($arwrk[$rowcntwrk]) ?>
 </option>
 <?php
 	}
-	if ($emptywrk && strval($balance_general->idperioso_contable->CurrentValue) <> "") {
+	if ($emptywrk && strval($balance_general->idperiodo_contable->CurrentValue) <> "") {
 ?>
-<option value="<?php echo ew_HtmlEncode($balance_general->idperioso_contable->CurrentValue) ?>" selected><?php echo $balance_general->idperioso_contable->CurrentValue ?></option>
+<option value="<?php echo ew_HtmlEncode($balance_general->idperiodo_contable->CurrentValue) ?>" selected><?php echo $balance_general->idperiodo_contable->CurrentValue ?></option>
 <?php
     }
 }
-if (@$emptywrk) $balance_general->idperioso_contable->OldValue = "";
+if (@$emptywrk) $balance_general->idperiodo_contable->OldValue = "";
 ?>
 </select>
 <?php
 $sSqlWrk = "SELECT `idperiodo_contable`, `nombre` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `periodo_contable`";
 $sWhereWrk = "";
-$balance_general->idperioso_contable->LookupFilters = array("s" => $sSqlWrk, "d" => "");
-$balance_general->idperioso_contable->LookupFilters += array("f0" => "`idperiodo_contable` = {filter_value}", "t0" => "3", "fn0" => "");
+$lookuptblfilter = "`estado` = 'Activo'";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$balance_general->idperiodo_contable->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$balance_general->idperiodo_contable->LookupFilters += array("f0" => "`idperiodo_contable` = {filter_value}", "t0" => "3", "fn0" => "");
 $sSqlWrk = "";
-$balance_general->Lookup_Selecting($balance_general->idperioso_contable, $sWhereWrk); // Call Lookup selecting
+$balance_general->Lookup_Selecting($balance_general->idperiodo_contable, $sWhereWrk); // Call Lookup selecting
 if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-$sSqlWrk .= " ORDER BY `nombre`";
-if ($sSqlWrk <> "") $balance_general->idperioso_contable->LookupFilters["s"] .= $sSqlWrk;
+if ($sSqlWrk <> "") $balance_general->idperiodo_contable->LookupFilters["s"] .= $sSqlWrk;
 ?>
-<input type="hidden" name="s_x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" id="s_x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" value="<?php echo $balance_general->idperioso_contable->LookupFilterQuery() ?>">
+<input type="hidden" name="s_x<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable" id="s_x<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable" value="<?php echo $balance_general->idperiodo_contable->LookupFilterQuery() ?>">
 </span>
-<?php } ?>
 <?php } else { ?>
-<span id="el$rowindex$_balance_general_idperioso_contable" class="form-group balance_general_idperioso_contable">
-<span<?php echo $balance_general->idperioso_contable->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $balance_general->idperioso_contable->ViewValue ?></p></span>
+<span id="el$rowindex$_balance_general_idperiodo_contable" class="form-group balance_general_idperiodo_contable">
+<span<?php echo $balance_general->idperiodo_contable->ViewAttributes() ?>>
+<p class="form-control-static"><?php echo $balance_general->idperiodo_contable->ViewValue ?></p></span>
 </span>
-<input type="hidden" data-table="balance_general" data-field="x_idperioso_contable" name="x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" id="x<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" value="<?php echo ew_HtmlEncode($balance_general->idperioso_contable->FormValue) ?>">
+<input type="hidden" data-table="balance_general" data-field="x_idperiodo_contable" name="x<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable" id="x<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable" value="<?php echo ew_HtmlEncode($balance_general->idperiodo_contable->FormValue) ?>">
 <?php } ?>
-<input type="hidden" data-table="balance_general" data-field="x_idperioso_contable" name="o<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" id="o<?php echo $balance_general_grid->RowIndex ?>_idperioso_contable" value="<?php echo ew_HtmlEncode($balance_general->idperioso_contable->OldValue) ?>">
+<input type="hidden" data-table="balance_general" data-field="x_idperiodo_contable" name="o<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable" id="o<?php echo $balance_general_grid->RowIndex ?>_idperiodo_contable" value="<?php echo ew_HtmlEncode($balance_general->idperiodo_contable->OldValue) ?>">
 </td>
 	<?php } ?>
 	<?php if ($balance_general->activo_circulante->Visible) { // activo_circulante ?>

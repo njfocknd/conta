@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<ew-language date="2016/6/13" version="12.0.0" id="es" name="Spanish" desc="Español" author="KK.pupu Damus">
+<ew-language date="2016/6/14" version="12.0.0" id="es" name="Spanish" desc="Español" author="KK.pupu Damus">
 	<locale>
 		<phrase id="locale" value=""/>
 		<!-- *** system locale for this language -->
@@ -592,15 +592,19 @@
 		<phrase id="or" value=" o "/>
 	</global>
 	<project><phrase id="footertext" value="Nexthor"/>
-<menu id="19"><phrase id="menutext" value="estado resultado detalle"/>
+<menu id="17"><phrase id="menutext" value="Estado de Resultado"/>
 </menu>
-<menu id="17"><phrase id="menutext" value="estado resultado"/>
+<menu id="19"><phrase id="menutext" value="estado resultado detalle"/>
 </menu>
 <menu id="15"><phrase id="menutext" value="Balance General"/>
 </menu>
 <menu id="16"><phrase id="menutext" value="balance general detalle"/>
 </menu>
 <menu id="7"><phrase id="menutext" value="Partida"/>
+</menu>
+<menu id="35"><phrase id="menutext" value="Valor Futuro"/>
+</menu>
+<menu id="48"><phrase id="menutext" value="Valor Presente"/>
 </menu>
 <menu id="11"><phrase id="menutext" value="Catálogo"/>
 </menu>
@@ -817,7 +821,7 @@
 </field>
 <field id="idempresa"><phrase id="fldcaption" value="Empresa"/>
 </field>
-<field id="idperioso_contable"><phrase id="fldcaption" value="Período Contable"/>
+<field id="idperiodo_contable"><phrase id="fldcaption" value="Período Contable"/>
 </field>
 <field id="activo_circulante"><phrase id="fldcaption" value="Activo Circulante"/>
 </field>
@@ -860,32 +864,30 @@
 <field id="fecha_insercion"><phrase id="fldcaption" value="Fecha Inserción"/>
 </field>
 </table>
-<table id="estado_resultado"><phrase id="tblcaption" value="estado resultado"/>
-<field id="idestado_resultado"><phrase id="fldcaption" value="idestado resultado"/>
+<table id="estado_resultado"><phrase id="tblcaption" value="Estado de Resultado"/>
+<field id="idestado_resultado"><phrase id="fldcaption" value="ID Estado de Resultado"/>
 </field>
-<field id="idempresa"><phrase id="fldcaption" value="idempresa"/>
+<field id="idempresa"><phrase id="fldcaption" value="Empresa"/>
 </field>
-<field id="idperiodo_contable"><phrase id="fldcaption" value="idperiodo contable"/>
+<field id="idperiodo_contable"><phrase id="fldcaption" value="Período contable"/>
 </field>
-<field id="venta_netas"><phrase id="fldcaption" value="venta netas"/>
+<field id="venta_netas"><phrase id="fldcaption" value="Ventas Netas"/>
 </field>
-<field id="costo_ventas"><phrase id="fldcaption" value="costo ventas"/>
+<field id="costo_ventas"><phrase id="fldcaption" value="Costo de Ventas"/>
 </field>
-<field id="depreciacion"><phrase id="fldcaption" value="depreciacion"/>
+<field id="depreciacion"><phrase id="fldcaption" value="Depreciación"/>
 </field>
-<field id="interes_pagado"><phrase id="fldcaption" value="interes pagado"/>
+<field id="interes_pagado"><phrase id="fldcaption" value="Interes pagado"/>
 </field>
-<field id="utilidad_gravable"><phrase id="fldcaption" value="utilidad gravable"/>
+<field id="impuestos"><phrase id="fldcaption" value="Impuestos"/>
 </field>
-<field id="impuestos"><phrase id="fldcaption" value="impuestos"/>
+<field id="dividendos"><phrase id="fldcaption" value="Dividendos"/>
 </field>
-<field id="utilidad_neta"><phrase id="fldcaption" value="utilidad neta"/>
+<field id="utilidades_retenidas"><phrase id="fldcaption" value="Utilidades retenida"/>
 </field>
-<field id="dividendos"><phrase id="fldcaption" value="dividendos"/>
+<field id="utilidad_neta"><phrase id="fldcaption" value="Utilidad neta"/>
 </field>
-<field id="utilidades_retenidas"><phrase id="fldcaption" value="utilidades retenidas"/>
-</field>
-<field id="estado"><phrase id="fldcaption" value="estado"/>
+<field id="estado"><phrase id="fldcaption" value="Estado"/>
 <phrase id="fldtagvalue1" value="Activo"/>
 <phrase id="fldtagcaption1" value="Activo"/>
 <phrase id="fldtagvalue2" value="Inactivo"/>
@@ -904,18 +906,18 @@
 <phrase id="fldtagcaption2" value="Inactivo"/>
 </field>
 </table>
-<table id="estado_resultado_detalle"><phrase id="tblcaption" value="estado resultado detalle"/>
-<field id="idestado_resultado_detalle"><phrase id="fldcaption" value="idestado resultado detalle"/>
+<table id="estado_resultado_detalle"><phrase id="tblcaption" value="Detalle de Estado de Resultado"/>
+<field id="idestado_resultado_detalle"><phrase id="fldcaption" value="Id Detalle de Estado de Resultado"/>
 </field>
-<field id="idestado_resultado"><phrase id="fldcaption" value="idestado resultado"/>
+<field id="idestado_resultado"><phrase id="fldcaption" value="Estado de Resultado"/>
 </field>
-<field id="idclase_resultado"><phrase id="fldcaption" value="idclase resultado"/>
+<field id="idclase_resultado"><phrase id="fldcaption" value="Clase"/>
 </field>
-<field id="idgrupo_resultado"><phrase id="fldcaption" value="idgrupo resultado"/>
+<field id="idgrupo_resultado"><phrase id="fldcaption" value="Cuenta"/>
 </field>
-<field id="monto"><phrase id="fldcaption" value="monto"/>
+<field id="monto"><phrase id="fldcaption" value="Monto"/>
 </field>
-<field id="estado"><phrase id="fldcaption" value="estado"/>
+<field id="estado"><phrase id="fldcaption" value="Estado"/>
 <phrase id="fldtagvalue1" value="Activo"/>
 <phrase id="fldtagcaption1" value="Activo"/>
 <phrase id="fldtagvalue2" value="Inactivo"/>

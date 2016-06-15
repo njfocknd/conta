@@ -1,0 +1,25 @@
+
+table {  
+	font-size: 11px;
+	border-collapse: collapse;
+}
+th {     
+	font-size: 13px;    
+	font-weight: normal;    
+	padding: 8px;    
+	background: rgba(0, 111, 186, 0.2);
+}
+.table>tbody>tr>td {
+	padding: 25px;
+}
+td {      
+	background-color: rgba(0, 111, 186, 0.06);    
+}
+td p {
+	margin-bottom: 0;
+}
+
+tr:hover td {
+	background: rgba(0, 111, 186, 0.06);
+}
+
