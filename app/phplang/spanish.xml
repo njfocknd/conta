@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<ew-language date="2016/6/14" version="12.0.0" id="es" name="Spanish" desc="Español" author="KK.pupu Damus">
+<ew-language date="2016/6/15" version="12.0.0" id="es" name="Spanish" desc="Español" author="KK.pupu Damus">
 	<locale>
 		<phrase id="locale" value=""/>
 		<!-- *** system locale for this language -->
@@ -605,6 +605,8 @@
 <menu id="35"><phrase id="menutext" value="Valor Futuro"/>
 </menu>
 <menu id="48"><phrase id="menutext" value="Valor Presente"/>
+</menu>
+<menu id="61"><phrase id="menutext" value="Amortización"/>
 </menu>
 <menu id="11"><phrase id="menutext" value="Catálogo"/>
 </menu>
