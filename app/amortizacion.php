@@ -1,10 +1,6 @@
 <?php
 include('nexthor_app.php');
 include('header.php');
-$MyOps = new DBOps($usr_name,$usr_pwd,$target_db,$target_host);
-$now = date (Ymd);
-$diaUno = date("01/m/Y", strtotime("$now +0 day"));
-$diaDos = date("d/m/Y", strtotime("$now +0 day"));
 ?>
 <script type='text/javascript'src="nexthor/js/nexthor_js.js" ></script>
 <script>

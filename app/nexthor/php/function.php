@@ -55,4 +55,33 @@ function fncComboQuery($MyOps, $query,$name,$function,$prefix,$suffix,$selected,
 		$combo.=$alert." <img src='general_repository/image/stop_24x24.png'> <font color =red><b>Error en el Selector</b></font>";
 		}
 	return $combo;
+	}
+		function fncDesignCombo($query,$name,$function,$prefix,$suffix,$selected,$error)
+	{
+	include('app_db_config.php');
+	//require_once('dbops.php');     
+	$MyOps = new DBOps($usr_name,$usr_pwd,$target_db,$target_host);
+	$count=0;
+	$combo="<select id='".$name."' name ='".$name."' ".$function." class='form-control'>";
+	$combo.=$prefix;
+	$res = $MyOps->list_orders($query);
+	if ($res)
+		{
+		while ($row = mysql_fetch_assoc($res)) 
+			{
+			$count++;
+			if ($selected==$row['id'])
+				$combo.="<option value='".$row['id']."' selected> ".$row["name"]." *</option>";
+			else
+				$combo.="<option value='".$row['id']."'> ".$row["name"]."</option>";
+			}
+		}
+	
+	$combo.=$suffix."</select>";
+	if ($count==0)
+		{
+		$alert="<SCRIPT LANGUAGE=\"JavaScript\">Alertify.log.error('<b><big>".$error."</big></b>');</SCRIPT>";
+		$combo.=$alert." <img src='general_repository/image/stop_24x24.png'> <font color =red><b>No tiene Datos</b></font>";
+		}
+	return $combo;
 	}?>

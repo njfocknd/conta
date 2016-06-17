@@ -600,6 +600,8 @@
 </menu>
 <menu id="16"><phrase id="menutext" value="balance general detalle"/>
 </menu>
+<menu id="74"><phrase id="menutext" value="Flujo de Efectivo"/>
+</menu>
 <menu id="7"><phrase id="menutext" value="Partida"/>
 </menu>
 <menu id="35"><phrase id="menutext" value="Valor Futuro"/>

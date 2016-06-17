@@ -1,0 +1,23 @@
+if($user_id!= null)
+{
+	include('app_db_config.php');
+	require_once('dbops.php');     
+	$MyOps = new DBOps($usr_name,$usr_pwd,$target_db,$target_host);
+																				
+	if (isset($_POST["items"])&&isset($_POST["id"])&&isset($_POST["update"]))
+	{
+		if ($_POST["update"] =='sending_order')
+		{
+			if ($_POST["id"]=="")
+			{
+				$query = " INSERT INTO sending_order(idorder,total_items,sending_order_date) VALUES (".$_POST["idorder"].",".$_POST["items"].",'".$_POST["sending_order_date"]."');";
+				$MyOps->insert_to_db($query);
+				echo "<SCRIPT LANGUAGE=\"JavaScript\">show_tabla();</SCRIPT>";
+			}
+			else
+			{
+				$query = "UPDATE sending_order SET total_items = '".$_POST["items"]."' where idsending_order = ".$_POST["id"].";";
+				$res = $MyOps->update_to_db($query);
+			}
+		}
+	}
