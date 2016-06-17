@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<ew-language date="2016/6/15" version="12.0.0" id="es" name="Spanish" desc="Español" author="KK.pupu Damus">
+<ew-language date="2016/6/17" version="12.0.0" id="es" name="Spanish" desc="Español" author="KK.pupu Damus">
 	<locale>
 		<phrase id="locale" value=""/>
 		<!-- *** system locale for this language -->
@@ -592,13 +592,17 @@
 		<phrase id="or" value=" o "/>
 	</global>
 	<project><phrase id="footertext" value="Nexthor"/>
-<menu id="17"><phrase id="menutext" value="Estado de Resultado"/>
+<menu id="91"><phrase id="menutext" value="Balance Genaral"/>
 </menu>
-<menu id="19"><phrase id="menutext" value="estado resultado detalle"/>
-</menu>
-<menu id="15"><phrase id="menutext" value="Balance General"/>
+<menu id="15"><phrase id="menutext" value="Balance General (Monitoreo)"/>
 </menu>
 <menu id="16"><phrase id="menutext" value="balance general detalle"/>
+</menu>
+<menu id="92"><phrase id="menutext" value="Estado de Resultado"/>
+</menu>
+<menu id="17"><phrase id="menutext" value="Estado de Resultado (Monitoreo)"/>
+</menu>
+<menu id="19"><phrase id="menutext" value="estado resultado detalle"/>
 </menu>
 <menu id="74"><phrase id="menutext" value="Flujo de Efectivo"/>
 </menu>

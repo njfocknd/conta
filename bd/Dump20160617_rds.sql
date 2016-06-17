@@ -1,0 +1,1785 @@
+-- MySQL dump 10.13  Distrib 5.6.24, for Win32 (x86)
+--
+-- Host: nexthordb.cquvmppcukva.us-west-2.rds.amazonaws.com    Database: contable
+-- ------------------------------------------------------
+-- Server version	5.6.23-log
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `balance_general`
+--
+
+DROP TABLE IF EXISTS `balance_general`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `balance_general` (
+  `idbalance_general` int(11) NOT NULL AUTO_INCREMENT,
+  `idempresa` int(11) NOT NULL DEFAULT '1',
+  `idperiodo_contable` int(11) NOT NULL DEFAULT '1',
+  `activo_circulante` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `activo_fijo` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `pasivo_circulante` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `pasivo_fijo` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `capital_contable` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `estado` enum('Activo','Inactivo') COLLATE utf8_bin NOT NULL DEFAULT 'Activo',
+  `fecha_insercion` datetime DEFAULT NULL,
+  PRIMARY KEY (`idbalance_general`),
+  KEY `fk_balance_general_idempresa_idx` (`idempresa`),
+  KEY `fk_balance_general_idperiodo_contable_idx` (`idperiodo_contable`),
+  CONSTRAINT `fk_balance_general_idempresa` FOREIGN KEY (`idempresa`) REFERENCES `empresa` (`idempresa`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_balance_general_idperiodo_contable` FOREIGN KEY (`idperiodo_contable`) REFERENCES `periodo_contable` (`idperiodo_contable`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `balance_general`
+--
+
+LOCK TABLES `balance_general` WRITE;
+/*!40000 ALTER TABLE `balance_general` DISABLE KEYS */;
+INSERT INTO `balance_general` VALUES (1,1,1,5000.00,5000.00,4000.00,7000.00,-1000.00,'Activo',NULL),(2,1,2,25000.00,50000.00,10000.00,6000.00,59000.00,'Activo',NULL),(3,2,2,642.00,2731.00,543.00,531.00,2299.00,'Activo',NULL),(4,2,1,708.00,2880.00,540.00,457.00,2591.00,'Activo',NULL);
+/*!40000 ALTER TABLE `balance_general` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'STRICT_ALL_TABLES,NO_AUTO_CREATE_USER' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 */ /*!50003 TRIGGER `contable`.`balance_general_BEFORE_INSERT` BEFORE INSERT ON `balance_general` FOR EACH ROW
+BEGIN
+	set new.activo_circulante = 0;
+	set new.activo_fijo = 0;
+	set new.pasivo_circulante = 0;
+	set new.pasivo_fijo = 0;
+	set new.capital_contable = 0;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'STRICT_ALL_TABLES,NO_AUTO_CREATE_USER' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 */ /*!50003 TRIGGER `contable`.`balance_general_BEFORE_UPDATE` BEFORE UPDATE ON `balance_general` FOR EACH ROW
+BEGIN
+	set new.capital_contable = (new.activo_circulante +new.activo_fijo) -  (new.pasivo_circulante +new.pasivo_fijo);
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `balance_general_detalle`
+--
+
+DROP TABLE IF EXISTS `balance_general_detalle`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `balance_general_detalle` (
+  `idbalance_general_detalle` int(11) NOT NULL AUTO_INCREMENT,
+  `idbalance_general` int(11) NOT NULL DEFAULT '1',
+  `idclase_cuenta` int(11) NOT NULL DEFAULT '1',
+  `idgrupo_cuenta` int(11) NOT NULL DEFAULT '1',
+  `idsubgrupo_cuenta` int(11) NOT NULL DEFAULT '6',
+  `monto` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `estado` enum('Activo','Inactivo') COLLATE utf8_bin NOT NULL DEFAULT 'Activo',
+  `fecha_insercion` datetime DEFAULT NULL,
+  PRIMARY KEY (`idbalance_general_detalle`),
+  KEY `fk_balance_general_detalle_idbalance_general_idx` (`idbalance_general`),
+  KEY `fk_balance_general_detalle_idclase_cuenta_idx` (`idclase_cuenta`),
+  KEY `fk_balance_general_detalle_idgrupo_cuenta_idx` (`idgrupo_cuenta`),
+  KEY `fk_balance_general_detalle__idsubgrupo_cuenta_idx` (`idsubgrupo_cuenta`),
+  CONSTRAINT `fk_balance_general_detalle__idsubgrupo_cuenta` FOREIGN KEY (`idsubgrupo_cuenta`) REFERENCES `subgrupo_cuenta` (`idsubgrupo_cuenta`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_balance_general_detalle_idbalance_general` FOREIGN KEY (`idbalance_general`) REFERENCES `balance_general` (`idbalance_general`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_balance_general_detalle_idclase_cuenta` FOREIGN KEY (`idclase_cuenta`) REFERENCES `clase_cuenta` (`idclase_cuenta`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_balance_general_detalle_idgrupo_cuenta` FOREIGN KEY (`idgrupo_cuenta`) REFERENCES `grupo_cuenta` (`idgrupo_cuenta`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `balance_general_detalle`
+--
+
+LOCK TABLES `balance_general_detalle` WRITE;
+/*!40000 ALTER TABLE `balance_general_detalle` DISABLE KEYS */;
+INSERT INTO `balance_general_detalle` VALUES (2,1,1,1,6,5000.00,'Activo',NULL),(3,1,1,2,10,5000.00,'Activo',NULL),(4,1,3,4,17,4000.00,'Activo',NULL),(5,1,3,5,19,7000.00,'Activo',NULL),(6,2,1,1,6,10000.00,'Activo',NULL),(7,2,1,1,7,5000.00,'Activo',NULL),(8,2,1,1,9,10000.00,'Activo',NULL),(9,2,1,2,11,50000.00,'Activo',NULL),(10,2,3,4,17,10000.00,'Activo',NULL),(11,2,3,5,19,6000.00,'Activo',NULL),(12,3,1,1,6,84.00,'Activo',NULL),(13,3,1,1,7,165.00,'Activo',NULL),(14,3,1,1,9,393.00,'Activo',NULL),(15,3,1,2,34,2731.00,'Activo',NULL),(16,3,3,4,17,312.00,'Activo',NULL),(17,3,3,4,35,231.00,'Activo',NULL),(18,3,3,5,36,531.00,'Activo',NULL),(19,3,5,7,37,500.00,'Activo',NULL),(20,3,5,7,38,1799.00,'Activo',NULL),(21,4,1,1,6,98.00,'Activo',NULL),(22,4,1,1,7,188.00,'Activo',NULL),(23,4,1,1,9,422.00,'Activo',NULL),(24,4,3,4,17,344.00,'Activo',NULL),(25,4,3,4,35,196.00,'Activo',NULL),(26,4,3,5,36,457.00,'Activo',NULL),(27,4,5,7,37,550.00,'Activo',NULL),(28,4,5,7,38,2041.00,'Activo',NULL),(29,4,1,2,34,2880.00,'Activo',NULL);
+/*!40000 ALTER TABLE `balance_general_detalle` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'STRICT_ALL_TABLES,NO_AUTO_CREATE_USER' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 */ /*!50003 TRIGGER `contable`.`balance_general_detalle_AFTER_INSERT` AFTER INSERT ON `balance_general_detalle` FOR EACH ROW
+BEGIN
+	if new.idclase_cuenta = 1 and new.idgrupo_cuenta = 1 then
+		update balance_general set activo_circulante = activo_circulante + new.monto where idbalance_general = new.idbalance_general;
+	elseif new.idclase_cuenta = 1 then
+		update balance_general set activo_fijo = activo_fijo + new.monto where idbalance_general = new.idbalance_general;
+	elseif new.idclase_cuenta = 3 and new.idgrupo_cuenta = 4 then
+		update balance_general set pasivo_circulante = pasivo_circulante + new.monto where idbalance_general = new.idbalance_general;
+	elseif new.idclase_cuenta = 3 then
+		update balance_general set pasivo_fijo = pasivo_fijo + new.monto where idbalance_general = new.idbalance_general;
+	else
+		update balance_general set capital_contable = capital_contable + new.monto where idbalance_general = new.idbalance_general;
+    end if;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'STRICT_ALL_TABLES,NO_AUTO_CREATE_USER' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 */ /*!50003 TRIGGER `contable`.`balance_general_detalle_BEFORE_UPDATE` BEFORE UPDATE ON `balance_general_detalle` FOR EACH ROW
+BEGIN
+	if new.estado != old.estado then
+		if new.estado = 'Inactivo' then
+			set new.monto = 0;
+        end if;
+	end if;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'STRICT_ALL_TABLES,NO_AUTO_CREATE_USER' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 */ /*!50003 TRIGGER `contable`.`balance_general_detalle_AFTER_UPDATE` AFTER UPDATE ON `balance_general_detalle` FOR EACH ROW
+BEGIN
+	
+	if new.monto != old.monto then
+		if new.idclase_cuenta = 1 and new.idgrupo_cuenta = 1 then
+			update balance_general set activo_circulante = activo_circulante + (new.monto-old.monto) where idbalance_general = new.idbalance_general;
+		elseif new.idclase_cuenta = 1 then
+			update balance_general set activo_fijo = activo_fijo + (new.monto-old.monto) where idbalance_general = new.idbalance_general;
+		elseif new.idclase_cuenta = 3 and new.idgrupo_cuenta = 4 then
+			update balance_general set pasivo_circulante = pasivo_circulante + (new.monto-old.monto) where idbalance_general = new.idbalance_general;
+		elseif new.idclase_cuenta = 3 then
+			update balance_general set pasivo_fijo = pasivo_fijo + (new.monto-old.monto) where idbalance_general = new.idbalance_general;
+		else
+			update balance_general set capital_contable = capital_contable + (new.monto-old.monto) where idbalance_general = new.idbalance_general;
+		end if;
+	end if;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `clase_cuenta`
+--
+
+DROP TABLE IF EXISTS `clase_cuenta`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `clase_cuenta` (
+  `idclase_cuenta` int(11) NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(45) COLLATE utf8_spanish_ci DEFAULT NULL,
+  `estado` enum('Activo','Inactivo') COLLATE utf8_spanish_ci NOT NULL DEFAULT 'Activo',
+  `nomenclatura` varchar(45) COLLATE utf8_spanish_ci DEFAULT NULL,
+  `definicion` varchar(45) COLLATE utf8_spanish_ci DEFAULT NULL,
+  PRIMARY KEY (`idclase_cuenta`)
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `clase_cuenta`
+--
+
+LOCK TABLES `clase_cuenta` WRITE;
+/*!40000 ALTER TABLE `clase_cuenta` DISABLE KEYS */;
+INSERT INTO `clase_cuenta` VALUES (1,'Activo','Activo','1','Activo'),(2,'Cuentas Regularizadoras del Activo','Inactivo','2','Cuentas Regularizadoras del Activo'),(3,'Pasivo','Activo','3','Pasivo'),(4,'Otras Cuentas Acreedoras','Inactivo','4','Otras Cuentas Acreedoras'),(5,'Capital Contable','Activo','5','Capital Contable'),(6,'Cuentas de Orden per Contra','Inactivo','6','Cuentas de Orden per Contra'),(7,'Productos ','Inactivo','7','Productos '),(8,'Gastos','Inactivo','8','Gastos');
+/*!40000 ALTER TABLE `clase_cuenta` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `clase_resultado`
+--
+
+DROP TABLE IF EXISTS `clase_resultado`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `clase_resultado` (
+  `idclase_resultado` int(11) NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(45) COLLATE utf8_bin DEFAULT NULL,
+  `estado` enum('Activo','Inactivo') COLLATE utf8_bin NOT NULL DEFAULT 'Activo',
+  PRIMARY KEY (`idclase_resultado`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `clase_resultado`
+--
+
+LOCK TABLES `clase_resultado` WRITE;
+/*!40000 ALTER TABLE `clase_resultado` DISABLE KEYS */;
+INSERT INTO `clase_resultado` VALUES (1,'Venta netas','Activo'),(2,'Costo de ventas','Activo'),(3,'Depreciación','Activo'),(4,'Intereses pagados','Activo'),(5,'Impuestos','Activo'),(6,'Dividendos','Activo'),(7,'Aumento en las utilidades retenidas','Activo');
+/*!40000 ALTER TABLE `clase_resultado` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `cuenta`
+--
+
+DROP TABLE IF EXISTS `cuenta`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `cuenta` (
+  `idcuenta` int(11) NOT NULL AUTO_INCREMENT,
+  `nomenclatura` varchar(45) COLLATE utf8_spanish_ci DEFAULT NULL,
+  `nombre` varchar(45) COLLATE utf8_spanish_ci DEFAULT NULL,
+  `debe` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `haber` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `saldo` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `estado` enum('Activo','Inactivo') COLLATE utf8_spanish_ci NOT NULL DEFAULT 'Activo',
+  `idsubcuenta` int(11) NOT NULL DEFAULT '1',
+  PRIMARY KEY (`idcuenta`),
+  KEY `fk_cuenta_idsubcuenta_idx` (`idsubcuenta`),
+  CONSTRAINT `fk_cuenta_idsubcuenta` FOREIGN KEY (`idsubcuenta`) REFERENCES `subcuenta` (`idsubcuenta`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `cuenta`
+--
+
+LOCK TABLES `cuenta` WRITE;
+/*!40000 ALTER TABLE `cuenta` DISABLE KEYS */;
+INSERT INTO `cuenta` VALUES (3,'111.103.01.01.01','Caja Chica TI',0.00,0.00,0.00,'Activo',1),(4,'111.103.01.01.02','Caja Chica Operaciones',0.00,0.00,0.00,'Activo',1);
+/*!40000 ALTER TABLE `cuenta` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 */ /*!50003 TRIGGER `contable`.`cuenta_BEFORE_UPDATE` BEFORE UPDATE ON `cuenta` FOR EACH ROW
+BEGIN
+	set new.saldo = new.debe - new.haber;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `cuenta_mayor_auxiliar`
+--
+
+DROP TABLE IF EXISTS `cuenta_mayor_auxiliar`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `cuenta_mayor_auxiliar` (
+  `idcuenta_mayor_auxiliar` int(11) NOT NULL AUTO_INCREMENT,
+  `idcuenta_mayor_principal` int(11) NOT NULL,
+  `nombre` varchar(64) COLLATE utf8_spanish_ci NOT NULL,
+  `nomenclatura` varchar(45) COLLATE utf8_spanish_ci NOT NULL,
+  `definicion` varchar(45) COLLATE utf8_spanish_ci NOT NULL,
+  `estado` enum('Activo','Inactivo') COLLATE utf8_spanish_ci NOT NULL DEFAULT 'Activo',
+  PRIMARY KEY (`idcuenta_mayor_auxiliar`),
+  KEY `fk_cuenta_mayor_auxiliar_idcuenta_mayor_principal_idx` (`idcuenta_mayor_principal`),
+  CONSTRAINT `fk_cuenta_mayor_auxiliar_idcuenta_mayor_principal` FOREIGN KEY (`idcuenta_mayor_principal`) REFERENCES `cuenta_mayor_principal` (`idcuenta_mayor_principal`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=320 DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `cuenta_mayor_auxiliar`
+--
+
+LOCK TABLES `cuenta_mayor_auxiliar` WRITE;
+/*!40000 ALTER TABLE `cuenta_mayor_auxiliar` DISABLE KEYS */;
+INSERT INTO `cuenta_mayor_auxiliar` VALUES (6,6,'Efectivo en Casa Matriz','111.101.01','Efectivo en Casa Matriz','Activo'),(7,6,'Efectivo en Sucursales','111.101.02','','Activo'),(8,7,'Dólares','111.102.01','Dólares','Activo'),(9,7,'Euros','111.102.02','','Activo'),(10,7,'Otras Monedas','111.102.99','Otras Monedas','Activo'),(11,11,'Depósitos Monetarios','111.106.01','','Activo'),(12,11,'Depósitos de Ahorro','111.106.02','','Activo'),(13,11,'Depósitos a Plazo Fijo','111.106.03','','Activo'),(14,11,'Otros Depósitos a Corto Plazo','111.106.99','','Activo'),(15,9,'Otros Depósitos a Corto Plazo','111.104.99','','Activo'),(16,9,'Depósitos a Plazo Fijo','111.104.03','','Activo'),(17,9,'Depósitos de Ahorro','111.104.02','','Activo'),(18,9,'Depósitos Monetarios','111.104.01','','Activo'),(19,10,'Depósitos Monetarios','111.105.01','','Activo'),(20,10,'Depósitos de Ahorro','111.105.02','','Activo'),(21,10,'Depósitos a Plazo Fijo','111.105.03','','Activo'),(22,10,'Otros Depósitos a Corto Plazo','111.105.99','','Activo'),(23,8,'Caja Chica en Casa Matriz','111.103.01','','Activo'),(24,8,'Caja Chica en Sucursales','111.103.02','','Activo'),(25,12,'Inversiones en Titulos-Valores de Emisores Nacionales','111.107.01','','Activo'),(26,12,'Inversiones en Titulos-Valores de Emisores Extranjeros','111.107.02','','Activo'),(27,13,'Clientes Nacionales','112.101.01','','Activo'),(28,13,'Clientes del Extranjero','112.101.02','','Activo'),(29,14,'Boucher de Tarjetas de Crédito','112.102.01','','Activo'),(30,14,'Facturas Cambiares','112.102.02','','Activo'),(31,14,'Letras','112.102.03','','Activo'),(32,14,'Pagarés','112.102.04','','Activo'),(33,14,'Otros Documentos por Cobrar','112.102.05','','Activo'),(34,15,'Anticipo a Proveedores Nacionales','112.103.01','','Activo'),(35,15,'Anticipo a Proveedores del Extranjero','112.103.02','','Activo'),(36,16,'Deudores por Venta de Activos Inmovilizados','112.104.01','','Activo'),(37,16,'Deudores por Faltante de Caja','112.104.02','','Activo'),(38,16,'Otros Deudores','112.104.99','','Activo'),(39,17,'Préstamos a Empleados','112.105.01','','Activo'),(40,17,'Préstamos a Directivos y/o Gerentes','112.105.02','','Activo'),(41,17,'Préstamos a Accionistas','112.105.03','','Activo'),(42,17,'Anticipos Sobre Sueldos','112.105.04','','Activo'),(43,18,'Intereses por Cobrar','112.106.01','','Activo'),(44,19,'Alquileres por Cobrar','112.107.01','','Activo'),(45,20,'Comisiones por Cobrar','112.108.01','','Activo'),(46,21,'Reclamaciones a Terceros','112.109.01','','Activo'),(47,21,'Depósitos Aduanales SAT','112.109.02','','Activo'),(48,21,'Otras Cuentas por Cobrar','112.109.99','','Activo'),(49,22,'IVA Crédito en Compras Locales','112.110.01','','Activo'),(50,22,'IVA Crédito en Importaciones','112.110.02','','Activo'),(51,23,'IVA Retenciones por Compensar','112.111.01','','Activo'),(52,24,'ISR por Cobrar','112.112.01','','Activo'),(53,24,'ISO Crédito Fiscal','112.112.02','','Activo'),(54,24,'Otros Créditos Fiscales','112.112.99','','Activo'),(55,25,'Impuesto Sobre la Renta Pagado Anticipado','113.101.01','','Activo'),(56,26,'Seguros Pagados por Anticipado','113.102.01','','Activo'),(57,27,'Alquileres Pagados por Anticipado','113.103.01','','Activo'),(58,28,'Intereses Pagados por Anticipado','113.104.01','','Activo'),(59,29,'Comisiones Pagadas por Anticipado','113.105.01','','Activo'),(60,30,'Publicidad Pagadas por Anticipada','113.106.01','','Activo'),(61,31,'Al Costo','114.101.01','','Activo'),(62,31,'A su Valor Neto Realizable','114.101.02','','Activo'),(63,32,'A su Valor Neto Realizable','114.102.02','A su Valor Neto Realizable','Activo'),(64,32,'Al Costo','114.102.01','Al Costo','Activo'),(65,33,'A su Valor Neto Realizable','114.103.02','A su Valor Neto Realizable','Activo'),(66,33,'Al Costo','114.103.01','Al Costo','Activo'),(67,34,'A su Valor Neto Realizable','114.104.02','A su Valor Neto Realizable','Activo'),(68,34,'Al Costo','114.104.01','Al Costo','Activo'),(69,35,'Mercancías en Tránsito','114.105.01','','Activo'),(70,36,'Mercaderías en Aduana','114.106.01','','Activo'),(71,37,'Papelería y Útiles','114.107.01','','Activo'),(72,38,'Suministros y Repuestos','114.108.01','','Activo'),(73,39,'Material de Empaque','114.109.01','','Activo'),(74,40,'Valores Emitidos y Garantizados por Entidades Estatales','121.101.01','','Activo'),(75,40,'Valores Emitidos por el Sistema Financiero Privado','121.101.02','','Activo'),(76,40,'Valores Emitidos por Empresas No Financieras Privadas','121.101.03','','Activo'),(77,40,'Valores Emitidos por Gobiernos Extranjeros','121.101.04','','Activo'),(78,40,'Valores Emitidos por Empresas Privadas del Extranjero','121.101.05','','Activo'),(79,41,'Preparación del Terreno','122.102.01','','Activo'),(80,41,'Construcción en Curso','122.102.02','','Activo'),(81,42,'Costo','122.103.01','','Activo'),(82,42,'Valor por Revaluación','122.103.02','','Activo'),(83,43,'Mobiliario','122.104.01','','Activo'),(84,43,'Equipo Electrónico','122.104.02','','Activo'),(85,43,'Equipo de Comunicación','122.104.03','','Activo'),(86,43,'Equipo de Seguridad','122.104.04','','Activo'),(87,44,'Costo','122.105.01','','Activo'),(88,44,'Valor por Revaluación','122.105.02','','Activo'),(89,46,'Costo','122.107.01','','Activo'),(90,46,'Valor por Revaluación','122.107.02','','Activo'),(91,47,'Costo','122.108.01','','Activo'),(92,47,'Valor por Revaluación','122.108.02','','Activo'),(93,48,'Costo','122.109.01','','Activo'),(94,48,'Valor por Revaluación','122.109.02','','Activo'),(95,49,'Costo','122.199.01','','Activo'),(96,49,'Valor por Revaluación','122.199.02','','Activo'),(97,50,'Costo','123.101.01','','Activo'),(98,50,'Valor por Revaluación','123.101.02','','Activo'),(99,51,'Costo','123.102.01','','Activo'),(100,51,'Valor por Revaluación','123.102.02','','Activo'),(101,52,'Costo','123.103.01','','Activo'),(102,52,'Valor por Revaluación','123.103.02','','Activo'),(103,53,'Costo','123.104.01','','Activo'),(104,53,'Valor por Revaluación','123.104.02','','Activo'),(105,54,'Costo','123.105.01','','Activo'),(106,54,'Valor por Revaluación','123.105.02','','Activo'),(107,55,'Crédito o Plusvalía Mercantil','123.106.01','','Activo'),(108,56,'Otros Activos Intangibles','123.199.01','','Activo'),(109,57,'Gastos de Organización','124.101.01','','Activo'),(110,58,'Gastos de Instalación y Remodelación','124.102.01','','Activo'),(111,59,'ISR Diferido','124.103.01','','Activo'),(112,60,'Provisión para Cuentas Incobrables','211.101.01','','Activo'),(113,61,'Depreciación Acumulada Vehículos','212.101.01','','Activo'),(114,62,'Depreciación Acumulada Edificios','212.102.01','','Activo'),(115,63,'Depreciación Acumulada Mobiliario y Equipo','212.103.01','','Activo'),(116,64,'Depreciación Acumulada Equipo de Cómputo','212.104.01','','Activo'),(117,65,'Depreciación Acumulada Programas y Licencias','212.105.01','','Activo'),(118,66,'Depreciación Acumulada Maquinaria','212.106.01','','Activo'),(119,67,'Depreciación Acumulada Herramientas','212.107.01','','Activo'),(120,68,'Otras Depreciaciones Acumuladas','212.199.01','','Activo'),(121,69,'Amortización Acumulada Concesiones y Franquicias','213.101.01','','Activo'),(122,70,'Amortización Acumulada Licencias','213.102.01','','Activo'),(123,71,'Amortización Acumulada Derechos de Llave','213.103.01','','Activo'),(124,72,'Amortización Acumulada Marcas','213.104.01','','Activo'),(125,73,'Amortización Acumulada Patentes','213.105.01','','Activo'),(126,74,'Amortización Acumulada Crédito Mercantil','213.106.01','','Activo'),(127,75,'Amortización Acumulada Gastos de Organización','213.107.01','','Activo'),(128,76,'Amortización Acumulada Gastos de Instalación','213.108.01','','Activo'),(129,77,'Otras Amortizaciones Acumuladas','213.199.01','','Activo'),(130,78,'Proveedores Nacionales','311.101.01','','Activo'),(131,78,'Proveedores del Extranjero','311.101.02','','Activo'),(132,79,'ISR por Pagar','311.103.01','','Activo'),(133,80,'ISR - Retenciones por Pagar','311.104.01','','Activo'),(134,81,'IVA Débito de Ventas','311.105.01','','Activo'),(135,81,'IVA Débito de Facturas Especiales','311.105.02','','Activo'),(136,82,'IVA - Retenciones por Pagar','311.106.01','','Activo'),(137,83,'ISO por Pagar','311.107.01','','Activo'),(138,83,'IUSI por Pagar','311.107.02','','Activo'),(139,83,'Impuestos Municipales por Pagar','311.107.03','','Activo'),(140,83,'Contribuciones por Pagar','311.107.04','','Activo'),(141,83,'Intereses y Multas por Pagar de Impuestos','311.107.05','','Activo'),(142,83,'Otros Impuestos y Contribuciones por Pagar','311.107.99','','Activo'),(143,84,'Sueldos Ordinarios y Extraordinarios por Pagar','311.108.01','','Activo'),(144,85,'Bonificaciones Incentivos por Pagar','311.109.01','','Activo'),(145,85,'Otras Bonificaciones por Pagar','311.109.99','','Activo'),(146,86,'Cuota Laboral IGSS por Pagar','311.110.01','','Activo'),(147,86,'Cuota Patronal (IGSS, IRTRA, INTECAP) por Pagar','311.110.02','','Activo'),(148,87,'Prestaciones Laborales por Pagar','311.111.01','','Activo'),(149,88,'Almacenadoras','311.112.01','','Activo'),(150,88,'Compañías de Seguros','311.112.02','','Activo'),(151,88,'Otros Acreedores','311.112.99','','Activo'),(152,89,'Intereses por Pagar','311.113.01','','Activo'),(153,90,'Comisiones por Pagar','311.114.01','','Activo'),(154,91,'Alquileres por Pagar','311.115.01','','Activo'),(155,92,'Facturas Cambiarias','311.116.01','','Activo'),(156,92,'Letras','311.116.02','','Activo'),(157,92,'Pagarés','311.116.03','','Activo'),(158,92,'Otros Documentos por Pagar','311.116.99','','Activo'),(159,93,'Préstamos en Moneda Nacional','311.117.01','','Activo'),(160,93,'Préstamos en Moneda Extranjera','311.117.02','','Activo'),(161,94,'Servicios Generales por pagar (Agua,electricidad,comunicaciones)','311.118.01','','Activo'),(162,94,'Otros Servicios y Cuentas por Pagar a Corto Plazo','311.118.99','','Activo'),(163,95,'Comisiones Cobradas Anticipadas','312.101.01','','Activo'),(164,96,'Intereses Cobrados Anticipados','312.102.01','','Activo'),(165,97,'Anticipos de Clientes Nacionales','312.103.01','','Activo'),(166,97,'Anticipos de Clientes del Extranjero','312.103.02','','Activo'),(167,98,'Dividendos por Pagar','312.104.01','','Activo'),(168,99,'Letras','321.101.01','','Activo'),(169,99,'Pagarés','321.101.02','','Activo'),(170,99,'Otros Documentos por Pagar a Largo Plazo','321.101.99','','Activo'),(171,100,'Préstamos en Moneda Nacional','321.102.01','','Activo'),(172,100,'Préstamos en Moneda Extranjera','321.102.02','','Activo'),(173,101,'Intereses Devengados No Percibidos','401.101.01','','Activo'),(174,104,'Capital Autorizado','511.101.01','','Activo'),(175,105,'Acciones por Suscribir','511.102.01','','Activo'),(176,105,'Suscriptores de Acciones','511.102.02','','Activo'),(177,106,'Reserva Legal Acumulada','512.101.01','','Activo'),(178,107,'Reserva para Futuros Dividendos','512.102.01','','Activo'),(179,108,'Reserva para Eventualidades','512.103.01','','Activo'),(180,109,'Otras Reservas de Capital','512.199.01','','Activo'),(181,110,'Revaluación de Inmuebles (+)','513.101.01','','Activo'),(182,111,'Revaluación de Bienes Muebles (+)','513.102.01','','Activo'),(183,112,'Pérdida por Bajas en el Valor de Mercado en Inversiones (-)','513.103.01','','Activo'),(184,113,'Pérdida en Negociación de Activos (-)','513.104.01','','Activo'),(185,114,'Ganancia por Altas en el Valor de Mercado en Inversiones (+)','513.105.01','','Activo'),(186,115,'Ganancia en Negociación de activos (+)','513.106.01','','Activo'),(187,121,'Mercaderías en Comisión P-C','611.101.01','','Activo'),(188,122,'Mercaderías en Consignación P-C','611.102.01','','Activo'),(189,125,'Ventas Locales','711.101.01','','Activo'),(190,125,'Ventas en el Exterior - Exportaciones','711.101.02','','Activo'),(191,126,'Devoluciones Sobre Ventas','711.102.01','','Activo'),(192,126,'Rebajas Sobre Ventas','711.102.02','','Activo'),(193,127,'Intereses Producto (Ganados o Cobrados)','712.101.01','','Activo'),(194,128,'Comisiones Cobradas','712.102.01','','Activo'),(195,129,'Alquileres Cobrados','712.103.01','','Activo'),(196,130,'Regalías Recibidas','712.104.01','','Activo'),(197,131,'Ganancias Cambiarias','712.105.01','','Activo'),(198,132,'Descuentos por Pronto Pago','712.106.01','','Activo'),(199,133,'Sobrantes de Caja','712.107.01','','Activo'),(200,134,'Créditos Recuperados','712.108.01','','Activo'),(201,135,'Otros Ingresos de Operación','712.199.01','','Activo'),(202,136,'Compras en el Mercado Local','810.101.01','','Activo'),(203,136,'Compras en el Extranjero-Importaciones','810.101.02','','Activo'),(204,137,'Devoluciones Sobre Compra de Materia Prima','810.102.01','','Activo'),(205,137,'Rebajas Sobre Compra de Materia Prima (-)','810.102.02','','Activo'),(206,138,'Impuestos Aduanales','810.103.01','','Activo'),(207,138,'Fletes Sobre Compra','810.103.02','','Activo'),(208,138,'Seguros Contra Riesgo de Transporte','810.103.03','','Activo'),(209,138,'Otros Gastos de Compra','810.103.99','','Activo'),(210,139,'Sueldos Ordinarios y Extraordinarios de Fábrica','810.104.01','','Activo'),(211,139,'Sueldos Extraordinarios de Fábrica','810.104.02','','Activo'),(212,140,'Sueldos Ordinarios','810.105.01','','Activo'),(213,140,'Sueldos Extraordinarios','810.105.02','','Activo'),(214,141,'Bonificaciones Incentivo de Fábrica','810.106.01','Bonificaciones Incentivo de Fábrica','Activo'),(215,142,'Cuotas Patronales de Fábrica','810.107.01','Cuotas Patronales de Fábrica','Activo'),(216,143,'Alquileres de Fábrica','810.108.01','Alquileres de Fábrica','Activo'),(217,144,'Depreciación Mobiliario y Equipo de Fábrica','810.109.01','Depreciación Mobiliario y Equipo de Fábrica','Activo'),(218,145,'Depreciación Equipo de Cómputo de Fábrica','810.110.01','Depreciación Equipo de Cómputo de Fábrica','Activo'),(219,146,'Depreciación Maquinaria','810.111.01','Depreciación Maquinaria','Activo'),(220,147,'Depreciación de Herramientas','810.112.01','Depreciación de Herramientas','Activo'),(221,148,'Combustibles Consumidos Fábrica','810.113.01','Combustibles Consumidos Fábrica','Activo'),(222,149,'Material de Empaque Consumidos Fábrica','810.114.01','Material de Empaque Consumidos Fábrica','Activo'),(223,150,'Seguros Vencidos de Fábrica','810.115.01','Seguros Vencidos de Fábrica','Activo'),(224,151,'IUSI Pagado de Fábrica','810.116.01','IUSI Pagado de Fábrica','Activo'),(225,152,'Indemnización de Fábrica','810.117.01','','Activo'),(226,152,'Bono Legal (Bono 14) de Fábrica','810.117.02','','Activo'),(227,152,'Aguinaldos de Fábrica','810.117.03','','Activo'),(228,152,'Vacaciones de Fábrica','810.117.04','','Activo'),(229,153,'Energía Eléctrica','810.118.01','','Activo'),(230,153,'Agua','810.118.02','','Activo'),(231,153,'Comunicaciones','810.118.03','','Activo'),(232,153,'Extracción de Basura','810.118.04','','Activo'),(233,153,'Seguridad','810.118.05','','Activo'),(234,153,'Otros','810.118.99','','Activo'),(235,154,'Costo de Producción','810.119.01','','Activo'),(236,155,'Compras en el Mercado Local','811.101.01','','Activo'),(237,155,'Compras en el Extranjero-Importaciones','811.101.02','','Activo'),(238,156,'Devoluciones Sobre Compra','811.102.01','','Activo'),(239,156,'Rebajas Sobre Compra','811.102.02','','Activo'),(240,157,'Impuestos Aduanales','811.103.01','','Activo'),(241,157,'Fletes Sobre Compra','811.103.02','','Activo'),(242,157,'Seguros Contra Riesgo de Transporte','811.103.03','','Activo'),(243,157,'Otros Gastos de Compra','811.103.99','','Activo'),(244,158,'Costo de Venta','811.104.01','','Activo'),(245,159,'Sueldos Ordinarios','812.101.01','Sueldos y Salarios de Vendedores','Activo'),(246,160,'Comisiones Sobre Ventas','812.102.01','Comisiones Sobre Ventas','Activo'),(247,161,'Bonificaciones Sobre Ventas','812.103.01','Bonificaciones Sobre Ventas','Activo'),(248,162,'IGSS','812.104.01','Cuotas Patronales de Vendedores','Activo'),(249,163,'Indemnización de Vendedores','812.105.01','Prestaciones Laborales de Vendedores','Activo'),(250,164,'Alquileres Sala de Venta o Locales Comerciales','812.106.01','Alquileres Sala de Venta o Locales Comerciale','Activo'),(251,165,'IUSI Sala de Venta','812.107.01','IUSI Sala de Venta','Activo'),(252,166,'Depreciación Vehículos de Reparto','812.108.01','Depreciación Vehículos de Reparto','Activo'),(253,167,'Depreciación Edificios Sala de Venta','812.109.01','Depreciación Edificios Sala de Venta','Activo'),(254,168,'Depreciación Mobiliario y Equipo Sala de Venta','812.110.01','Depreciación Mobiliario y Equipo Sala de Vent','Activo'),(255,169,'Depreciación Equipo de Computación Sala de Venta','812.111.01','Depreciación Equipo de Computación Sala de Ve','Activo'),(256,170,'Amortización Gastos de Instalación Sala de Venta','812.112.01','Amortización Gastos de Instalación Sala de Ve','Activo'),(257,171,'Gastos de Publicidad - Publicidad y Propaganda','812.113.01','Gastos de Publicidad - Publicidad y Propagand','Activo'),(258,172,'Material de Empaque Consumido','812.114.01','Material de Empaque Consumido','Activo'),(259,173,'Fletes y Acarreos de Venta','812.115.01','Fletes y Acarreos de Venta','Activo'),(260,174,'Seguros Vencidos de Sala de Ventas','812.116.01','Seguros Vencidos de Sala de Ventas','Activo'),(261,175,'Alquileres Vencidos Sala de Venta','812.117.01','Alquileres Vencidos Sala de Venta','Activo'),(262,176,'Cuota Incobrables','812.118.01','Cuota Incobrables','Activo'),(263,177,'Combustibles Consumidos','812.119.01','Combustibles Consumidos','Activo'),(264,178,'Agua','812.120.01','Agua','Activo'),(265,179,'Otros Gastos de Distribución','812.199.01','Otros Gastos de Distribución','Activo'),(266,159,'Sueldos Extraordinarios','812.101.02','','Activo'),(267,162,'IRTRA','812.104.02','','Activo'),(268,162,'INTECAP','812.104.03','','Activo'),(269,163,'Bono Legal (Bono 14) de Vendedores','812.105.02','','Activo'),(270,163,'Aguinaldos de Vendedores','812.105.03','','Activo'),(271,163,'Vacaciones de Vendedores','812.105.04','','Activo'),(272,178,'Energía Eléctrica','812.120.02','','Activo'),(273,178,'Comunicaciones (telefonía, internet, otros)','812.120.03','','Activo'),(274,181,'Bonificaciones Incentivos Personal Administrativo','813.102.01','Bonificaciones Incentivos Personal Administra','Activo'),(275,182,'IGSS','813.103.01','IGSS','Activo'),(276,183,'Indemnización de Personal Administrativo','813.104.01','Indemnización de Personal Administrativo','Activo'),(277,184,'Alquileres de Oficinas y Bodegas','813.105.01','Alquileres de Oficinas y Bodegas','Activo'),(278,185,'IUSI de Oficinas','813.106.01','IUSI de Oficinas','Activo'),(279,186,'Depreciación Vehículos de Oficina','813.107.01','Depreciación Vehículos de Oficina','Activo'),(280,187,'Depreciación Edificios de Oficina','813.108.01','Depreciación Edificios de Oficina','Activo'),(281,188,'Depreciación Mobiliario y Equipo de Oficina','813.109.01','Depreciación Mobiliario y Equipo de Oficina','Activo'),(282,189,'Depreciación Equipo de Computación de Oficina','813.110.01','Depreciación Equipo de Computación de Oficina','Activo'),(283,190,'Amortización Gastos de Origanización','813.111.01','Amortización Gastos de Origanización','Activo'),(284,191,'Amortización Concesiones y Franquicias','813.112.01','Amortización Concesiones y Franquicias','Activo'),(285,192,'Amortización Licencias','813.113.01','Amortización Licencias','Activo'),(286,193,'Amortización Derecho de Llave','813.114.01','Amortización Derecho de Llave','Activo'),(287,194,'Amortización Marcas y Patentes','813.115.01','Amortización Marcas y Patentes','Activo'),(288,195,'Amortización Crédito Mercantil','813.116.01','Amortización Crédito Mercantil','Activo'),(289,196,'Amortización Gastos de Instalación de Oficina','813.117.01','Amortización Gastos de Instalación de Oficina','Activo'),(290,197,'Papelería y Útiles Consumidos','813.118.01','Papelería y Útiles Consumidos','Activo'),(291,198,'Suministros y Repuestos Consumidos','813.119.01','Suministros y Repuestos Consumidos','Activo'),(292,199,'Agua','813.120.01','Agua','Activo'),(293,200,'Servicios de Vigilancia y Seguridad','813.121.01','Servicios de Vigilancia y Seguridad','Activo'),(294,201,'Gastos de Organización','813.122.01','Gastos de Organización','Activo'),(295,202,'Seguros Vencidos','813.123.01','Seguros Vencidos','Activo'),(296,203,'Alquileres Vencidos de Oficina','813.124.01','Alquileres Vencidos de Oficina','Activo'),(297,204,'Otros Gastos de Administración','813.199.01','Otros Gastos de Administración','Activo'),(298,180,'Sueldos Ordinarios','813.101.01','','Activo'),(299,180,'Sueldos Extraordinarios','813.101.02','','Activo'),(300,182,'IRTRA','813.103.02','','Activo'),(301,182,'INTECAP','813.103.03','','Activo'),(302,183,'Bono Legal (Bono 14) de Personal Administrativo','813.104.02','','Activo'),(303,183,'Aguinaldos de Personal Administrativo','813.104.03','','Activo'),(304,183,'Vacaciones de Personal Administrativo','813.104.04','','Activo'),(305,199,'Energía Eléctrica','813.120.02','','Activo'),(306,199,'Comunicaciones (telefonía, internet, otros)','813.120.03','','Activo'),(307,200,'Servicios de Limpieza y Extracción de Basura','813.121.02','','Activo'),(308,200,'Servicios de Fontanería, Albañilería y Electricidad','813.121.03','','Activo'),(309,200,'Servicios de Mensajería y Correos','813.121.04','','Activo'),(310,200,'Otros Servicios','813.121.99','','Activo'),(311,206,'Pérdida Cambiaria','814.102.01','Pérdida Cambiaria','Activo'),(312,207,'Bajas y Pérdida de Inventario','814.103.01','Bajas y Pérdida de Inventario','Activo'),(313,208,'Faltantes de Caja','814.104.01','Faltantes de Caja','Activo'),(314,209,'Donaciones','814.105.01','Donaciones','Activo'),(315,210,'Impuestos Pagados','814.106.01','Impuestos Pagados','Activo'),(316,211,'Multas y Recargos','814.107.01','Multas y Recargos','Activo'),(317,212,'Otros Gastos','814.199.01','Otros Gastos','Activo'),(318,205,'Intereses Bancarios','814.101.01','','Activo'),(319,205,'Intereses Comerciales','814.101.02','','Activo');
+/*!40000 ALTER TABLE `cuenta_mayor_auxiliar` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `cuenta_mayor_principal`
+--
+
+DROP TABLE IF EXISTS `cuenta_mayor_principal`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `cuenta_mayor_principal` (
+  `idcuenta_mayor_principal` int(11) NOT NULL AUTO_INCREMENT,
+  `idsubgrupo_cuenta` int(11) NOT NULL,
+  `nombre` varchar(64) COLLATE utf8_spanish_ci NOT NULL,
+  `nomenclatura` varchar(45) COLLATE utf8_spanish_ci NOT NULL,
+  `definicion` varchar(45) COLLATE utf8_spanish_ci NOT NULL,
+  `estado` enum('Activo','Inactivo') COLLATE utf8_spanish_ci NOT NULL DEFAULT 'Activo',
+  PRIMARY KEY (`idcuenta_mayor_principal`),
+  KEY `fk_cuenta_mayor_principal_idsubgrupo_cuenta_idx` (`idsubgrupo_cuenta`),
+  CONSTRAINT `fk_cuenta_mayor_principal_idsubgrupo_cuenta` FOREIGN KEY (`idsubgrupo_cuenta`) REFERENCES `subgrupo_cuenta` (`idsubgrupo_cuenta`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=213 DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `cuenta_mayor_principal`
+--
+
+LOCK TABLES `cuenta_mayor_principal` WRITE;
+/*!40000 ALTER TABLE `cuenta_mayor_principal` DISABLE KEYS */;
+INSERT INTO `cuenta_mayor_principal` VALUES (6,6,'Caja Moneda Nacional','111.101','Caja Moneda Nacional','Activo'),(7,6,'Caja Moneda Extranjera','111.102','','Activo'),(8,6,'Caja Chica','111.103','','Activo'),(9,6,'Bancos del País Moneda Nacional','111.104','','Activo'),(10,6,'Bancos del País Moneda Extranjera','111.105','','Activo'),(11,6,'Bancos del Exterior','111.106','','Activo'),(12,6,'Inversiones a Corto Plazo','111.107','','Activo'),(13,7,'Cuentas por Cobrar Comerciales','112.101','','Activo'),(14,7,'Documentos por Cobrar','112.102','','Activo'),(15,7,'Anticipo a Proveedores','112.103','','Activo'),(16,7,'Cuentas por Cobrar No Comerciales','112.104','','Activo'),(17,7,'Prestamos y Anticipos a Personal','112.105','','Activo'),(18,7,'Intereses por Cobrar','112.106','','Activo'),(19,7,'Alquileres por Cobrar','112.107','','Activo'),(20,7,'Comisiones por Cobrar','112.108','','Activo'),(21,7,'Otras Cuentas por Cobrar','112.109','','Activo'),(22,7,'IVA Crédito Fiscal','112.110','','Activo'),(23,7,'IVA Retenciones por Compensar','112.111','','Activo'),(24,7,'Otros Créditos Fiscales','112.112','','Activo'),(25,8,'Impuesto Sobre la Renta Pagado Anticipado','113.101','','Activo'),(26,8,'Seguros Pagados por Anticipado','113.102','','Activo'),(27,8,'Alquileres Pagados por Anticipado','113.103','','Activo'),(28,8,'Intereses Pagados por Anticipado','113.104','','Activo'),(29,8,'Comisiones Pagadas por Anticipado','113.105','','Activo'),(30,8,'Publicidad Pagadas por Anticipada','113.106','','Activo'),(31,9,'Inventario de Mercaderías','114.101','','Activo'),(32,9,'Inventario de Materia Prima','114.102','','Activo'),(33,9,'Inventario de Artículos en Proceso','114.103','','Activo'),(34,9,'Inventario de Artículos Terminados','114.104','','Activo'),(35,9,'Mercancías en Tránsito','114.105','','Activo'),(36,9,'Mercaderías en Aduana','114.106','','Activo'),(37,9,'Papelería y Útiles','114.107','','Activo'),(38,9,'Suministros y Repuestos','114.108','','Activo'),(39,9,'Material de Empaque','114.109','','Activo'),(40,10,'Inversión en Títulos-Valores al Vencimiento','121.101','','Activo'),(41,11,'Construcciones en Proceso','122.102','','Activo'),(42,11,'Terrenos','122.103','','Activo'),(43,11,'Mobiliario y Equipo','122.104','','Activo'),(44,11,'Equipo de Computación','122.105','','Activo'),(45,11,'Programas y Licencias de Computación','122.106','','Activo'),(46,11,'Vehículos','122.107','','Activo'),(47,11,'Maquinaria','122.108','','Activo'),(48,11,'Herramientas','122.109','','Activo'),(49,11,'Otros Equipos Inmovilizados','122.199','','Activo'),(50,12,'Concesiones y Franquicias','123.101','','Activo'),(51,12,'Licencias','123.102','','Activo'),(52,12,'Derecho de Llave','123.103','','Activo'),(53,12,'Marcas','123.104','','Activo'),(54,12,'Patentes','123.105','','Activo'),(55,12,'Crédito o Plusvalía Mercantil','123.106','','Activo'),(56,12,'Otros Activos Intangibles','123.199','','Activo'),(57,13,'Gastos de Organización','124.101','','Activo'),(58,13,'Gastos de Instalación y Remodelación','124.102','','Activo'),(59,13,'ISR Diferido','124.103','','Activo'),(60,14,'Provisión para Cuentas Incobrables','211.101','','Activo'),(61,15,'Depreciación Acumulada Vehículos','212.101','','Activo'),(62,15,'Depreciación Acumulada Edificios','212.102','','Activo'),(63,15,'Depreciación Acumulada Mobiliario y Equipo','212.103','','Activo'),(64,15,'Depreciación Acumulada Equipo de Cómputo','212.104','','Activo'),(65,15,'Depreciación Acumulada Programas y Licencias','212.105','','Activo'),(66,15,'Depreciación Acumulada Maquinaria','212.106','','Activo'),(67,15,'Depreciación Acumulada Herramientas','212.107','','Activo'),(68,15,'Otras Depreciaciones Acumuladas','212.199','','Activo'),(69,16,'Amortización Acumulada Concesiones y Franquicias','213.101','','Activo'),(70,16,'Amortización Acumulada Licencias','213.102','','Activo'),(71,16,'Amortización Acumulada Derechos de Llave','213.103','','Activo'),(72,16,'Amortización Acumulada Marcas','213.104','','Activo'),(73,16,'Amortización Acumulada Patentes','213.105','','Activo'),(74,16,'Amortización Acumulada Crédito Mercantil','213.106','','Activo'),(75,16,'Amortización Acumulada Gastos de Organización','213.107','','Activo'),(76,16,'Amortización Acumulada Gastos de Instalación','213.108','','Activo'),(77,16,'Otras Amortizaciones Acumuladas','213.199','','Activo'),(78,17,'Cuentas por Pagar Comerciales - Proveedores','311.101','','Activo'),(79,17,'Impuesto Sobre la Renta por Pagar','311.103','','Activo'),(80,17,'ISR - Retenciones por Pagar','311.104','','Activo'),(81,17,'IVA Débito Fiscal','311.105','','Activo'),(82,17,'IVA - Retenciones por Pagar','311.106','','Activo'),(83,17,'Otros Impuestos y Contribuciones por Pagar','311.107','','Activo'),(84,17,'Sueldos y Salarios por Pagar','311.108','','Activo'),(85,17,'Bonificaciones por Pagar','311.109','','Activo'),(86,17,'Cuotas Patronales y Laborales por Pagar','311.110','','Activo'),(87,17,'Prestaciones Laborales por Pagar','311.111','','Activo'),(88,17,'Cuentas por Pagar No Comerciales - Acreedores Varios','311.112','','Activo'),(89,17,'Intereses por Pagar','311.113','','Activo'),(90,17,'Comisiones por Pagar','311.114','','Activo'),(91,17,'Alquileres por Pagar','311.115','','Activo'),(92,17,'Documentos por Pagar a Corto Plazo','311.116','','Activo'),(93,17,'Préstamos a Corto Plazo','311.117','Préstamos a Corto Plazo','Activo'),(94,17,'Otras Cuentas por Pagar a Corto Plazo','311.118','','Activo'),(95,18,'Comisiones Cobradas Anticipadas','312.101','','Activo'),(96,18,'Intereses Cobrados Anticipados','312.102','','Activo'),(97,18,'Anticipos de Clientes','312.103','','Activo'),(98,18,'Dividendos por Pagar','312.104','','Activo'),(99,19,'Documentos por Pagar a Largo Plazo','321.101','','Activo'),(100,19,'Préstamos a Largo Plazo','321.102','','Activo'),(101,20,'Intereses Devengados No Percibidos','401.101','','Activo'),(102,20,'Comisiones Devengadas No Percibidas','401.102','','Activo'),(103,20,'Reserva para Prestaciones Laborales','401.103','','Activo'),(104,21,'Capital Autorizado','511.101','','Activo'),(105,21,'Capital No Pagado (-)','511.102','','Activo'),(106,22,'Reserva Legal Acumulada','512.101','','Activo'),(107,22,'Reserva para Futuros Dividendos','512.102','','Activo'),(108,22,'Reserva para Eventualidades','512.103','','Activo'),(109,22,'Otras Reservas de Capital','512.199','','Activo'),(110,23,'Revaluación de Inmuebles (+)','513.101','','Activo'),(111,23,'Revaluación de Bienes Muebles (+)','513.102','','Activo'),(112,23,'Pérdida por Bajas en el Valor de Mercado en Inversiones (-)','513.103','','Activo'),(113,23,'Pérdida en Negociación de Activos (-)','513.104','','Activo'),(114,23,'Ganancia por Altas en el Valor de Mercado en Inversiones (+)','513.105','','Activo'),(115,23,'Ganancia en Negociación de activos (+)','513.106','','Activo'),(116,24,'Utilidades Acumuladas','514.101','','Activo'),(117,24,'Pérdidas Acumuladas','514.102','','Activo'),(118,24,'Pérdidas y Ganancias','514.103','','Activo'),(119,24,'Utilidades a Repartir','514.104','','Activo'),(120,24,'Pérdidas por Repartir','514.105','','Activo'),(121,25,'Mercaderías en Comisión P-C','611.101','','Activo'),(122,25,'Mercaderías en Consignación P-C','611.102','','Activo'),(123,26,'Comitentes por Mercaderías P-C','612.101','','Activo'),(124,26,'Ventas por Realizar P-C','612.102','','Activo'),(125,27,'Ventas Brutas','711.101','','Activo'),(126,27,'Devoluciones y Rebajas Sobre Ventas (-)','711.102','','Activo'),(127,28,'Intereses Producto (Ganados o Cobrados)','712.101','','Activo'),(128,28,'Comisiones Cobradas','712.102','','Activo'),(129,28,'Alquileres Cobrados','712.103','','Activo'),(130,28,'Regalías Recibidas','712.104','','Activo'),(131,28,'Ganancias Cambiarias','712.105','','Activo'),(132,28,'Descuentos por Pronto Pago','712.106','','Activo'),(133,28,'Sobrantes de Caja','712.107','','Activo'),(134,28,'Créditos Recuperados','712.108','','Activo'),(135,28,'Otros Ingresos de Operación','712.199','','Activo'),(136,29,'Compras de Materia Prima','810.101','','Activo'),(137,29,'Devoluciones y Rebajas Sobre Compra de Materia Prima (-)','810.102','','Activo'),(138,29,'Gastos Sobre Compra de Materia Prima','810.103','','Activo'),(139,29,'Mano de Obra Directa','810.104','','Activo'),(140,29,'Mano de Obra Indirecta','810.105','','Activo'),(141,29,'Bonificaciones Incentivo de Fábrica','810.106','','Activo'),(142,29,'Cuotas Patronales de Fábrica','810.107','','Activo'),(143,29,'Alquileres de Fábrica','810.108','','Activo'),(144,29,'Depreciación Mobiliario y Equipo de Fábrica','810.109','','Activo'),(145,29,'Depreciación Equipo de Cómputo de Fábrica','810.110','','Activo'),(146,29,'Depreciación Maquinaria','810.111','','Activo'),(147,29,'Depreciación de Herramientas','810.112','','Activo'),(148,29,'Combustibles Consumidos Fábrica','810.113','','Activo'),(149,29,'Material de Empaque Consumidos Fábrica','810.114','','Activo'),(150,29,'Seguros Vencidos de Fábrica','810.115','','Activo'),(151,29,'IUSI Pagado de Fábrica','810.116','','Activo'),(152,29,'Prestaciones Laborales de Fábrica','810.117','','Activo'),(153,29,'Gastos Diversos de Fábrica','810.118','','Activo'),(154,29,'Costo de Producción','810.119','','Activo'),(155,30,'Compras','811.101','','Activo'),(156,30,'Devoluciones y Rebajas Sobre Compra (-)','811.102','','Activo'),(157,30,'Gastos Sobre Compra','811.103','','Activo'),(158,30,'Costo de Venta','811.104','','Activo'),(159,31,'Sueldos y Salarios de Vendedores','812.101','','Activo'),(160,31,'Comisiones Sobre Ventas','812.102','','Activo'),(161,31,'Bonificaciones Sobre Ventas','812.103','','Activo'),(162,31,'Cuotas Patronales de Vendedores','812.104','','Activo'),(163,31,'Prestaciones Laborales de Vendedores','812.105','','Activo'),(164,31,'Alquileres Sala de Venta o Locales Comerciales','812.106','','Activo'),(165,31,'IUSI Sala de Venta','812.107','','Activo'),(166,31,'Depreciación Vehículos de Reparto','812.108','','Activo'),(167,31,'Depreciación Edificios Sala de Venta','812.109','','Activo'),(168,31,'Depreciación Mobiliario y Equipo Sala de Venta','812.110','','Activo'),(169,31,'Depreciación Equipo de Computación Sala de Venta','812.111','','Activo'),(170,31,'Amortización Gastos de Instalación Sala de Venta','812.112','','Activo'),(171,31,'Gastos de Publicidad - Publicidad y Propaganda','812.113','','Activo'),(172,31,'Material de Empaque Consumido','812.114','','Activo'),(173,31,'Fletes y Acarreos de Venta','812.115','','Activo'),(174,31,'Seguros Vencidos de Sala de Ventas','812.116','','Activo'),(175,31,'Alquileres Vencidos Sala de Venta','812.117','','Activo'),(176,31,'Cuota Incobrables','812.118','','Activo'),(177,31,'Combustibles Consumidos','812.119','','Activo'),(178,31,'Gastos Diversos Sala de Venta','812.120','','Activo'),(179,31,'Otros Gastos de Distribución','812.199','','Activo'),(180,32,'Sueldos y Salarios de Personal Administrativo','813.101','','Activo'),(181,32,'Bonificaciones Incentivos Personal Administrativo','813.102','','Activo'),(182,32,'Cuotas Patronales de Personal Administrativo','813.103','','Activo'),(183,32,'Prestaciones Laborales de Personal Administrativo','813.104','','Activo'),(184,32,'Alquileres de Oficinas y Bodegas','813.105','','Activo'),(185,32,'IUSI de Oficinas','813.106','','Activo'),(186,32,'Depreciación Vehículos de Oficina','813.107','','Activo'),(187,32,'Depreciación Edificios de Oficina','813.108','','Activo'),(188,32,'Depreciación Mobiliario y Equipo de Oficina','813.109','','Activo'),(189,32,'Depreciación Equipo de Computación de Oficina','813.110','','Activo'),(190,32,'Amortización Gastos de Origanización','813.111','','Activo'),(191,32,'Amortización Concesiones y Franquicias','813.112','','Activo'),(192,32,'Amortización Licencias','813.113','','Activo'),(193,32,'Amortización Derecho de Llave','813.114','','Activo'),(194,32,'Amortización Marcas y Patentes','813.115','','Activo'),(195,32,'Amortización Crédito Mercantil','813.116','','Activo'),(196,32,'Amortización Gastos de Instalación de Oficina','813.117','','Activo'),(197,32,'Papelería y Útiles Consumidos','813.118','','Activo'),(198,32,'Suministros y Repuestos Consumidos','813.119','','Activo'),(199,32,'Gastos Diversos','813.120','','Activo'),(200,32,'Servicios Varios','813.121','','Activo'),(201,32,'Gastos de Organización','813.122','','Activo'),(202,32,'Seguros Vencidos','813.123','','Activo'),(203,32,'Alquileres Vencidos de Oficina','813.124','','Activo'),(204,32,'Otros Gastos de Administración','813.199','','Activo'),(205,33,'Intereses Gasto','814.101','','Activo'),(206,33,'Pérdida Cambiaria','814.102','','Activo'),(207,33,'Bajas y Pérdida de Inventario','814.103','','Activo'),(208,33,'Faltantes de Caja','814.104','','Activo'),(209,33,'Donaciones','814.105','','Activo'),(210,33,'Impuestos Pagados','814.106','','Activo'),(211,33,'Multas y Recargos','814.107','','Activo'),(212,33,'Otros Gastos','814.199','','Activo');
+/*!40000 ALTER TABLE `cuenta_mayor_principal` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `empresa`
+--
+
+DROP TABLE IF EXISTS `empresa`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `empresa` (
+  `idempresa` int(11) NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(45) COLLATE utf8_bin NOT NULL,
+  `ticker` varchar(45) COLLATE utf8_bin NOT NULL,
+  `estado` enum('Activo','Inactivo') COLLATE utf8_bin NOT NULL DEFAULT 'Activo',
+  PRIMARY KEY (`idempresa`),
+  UNIQUE KEY `ticker_UNIQUE` (`ticker`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `empresa`
+--
+
+LOCK TABLES `empresa` WRITE;
+/*!40000 ALTER TABLE `empresa` DISABLE KEYS */;
+INSERT INTO `empresa` VALUES (1,'America Movil, S.A.B. de C.V.','AMX','Activo'),(2,'PRUFROCK','PF','Activo');
+/*!40000 ALTER TABLE `empresa` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `estado_resultado`
+--
+
+DROP TABLE IF EXISTS `estado_resultado`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `estado_resultado` (
+  `idestado_resultado` int(11) NOT NULL AUTO_INCREMENT,
+  `idempresa` int(11) NOT NULL DEFAULT '1',
+  `idperiodo_contable` int(11) NOT NULL DEFAULT '1',
+  `venta_netas` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `costo_ventas` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `depreciacion` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `interes_pagado` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `impuestos` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `utilidad_neta` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `dividendos` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `utilidades_retenidas` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `estado` enum('Activo','Inactivo') COLLATE utf8_bin NOT NULL DEFAULT 'Activo',
+  PRIMARY KEY (`idestado_resultado`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `estado_resultado`
+--
+
+LOCK TABLES `estado_resultado` WRITE;
+/*!40000 ALTER TABLE `estado_resultado` DISABLE KEYS */;
+INSERT INTO `estado_resultado` VALUES (1,1,1,200.00,0.00,50.00,0.00,0.00,150.00,0.00,0.00,'Inactivo'),(2,2,1,2311.00,1344.00,276.00,141.00,187.00,363.00,121.00,242.00,'Activo');
+/*!40000 ALTER TABLE `estado_resultado` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'STRICT_ALL_TABLES,NO_AUTO_CREATE_USER' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 */ /*!50003 TRIGGER `contable`.`estado_resultado_BEFORE_INSERT` BEFORE INSERT ON `estado_resultado` FOR EACH ROW
+BEGIN
+ set new.venta_netas = 0;
+ set new.costo_ventas = 0;
+ set new.depreciacion = 0;
+ set new.interes_pagado = 0;
+ set new.impuestos = 0;
+ set new.utilidad_neta = 0;
+ set new.dividendos = 0;
+ set new.utilidades_retenidas = 0;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 */ /*!50003 TRIGGER `contable`.`estado_resultado_BEFORE_UPDATE` BEFORE UPDATE ON `estado_resultado` FOR EACH ROW
+BEGIN
+ set new.utilidad_neta = new.venta_netas -(new.costo_ventas+new.depreciacion+new.interes_pagado+new.impuestos);
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `estado_resultado_detalle`
+--
+
+DROP TABLE IF EXISTS `estado_resultado_detalle`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `estado_resultado_detalle` (
+  `idestado_resultado_detalle` int(11) NOT NULL AUTO_INCREMENT,
+  `idestado_resultado` int(11) NOT NULL DEFAULT '1',
+  `idclase_resultado` int(11) NOT NULL DEFAULT '1',
+  `idgrupo_resultado` int(11) NOT NULL DEFAULT '1',
+  `monto` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `estado` enum('Activo','Inactivo') COLLATE utf8_bin NOT NULL DEFAULT 'Activo',
+  PRIMARY KEY (`idestado_resultado_detalle`),
+  KEY `fk_estado_resultado_detalle_idestado_resultado_idx` (`idestado_resultado`),
+  KEY `fk_estado_resultado_detalle_idclase_resultado_idx` (`idclase_resultado`),
+  KEY `fk_estado_resultado_detalle_idgrupo_resultado_idx` (`idgrupo_resultado`),
+  CONSTRAINT `fk_estado_resultado_detalle_idclase_resultado` FOREIGN KEY (`idclase_resultado`) REFERENCES `clase_resultado` (`idclase_resultado`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_estado_resultado_detalle_idestado_resultado` FOREIGN KEY (`idestado_resultado`) REFERENCES `estado_resultado` (`idestado_resultado`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_estado_resultado_detalle_idgrupo_resultado` FOREIGN KEY (`idgrupo_resultado`) REFERENCES `grupo_resultado` (`idgrupo_resultado`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `estado_resultado_detalle`
+--
+
+LOCK TABLES `estado_resultado_detalle` WRITE;
+/*!40000 ALTER TABLE `estado_resultado_detalle` DISABLE KEYS */;
+INSERT INTO `estado_resultado_detalle` VALUES (1,1,1,1,100.00,'Activo'),(2,1,2,2,50.00,'Activo'),(3,1,1,8,200.00,'Activo'),(4,1,3,3,50.00,'Activo'),(5,2,1,1,2311.00,'Activo'),(6,2,2,2,1344.00,'Activo'),(7,2,3,3,276.00,'Activo'),(8,2,4,4,141.00,'Activo'),(9,2,5,5,187.00,'Activo'),(10,2,6,6,121.00,'Activo'),(11,2,7,7,242.00,'Activo');
+/*!40000 ALTER TABLE `estado_resultado_detalle` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'STRICT_ALL_TABLES,NO_AUTO_CREATE_USER' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 */ /*!50003 TRIGGER `contable`.`estado_resultado_detalle_AFTER_INSERT` AFTER INSERT ON `estado_resultado_detalle` FOR EACH ROW
+BEGIN
+	
+		if new.idclase_resultado = 1 then
+			update estado_resultado set venta_netas = venta_netas + new.monto where idestado_resultado = new.idestado_resultado;
+		elseif new.idclase_resultado = 2 then
+			update estado_resultado set costo_ventas = costo_ventas + new.monto where idestado_resultado = new.idestado_resultado;
+		elseif new.idclase_resultado = 3 then
+			update estado_resultado set depreciacion = depreciacion + new.monto where idestado_resultado = new.idestado_resultado;
+		elseif new.idclase_resultado = 4 then
+			update estado_resultado set interes_pagado = interes_pagado + new.monto where idestado_resultado = new.idestado_resultado;
+		elseif new.idclase_resultado = 5 then
+			update estado_resultado set impuestos = impuestos + new.monto where idestado_resultado = new.idestado_resultado;
+		elseif new.idclase_resultado = 6 then
+			update estado_resultado set dividendos = dividendos + new.monto where idestado_resultado = new.idestado_resultado;
+		else
+			update estado_resultado set utilidades_retenidas = utilidades_retenidas + new.monto where idestado_resultado = new.idestado_resultado;
+		end if;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'STRICT_ALL_TABLES,NO_AUTO_CREATE_USER' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 */ /*!50003 TRIGGER `contable`.`estado_resultado_detalle_BEFORE_UPDATE` BEFORE UPDATE ON `estado_resultado_detalle` FOR EACH ROW
+BEGIN
+	if new.estado != old.estado then
+		if new.estado = 'Inactivo' then
+			set new.monto = 0;
+        end if;
+	end if;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'STRICT_ALL_TABLES,NO_AUTO_CREATE_USER' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 */ /*!50003 TRIGGER `contable`.`estado_resultado_detalle_AFTER_UPDATE` AFTER UPDATE ON `estado_resultado_detalle` FOR EACH ROW
+BEGIN
+	if new.monto != old.monto then
+		if new.idclase_resultado = 1 then
+			update estado_resultado set venta_netas = venta_netas  + (new.monto-old.monto)  where idestado_resultado = new.idestado_resultado;
+		elseif new.idclase_resultado = 2 then
+			update estado_resultado set costo_ventas = costo_ventas  + (new.monto-old.monto)  where idestado_resultado = new.idestado_resultado;
+		elseif new.idclase_resultado = 3 then
+			update estado_resultado set depreciacion = depreciacion  + (new.monto-old.monto)  where idestado_resultado = new.idestado_resultado;
+		elseif new.idclase_resultado = 4 then
+			update estado_resultado set interes_pagado = interes_pagado  + (new.monto-old.monto)  where idestado_resultado = new.idestado_resultado;
+		elseif new.idclase_resultado = 5 then
+			update estado_resultado set impuestos = impuestos  + (new.monto-old.monto)  where idestado_resultado = new.idestado_resultado;
+		elseif new.idclase_resultado = 6 then
+			update estado_resultado set dividendos = dividendos  + (new.monto-old.monto)  where idestado_resultado = new.idestado_resultado;
+		else
+			update estado_resultado set utilidades_retenidas = utilidades_retenidas  + (new.monto-old.monto)  where idestado_resultado = new.idestado_resultado;
+		end if;
+    end if;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `flujo_efectivo`
+--
+
+DROP TABLE IF EXISTS `flujo_efectivo`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `flujo_efectivo` (
+  `idflujo_efectivo` int(11) NOT NULL AUTO_INCREMENT,
+  `idempresa` int(11) NOT NULL DEFAULT '0',
+  `idperiodo_contable` int(11) NOT NULL DEFAULT '0',
+  `fecha` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  PRIMARY KEY (`idflujo_efectivo`),
+  KEY `FK_flujo_efectivo_periodo_contable` (`idperiodo_contable`),
+  KEY `FK_flujo_efectivo_empresa` (`idempresa`),
+  CONSTRAINT `FK_flujo_efectivo_empresa` FOREIGN KEY (`idempresa`) REFERENCES `empresa` (`idempresa`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `FK_flujo_efectivo_periodo_contable` FOREIGN KEY (`idperiodo_contable`) REFERENCES `periodo_contable` (`idperiodo_contable`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `flujo_efectivo`
+--
+
+LOCK TABLES `flujo_efectivo` WRITE;
+/*!40000 ALTER TABLE `flujo_efectivo` DISABLE KEYS */;
+INSERT INTO `flujo_efectivo` VALUES (5,2,1,'2016-06-15 21:42:55'),(6,1,1,'2016-06-15 21:43:06');
+/*!40000 ALTER TABLE `flujo_efectivo` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `flujo_efectivo_detalle`
+--
+
+DROP TABLE IF EXISTS `flujo_efectivo_detalle`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `flujo_efectivo_detalle` (
+  `idflujo_efectivo_detalle` int(11) NOT NULL AUTO_INCREMENT,
+  `idflujo_efectivo` int(11) NOT NULL DEFAULT '0',
+  `idgrupo_flujo_efectivo` int(11) NOT NULL DEFAULT '0',
+  `idsubgrupo_cuenta_balance` int(11) DEFAULT NULL,
+  `descripcion` varchar(50) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL,
+  `monto` float NOT NULL DEFAULT '0',
+  PRIMARY KEY (`idflujo_efectivo_detalle`),
+  KEY `FK_flujo_efectivo_detalle_subgrupo_cuenta` (`idsubgrupo_cuenta_balance`),
+  KEY `FK_flujo_efectivo_detalle_flujo_efectivo` (`idflujo_efectivo`),
+  KEY `FK_flujo_efectivo_detalle_grupo_flujo_efectivo` (`idgrupo_flujo_efectivo`),
+  CONSTRAINT `FK_flujo_efectivo_detalle_flujo_efectivo` FOREIGN KEY (`idflujo_efectivo`) REFERENCES `flujo_efectivo` (`idflujo_efectivo`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `FK_flujo_efectivo_detalle_grupo_flujo_efectivo` FOREIGN KEY (`idgrupo_flujo_efectivo`) REFERENCES `grupo_flujo_efectivo` (`idgrupo_flujo_efectivo`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `FK_flujo_efectivo_detalle_subgrupo_cuenta` FOREIGN KEY (`idsubgrupo_cuenta_balance`) REFERENCES `subgrupo_cuenta` (`idsubgrupo_cuenta`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=277 DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `flujo_efectivo_detalle`
+--
+
+LOCK TABLES `flujo_efectivo_detalle` WRITE;
+/*!40000 ALTER TABLE `flujo_efectivo_detalle` DISABLE KEYS */;
+INSERT INTO `flujo_efectivo_detalle` VALUES (265,5,1,6,NULL,84),(266,5,2,NULL,'Utilidad neta',363),(267,5,2,NULL,'Depreciacion',276),(268,5,2,7,NULL,-23),(269,5,2,9,NULL,-29),(270,5,3,34,NULL,-149),(271,5,2,17,NULL,32),(272,5,4,36,NULL,-74),(273,5,4,35,NULL,-35),(274,5,4,37,NULL,50),(275,5,3,NULL,'Depreciacion',-276),(276,5,4,NULL,'Dividendos pagados',-121);
+/*!40000 ALTER TABLE `flujo_efectivo_detalle` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `grupo_cuenta`
+--
+
+DROP TABLE IF EXISTS `grupo_cuenta`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `grupo_cuenta` (
+  `idgrupo_cuenta` int(11) NOT NULL AUTO_INCREMENT,
+  `idclase_cuenta` int(11) NOT NULL,
+  `nombre` varchar(45) COLLATE utf8_spanish_ci NOT NULL,
+  `nomenclatura` varchar(45) COLLATE utf8_spanish_ci NOT NULL,
+  `definicion` varchar(45) COLLATE utf8_spanish_ci NOT NULL,
+  `estado` enum('Activo','Inactivo') COLLATE utf8_spanish_ci NOT NULL DEFAULT 'Activo',
+  PRIMARY KEY (`idgrupo_cuenta`),
+  KEY `fk_grupo_cuenta_idclase_cuenta_idx` (`idclase_cuenta`),
+  CONSTRAINT `fk_grupo_cuenta_idclase_cuenta` FOREIGN KEY (`idclase_cuenta`) REFERENCES `clase_cuenta` (`idclase_cuenta`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `grupo_cuenta`
+--
+
+LOCK TABLES `grupo_cuenta` WRITE;
+/*!40000 ALTER TABLE `grupo_cuenta` DISABLE KEYS */;
+INSERT INTO `grupo_cuenta` VALUES (1,1,'Circulante','11','Corriente','Activo'),(2,1,'Fijo','12','No Corriente','Activo'),(3,2,'Prevision para cuentas incobrables, depreciac','21','Prevision para cuentas incobrables, depreciac','Activo'),(4,3,'Circulante','31','Corriente','Activo'),(5,3,'Fijo','32','No Corriente','Activo'),(6,4,'Otras Cuentas Acreedoras','40','','Activo'),(7,5,'Capital, Reservas y Resultados','51','','Activo'),(8,6,'Cuentas de Orden per Contra','61','','Activo'),(9,7,'Ingresos','71','','Activo'),(10,8,'Gastos de Operación','81','','Activo');
+/*!40000 ALTER TABLE `grupo_cuenta` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `grupo_flujo_efectivo`
+--
+
+DROP TABLE IF EXISTS `grupo_flujo_efectivo`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `grupo_flujo_efectivo` (
+  `idgrupo_flujo_efectivo` int(11) NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(50) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT ' ',
+  `tipo_saldo` enum('+','-') CHARACTER SET utf8 COLLATE utf8_bin DEFAULT '+',
+  PRIMARY KEY (`idgrupo_flujo_efectivo`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `grupo_flujo_efectivo`
+--
+
+LOCK TABLES `grupo_flujo_efectivo` WRITE;
+/*!40000 ALTER TABLE `grupo_flujo_efectivo` DISABLE KEYS */;
+INSERT INTO `grupo_flujo_efectivo` VALUES (1,'Efectivo al inicio del periodo','+'),(2,'Actividades de operacion','+'),(3,'Actividades de inversion','-'),(4,'Actividades de financiamiento','-'),(6,'Efectivo al final del periodo','+');
+/*!40000 ALTER TABLE `grupo_flujo_efectivo` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `grupo_resultado`
+--
+
+DROP TABLE IF EXISTS `grupo_resultado`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `grupo_resultado` (
+  `idgrupo_resultado` int(11) NOT NULL AUTO_INCREMENT,
+  `idclase_resultado` int(11) NOT NULL DEFAULT '1',
+  `nombre` varchar(45) COLLATE utf8_bin DEFAULT NULL,
+  `estado` enum('Activo','Inactivo') COLLATE utf8_bin NOT NULL DEFAULT 'Activo',
+  `idgrupo_flujo_efectivo` int(11) DEFAULT NULL,
+  PRIMARY KEY (`idgrupo_resultado`),
+  KEY `fk_grupo_resultado_idclase_resultado_idx` (`idclase_resultado`),
+  KEY `FK_grupo_resultado_grupo_flujo_efectivo` (`idgrupo_flujo_efectivo`),
+  CONSTRAINT `FK_grupo_resultado_grupo_flujo_efectivo` FOREIGN KEY (`idgrupo_flujo_efectivo`) REFERENCES `grupo_flujo_efectivo` (`idgrupo_flujo_efectivo`),
+  CONSTRAINT `fk_grupo_resultado_idclase_resultado` FOREIGN KEY (`idclase_resultado`) REFERENCES `clase_resultado` (`idclase_resultado`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `grupo_resultado`
+--
+
+LOCK TABLES `grupo_resultado` WRITE;
+/*!40000 ALTER TABLE `grupo_resultado` DISABLE KEYS */;
+INSERT INTO `grupo_resultado` VALUES (1,1,'Venta netas','Activo',NULL),(2,2,'Costo de ventas','Activo',NULL),(3,3,'Depreciación','Activo',NULL),(4,4,'Intereses pagados','Activo',NULL),(5,5,'Impuestos','Activo',NULL),(6,6,'Dividendos','Activo',NULL),(7,7,'Aumento en las utilidades retenidas','Activo',NULL),(8,1,'Ingresos totales','Activo',NULL);
+/*!40000 ALTER TABLE `grupo_resultado` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `partida`
+--
+
+DROP TABLE IF EXISTS `partida`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `partida` (
+  `idpartida` int(11) NOT NULL AUTO_INCREMENT,
+  `fecha` date DEFAULT NULL,
+  `idcuenta_cargo` int(11) NOT NULL,
+  `idcuenta_abono` int(11) NOT NULL,
+  `monto` decimal(10,0) NOT NULL DEFAULT '0',
+  `estado` enum('Activo','Inactivo') COLLATE utf8_spanish_ci NOT NULL DEFAULT 'Activo',
+  `descripcion` varchar(128) COLLATE utf8_spanish_ci DEFAULT NULL,
+  PRIMARY KEY (`idpartida`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `partida`
+--
+
+LOCK TABLES `partida` WRITE;
+/*!40000 ALTER TABLE `partida` DISABLE KEYS */;
+INSERT INTO `partida` VALUES (1,'2016-01-04',2,1,250,'Activo','deposito al banco no 323i9'),(2,'2016-02-16',2,1,100,'Activo','factura'),(3,NULL,2,1,500,'Activo','deposito numero io23849230');
+/*!40000 ALTER TABLE `partida` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 */ /*!50003 TRIGGER `contable`.`partida_BEFORE_INSERT` BEFORE INSERT ON `partida` FOR EACH ROW
+BEGIN
+	call pr_cargar_cuenta(new.idcuenta_cargo,new.monto);
+	call pr_abonar_cuenta(new.idcuenta_abono,new.monto);
+
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `periodo_contable`
+--
+
+DROP TABLE IF EXISTS `periodo_contable`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `periodo_contable` (
+  `idperiodo_contable` int(11) NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(45) COLLATE utf8_bin DEFAULT NULL,
+  `fecha_inicio` date DEFAULT NULL,
+  `fecha_fin` date DEFAULT NULL,
+  `estado` enum('Activo','Inactivo') COLLATE utf8_bin DEFAULT 'Activo',
+  `estatus` enum('Pasado','Presente','Futuro') COLLATE utf8_bin NOT NULL DEFAULT 'Futuro',
+  PRIMARY KEY (`idperiodo_contable`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `periodo_contable`
+--
+
+LOCK TABLES `periodo_contable` WRITE;
+/*!40000 ALTER TABLE `periodo_contable` DISABLE KEYS */;
+INSERT INTO `periodo_contable` VALUES (1,'2015','2015-01-11','2015-12-31','Activo','Pasado'),(2,'2014','2014-01-11','2014-12-31','Activo','Pasado'),(3,'2013','2013-01-11','2013-12-31','Activo','Pasado'),(4,'2012','2012-01-11','2012-12-31','Activo','Pasado'),(5,'2016','2016-01-11','2016-12-31','Activo','Presente'),(6,'2017','2017-01-11','2017-12-31','Activo','Futuro'),(7,'2018','2018-01-11','2018-12-31','Activo','Futuro'),(8,'2019','2019-01-11','2019-12-31','Activo','Futuro'),(9,'2020','2020-01-11','2020-12-31','Activo','Futuro');
+/*!40000 ALTER TABLE `periodo_contable` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `razones_financieras`
+--
+
+DROP TABLE IF EXISTS `razones_financieras`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `razones_financieras` (
+  `idrazon_financiera` int(11) NOT NULL AUTO_INCREMENT,
+  `idempresa` int(11) NOT NULL DEFAULT '0',
+  `idperiodo_contable` int(11) NOT NULL DEFAULT '0',
+  `estado` enum('Activo','Inactivo') COLLATE utf8_spanish_ci NOT NULL DEFAULT 'Activo',
+  PRIMARY KEY (`idrazon_financiera`),
+  KEY `fk_razones_financieras_empresa` (`idempresa`),
+  KEY `fk_razones_financieras_periodo_contable` (`idperiodo_contable`),
+  CONSTRAINT `fk_razones_financieras_empresa` FOREIGN KEY (`idempresa`) REFERENCES `empresa` (`idempresa`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_razones_financieras_periodo_contable` FOREIGN KEY (`idperiodo_contable`) REFERENCES `periodo_contable` (`idperiodo_contable`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `razones_financieras`
+--
+
+LOCK TABLES `razones_financieras` WRITE;
+/*!40000 ALTER TABLE `razones_financieras` DISABLE KEYS */;
+INSERT INTO `razones_financieras` VALUES (1,2,1,'Activo');
+/*!40000 ALTER TABLE `razones_financieras` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `razones_financieras_detalle`
+--
+
+DROP TABLE IF EXISTS `razones_financieras_detalle`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `razones_financieras_detalle` (
+  `idrazon_financiera_detalle` int(11) NOT NULL AUTO_INCREMENT,
+  `idrazon_financiera` int(11) NOT NULL DEFAULT '0',
+  `idtipo_razon_financiera` int(11) NOT NULL DEFAULT '0',
+  `valor` float NOT NULL DEFAULT '0',
+  `estado` enum('Activo','Inactivo') COLLATE utf8_spanish_ci NOT NULL DEFAULT 'Activo',
+  PRIMARY KEY (`idrazon_financiera_detalle`),
+  KEY `fk_tipo_razon_financiera` (`idtipo_razon_financiera`),
+  KEY `fk_razones_financieras_razones_financieras_detalle` (`idrazon_financiera`),
+  CONSTRAINT `fk_razones_financieras_razones_financieras_detalle` FOREIGN KEY (`idrazon_financiera`) REFERENCES `razones_financieras` (`idrazon_financiera`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_tipo_razon_financiera` FOREIGN KEY (`idtipo_razon_financiera`) REFERENCES `tipo_razon_financiera` (`idtipo_razon_financiera`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=1081 DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `razones_financieras_detalle`
+--
+
+LOCK TABLES `razones_financieras_detalle` WRITE;
+/*!40000 ALTER TABLE `razones_financieras_detalle` DISABLE KEYS */;
+INSERT INTO `razones_financieras_detalle` VALUES (1059,1,1,1.31,'Activo'),(1060,1,2,0.53,'Activo'),(1061,1,3,0.18,'Activo'),(1062,1,4,4.68,'Activo'),(1063,1,5,192,'Activo'),(1064,1,6,0.28,'Activo'),(1065,1,7,0.39,'Activo'),(1066,1,8,1.39,'Activo'),(1067,1,9,0.15,'Activo'),(1068,1,10,4.9,'Activo'),(1069,1,11,6.86,'Activo'),(1070,1,12,3.18,'Activo'),(1071,1,13,114,'Activo'),(1072,1,14,12.29,'Activo'),(1073,1,15,29,'Activo'),(1074,1,16,13.76,'Activo'),(1075,1,17,0.8,'Activo'),(1076,1,18,0.64,'Activo'),(1077,1,19,15.71,'Activo'),(1078,1,20,10.12,'Activo'),(1079,1,21,14.01,'Activo'),(1080,1,22,0.22,'Activo');
+/*!40000 ALTER TABLE `razones_financieras_detalle` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `subcuenta`
+--
+
+DROP TABLE IF EXISTS `subcuenta`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `subcuenta` (
+  `idsubcuenta` int(11) NOT NULL AUTO_INCREMENT,
+  `idcuenta_mayor_auxiliar` int(11) NOT NULL,
+  `nombre` varchar(45) COLLATE utf8_spanish_ci NOT NULL,
+  `nomenclatura` varchar(45) COLLATE utf8_spanish_ci NOT NULL,
+  `definicion` varchar(45) COLLATE utf8_spanish_ci NOT NULL,
+  `estado` enum('Activo','Inactivo') COLLATE utf8_spanish_ci NOT NULL DEFAULT 'Activo',
+  PRIMARY KEY (`idsubcuenta`),
+  KEY `fk_subcuenta_idcuenta_mayor_auxiliar_idx` (`idcuenta_mayor_auxiliar`),
+  CONSTRAINT `fk_subcuenta_idcuenta_mayor_auxiliar` FOREIGN KEY (`idcuenta_mayor_auxiliar`) REFERENCES `cuenta_mayor_auxiliar` (`idcuenta_mayor_auxiliar`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `subcuenta`
+--
+
+LOCK TABLES `subcuenta` WRITE;
+/*!40000 ALTER TABLE `subcuenta` DISABLE KEYS */;
+INSERT INTO `subcuenta` VALUES (1,23,'Caja Chica TI','111.103.01.01','','Activo');
+/*!40000 ALTER TABLE `subcuenta` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `subgrupo_cuenta`
+--
+
+DROP TABLE IF EXISTS `subgrupo_cuenta`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `subgrupo_cuenta` (
+  `idsubgrupo_cuenta` int(11) NOT NULL AUTO_INCREMENT,
+  `idgrupo_cuenta` int(11) NOT NULL,
+  `nombre` varchar(45) COLLATE utf8_spanish_ci NOT NULL,
+  `nomenclatura` varchar(45) COLLATE utf8_spanish_ci NOT NULL,
+  `definicion` varchar(45) COLLATE utf8_spanish_ci NOT NULL,
+  `estado` enum('Activo','Inactivo') COLLATE utf8_spanish_ci NOT NULL DEFAULT 'Activo',
+  `idgrupo_flujo_efectivo` int(11) DEFAULT NULL,
+  PRIMARY KEY (`idsubgrupo_cuenta`),
+  KEY `fk_subgrupo_cuenta_idgrupo_cuenta_idx` (`idgrupo_cuenta`),
+  KEY `FK_subgrupo_cuenta_grupo_flujo_efectivo` (`idgrupo_flujo_efectivo`),
+  CONSTRAINT `FK_subgrupo_cuenta_grupo_flujo_efectivo` FOREIGN KEY (`idgrupo_flujo_efectivo`) REFERENCES `grupo_flujo_efectivo` (`idgrupo_flujo_efectivo`),
+  CONSTRAINT `fk_subgrupo_cuenta_idgrupo_cuenta` FOREIGN KEY (`idgrupo_cuenta`) REFERENCES `grupo_cuenta` (`idgrupo_cuenta`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=39 DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `subgrupo_cuenta`
+--
+
+LOCK TABLES `subgrupo_cuenta` WRITE;
+/*!40000 ALTER TABLE `subgrupo_cuenta` DISABLE KEYS */;
+INSERT INTO `subgrupo_cuenta` VALUES (6,1,'Efectivo y Equivalentes de Efectivo','111','Efectivo y Equivalentes de Efectivo','Activo',NULL),(7,1,'Cuentas por Cobrar','112','Cuentas por Cobrar','Activo',2),(8,1,'Pagos Anticipados','113','Pagos Anticipados','Activo',NULL),(9,1,'Inventarios o Existencias','114','Inventarios o Existencias','Activo',2),(10,2,'Inversiones a Largo Plazo','121','','Activo',NULL),(11,2,'Mobiliario y Equipo','122','','Activo',NULL),(12,2,'Activos Intangibles','123','','Activo',NULL),(13,2,'Cargos por Amortizar','124','','Activo',NULL),(14,3,'Provisión para Cuentas Incobrables','211','','Activo',NULL),(15,3,'Depreciaciones Acumuladas','212','','Activo',NULL),(16,3,'Amortizaciones Acumuladas','213','','Activo',NULL),(17,4,'Cuentas por Pagar a Corto Plazo','311','','Activo',2),(18,4,'Cobros Anticipados','312','','Activo',NULL),(19,5,'Cuentas por Pagar a Largo Plazo','321','','Activo',NULL),(20,6,'Otras Cuentas Acreedoras','401','','Activo',NULL),(21,7,'Capital Social','511','','Activo',NULL),(22,7,'Reservas de Capital','512','','Activo',NULL),(23,7,'Perdidas y/o Ganancias de Capital','513','','Activo',NULL),(24,7,'Resultados Acumulados','514','','Activo',NULL),(25,8,'Cuentas de Orden Débito','611','','Activo',NULL),(26,8,'Cuentas de Orden Crédito','612','','Activo',NULL),(27,9,'Ingresos de Operación','711','','Activo',NULL),(28,9,'Otros Ingresos de Operación','712','','Activo',NULL),(29,10,'Costo de Producción','810','','Activo',NULL),(30,10,'Costo de Venta','811','','Activo',NULL),(31,10,'Gastos de Distribución','812','','Activo',NULL),(32,10,'Gastos de Administración','813','','Activo',NULL),(33,10,'Otros Gastos','814','','Activo',NULL),(34,2,'Planta y equipo neto','125','Planta y equipo neto','Activo',3),(35,4,'Documentos por pagar a corto plazo','313','Documentos por pagar a corto plazo','Activo',4),(36,5,'Deuda a largo plazo','322','Deuda a largo plazo','Activo',4),(37,7,'Acciones comunes y superavit pagados','515','Acciones comunes y superavit pagados','Activo',4),(38,7,'Utilidades Retenidas','516','Utilidades Retenidas','Activo',NULL);
+/*!40000 ALTER TABLE `subgrupo_cuenta` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `tipo_razon_financiera`
+--
+
+DROP TABLE IF EXISTS `tipo_razon_financiera`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `tipo_razon_financiera` (
+  `idtipo_razon_financiera` int(11) NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(50) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '0',
+  `estado` enum('Activo','Inactivo') CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT 'Activo',
+  `agrupacion` varchar(4) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT ' ',
+  `interpretacion` varchar(10) COLLATE utf8_spanish_ci DEFAULT ' ',
+  PRIMARY KEY (`idtipo_razon_financiera`)
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `tipo_razon_financiera`
+--
+
+LOCK TABLES `tipo_razon_financiera` WRITE;
+/*!40000 ALTER TABLE `tipo_razon_financiera` DISABLE KEYS */;
+INSERT INTO `tipo_razon_financiera` VALUES (1,'Razon circulante','Activo','I','veces'),(2,'Razon rapida','Activo','I','veces'),(3,'Razon de efectivo','Activo','I','veces'),(4,'Capital de trabajo neto a activos totales','Activo','I','%'),(5,'Medida del intervalo','Activo','I','dias'),(6,'Razon de deduda total','Activo','II','%'),(7,'Razon deuda-capital','Activo','II','veces'),(8,'Multiplicador del capital','Activo','II','veces'),(9,'Razon de deuda a largo plazo','Activo','II','veces'),(10,'Razon de veces que se ha ganado el interes','Activo','II','veces'),(11,'Razon de cobertura de efectivo','Activo','II','veces'),(12,'Rotacion de inventario','Activo','III','veces'),(13,'Dias de ventas en inventario','Activo','III','dias'),(14,'Rotacion de cuentas por cobrar','Activo','III','veces'),(15,'Dias de ventas en cuentas por cobrar','Activo','III','dias'),(16,'Rotacion de capital de trabajo neto','Activo','III','veces'),(17,'Rotacion de activos fijos','Activo','III','veces'),(18,'Rotacion de activos totales','Activo','III','veces'),(19,'Margen de utilidad','Activo','IV','%'),(20,'Rendimiento sobre los activos','Activo','IV','%'),(21,'Rendimiento sobre el capital','Activo','IV','%'),(22,'ROE','Activo','IV','%');
+/*!40000 ALTER TABLE `tipo_razon_financiera` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Temporary view structure for view `view_estado_flujo_efectivo`
+--
+
+DROP TABLE IF EXISTS `view_estado_flujo_efectivo`;
+/*!50001 DROP VIEW IF EXISTS `view_estado_flujo_efectivo`*/;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+/*!50001 CREATE VIEW `view_estado_flujo_efectivo` AS SELECT 
+ 1 AS `idempresa`,
+ 1 AS `nombre_empresa`,
+ 1 AS `ticker`,
+ 1 AS `idperiodo_contable`,
+ 1 AS `anio`,
+ 1 AS `idgrupo_flujo_efectivo`,
+ 1 AS `tipo_saldo`,
+ 1 AS `actividad`,
+ 1 AS `subactividad`,
+ 1 AS `monto`*/;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Temporary view structure for view `view_razones_financieras`
+--
+
+DROP TABLE IF EXISTS `view_razones_financieras`;
+/*!50001 DROP VIEW IF EXISTS `view_razones_financieras`*/;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+/*!50001 CREATE VIEW `view_razones_financieras` AS SELECT 
+ 1 AS `idrazon_financiera_detalle`,
+ 1 AS `idrazon_financiera`,
+ 1 AS `idempresa`,
+ 1 AS `idperiodo_contable`,
+ 1 AS `agrupacion`,
+ 1 AS `nombre`,
+ 1 AS `valor`,
+ 1 AS `interpretacion`*/;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Dumping events for database 'contable'
+--
+
+--
+-- Dumping routines for database 'contable'
+--
+/*!50003 DROP FUNCTION IF EXISTS `obtener_configuracion` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE  FUNCTION `obtener_configuracion`(pcodigo varchar(45), pidempresa int) RETURNS varchar(45) CHARSET utf8 COLLATE utf8_spanish_ci
+BEGIN
+	declare respuesta varchar(45) default '';
+    select valor into respuesta from configuracion where codigo = pcodigo and idempresa = pidempresa;
+	RETURN respuesta;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP FUNCTION IF EXISTS `obtener_correlativo` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE  FUNCTION `obtener_correlativo`(pcodigo varchar(45), pidempresa int) RETURNS int(11)
+BEGIN
+	declare respuesta int default 0;
+    select valor+1 into respuesta from correlativo where codigo = pcodigo and idempresa = pidempresa;
+    if respuesta = 0 then
+		insert into correlativo(codigo, valor, idempresa) values (pcodigo,1, pidempresa);
+        set respuesta = 1;
+    else
+		update correlativo set valor = respuesta where codigo = pcodigo and idempresa = pidempresa;
+    end if;
+RETURN respuesta;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP FUNCTION IF EXISTS `obtener_idclase_cuenta` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE  FUNCTION `obtener_idclase_cuenta`(pid int) RETURNS int(11)
+BEGIN
+	declare respuesta int default 0;
+    select gc.idclase_cuenta into respuesta 
+	from grupo_cuenta gc
+    inner join subgrupo_cuenta sc on gc.idgrupo_cuenta = sc.idgrupo_cuenta
+    where sc.idsubgrupo_cuenta = pid;
+    
+RETURN respuesta;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP FUNCTION IF EXISTS `obtener_idclase_resultado` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE  FUNCTION `obtener_idclase_resultado`(pid int) RETURNS int(11)
+BEGIN
+	declare respuesta int default 0;
+    select cr.idclase_resultado into respuesta 
+	from grupo_resultado cr 
+    where cr.idgrupo_resultado = pid;
+    
+RETURN respuesta;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP FUNCTION IF EXISTS `obtener_idgrupo_cuenta` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE  FUNCTION `obtener_idgrupo_cuenta`(pid int) RETURNS int(11)
+BEGIN
+	declare respuesta int default 0;
+    select gc.idgrupo_cuenta into respuesta 
+	from subgrupo_cuenta gc
+    where gc.idsubgrupo_cuenta = pid;
+    
+RETURN respuesta;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP FUNCTION IF EXISTS `validar_sucursal_casa_matriz` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE  FUNCTION `validar_sucursal_casa_matriz`(pidempresa int, pidsucursal int) RETURNS int(11)
+BEGIN
+	declare respuesta int default 1;
+    select count(*) into respuesta from sucursal where idempresa = pidempresa and idsucursal != pidsucursal and casa_matriz = 1;
+    if respuesta > 0 then
+		set respuesta = 2;
+	else 
+		set respuesta = 1;
+    end if;
+RETURN respuesta;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `pr_abonar_cuenta` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE  PROCEDURE `pr_abonar_cuenta`(in p_idcuenta int, in p_monto decimal(10,2))
+BEGIN
+	update cuenta set haber = haber + p_monto where idcuenta = p_idcuenta;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `pr_cargar_cuenta` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE  PROCEDURE `pr_cargar_cuenta`(in p_idcuenta int, in p_monto decimal(10,2))
+BEGIN
+	update cuenta set debe = debe + p_monto where idcuenta = p_idcuenta;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `pr_generar_flujo_efectivo` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE  PROCEDURE `pr_generar_flujo_efectivo`(IN `anio_inicio` VARCHAR(4), IN `anio_fin` VARCHAR(4), IN `idempresa` INT)
+BEGIN
+	
+	set @año1 = anio_inicio;
+	set @año2 = anio_fin;
+	set @idempresa=idempresa;
+	set @idcuenta_efectivo=6;
+	
+	
+	select 
+		@idperiodo_contable:=p.idperiodo_contable
+	from periodo_contable p
+	where p.nombre=@año2;
+	
+	if not exists(select * from flujo_efectivo f inner join periodo_contable p on f.idperiodo_contable=p.idperiodo_contable where  p.nombre=@año2 and f.idempresa=@idempresa limit 1) then
+		insert into flujo_efectivo 
+			(idempresa,idperiodo_contable,fecha)
+		values
+			(@idempresa,@idperiodo_contable,NOW());
+			
+	end if;
+	
+	
+	
+	select 
+		@idflujo_efectivo:=f.idflujo_efectivo
+	from 
+		flujo_efectivo f
+		inner join periodo_contable p on f.idperiodo_contable=p.idperiodo_contable
+	where 
+		f.idempresa=2 and p.nombre=@año2;
+			
+	delete from flujo_efectivo_detalle where idflujo_efectivo =@idflujo_efectivo;
+	
+	#Obtiene los datos del estado de resultados
+	select 
+		@UtilidadNeta := resultado.utilidad_neta ,
+		@Depreciacion := resultado.depreciacion,
+		@DividendosPagados := resultado.dividendos,
+		@AccionesRetenidas := resultado.utilidades_retenidas
+	from
+		estado_resultado resultado
+		inner join periodo_contable periodo on resultado.idperiodo_contable=periodo.idperiodo_contable
+	where 
+		resultado.idempresa=@idempresa and periodo.nombre=@año2;
+	
+	
+	#Inserta efectivo
+	set @idgrupoefectivo:=1;
+	insert into flujo_efectivo_detalle (idflujo_efectivo, idgrupo_flujo_efectivo,idsubgrupo_cuenta_balance,monto)
+	select 
+		@idflujo_efectivo,
+		@idgrupoefectivo, 
+		subgrupo.idsubgrupo_cuenta,
+		detalle.monto 		
+	from 
+		balance_general balance
+		inner join balance_general_detalle detalle on balance.idbalance_general=detalle.idbalance_general
+		inner join subgrupo_cuenta subgrupo on detalle.idsubgrupo_cuenta=subgrupo.idsubgrupo_cuenta 	
+		inner join grupo_cuenta grupo on subgrupo.idgrupo_cuenta=grupo.idgrupo_cuenta
+		inner join periodo_contable periodo on balance.idperiodo_contable=periodo.idperiodo_contable
+		inner join clase_cuenta clase on  grupo.idclase_cuenta=clase.idclase_cuenta
+	where
+	   balance.idempresa=@idempresa and	periodo.nombre=@año1
+	   and subgrupo.idsubgrupo_cuenta=6; #cuenta de efectivo
+	
+	#*******************actividad de operacion*************************
+	
+	#Insertar Utilidad
+	set @idgrupoefectivo:=2; 
+	insert into flujo_efectivo_detalle 
+		(idflujo_efectivo, idgrupo_flujo_efectivo,descripcion,monto)
+	values
+		(@idflujo_efectivo,@idgrupoefectivo,'Utilidad neta',@UtilidadNeta);
+	
+	#Insertar depreciacion
+	set @idgrupoefectivo:=2; 
+	insert into flujo_efectivo_detalle 
+		(idflujo_efectivo, idgrupo_flujo_efectivo,descripcion,monto)
+	values
+		(@idflujo_efectivo,@idgrupoefectivo,'Depreciacion',@Depreciacion );
+	
+	
+	#Inserta Cuentas de operacion
+	
+	#cuentas de activo
+	insert into flujo_efectivo_detalle 
+		(idflujo_efectivo, idgrupo_flujo_efectivo,idsubgrupo_cuenta_balance,monto)
+	select 
+		@idflujo_efectivo,
+		efectivo.idgrupo_flujo_efectivo,
+		subgrupo.idsubgrupo_cuenta,
+		sum(case @año1 
+			when periodo.nombre then detalle.monto 
+			else 0
+		end)-
+		sum(case @año2 
+			when periodo.nombre then detalle.monto 
+			else 0
+		end)	
+	from 
+		balance_general balance
+		inner join balance_general_detalle detalle on balance.idbalance_general=detalle.idbalance_general
+		inner join subgrupo_cuenta subgrupo on detalle.idsubgrupo_cuenta=subgrupo.idsubgrupo_cuenta
+		inner join grupo_flujo_efectivo efectivo on subgrupo.idgrupo_flujo_efectivo=efectivo.idgrupo_flujo_efectivo 	
+		inner join grupo_cuenta grupo on subgrupo.idgrupo_cuenta=grupo.idgrupo_cuenta
+		inner join periodo_contable periodo on balance.idperiodo_contable=periodo.idperiodo_contable
+		inner join clase_cuenta clase on  grupo.idclase_cuenta=clase.idclase_cuenta
+	where
+	   balance.idempresa=@idempresa and	(periodo.nombre=@año1 or periodo.nombre=@año2)
+	   and clase.idclase_cuenta=1 #ACTIVO
+	group by
+		subgrupo.nombre,
+		efectivo.idgrupo_flujo_efectivo;
+	
+	
+	#cuentas de pasivo
+	insert into flujo_efectivo_detalle 
+		(idflujo_efectivo, idgrupo_flujo_efectivo,idsubgrupo_cuenta_balance,monto)
+	select 
+		@idflujo_efectivo,
+		efectivo.idgrupo_flujo_efectivo,
+		subgrupo.idsubgrupo_cuenta,
+		sum(case @año2 
+			when periodo.nombre then detalle.monto 
+			else 0
+		end)-
+		sum(case @año1 
+			when periodo.nombre then detalle.monto 
+			else 0
+		end)
+	from 
+		balance_general balance
+		inner join balance_general_detalle detalle on balance.idbalance_general=detalle.idbalance_general
+		inner join subgrupo_cuenta subgrupo on detalle.idsubgrupo_cuenta=subgrupo.idsubgrupo_cuenta
+		inner join grupo_flujo_efectivo efectivo on subgrupo.idgrupo_flujo_efectivo=efectivo.idgrupo_flujo_efectivo 	
+		inner join grupo_cuenta grupo on subgrupo.idgrupo_cuenta=grupo.idgrupo_cuenta
+		inner join periodo_contable periodo on balance.idperiodo_contable=periodo.idperiodo_contable
+		inner join clase_cuenta clase on  grupo.idclase_cuenta=clase.idclase_cuenta
+	where
+	   balance.idempresa=@idempresa and	(periodo.nombre=@año1 or periodo.nombre=@año2)
+	   and clase.idclase_cuenta=3 #PASIVO
+	group by
+		subgrupo.nombre,
+		efectivo.idgrupo_flujo_efectivo;
+		
+		
+	#cuentas de capital
+	insert into flujo_efectivo_detalle 
+		(idflujo_efectivo, idgrupo_flujo_efectivo,idsubgrupo_cuenta_balance,monto)
+	select 
+		@idflujo_efectivo,
+		efectivo.idgrupo_flujo_efectivo,
+		subgrupo.idsubgrupo_cuenta,
+		sum(case @año2 
+			when periodo.nombre then detalle.monto 
+			else 0
+		end)-
+		sum(case @año1 
+			when periodo.nombre then detalle.monto 
+			else 0
+		end)
+	from 
+		balance_general balance
+		inner join balance_general_detalle detalle on balance.idbalance_general=detalle.idbalance_general
+		inner join subgrupo_cuenta subgrupo on detalle.idsubgrupo_cuenta=subgrupo.idsubgrupo_cuenta
+		inner join grupo_flujo_efectivo efectivo on subgrupo.idgrupo_flujo_efectivo=efectivo.idgrupo_flujo_efectivo 	
+		inner join grupo_cuenta grupo on subgrupo.idgrupo_cuenta=grupo.idgrupo_cuenta
+		inner join periodo_contable periodo on balance.idperiodo_contable=periodo.idperiodo_contable
+		inner join clase_cuenta clase on  grupo.idclase_cuenta=clase.idclase_cuenta
+	where
+	   balance.idempresa=@idempresa and	(periodo.nombre=@año1 or periodo.nombre=@año2)
+	   and clase.idclase_cuenta=5 #capital
+	group by
+		subgrupo.nombre,
+		efectivo.idgrupo_flujo_efectivo;
+		
+		
+	#Insertar Depreciaciones
+	set @idgrupoefectivo:=3; 
+	insert into flujo_efectivo_detalle 
+		(idflujo_efectivo, idgrupo_flujo_efectivo,descripcion,monto)
+	values
+		(@idflujo_efectivo,@idgrupoefectivo,'Depreciacion',@Depreciacion*-1 );
+	
+	
+		
+	
+	#Insertar Dividendo
+	set @idgrupoefectivo:=4; 
+	insert into flujo_efectivo_detalle 
+		(idflujo_efectivo, idgrupo_flujo_efectivo,descripcion,monto)
+	values
+		(@idflujo_efectivo,@idgrupoefectivo,'Dividendos pagados',@DividendosPagados*-1 );
+
+
+
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `pr_razones_financieras` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE  PROCEDURE `pr_razones_financieras`(IN `idempresa` INT, IN `idperiodo_contable` INT)
+BEGIN
+
+#Parametros
+set @idempresa:=idempresa;
+#cuentas balance general
+set @idinventarios:=9;
+set @idcuentaefectivo:=6;
+set @iddeuda_largo_plazo := 36;
+set @idcuentas_x_cobrar:=7;
+
+
+set @idperiodo = idperiodo_contable;
+
+/*--Datos de estados de resultados--*/
+select
+	resultado.venta_netas,resultado.costo_ventas,resultado.depreciacion,
+	resultado.venta_netas -  resultado.costo_ventas - resultado.depreciacion, #Utilidades Antes de los Intereses e Impuestos
+	resultado.interes_pagado,resultado.utilidad_neta
+	 into 
+	 @ventas,@costos,@depreciacion,
+	 @uaii,
+	 @intereses_pagados, @utilidad_neta
+from 
+	estado_resultado resultado
+where
+	resultado.idempresa=@idempresa
+	and resultado.idperiodo_contable=@idperiodo;
+	
+/*--Datos de estados del balance general--*/
+select 
+	balance.activo_circulante+balance.activo_fijo, 
+	balance.pasivo_circulante+balance.pasivo_fijo,
+	balance.activo_circulante-balance.pasivo_circulante,
+	(balance.activo_circulante + balance.activo_fijo)-(balance.pasivo_circulante + balance.pasivo_fijo),
+	sum(if(detalle.idsubgrupo_cuenta=@idinventarios, detalle.monto, 0)),
+	sum(if(detalle.idsubgrupo_cuenta=@idcuentaefectivo,detalle.monto,0)),
+	sum(if(detalle.idsubgrupo_cuenta=@iddeuda_largo_plazo,detalle.monto,0)),
+	sum(if(detalle.idsubgrupo_cuenta=@idcuentas_x_cobrar,detalle.monto,0))
+	into
+	@activo_total,
+	@pasivo_total,
+	@capital_trabajo,
+	@capital_contable,
+	@inventarios,
+	@efectivo,
+	@deuda_largo_plazo,
+	@cuentas_x_cobrar
+from 
+	balance_general balance
+	inner join balance_general_detalle detalle on balance.idbalance_general=detalle.idbalance_general
+where
+	balance.idempresa=@idempresa 
+	and balance.idperiodo_contable=@idperiodo
+group by
+	balance.activo_circulante,
+	balance.activo_fijo,
+	balance.pasivo_circulante,
+	balance.pasivo_fijo;
+
+SET @deuda_total:=(@activo_total-@capital_contable)/(@activo_total);
+
+
+	
+/*----------------------RAZONES FINANCIERAS------------------*/
+select 
+	#-----Medidas de liquidez a corto plazo
+	round(balance.activo_circulante/balance.pasivo_circulante,2),
+	round((balance.activo_circulante-@inventarios)/balance.pasivo_circulante,2),
+	round(@efectivo/balance.pasivo_circulante,2),
+	round((@capital_trabajo/@activo_total)*100,2),
+	floor(balance.activo_circulante/(@costos/365)),
+	
+	round(@deuda_total,2),
+	round(@deuda_total/(1-@deuda_total),2),
+	round(1/(1-@deuda_total),2),
+	round(@deuda_largo_plazo/(@deuda_largo_plazo+@capital_contable),2),
+	round(@uaii / @intereses_pagados,2),
+	round((@uaii + @depreciacion)/@intereses_pagados,2),
+	
+	round(@costos/@inventarios,2),
+	floor(365/(@costos/@inventarios)),
+	round(@ventas/@cuentas_x_cobrar,2),
+	floor(365/(@ventas/@cuentas_x_cobrar)),
+	round(@ventas/@capital_trabajo,2),
+	round(@ventas/balance.activo_fijo,2),
+	round(@ventas/@activo_total,2),
+	round((@utilidad_neta / @ventas)*100,2),
+	round((@utilidad_neta / @activo_total)*100,2),
+	round((@utilidad_neta / @capital_contable)*100,2) 
+	into
+	@razon_circulante,
+	@razon_rapida,
+	@razon_de_efectivo,
+	@cap_trab_neto,
+	@medida_intervalo,
+	#-----Medidas de liquidez a largo plazo o de apalancamiento 
+	@deuda_total,
+	@razon_deuda_capital,
+	@multiplicador_capital,
+	@deuda_largo_plazo,
+	@veces_interes_ganado,
+	@cobertura_efectivo,
+	 #-----Medidas de actividad o rotacion de activos
+	@rotacion_inventario,
+	@dias_venta_inventario,
+	@rotacion_cuentas_x_cobrar,
+	@dias_ventas_cxc,
+	@rotacion_capital_trabajo,
+	@rotacion_activos_fijos,
+	@rotacion_activo_total,
+	 #Medidas de rentabilidad
+	@margen_utilidad,
+	@rendimiento_activos,
+	@rendimiento_sobre_capital
+from 
+	balance_general balance
+	inner join balance_general_detalle detalle on balance.idbalance_general=detalle.idbalance_general
+where
+	balance.idempresa=@idempresa 
+	and balance.idperiodo_contable=@idperiodo
+group by
+	balance.activo_circulante,
+	balance.pasivo_circulante;
+
+
+if not exists(select * from razones_financieras where idempresa=@idempresa and idperiodo_contable=@idperiodo) then
+	insert into razones_financieras 
+		(idempresa,idperiodo_contable)
+	values
+		(@idempresa,@idperiodo);
+end if;
+
+
+select  
+	idrazon_financiera into @idrazon_financiera
+from razones_financieras 
+where idempresa= @idempresa and idperiodo_contable=@idperiodo;
+
+delete from razones_financieras_detalle
+where 
+	idrazon_financiera=@idrazon_financiera;
+
+#RAZON CIRCULANTE
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,1,@razon_circulante);
+
+#RAZON RAPIDA
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,2,@razon_rapida);
+
+
+#RAZON DE EFECTIVO
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,3,@razon_de_efectivo);
+
+
+#RAZON CAPITAL TRABAJO NETO
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,4,@cap_trab_neto);
+
+#RAZON MEDIDA DEL INTERVALO
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,5,@medida_intervalo);
+
+
+#RAZON DEUDA TOTAL
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,6,@deuda_total);
+
+
+#RAZON DEUDA-CAPITAL
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,7,@razon_deuda_capital);
+
+
+#RAZON MULTIPLICADOR DE CAPITAL
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,8,@multiplicador_capital);
+
+
+#RAZON DEUDA A LARGO PLAZO
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,9,@deuda_largo_plazo);
+
+
+#RAZON DE VECES QUE SE HA GANADO INTERES
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,10,@veces_interes_ganado);
+
+#RAZON DE COBERTURA DE EFECTIVO
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,11,@cobertura_efectivo);
+	
+	
+#RAZON ROTACION DE INVENTARIO
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,12,@rotacion_inventario);
+	
+
+#RAZON DIAS DE VENTA EN INVENTARIO
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,13,@dias_venta_inventario);
+	
+	
+#RAZON ROTACION DE CUENTAS POR COBRAR
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,14,@rotacion_cuentas_x_cobrar);
+	
+	
+#RAZON DIAS EN VENTAS DE CUENTAS POR COBRAR
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,15,@dias_ventas_cxc);
+	
+	
+#RAZON ROTACION DEL CAPITAL DE TRABAJO NETO
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,16,@rotacion_capital_trabajo);
+	
+	
+#RAZON ACTIVOS FIJOS
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,17,@rotacion_activos_fijos);
+	
+	
+#RAZON ACTIVOS TOTALES
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,18,@rotacion_activo_total);
+	
+	
+#RAZON MARGEN DE UTILIDAD
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,19,@margen_utilidad);
+	
+	
+#RAZON RENDIMIENTO DE ACTIVOS
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,20,@rendimiento_activos);
+
+
+#RAZON REDNIMIENTO SOBRE CAPITAL
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,21,@rendimiento_sobre_capital);
+
+
+#RAZON ROE
+insert into razones_financieras_detalle
+	(idrazon_financiera, idtipo_razon_financiera,valor)
+values
+	(@idrazon_financiera,22,ROUND((@margen_utilidad/100 * @rendimiento_activos/100 * @rendimiento_sobre_capital/100)*100,2) );
+
+
+
+
+
+
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Final view structure for view `view_estado_flujo_efectivo`
+--
+
+/*!50001 DROP VIEW IF EXISTS `view_estado_flujo_efectivo`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_general_ci */;
+/*!50001 CREATE ALGORITHM=TEMPTABLE */
+/*!50013  SQL SECURITY DEFINER */
+/*!50001 VIEW `view_estado_flujo_efectivo` AS select `empresa`.`idempresa` AS `idempresa`,`empresa`.`nombre` AS `nombre_empresa`,`empresa`.`ticker` AS `ticker`,`periodo`.`idperiodo_contable` AS `idperiodo_contable`,`periodo`.`nombre` AS `anio`,`grupo`.`idgrupo_flujo_efectivo` AS `idgrupo_flujo_efectivo`,`grupo`.`tipo_saldo` AS `tipo_saldo`,`grupo`.`nombre` AS `actividad`,if(isnull(`subgrupo`.`idsubgrupo_cuenta`),`detalle`.`descripcion`,`subgrupo`.`nombre`) AS `subactividad`,`detalle`.`monto` AS `monto` from (((((`flujo_efectivo_detalle` `detalle` join `flujo_efectivo` `flujo` on((`detalle`.`idflujo_efectivo` = `flujo`.`idflujo_efectivo`))) join `periodo_contable` `periodo` on((`flujo`.`idperiodo_contable` = `periodo`.`idperiodo_contable`))) join `empresa` on((`flujo`.`idempresa` = `empresa`.`idempresa`))) join `grupo_flujo_efectivo` `grupo` on((`detalle`.`idgrupo_flujo_efectivo` = `grupo`.`idgrupo_flujo_efectivo`))) left join `subgrupo_cuenta` `subgrupo` on((`detalle`.`idsubgrupo_cuenta_balance` = `subgrupo`.`idsubgrupo_cuenta`))) order by `grupo`.`idgrupo_flujo_efectivo` */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `view_razones_financieras`
+--
+
+/*!50001 DROP VIEW IF EXISTS `view_razones_financieras`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_general_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013  SQL SECURITY DEFINER */
+/*!50001 VIEW `view_razones_financieras` AS select `detalle`.`idrazon_financiera_detalle` AS `idrazon_financiera_detalle`,`razones`.`idrazon_financiera` AS `idrazon_financiera`,`razones`.`idempresa` AS `idempresa`,`razones`.`idperiodo_contable` AS `idperiodo_contable`,`tipo`.`agrupacion` AS `agrupacion`,`tipo`.`nombre` AS `nombre`,`detalle`.`valor` AS `valor`,`tipo`.`interpretacion` AS `interpretacion` from ((`razones_financieras_detalle` `detalle` join `razones_financieras` `razones` on((`detalle`.`idrazon_financiera` = `razones`.`idrazon_financiera`))) join `tipo_razon_financiera` `tipo` on((`detalle`.`idtipo_razon_financiera` = `tipo`.`idtipo_razon_financiera`))) where (`razones`.`estado` = 'Activo') */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2016-06-17 10:33:39

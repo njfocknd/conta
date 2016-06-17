@@ -10,6 +10,7 @@ function fncMostrar()
 
 function fncCambiarMonto(id, monto)
 {
+	
 	div=document.getElementById("divActualizar");
 	$(div).html("<img src='nexthor/image/loading.gif' align='center'>");
 	strParam="id="+id+"&monto="+monto+"&actualizarDetalle=1";
@@ -19,6 +20,7 @@ function fncCambiarMonto(id, monto)
 
 function fncAgregarCuenta(opt,id,monto)
 {
+	
 	if (document.getElementById('cuenta_'+opt).value > 0)
 	{
 		div=document.getElementById("divActualizar");
@@ -34,6 +36,7 @@ function fncAgregarCuenta(opt,id,monto)
 }
 
 function fncCambiarCuenta(opt,id,monto){
+	
 	if(monto>0){
 		if (document.getElementById('monto_'+opt).value > 0){
 			fncAgregarCuenta(opt,id,document.getElementById('monto_'+opt).value);

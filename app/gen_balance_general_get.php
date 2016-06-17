@@ -39,7 +39,9 @@ function fncHTML($arrayData){
 						<div class='panel-heading'>".$arrayData['clase_cuenta'][1]["nombre"]."</div>
 						  <table class='table' >
 							<tr>
-								<td><em><b>".$arrayData['clase_cuenta'][1]["grupo_cuenta"][1]["nombre"]."</b></em></td><td colspan = 2></td>
+								<td><em><b>".$arrayData['clase_cuenta'][1]["grupo_cuenta"][1]["nombre"]."</b></em></td>
+								<td></td>
+								<td align = 'right'><b>".number_format($arrayData['clase_cuenta'][1]["grupo_cuenta"][1]["monto"],0)."</b></td>
 							<tr>";
 	$ids= '0';$x=0;
 	foreach ($arrayData['clase_cuenta'][1]["grupo_cuenta"][1]["subgrupo_cuenta"] as $key => $value) 
@@ -62,7 +64,9 @@ function fncHTML($arrayData){
 	}
 
 	echo "					<tr>
-								<td><em><b>".$arrayData['clase_cuenta'][1]["grupo_cuenta"][2]["nombre"]."</b></em></td><td colspan = 2></td>
+								<td><em><b>".$arrayData['clase_cuenta'][1]["grupo_cuenta"][2]["nombre"]."</b></em></td>
+								<td></td>
+								<td align = 'right'><b>".number_format($arrayData['clase_cuenta'][1]["grupo_cuenta"][2]["monto"],0)."</b></td>
 							<tr>";
 	$ids= '0';$x=0;
 	foreach ($arrayData['clase_cuenta'][1]["grupo_cuenta"][2]["subgrupo_cuenta"] as $key => $value) 
@@ -84,8 +88,7 @@ function fncHTML($arrayData){
 							</tr>";	
 	}
 	echo "					<tr>
-								<td></td>
-								<td></td>
+								<td><em><b>Total de Activos</b></em></td><td></td>
 								<td><input type='text' value='".$arrayData['clase_cuenta'][1]["monto"]."' style='text-align: right;' size='8'  class='form-control' readonly/></td>
 							<tr>
 						</table>
@@ -98,7 +101,9 @@ function fncHTML($arrayData){
 						<div class='panel-heading'>".$arrayData['clase_cuenta'][3]["nombre"]."</div>
 						  <table class='table'>
 							<tr>
-								<td><em><b>".$arrayData['clase_cuenta'][3]["grupo_cuenta"][4]["nombre"]."</b></em></td><td colspan = 2></td>
+								<td><em><b>".$arrayData['clase_cuenta'][3]["grupo_cuenta"][4]["nombre"]."</b></em></td>
+								<td></td>
+								<td align = 'right'><b>".number_format($arrayData['clase_cuenta'][3]["grupo_cuenta"][4]["monto"],0)."</b></td>
 							<tr>";
 	$ids= '0';$x=0;
 	foreach ($arrayData['clase_cuenta'][3]["grupo_cuenta"][4]["subgrupo_cuenta"] as $key => $value) 
@@ -120,7 +125,9 @@ function fncHTML($arrayData){
 							</tr>";	
 	}
 	echo "					<tr>
-								<td><em><b>".$arrayData['clase_cuenta'][3]["grupo_cuenta"][5]["nombre"]."</b></em></td><td colspan = 2></td>
+								<td><em><b>".$arrayData['clase_cuenta'][3]["grupo_cuenta"][5]["nombre"]."</b></em></td>
+								<td></td>
+								<td align = 'right'><b>".number_format($arrayData['clase_cuenta'][3]["grupo_cuenta"][5]["monto"],0)."</b></td>
 							<tr>";
 	$ids= '0';$x=0;
 	foreach ($arrayData['clase_cuenta'][3]["grupo_cuenta"][5]["subgrupo_cuenta"] as $key => $value) 
@@ -142,8 +149,7 @@ function fncHTML($arrayData){
 							</tr>";	
 	}
 	echo "					<tr>
-								<td></td>
-								<td></td>
+								<td><em><b>Total de Responsabilidad</b></em></td><td></td>
 								<td><input type='text' value='".$arrayData['clase_cuenta'][3]["monto"]."' style='text-align: right;' size='8'  class='form-control' readonly/></td>
 							<tr>		
 						</table>
@@ -152,7 +158,8 @@ function fncHTML($arrayData){
 						<div class='panel-heading'>Capital Contable</div>
 						  <table class='table'>
 							<tr>
-								<td><em><b>Capital, Reservas y Resultados</b></em></td><td></td><td>".$arrayData['capital_contable']."</td>
+								<td><em><b>Capital, Reservas y Resultados</b></em></td><td></td>
+								<td align = 'right'><b>".number_format($arrayData['capital_contable'],0)."</b></td>
 							<tr>
 							
 				</td>

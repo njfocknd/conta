@@ -4,8 +4,10 @@
 
 // Generate all menu items
 $RootMenu->IsRoot = TRUE;
-$RootMenu->AddMenuItem(17, "mi_estado_resultado", $Language->MenuPhrase("17", "MenuText"), "estado_resultadolist.php", -1, "", TRUE, FALSE);
-$RootMenu->AddMenuItem(15, "mi_balance_general", $Language->MenuPhrase("15", "MenuText"), "balance_generallist.php?cmd=resetall", -1, "", TRUE, FALSE);
+$RootMenu->AddMenuItem(91, "mci_Balance_Genaral", $Language->MenuPhrase("91", "MenuText"), "gen_balance_general.php", -1, "", TRUE, FALSE, TRUE);
+$RootMenu->AddMenuItem(15, "mi_balance_general", $Language->MenuPhrase("15", "MenuText"), "balance_generallist.php?cmd=resetall", 91, "", TRUE, FALSE);
+$RootMenu->AddMenuItem(92, "mci_Estado_de_Resultado", $Language->MenuPhrase("92", "MenuText"), "gen_estado_resultado.php", -1, "", TRUE, FALSE, TRUE);
+$RootMenu->AddMenuItem(17, "mi_estado_resultado", $Language->MenuPhrase("17", "MenuText"), "estado_resultadolist.php", 92, "", TRUE, FALSE);
 $RootMenu->AddMenuItem(74, "mci_Flujo_de_Efectivo", $Language->MenuPhrase("74", "MenuText"), "FlujoEfectivo.php", -1, "", TRUE, FALSE, TRUE);
 $RootMenu->AddMenuItem(35, "mci_Valor_Futuro", $Language->MenuPhrase("35", "MenuText"), "interes.php", -1, "", TRUE, FALSE, TRUE);
 $RootMenu->AddMenuItem(48, "mci_Valor_Presente", $Language->MenuPhrase("48", "MenuText"), "valor_presente.php", -1, "", TRUE, FALSE, TRUE);

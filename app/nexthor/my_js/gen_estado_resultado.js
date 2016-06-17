@@ -17,13 +17,13 @@ function fncCambiarMonto(id, monto)
 	fncMostrar();
 }
 
-function fncAgregarCuenta(opt,id,monto)
+function fncAgregarCuenta(id,monto)
 {
-	if (document.getElementById('cuenta_'+opt).value > 0)
+	if (document.getElementById('cuenta').value > 0)
 	{
 		div=document.getElementById("divActualizar");
 		$(div).html("<img src='nexthor/image/loading.gif' align='center'>");
-		strParam="id="+id+"&monto="+monto+"&cuenta="+document.getElementById('cuenta_'+opt).value+"&agregarDetalle=1";
+		strParam="id="+id+"&monto="+monto+"&cuenta="+document.getElementById('cuenta').value+"&agregarDetalle=1";
 		ajax_dynamic_div("POST",'gen_estado_resultado_update.php',strParam,div,'false');
 		fncMostrar();
 	}
@@ -33,10 +33,10 @@ function fncAgregarCuenta(opt,id,monto)
 	}
 }
 
-function fncCambiarCuenta(opt,id,monto){
+function fncCambiarCuenta(id,monto){
 	if(monto>0){
-		if (document.getElementById('monto_'+opt).value > 0){
-			fncAgregarCuenta(opt,id,document.getElementById('monto_'+opt).value);
+		if (document.getElementById('monto').value > 0){
+			fncAgregarCuenta(id,document.getElementById('monto').value);
 		}
 	}
 }
