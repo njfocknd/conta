@@ -7,6 +7,7 @@ $RootMenu->IsRoot = TRUE;
 $RootMenu->AddMenuItem(106, "mci_Balance_General", $Language->MenuPhrase("106", "MenuText"), "gen_balance_general.php", -1, "", TRUE, FALSE, TRUE);
 $RootMenu->AddMenuItem(130, "mci_Ane1lisis_Balance_General", $Language->MenuPhrase("130", "MenuText"), "rep_balance_general.php", 106, "", TRUE, FALSE, TRUE);
 $RootMenu->AddMenuItem(15, "mi_balance_general", $Language->MenuPhrase("15", "MenuText"), "balance_generallist.php?cmd=resetall", 106, "", TRUE, FALSE);
+$RootMenu->AddMenuItem(175, "mci_Razones_Financieras", $Language->MenuPhrase("175", "MenuText"), "gen_razones_financieras.php", -1, "", TRUE, FALSE, TRUE);
 $RootMenu->AddMenuItem(105, "mci_Estado_de_Resultado", $Language->MenuPhrase("105", "MenuText"), "gen_estado_resultado.php", -1, "", TRUE, FALSE, TRUE);
 $RootMenu->AddMenuItem(154, "mci_Ane1lisis_Estado_de_Resultado", $Language->MenuPhrase("154", "MenuText"), "rep_estado_resultado.php", 105, "", TRUE, FALSE, TRUE);
 $RootMenu->AddMenuItem(17, "mi_estado_resultado", $Language->MenuPhrase("17", "MenuText"), "estado_resultadolist.php", 105, "", TRUE, FALSE);
