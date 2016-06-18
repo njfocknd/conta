@@ -457,6 +457,9 @@ class csubgrupo_cuenta_add extends csubgrupo_cuenta {
 		$this->idgrupo_cuenta->OldValue = $this->idgrupo_cuenta->CurrentValue;
 		$this->definicion->CurrentValue = NULL;
 		$this->definicion->OldValue = $this->definicion->CurrentValue;
+		$this->idgrupo_flujo_efectivo->CurrentValue = NULL;
+		$this->idgrupo_flujo_efectivo->OldValue = $this->idgrupo_flujo_efectivo->CurrentValue;
+		$this->tendencia->CurrentValue = "Positiva";
 	}
 
 	// Load form values
@@ -476,6 +479,12 @@ class csubgrupo_cuenta_add extends csubgrupo_cuenta {
 		if (!$this->definicion->FldIsDetailKey) {
 			$this->definicion->setFormValue($objForm->GetValue("x_definicion"));
 		}
+		if (!$this->idgrupo_flujo_efectivo->FldIsDetailKey) {
+			$this->idgrupo_flujo_efectivo->setFormValue($objForm->GetValue("x_idgrupo_flujo_efectivo"));
+		}
+		if (!$this->tendencia->FldIsDetailKey) {
+			$this->tendencia->setFormValue($objForm->GetValue("x_tendencia"));
+		}
 	}
 
 	// Restore form values
@@ -486,6 +495,8 @@ class csubgrupo_cuenta_add extends csubgrupo_cuenta {
 		$this->nombre->CurrentValue = $this->nombre->FormValue;
 		$this->idgrupo_cuenta->CurrentValue = $this->idgrupo_cuenta->FormValue;
 		$this->definicion->CurrentValue = $this->definicion->FormValue;
+		$this->idgrupo_flujo_efectivo->CurrentValue = $this->idgrupo_flujo_efectivo->FormValue;
+		$this->tendencia->CurrentValue = $this->tendencia->FormValue;
 	}
 
 	// Load row based on key values
@@ -523,6 +534,8 @@ class csubgrupo_cuenta_add extends csubgrupo_cuenta {
 		$this->idgrupo_cuenta->setDbValue($rs->fields('idgrupo_cuenta'));
 		$this->definicion->setDbValue($rs->fields('definicion'));
 		$this->estado->setDbValue($rs->fields('estado'));
+		$this->idgrupo_flujo_efectivo->setDbValue($rs->fields('idgrupo_flujo_efectivo'));
+		$this->tendencia->setDbValue($rs->fields('tendencia'));
 	}
 
 	// Load DbValue from recordset
@@ -535,6 +548,8 @@ class csubgrupo_cuenta_add extends csubgrupo_cuenta {
 		$this->idgrupo_cuenta->DbValue = $row['idgrupo_cuenta'];
 		$this->definicion->DbValue = $row['definicion'];
 		$this->estado->DbValue = $row['estado'];
+		$this->idgrupo_flujo_efectivo->DbValue = $row['idgrupo_flujo_efectivo'];
+		$this->tendencia->DbValue = $row['tendencia'];
 	}
 
 	// Load old record
@@ -576,6 +591,8 @@ class csubgrupo_cuenta_add extends csubgrupo_cuenta {
 		// idgrupo_cuenta
 		// definicion
 		// estado
+		// idgrupo_flujo_efectivo
+		// tendencia
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -627,6 +644,18 @@ class csubgrupo_cuenta_add extends csubgrupo_cuenta {
 		}
 		$this->estado->ViewCustomAttributes = "";
 
+		// idgrupo_flujo_efectivo
+		$this->idgrupo_flujo_efectivo->ViewValue = $this->idgrupo_flujo_efectivo->CurrentValue;
+		$this->idgrupo_flujo_efectivo->ViewCustomAttributes = "";
+
+		// tendencia
+		if (strval($this->tendencia->CurrentValue) <> "") {
+			$this->tendencia->ViewValue = $this->tendencia->OptionCaption($this->tendencia->CurrentValue);
+		} else {
+			$this->tendencia->ViewValue = NULL;
+		}
+		$this->tendencia->ViewCustomAttributes = "";
+
 			// nomenclatura
 			$this->nomenclatura->LinkCustomAttributes = "";
 			$this->nomenclatura->HrefValue = "";
@@ -646,6 +675,16 @@ class csubgrupo_cuenta_add extends csubgrupo_cuenta {
 			$this->definicion->LinkCustomAttributes = "";
 			$this->definicion->HrefValue = "";
 			$this->definicion->TooltipValue = "";
+
+			// idgrupo_flujo_efectivo
+			$this->idgrupo_flujo_efectivo->LinkCustomAttributes = "";
+			$this->idgrupo_flujo_efectivo->HrefValue = "";
+			$this->idgrupo_flujo_efectivo->TooltipValue = "";
+
+			// tendencia
+			$this->tendencia->LinkCustomAttributes = "";
+			$this->tendencia->HrefValue = "";
+			$this->tendencia->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
 
 			// nomenclatura
@@ -713,6 +752,17 @@ class csubgrupo_cuenta_add extends csubgrupo_cuenta {
 			$this->definicion->EditValue = ew_HtmlEncode($this->definicion->CurrentValue);
 			$this->definicion->PlaceHolder = ew_RemoveHtml($this->definicion->FldCaption());
 
+			// idgrupo_flujo_efectivo
+			$this->idgrupo_flujo_efectivo->EditAttrs["class"] = "form-control";
+			$this->idgrupo_flujo_efectivo->EditCustomAttributes = "";
+			$this->idgrupo_flujo_efectivo->EditValue = ew_HtmlEncode($this->idgrupo_flujo_efectivo->CurrentValue);
+			$this->idgrupo_flujo_efectivo->PlaceHolder = ew_RemoveHtml($this->idgrupo_flujo_efectivo->FldCaption());
+
+			// tendencia
+			$this->tendencia->EditAttrs["class"] = "form-control";
+			$this->tendencia->EditCustomAttributes = "";
+			$this->tendencia->EditValue = $this->tendencia->Options(TRUE);
+
 			// Add refer script
 			// nomenclatura
 
@@ -730,6 +780,14 @@ class csubgrupo_cuenta_add extends csubgrupo_cuenta {
 			// definicion
 			$this->definicion->LinkCustomAttributes = "";
 			$this->definicion->HrefValue = "";
+
+			// idgrupo_flujo_efectivo
+			$this->idgrupo_flujo_efectivo->LinkCustomAttributes = "";
+			$this->idgrupo_flujo_efectivo->HrefValue = "";
+
+			// tendencia
+			$this->tendencia->LinkCustomAttributes = "";
+			$this->tendencia->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
 			$this->RowType == EW_ROWTYPE_EDIT ||
@@ -763,6 +821,12 @@ class csubgrupo_cuenta_add extends csubgrupo_cuenta {
 		}
 		if (!$this->definicion->FldIsDetailKey && !is_null($this->definicion->FormValue) && $this->definicion->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->definicion->FldCaption(), $this->definicion->ReqErrMsg));
+		}
+		if (!ew_CheckInteger($this->idgrupo_flujo_efectivo->FormValue)) {
+			ew_AddMessage($gsFormError, $this->idgrupo_flujo_efectivo->FldErrMsg());
+		}
+		if (!$this->tendencia->FldIsDetailKey && !is_null($this->tendencia->FormValue) && $this->tendencia->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->tendencia->FldCaption(), $this->tendencia->ReqErrMsg));
 		}
 
 		// Validate detail grid
@@ -810,6 +874,12 @@ class csubgrupo_cuenta_add extends csubgrupo_cuenta {
 
 		// definicion
 		$this->definicion->SetDbValueDef($rsnew, $this->definicion->CurrentValue, "", FALSE);
+
+		// idgrupo_flujo_efectivo
+		$this->idgrupo_flujo_efectivo->SetDbValueDef($rsnew, $this->idgrupo_flujo_efectivo->CurrentValue, NULL, FALSE);
+
+		// tendencia
+		$this->tendencia->SetDbValueDef($rsnew, $this->tendencia->CurrentValue, "", strval($this->tendencia->CurrentValue) == "");
 
 		// Call Row Inserting event
 		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
@@ -1089,6 +1159,12 @@ fsubgrupo_cuentaadd.Validate = function() {
 			elm = this.GetElements("x" + infix + "_definicion");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $subgrupo_cuenta->definicion->FldCaption(), $subgrupo_cuenta->definicion->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_idgrupo_flujo_efectivo");
+			if (elm && !ew_CheckInteger(elm.value))
+				return this.OnError(elm, "<?php echo ew_JsEncode2($subgrupo_cuenta->idgrupo_flujo_efectivo->FldErrMsg()) ?>");
+			elm = this.GetElements("x" + infix + "_tendencia");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $subgrupo_cuenta->tendencia->FldCaption(), $subgrupo_cuenta->tendencia->ReqErrMsg)) ?>");
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -1123,6 +1199,8 @@ fsubgrupo_cuentaadd.ValidateRequired = false;
 
 // Dynamic selection lists
 fsubgrupo_cuentaadd.Lists["x_idgrupo_cuenta"] = {"LinkField":"x_idgrupo_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fsubgrupo_cuentaadd.Lists["x_tendencia"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fsubgrupo_cuentaadd.Lists["x_tendencia"].Options = <?php echo json_encode($subgrupo_cuenta->tendencia->Options()) ?>;
 
 // Form object for search
 </script>
@@ -1231,6 +1309,48 @@ if ($sSqlWrk <> "") $subgrupo_cuenta->idgrupo_cuenta->LookupFilters["s"] .= $sSq
 <input type="text" data-table="subgrupo_cuenta" data-field="x_definicion" name="x_definicion" id="x_definicion" size="30" maxlength="45" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->definicion->getPlaceHolder()) ?>" value="<?php echo $subgrupo_cuenta->definicion->EditValue ?>"<?php echo $subgrupo_cuenta->definicion->EditAttributes() ?>>
 </span>
 <?php echo $subgrupo_cuenta->definicion->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
+<?php if ($subgrupo_cuenta->idgrupo_flujo_efectivo->Visible) { // idgrupo_flujo_efectivo ?>
+	<div id="r_idgrupo_flujo_efectivo" class="form-group">
+		<label id="elh_subgrupo_cuenta_idgrupo_flujo_efectivo" for="x_idgrupo_flujo_efectivo" class="col-sm-2 control-label ewLabel"><?php echo $subgrupo_cuenta->idgrupo_flujo_efectivo->FldCaption() ?></label>
+		<div class="col-sm-10"><div<?php echo $subgrupo_cuenta->idgrupo_flujo_efectivo->CellAttributes() ?>>
+<span id="el_subgrupo_cuenta_idgrupo_flujo_efectivo">
+<input type="text" data-table="subgrupo_cuenta" data-field="x_idgrupo_flujo_efectivo" name="x_idgrupo_flujo_efectivo" id="x_idgrupo_flujo_efectivo" size="30" placeholder="<?php echo ew_HtmlEncode($subgrupo_cuenta->idgrupo_flujo_efectivo->getPlaceHolder()) ?>" value="<?php echo $subgrupo_cuenta->idgrupo_flujo_efectivo->EditValue ?>"<?php echo $subgrupo_cuenta->idgrupo_flujo_efectivo->EditAttributes() ?>>
+</span>
+<?php echo $subgrupo_cuenta->idgrupo_flujo_efectivo->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
+<?php if ($subgrupo_cuenta->tendencia->Visible) { // tendencia ?>
+	<div id="r_tendencia" class="form-group">
+		<label id="elh_subgrupo_cuenta_tendencia" for="x_tendencia" class="col-sm-2 control-label ewLabel"><?php echo $subgrupo_cuenta->tendencia->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $subgrupo_cuenta->tendencia->CellAttributes() ?>>
+<span id="el_subgrupo_cuenta_tendencia">
+<select data-table="subgrupo_cuenta" data-field="x_tendencia" data-value-separator="<?php echo ew_HtmlEncode(is_array($subgrupo_cuenta->tendencia->DisplayValueSeparator) ? json_encode($subgrupo_cuenta->tendencia->DisplayValueSeparator) : $subgrupo_cuenta->tendencia->DisplayValueSeparator) ?>" id="x_tendencia" name="x_tendencia"<?php echo $subgrupo_cuenta->tendencia->EditAttributes() ?>>
+<?php
+if (is_array($subgrupo_cuenta->tendencia->EditValue)) {
+	$arwrk = $subgrupo_cuenta->tendencia->EditValue;
+	$rowswrk = count($arwrk);
+	$emptywrk = TRUE;
+	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
+		$selwrk = ew_SameStr($subgrupo_cuenta->tendencia->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
+?>
+<option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
+<?php echo $subgrupo_cuenta->tendencia->DisplayValue($arwrk[$rowcntwrk]) ?>
+</option>
+<?php
+	}
+	if ($emptywrk && strval($subgrupo_cuenta->tendencia->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($subgrupo_cuenta->tendencia->CurrentValue) ?>" selected><?php echo $subgrupo_cuenta->tendencia->CurrentValue ?></option>
+<?php
+    }
+}
+?>
+</select>
+</span>
+<?php echo $subgrupo_cuenta->tendencia->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
 </div>

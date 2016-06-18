@@ -611,6 +611,8 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 		$this->idgrupo_cuenta->setDbValue($rs->fields('idgrupo_cuenta'));
 		$this->definicion->setDbValue($rs->fields('definicion'));
 		$this->estado->setDbValue($rs->fields('estado'));
+		$this->idgrupo_flujo_efectivo->setDbValue($rs->fields('idgrupo_flujo_efectivo'));
+		$this->tendencia->setDbValue($rs->fields('tendencia'));
 	}
 
 	// Load DbValue from recordset
@@ -623,6 +625,8 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 		$this->idgrupo_cuenta->DbValue = $row['idgrupo_cuenta'];
 		$this->definicion->DbValue = $row['definicion'];
 		$this->estado->DbValue = $row['estado'];
+		$this->idgrupo_flujo_efectivo->DbValue = $row['idgrupo_flujo_efectivo'];
+		$this->tendencia->DbValue = $row['tendencia'];
 	}
 
 	// Render row values based on field settings
@@ -647,6 +651,8 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 		// idgrupo_cuenta
 		// definicion
 		// estado
+		// idgrupo_flujo_efectivo
+		// tendencia
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -698,6 +704,18 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 		}
 		$this->estado->ViewCustomAttributes = "";
 
+		// idgrupo_flujo_efectivo
+		$this->idgrupo_flujo_efectivo->ViewValue = $this->idgrupo_flujo_efectivo->CurrentValue;
+		$this->idgrupo_flujo_efectivo->ViewCustomAttributes = "";
+
+		// tendencia
+		if (strval($this->tendencia->CurrentValue) <> "") {
+			$this->tendencia->ViewValue = $this->tendencia->OptionCaption($this->tendencia->CurrentValue);
+		} else {
+			$this->tendencia->ViewValue = NULL;
+		}
+		$this->tendencia->ViewCustomAttributes = "";
+
 			// idsubgrupo_cuenta
 			$this->idsubgrupo_cuenta->LinkCustomAttributes = "";
 			$this->idsubgrupo_cuenta->HrefValue = "";
@@ -727,6 +745,16 @@ class csubgrupo_cuenta_view extends csubgrupo_cuenta {
 			$this->estado->LinkCustomAttributes = "";
 			$this->estado->HrefValue = "";
 			$this->estado->TooltipValue = "";
+
+			// idgrupo_flujo_efectivo
+			$this->idgrupo_flujo_efectivo->LinkCustomAttributes = "";
+			$this->idgrupo_flujo_efectivo->HrefValue = "";
+			$this->idgrupo_flujo_efectivo->TooltipValue = "";
+
+			// tendencia
+			$this->tendencia->LinkCustomAttributes = "";
+			$this->tendencia->HrefValue = "";
+			$this->tendencia->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -965,6 +993,8 @@ fsubgrupo_cuentaview.ValidateRequired = false;
 fsubgrupo_cuentaview.Lists["x_idgrupo_cuenta"] = {"LinkField":"x_idgrupo_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 fsubgrupo_cuentaview.Lists["x_estado"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 fsubgrupo_cuentaview.Lists["x_estado"].Options = <?php echo json_encode($subgrupo_cuenta->estado->Options()) ?>;
+fsubgrupo_cuentaview.Lists["x_tendencia"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fsubgrupo_cuentaview.Lists["x_tendencia"].Options = <?php echo json_encode($subgrupo_cuenta->tendencia->Options()) ?>;
 
 // Form object for search
 </script>
@@ -1054,6 +1084,28 @@ $subgrupo_cuenta_view->ShowMessage();
 <span id="el_subgrupo_cuenta_estado">
 <span<?php echo $subgrupo_cuenta->estado->ViewAttributes() ?>>
 <?php echo $subgrupo_cuenta->estado->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($subgrupo_cuenta->idgrupo_flujo_efectivo->Visible) { // idgrupo_flujo_efectivo ?>
+	<tr id="r_idgrupo_flujo_efectivo">
+		<td><span id="elh_subgrupo_cuenta_idgrupo_flujo_efectivo"><?php echo $subgrupo_cuenta->idgrupo_flujo_efectivo->FldCaption() ?></span></td>
+		<td data-name="idgrupo_flujo_efectivo"<?php echo $subgrupo_cuenta->idgrupo_flujo_efectivo->CellAttributes() ?>>
+<span id="el_subgrupo_cuenta_idgrupo_flujo_efectivo">
+<span<?php echo $subgrupo_cuenta->idgrupo_flujo_efectivo->ViewAttributes() ?>>
+<?php echo $subgrupo_cuenta->idgrupo_flujo_efectivo->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($subgrupo_cuenta->tendencia->Visible) { // tendencia ?>
+	<tr id="r_tendencia">
+		<td><span id="elh_subgrupo_cuenta_tendencia"><?php echo $subgrupo_cuenta->tendencia->FldCaption() ?></span></td>
+		<td data-name="tendencia"<?php echo $subgrupo_cuenta->tendencia->CellAttributes() ?>>
+<span id="el_subgrupo_cuenta_tendencia">
+<span<?php echo $subgrupo_cuenta->tendencia->ViewAttributes() ?>>
+<?php echo $subgrupo_cuenta->tendencia->ViewValue ?></span>
 </span>
 </td>
 	</tr>

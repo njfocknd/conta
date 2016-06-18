@@ -49,6 +49,9 @@ fsubgrupo_cuentagrid.Validate = function() {
 			elm = this.GetElements("x" + infix + "_idgrupo_cuenta");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $subgrupo_cuenta->idgrupo_cuenta->FldCaption(), $subgrupo_cuenta->idgrupo_cuenta->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_tendencia");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $subgrupo_cuenta->tendencia->FldCaption(), $subgrupo_cuenta->tendencia->ReqErrMsg)) ?>");
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -64,6 +67,7 @@ fsubgrupo_cuentagrid.EmptyRow = function(infix) {
 	if (ew_ValueChanged(fobj, infix, "nomenclatura", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "nombre", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "idgrupo_cuenta", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "tendencia", false)) return false;
 	return true;
 }
 
@@ -84,6 +88,8 @@ fsubgrupo_cuentagrid.ValidateRequired = false;
 
 // Dynamic selection lists
 fsubgrupo_cuentagrid.Lists["x_idgrupo_cuenta"] = {"LinkField":"x_idgrupo_cuenta","Ajax":true,"AutoFill":false,"DisplayFields":["x_nombre","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fsubgrupo_cuentagrid.Lists["x_tendencia"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fsubgrupo_cuentagrid.Lists["x_tendencia"].Options = <?php echo json_encode($subgrupo_cuenta->tendencia->Options()) ?>;
 
 // Form object for search
 </script>
@@ -188,6 +194,15 @@ $subgrupo_cuenta_grid->ListOptions->Render("header", "left");
 	<?php } else { ?>
 		<th data-name="idgrupo_cuenta"><div><div id="elh_subgrupo_cuenta_idgrupo_cuenta" class="subgrupo_cuenta_idgrupo_cuenta">
 			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $subgrupo_cuenta->idgrupo_cuenta->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($subgrupo_cuenta->idgrupo_cuenta->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($subgrupo_cuenta->idgrupo_cuenta->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
+<?php if ($subgrupo_cuenta->tendencia->Visible) { // tendencia ?>
+	<?php if ($subgrupo_cuenta->SortUrl($subgrupo_cuenta->tendencia) == "") { ?>
+		<th data-name="tendencia"><div id="elh_subgrupo_cuenta_tendencia" class="subgrupo_cuenta_tendencia"><div class="ewTableHeaderCaption"><?php echo $subgrupo_cuenta->tendencia->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="tendencia"><div><div id="elh_subgrupo_cuenta_tendencia" class="subgrupo_cuenta_tendencia">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $subgrupo_cuenta->tendencia->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($subgrupo_cuenta->tendencia->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($subgrupo_cuenta->tendencia->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -464,6 +479,75 @@ if ($sSqlWrk <> "") $subgrupo_cuenta->idgrupo_cuenta->LookupFilters["s"] .= $sSq
 <?php } ?>
 </td>
 	<?php } ?>
+	<?php if ($subgrupo_cuenta->tendencia->Visible) { // tendencia ?>
+		<td data-name="tendencia"<?php echo $subgrupo_cuenta->tendencia->CellAttributes() ?>>
+<?php if ($subgrupo_cuenta->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $subgrupo_cuenta_grid->RowCnt ?>_subgrupo_cuenta_tendencia" class="form-group subgrupo_cuenta_tendencia">
+<select data-table="subgrupo_cuenta" data-field="x_tendencia" data-value-separator="<?php echo ew_HtmlEncode(is_array($subgrupo_cuenta->tendencia->DisplayValueSeparator) ? json_encode($subgrupo_cuenta->tendencia->DisplayValueSeparator) : $subgrupo_cuenta->tendencia->DisplayValueSeparator) ?>" id="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_tendencia" name="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_tendencia"<?php echo $subgrupo_cuenta->tendencia->EditAttributes() ?>>
+<?php
+if (is_array($subgrupo_cuenta->tendencia->EditValue)) {
+	$arwrk = $subgrupo_cuenta->tendencia->EditValue;
+	$rowswrk = count($arwrk);
+	$emptywrk = TRUE;
+	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
+		$selwrk = ew_SameStr($subgrupo_cuenta->tendencia->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
+?>
+<option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
+<?php echo $subgrupo_cuenta->tendencia->DisplayValue($arwrk[$rowcntwrk]) ?>
+</option>
+<?php
+	}
+	if ($emptywrk && strval($subgrupo_cuenta->tendencia->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($subgrupo_cuenta->tendencia->CurrentValue) ?>" selected><?php echo $subgrupo_cuenta->tendencia->CurrentValue ?></option>
+<?php
+    }
+}
+if (@$emptywrk) $subgrupo_cuenta->tendencia->OldValue = "";
+?>
+</select>
+</span>
+<input type="hidden" data-table="subgrupo_cuenta" data-field="x_tendencia" name="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_tendencia" id="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_tendencia" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->tendencia->OldValue) ?>">
+<?php } ?>
+<?php if ($subgrupo_cuenta->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $subgrupo_cuenta_grid->RowCnt ?>_subgrupo_cuenta_tendencia" class="form-group subgrupo_cuenta_tendencia">
+<select data-table="subgrupo_cuenta" data-field="x_tendencia" data-value-separator="<?php echo ew_HtmlEncode(is_array($subgrupo_cuenta->tendencia->DisplayValueSeparator) ? json_encode($subgrupo_cuenta->tendencia->DisplayValueSeparator) : $subgrupo_cuenta->tendencia->DisplayValueSeparator) ?>" id="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_tendencia" name="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_tendencia"<?php echo $subgrupo_cuenta->tendencia->EditAttributes() ?>>
+<?php
+if (is_array($subgrupo_cuenta->tendencia->EditValue)) {
+	$arwrk = $subgrupo_cuenta->tendencia->EditValue;
+	$rowswrk = count($arwrk);
+	$emptywrk = TRUE;
+	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
+		$selwrk = ew_SameStr($subgrupo_cuenta->tendencia->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
+?>
+<option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
+<?php echo $subgrupo_cuenta->tendencia->DisplayValue($arwrk[$rowcntwrk]) ?>
+</option>
+<?php
+	}
+	if ($emptywrk && strval($subgrupo_cuenta->tendencia->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($subgrupo_cuenta->tendencia->CurrentValue) ?>" selected><?php echo $subgrupo_cuenta->tendencia->CurrentValue ?></option>
+<?php
+    }
+}
+if (@$emptywrk) $subgrupo_cuenta->tendencia->OldValue = "";
+?>
+</select>
+</span>
+<?php } ?>
+<?php if ($subgrupo_cuenta->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $subgrupo_cuenta_grid->RowCnt ?>_subgrupo_cuenta_tendencia" class="subgrupo_cuenta_tendencia">
+<span<?php echo $subgrupo_cuenta->tendencia->ViewAttributes() ?>>
+<?php echo $subgrupo_cuenta->tendencia->ListViewValue() ?></span>
+</span>
+<input type="hidden" data-table="subgrupo_cuenta" data-field="x_tendencia" name="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_tendencia" id="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_tendencia" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->tendencia->FormValue) ?>">
+<input type="hidden" data-table="subgrupo_cuenta" data-field="x_tendencia" name="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_tendencia" id="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_tendencia" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->tendencia->OldValue) ?>">
+<?php } ?>
+</td>
+	<?php } ?>
 <?php
 
 // Render list options (body, right)
@@ -596,6 +680,45 @@ if ($sSqlWrk <> "") $subgrupo_cuenta->idgrupo_cuenta->LookupFilters["s"] .= $sSq
 <input type="hidden" data-table="subgrupo_cuenta" data-field="x_idgrupo_cuenta" name="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_idgrupo_cuenta" id="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_idgrupo_cuenta" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->idgrupo_cuenta->FormValue) ?>">
 <?php } ?>
 <input type="hidden" data-table="subgrupo_cuenta" data-field="x_idgrupo_cuenta" name="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_idgrupo_cuenta" id="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_idgrupo_cuenta" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->idgrupo_cuenta->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($subgrupo_cuenta->tendencia->Visible) { // tendencia ?>
+		<td data-name="tendencia">
+<?php if ($subgrupo_cuenta->CurrentAction <> "F") { ?>
+<span id="el$rowindex$_subgrupo_cuenta_tendencia" class="form-group subgrupo_cuenta_tendencia">
+<select data-table="subgrupo_cuenta" data-field="x_tendencia" data-value-separator="<?php echo ew_HtmlEncode(is_array($subgrupo_cuenta->tendencia->DisplayValueSeparator) ? json_encode($subgrupo_cuenta->tendencia->DisplayValueSeparator) : $subgrupo_cuenta->tendencia->DisplayValueSeparator) ?>" id="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_tendencia" name="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_tendencia"<?php echo $subgrupo_cuenta->tendencia->EditAttributes() ?>>
+<?php
+if (is_array($subgrupo_cuenta->tendencia->EditValue)) {
+	$arwrk = $subgrupo_cuenta->tendencia->EditValue;
+	$rowswrk = count($arwrk);
+	$emptywrk = TRUE;
+	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
+		$selwrk = ew_SameStr($subgrupo_cuenta->tendencia->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
+?>
+<option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
+<?php echo $subgrupo_cuenta->tendencia->DisplayValue($arwrk[$rowcntwrk]) ?>
+</option>
+<?php
+	}
+	if ($emptywrk && strval($subgrupo_cuenta->tendencia->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($subgrupo_cuenta->tendencia->CurrentValue) ?>" selected><?php echo $subgrupo_cuenta->tendencia->CurrentValue ?></option>
+<?php
+    }
+}
+if (@$emptywrk) $subgrupo_cuenta->tendencia->OldValue = "";
+?>
+</select>
+</span>
+<?php } else { ?>
+<span id="el$rowindex$_subgrupo_cuenta_tendencia" class="form-group subgrupo_cuenta_tendencia">
+<span<?php echo $subgrupo_cuenta->tendencia->ViewAttributes() ?>>
+<p class="form-control-static"><?php echo $subgrupo_cuenta->tendencia->ViewValue ?></p></span>
+</span>
+<input type="hidden" data-table="subgrupo_cuenta" data-field="x_tendencia" name="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_tendencia" id="x<?php echo $subgrupo_cuenta_grid->RowIndex ?>_tendencia" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->tendencia->FormValue) ?>">
+<?php } ?>
+<input type="hidden" data-table="subgrupo_cuenta" data-field="x_tendencia" name="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_tendencia" id="o<?php echo $subgrupo_cuenta_grid->RowIndex ?>_tendencia" value="<?php echo ew_HtmlEncode($subgrupo_cuenta->tendencia->OldValue) ?>">
 </td>
 	<?php } ?>
 <?php

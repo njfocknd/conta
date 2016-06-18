@@ -739,6 +739,8 @@ class csubgrupo_cuenta_grid extends csubgrupo_cuenta {
 			return FALSE;
 		if ($objForm->HasValue("x_idgrupo_cuenta") && $objForm->HasValue("o_idgrupo_cuenta") && $this->idgrupo_cuenta->CurrentValue <> $this->idgrupo_cuenta->OldValue)
 			return FALSE;
+		if ($objForm->HasValue("x_tendencia") && $objForm->HasValue("o_tendencia") && $this->tendencia->CurrentValue <> $this->tendencia->OldValue)
+			return FALSE;
 		return TRUE;
 	}
 
@@ -1029,6 +1031,8 @@ class csubgrupo_cuenta_grid extends csubgrupo_cuenta {
 		$this->nombre->OldValue = $this->nombre->CurrentValue;
 		$this->idgrupo_cuenta->CurrentValue = NULL;
 		$this->idgrupo_cuenta->OldValue = $this->idgrupo_cuenta->CurrentValue;
+		$this->tendencia->CurrentValue = "Positiva";
+		$this->tendencia->OldValue = $this->tendencia->CurrentValue;
 	}
 
 	// Load form values
@@ -1049,6 +1053,10 @@ class csubgrupo_cuenta_grid extends csubgrupo_cuenta {
 			$this->idgrupo_cuenta->setFormValue($objForm->GetValue("x_idgrupo_cuenta"));
 		}
 		$this->idgrupo_cuenta->setOldValue($objForm->GetValue("o_idgrupo_cuenta"));
+		if (!$this->tendencia->FldIsDetailKey) {
+			$this->tendencia->setFormValue($objForm->GetValue("x_tendencia"));
+		}
+		$this->tendencia->setOldValue($objForm->GetValue("o_tendencia"));
 		if (!$this->idsubgrupo_cuenta->FldIsDetailKey && $this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
 			$this->idsubgrupo_cuenta->setFormValue($objForm->GetValue("x_idsubgrupo_cuenta"));
 	}
@@ -1061,6 +1069,7 @@ class csubgrupo_cuenta_grid extends csubgrupo_cuenta {
 		$this->nomenclatura->CurrentValue = $this->nomenclatura->FormValue;
 		$this->nombre->CurrentValue = $this->nombre->FormValue;
 		$this->idgrupo_cuenta->CurrentValue = $this->idgrupo_cuenta->FormValue;
+		$this->tendencia->CurrentValue = $this->tendencia->FormValue;
 	}
 
 	// Load recordset
@@ -1124,6 +1133,8 @@ class csubgrupo_cuenta_grid extends csubgrupo_cuenta {
 		$this->idgrupo_cuenta->setDbValue($rs->fields('idgrupo_cuenta'));
 		$this->definicion->setDbValue($rs->fields('definicion'));
 		$this->estado->setDbValue($rs->fields('estado'));
+		$this->idgrupo_flujo_efectivo->setDbValue($rs->fields('idgrupo_flujo_efectivo'));
+		$this->tendencia->setDbValue($rs->fields('tendencia'));
 	}
 
 	// Load DbValue from recordset
@@ -1136,6 +1147,8 @@ class csubgrupo_cuenta_grid extends csubgrupo_cuenta {
 		$this->idgrupo_cuenta->DbValue = $row['idgrupo_cuenta'];
 		$this->definicion->DbValue = $row['definicion'];
 		$this->estado->DbValue = $row['estado'];
+		$this->idgrupo_flujo_efectivo->DbValue = $row['idgrupo_flujo_efectivo'];
+		$this->tendencia->DbValue = $row['tendencia'];
 	}
 
 	// Load old record
@@ -1183,6 +1196,8 @@ class csubgrupo_cuenta_grid extends csubgrupo_cuenta {
 		// idgrupo_cuenta
 		// definicion
 		// estado
+		// idgrupo_flujo_efectivo
+		// tendencia
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -1234,6 +1249,18 @@ class csubgrupo_cuenta_grid extends csubgrupo_cuenta {
 		}
 		$this->estado->ViewCustomAttributes = "";
 
+		// idgrupo_flujo_efectivo
+		$this->idgrupo_flujo_efectivo->ViewValue = $this->idgrupo_flujo_efectivo->CurrentValue;
+		$this->idgrupo_flujo_efectivo->ViewCustomAttributes = "";
+
+		// tendencia
+		if (strval($this->tendencia->CurrentValue) <> "") {
+			$this->tendencia->ViewValue = $this->tendencia->OptionCaption($this->tendencia->CurrentValue);
+		} else {
+			$this->tendencia->ViewValue = NULL;
+		}
+		$this->tendencia->ViewCustomAttributes = "";
+
 			// nomenclatura
 			$this->nomenclatura->LinkCustomAttributes = "";
 			$this->nomenclatura->HrefValue = "";
@@ -1248,6 +1275,11 @@ class csubgrupo_cuenta_grid extends csubgrupo_cuenta {
 			$this->idgrupo_cuenta->LinkCustomAttributes = "";
 			$this->idgrupo_cuenta->HrefValue = "";
 			$this->idgrupo_cuenta->TooltipValue = "";
+
+			// tendencia
+			$this->tendencia->LinkCustomAttributes = "";
+			$this->tendencia->HrefValue = "";
+			$this->tendencia->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
 
 			// nomenclatura
@@ -1310,6 +1342,11 @@ class csubgrupo_cuenta_grid extends csubgrupo_cuenta {
 			$this->idgrupo_cuenta->EditValue = $arwrk;
 			}
 
+			// tendencia
+			$this->tendencia->EditAttrs["class"] = "form-control";
+			$this->tendencia->EditCustomAttributes = "";
+			$this->tendencia->EditValue = $this->tendencia->Options(TRUE);
+
 			// Add refer script
 			// nomenclatura
 
@@ -1323,6 +1360,10 @@ class csubgrupo_cuenta_grid extends csubgrupo_cuenta {
 			// idgrupo_cuenta
 			$this->idgrupo_cuenta->LinkCustomAttributes = "";
 			$this->idgrupo_cuenta->HrefValue = "";
+
+			// tendencia
+			$this->tendencia->LinkCustomAttributes = "";
+			$this->tendencia->HrefValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
 
 			// nomenclatura
@@ -1385,6 +1426,11 @@ class csubgrupo_cuenta_grid extends csubgrupo_cuenta {
 			$this->idgrupo_cuenta->EditValue = $arwrk;
 			}
 
+			// tendencia
+			$this->tendencia->EditAttrs["class"] = "form-control";
+			$this->tendencia->EditCustomAttributes = "";
+			$this->tendencia->EditValue = $this->tendencia->Options(TRUE);
+
 			// Edit refer script
 			// nomenclatura
 
@@ -1398,6 +1444,10 @@ class csubgrupo_cuenta_grid extends csubgrupo_cuenta {
 			// idgrupo_cuenta
 			$this->idgrupo_cuenta->LinkCustomAttributes = "";
 			$this->idgrupo_cuenta->HrefValue = "";
+
+			// tendencia
+			$this->tendencia->LinkCustomAttributes = "";
+			$this->tendencia->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
 			$this->RowType == EW_ROWTYPE_EDIT ||
@@ -1425,6 +1475,9 @@ class csubgrupo_cuenta_grid extends csubgrupo_cuenta {
 		}
 		if (!$this->idgrupo_cuenta->FldIsDetailKey && !is_null($this->idgrupo_cuenta->FormValue) && $this->idgrupo_cuenta->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->idgrupo_cuenta->FldCaption(), $this->idgrupo_cuenta->ReqErrMsg));
+		}
+		if (!$this->tendencia->FldIsDetailKey && !is_null($this->tendencia->FormValue) && $this->tendencia->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->tendencia->FldCaption(), $this->tendencia->ReqErrMsg));
 		}
 
 		// Return validate result
@@ -1547,6 +1600,9 @@ class csubgrupo_cuenta_grid extends csubgrupo_cuenta {
 			// idgrupo_cuenta
 			$this->idgrupo_cuenta->SetDbValueDef($rsnew, $this->idgrupo_cuenta->CurrentValue, 0, $this->idgrupo_cuenta->ReadOnly);
 
+			// tendencia
+			$this->tendencia->SetDbValueDef($rsnew, $this->tendencia->CurrentValue, "", $this->tendencia->ReadOnly);
+
 			// Call Row Updating event
 			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
 			if ($bUpdateRow) {
@@ -1603,6 +1659,9 @@ class csubgrupo_cuenta_grid extends csubgrupo_cuenta {
 
 		// idgrupo_cuenta
 		$this->idgrupo_cuenta->SetDbValueDef($rsnew, $this->idgrupo_cuenta->CurrentValue, 0, FALSE);
+
+		// tendencia
+		$this->tendencia->SetDbValueDef($rsnew, $this->tendencia->CurrentValue, "", strval($this->tendencia->CurrentValue) == "");
 
 		// Call Row Inserting event
 		$rs = ($rsold == NULL) ? NULL : $rsold->fields;

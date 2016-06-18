@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<ew-language date="2016/6/17" version="12.0.0" id="es" name="Spanish" desc="Español" author="KK.pupu Damus">
+<ew-language date="2016/6/18" version="12.0.0" id="es" name="Spanish" desc="Español" author="KK.pupu Damus">
 	<locale>
 		<phrase id="locale" value=""/>
 		<!-- *** system locale for this language -->
@@ -592,15 +592,33 @@
 		<phrase id="or" value=" o "/>
 	</global>
 	<project><phrase id="footertext" value="Nexthor"/>
-<menu id="91"><phrase id="menutext" value="Balance Genaral"/>
+<menu id="75"><phrase id="menutext" value="flujo efectivo"/>
 </menu>
-<menu id="15"><phrase id="menutext" value="Balance General (Monitoreo)"/>
+<menu id="76"><phrase id="menutext" value="flujo efectivo detalle"/>
+</menu>
+<menu id="77"><phrase id="menutext" value="grupo flujo efectivo"/>
+</menu>
+<menu id="78"><phrase id="menutext" value="razones financieras"/>
+</menu>
+<menu id="79"><phrase id="menutext" value="razones financieras detalle"/>
+</menu>
+<menu id="81"><phrase id="menutext" value="view estado flujo efectivo"/>
+</menu>
+<menu id="82"><phrase id="menutext" value="view razones financieras"/>
+</menu>
+<menu id="106"><phrase id="menutext" value="Balance General"/>
+</menu>
+<menu id="130"><phrase id="menutext" value="Análisis Balance General"/>
+</menu>
+<menu id="15"><phrase id="menutext" value="Balance General (Backend)"/>
 </menu>
 <menu id="16"><phrase id="menutext" value="balance general detalle"/>
 </menu>
-<menu id="92"><phrase id="menutext" value="Estado de Resultado"/>
+<menu id="105"><phrase id="menutext" value="Estado de Resultado"/>
 </menu>
-<menu id="17"><phrase id="menutext" value="Estado de Resultado (Monitoreo)"/>
+<menu id="154"><phrase id="menutext" value="Análisis Estado de Resultado"/>
+</menu>
+<menu id="17"><phrase id="menutext" value="Estado de Resultado (backend)"/>
 </menu>
 <menu id="19"><phrase id="menutext" value="estado resultado detalle"/>
 </menu>
@@ -637,6 +655,8 @@
 <menu id="9"><phrase id="menutext" value="SubCuenta"/>
 </menu>
 <menu id="2"><phrase id="menutext" value="Cuenta"/>
+</menu>
+<menu id="80"><phrase id="menutext" value="Tipo de razón de financiera"/>
 </menu>
 <table id="clase_cuenta"><phrase id="tblcaption" value="Clase de Cuenta"/>
 <field id="idclase_cuenta"><phrase id="fldcaption" value="idclase cuenta"/>
@@ -784,6 +804,14 @@
 <phrase id="fldtagcaption1" value="Activo"/>
 <phrase id="fldtagvalue2" value="Inactivo"/>
 <phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+<field id="idgrupo_flujo_efectivo"><phrase id="fldcaption" value="idgrupo flujo efectivo"/>
+</field>
+<field id="tendencia"><phrase id="fldcaption" value="Tendencia"/>
+<phrase id="fldtagvalue1" value="Positiva"/>
+<phrase id="fldtagcaption1" value="Positiva"/>
+<phrase id="fldtagvalue2" value="Negativa"/>
+<phrase id="fldtagcaption2" value="Negativa"/>
 </field>
 </table>
 <table id="empresa"><phrase id="tblcaption" value="Empresa"/>
@@ -944,6 +972,134 @@
 <phrase id="fldtagcaption1" value="Activo"/>
 <phrase id="fldtagvalue2" value="Inactivo"/>
 <phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+<field id="idgrupo_flujo_efectivo"><phrase id="fldcaption" value="idgrupo flujo efectivo"/>
+</field>
+</table>
+<table id="flujo_efectivo"><phrase id="tblcaption" value="flujo efectivo"/>
+<field id="idflujo_efectivo"><phrase id="fldcaption" value="idflujo efectivo"/>
+</field>
+<field id="idempresa"><phrase id="fldcaption" value="idempresa"/>
+</field>
+<field id="idperiodo_contable"><phrase id="fldcaption" value="idperiodo contable"/>
+</field>
+<field id="fecha"><phrase id="fldcaption" value="fecha"/>
+</field>
+</table>
+<table id="flujo_efectivo_detalle"><phrase id="tblcaption" value="flujo efectivo detalle"/>
+<field id="idflujo_efectivo_detalle"><phrase id="fldcaption" value="idflujo efectivo detalle"/>
+</field>
+<field id="idflujo_efectivo"><phrase id="fldcaption" value="idflujo efectivo"/>
+</field>
+<field id="idgrupo_flujo_efectivo"><phrase id="fldcaption" value="idgrupo flujo efectivo"/>
+</field>
+<field id="idsubgrupo_cuenta_balance"><phrase id="fldcaption" value="idsubgrupo cuenta balance"/>
+</field>
+<field id="descripcion"><phrase id="fldcaption" value="descripcion"/>
+</field>
+<field id="monto"><phrase id="fldcaption" value="monto"/>
+</field>
+</table>
+<table id="grupo_flujo_efectivo"><phrase id="tblcaption" value="grupo flujo efectivo"/>
+<field id="idgrupo_flujo_efectivo"><phrase id="fldcaption" value="idgrupo flujo efectivo"/>
+</field>
+<field id="nombre"><phrase id="fldcaption" value="nombre"/>
+</field>
+<field id="tipo_saldo"><phrase id="fldcaption" value="tipo saldo"/>
+<phrase id="fldtagvalue1" value="+"/>
+<phrase id="fldtagcaption1" value="+"/>
+<phrase id="fldtagvalue2" value="-"/>
+<phrase id="fldtagcaption2" value="-"/>
+</field>
+</table>
+<table id="razones_financieras"><phrase id="tblcaption" value="razones financieras"/>
+<field id="idrazon_financiera"><phrase id="fldcaption" value="idrazon financiera"/>
+</field>
+<field id="idempresa"><phrase id="fldcaption" value="idempresa"/>
+</field>
+<field id="idperiodo_contable"><phrase id="fldcaption" value="idperiodo contable"/>
+</field>
+<field id="estado"><phrase id="fldcaption" value="estado"/>
+<phrase id="fldtagvalue1" value="Activo"/>
+<phrase id="fldtagcaption1" value="Activo"/>
+<phrase id="fldtagvalue2" value="Inactivo"/>
+<phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+</table>
+<table id="razones_financieras_detalle"><phrase id="tblcaption" value="razones financieras detalle"/>
+<field id="idrazon_financiera_detalle"><phrase id="fldcaption" value="idrazon financiera detalle"/>
+</field>
+<field id="idrazon_financiera"><phrase id="fldcaption" value="idrazon financiera"/>
+</field>
+<field id="idtipo_razon_financiera"><phrase id="fldcaption" value="idtipo razon financiera"/>
+</field>
+<field id="valor"><phrase id="fldcaption" value="valor"/>
+</field>
+<field id="estado"><phrase id="fldcaption" value="estado"/>
+<phrase id="fldtagvalue1" value="Activo"/>
+<phrase id="fldtagcaption1" value="Activo"/>
+<phrase id="fldtagvalue2" value="Inactivo"/>
+<phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+</table>
+<table id="tipo_razon_financiera"><phrase id="tblcaption" value="Tipo de razones financieras"/>
+<field id="idtipo_razon_financiera"><phrase id="fldcaption" value="Tipo de razón financiera"/>
+</field>
+<field id="nombre"><phrase id="fldcaption" value="Nombre"/>
+</field>
+<field id="estado"><phrase id="fldcaption" value="Estado"/>
+<phrase id="fldtagvalue1" value="Activo"/>
+<phrase id="fldtagcaption1" value="Activo"/>
+<phrase id="fldtagvalue2" value="Inactivo"/>
+<phrase id="fldtagcaption2" value="Inactivo"/>
+</field>
+<field id="agrupacion"><phrase id="fldcaption" value="Agrupación"/>
+</field>
+<field id="interpretacion"><phrase id="fldcaption" value="Interpretación"/>
+</field>
+</table>
+<table id="view_estado_flujo_efectivo"><phrase id="tblcaption" value="view estado flujo efectivo"/>
+<field id="idempresa"><phrase id="fldcaption" value="idempresa"/>
+</field>
+<field id="nombre_empresa"><phrase id="fldcaption" value="nombre empresa"/>
+</field>
+<field id="ticker"><phrase id="fldcaption" value="ticker"/>
+</field>
+<field id="idperiodo_contable"><phrase id="fldcaption" value="idperiodo contable"/>
+</field>
+<field id="anio"><phrase id="fldcaption" value="anio"/>
+</field>
+<field id="idgrupo_flujo_efectivo"><phrase id="fldcaption" value="idgrupo flujo efectivo"/>
+</field>
+<field id="tipo_saldo"><phrase id="fldcaption" value="tipo saldo"/>
+<phrase id="fldtagvalue1" value="+"/>
+<phrase id="fldtagcaption1" value="+"/>
+<phrase id="fldtagvalue2" value="-"/>
+<phrase id="fldtagcaption2" value="-"/>
+</field>
+<field id="actividad"><phrase id="fldcaption" value="actividad"/>
+</field>
+<field id="subactividad"><phrase id="fldcaption" value="subactividad"/>
+</field>
+<field id="monto"><phrase id="fldcaption" value="monto"/>
+</field>
+</table>
+<table id="view_razones_financieras"><phrase id="tblcaption" value="view razones financieras"/>
+<field id="idrazon_financiera_detalle"><phrase id="fldcaption" value="idrazon financiera detalle"/>
+</field>
+<field id="idrazon_financiera"><phrase id="fldcaption" value="idrazon financiera"/>
+</field>
+<field id="idempresa"><phrase id="fldcaption" value="idempresa"/>
+</field>
+<field id="idperiodo_contable"><phrase id="fldcaption" value="idperiodo contable"/>
+</field>
+<field id="agrupacion"><phrase id="fldcaption" value="agrupacion"/>
+</field>
+<field id="nombre"><phrase id="fldcaption" value="nombre"/>
+</field>
+<field id="valor"><phrase id="fldcaption" value="valor"/>
+</field>
+<field id="interpretacion"><phrase id="fldcaption" value="interpretacion"/>
 </field>
 </table>
 </project>

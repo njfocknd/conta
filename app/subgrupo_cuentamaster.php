@@ -3,6 +3,7 @@
 // nomenclatura
 // nombre
 // idgrupo_cuenta
+// tendencia
 
 ?>
 <?php if ($subgrupo_cuenta->Visible) { ?>
@@ -39,6 +40,17 @@
 <span id="el_subgrupo_cuenta_idgrupo_cuenta">
 <span<?php echo $subgrupo_cuenta->idgrupo_cuenta->ViewAttributes() ?>>
 <?php echo $subgrupo_cuenta->idgrupo_cuenta->ListViewValue() ?></span>
+</span>
+</td>
+		</tr>
+<?php } ?>
+<?php if ($subgrupo_cuenta->tendencia->Visible) { // tendencia ?>
+		<tr id="r_tendencia">
+			<td><?php echo $subgrupo_cuenta->tendencia->FldCaption() ?></td>
+			<td<?php echo $subgrupo_cuenta->tendencia->CellAttributes() ?>>
+<span id="el_subgrupo_cuenta_tendencia">
+<span<?php echo $subgrupo_cuenta->tendencia->ViewAttributes() ?>>
+<?php echo $subgrupo_cuenta->tendencia->ListViewValue() ?></span>
 </span>
 </td>
 		</tr>

@@ -37,23 +37,23 @@ function fncGrafica(&$arrayData){
                 
                 {
                     "title": "'.$arrayData['clase_resultado'][2]['nombre'].'",
-                    "value": '.(($arrayData['clase_resultado'][2]['monto']/$arrayData['clase_resultado'][1]['monto'])*100).'
+                    "value": '.round((($arrayData['clase_resultado'][2]['monto']/$arrayData['clase_resultado'][1]['monto'])*100),2).'
                 },
                 {
                     "title": "'.$arrayData['clase_resultado'][3]['nombre'].'",
-                    "value": '.(($arrayData['clase_resultado'][3]['monto']/$arrayData['clase_resultado'][1]['monto'])*100).'
+                    "value": '.round((($arrayData['clase_resultado'][3]['monto']/$arrayData['clase_resultado'][1]['monto'])*100),2).'
                 },
 				{
                     "title": "'.$arrayData['clase_resultado'][4]['nombre'].'",
-                    "value": '.(($arrayData['clase_resultado'][4]['monto']/$arrayData['clase_resultado'][1]['monto'])*100).'
+                    "value": '.round((($arrayData['clase_resultado'][4]['monto']/$arrayData['clase_resultado'][1]['monto'])*100),2).'
                 },
 				{
                     "title": "'.$arrayData['clase_resultado'][5]['nombre'].'",
-                    "value": '.(($arrayData['clase_resultado'][5]['monto']/$arrayData['clase_resultado'][1]['monto'])*100).'
+                    "value": '.round((($arrayData['clase_resultado'][5]['monto']/$arrayData['clase_resultado'][1]['monto'])*100),2).'
                 },
 				{
                     "title": "Utilidad neta",
-                    "value": '.(($utilidad_neta/$arrayData['clase_resultado'][1]['monto'])*100).'
+                    "value": '.round((($utilidad_neta/$arrayData['clase_resultado'][1]['monto'])*100),2).'
                 },
 			];</script>';
 ?><script>
@@ -132,7 +132,7 @@ function fncHTML($arrayData){
 	echo "					
 							<tr class='danger'>
 								<td colspan = 3><em><b>Utilidades antes de intereses e impuestos</td>
-								<td><b><input type='text' value='".$utilidad_antes."' style='text-align: right' size='8'  class='form-control' readonly/></b></td>
+								<td><b><input type='text' value='".number_format($utilidad_antes,0)."' style='text-align: right' size='8'  class='form-control' readonly/></b></td>
 							</tr>
 							<tr class='warning'>
 								<td colspan = 4><b>".$arrayData['clase_resultado'][4]['nombre']."</b></td>
@@ -149,7 +149,7 @@ function fncHTML($arrayData){
 							<tr class='danger'>
 								<td  colspan = 2><em><b>Utilidad gravable</td>
 								<td></td>
-								<td><b><input type='text' value='".$utilidad_gravable."' style='text-align: right' size='8'  class='form-control' readonly/></b></td>
+								<td><b><input type='text' value='".number_format($utilidad_gravable,0)."' style='text-align: right' size='8'  class='form-control' readonly/></b></td>
 							</tr>
 							<tr class='warning'>
 								<td  colspan = 4><b>".$arrayData['clase_resultado'][5]['nombre']."</b></td>
@@ -165,7 +165,7 @@ function fncHTML($arrayData){
 	echo "					<tr class='success'>
 								<td  colspan = 2><em><b>Utilidad neta</td>
 								<td></td>
-								<td><input type='text' value='".$utilidad_neta."' style='text-align: right' size='8'  class='form-control' readonly/></td>
+								<td><b><input type='text' value='".number_format($utilidad_neta,0)."' style='text-align: right' size='8'  class='form-control' readonly/></b></td>
 							</tr>
 							
 						</table>
