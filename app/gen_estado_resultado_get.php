@@ -8,6 +8,7 @@ function fncSetDataToArray($row, &$arrayData, $option)
 		case 0:
 			$arrayData["idestado_resultado"]=$row["idestado_resultado"];
 			$arrayData["cuenta"]=$row["cuenta"];
+			$arrayData["estatus"]=$row["estatus"];
 			$arrayData['clase_resultado'][$row["idclase_resultado"]]["monto"]=0;
 			$arrayData['clase_resultado'][$row["idclase_resultado"]]["nombre"]=$row["clase_resultado"];
 			break;
@@ -25,7 +26,56 @@ function fncSetDataToArray($row, &$arrayData, $option)
     <script src="nexthor/libs/amcharts/amcharts.js" type="text/javascript"></script>
 	<script src="nexthor/libs/amcharts/funnel.js" type="text/javascript"></script>
 <?php
+
+
+function fncFuturo($arrayData){
+	$queryEmpresa="select idempresa id, ticker name from empresa where estado='Activo';";
+	$queryPeriodoContable="select idperiodo_contable id, nombre name from periodo_contable where estado='Activo' and estatus = 'Pasado';";
+	echo "<div class='panel panel-danger'>
+			<div class='panel-heading'>
+				Cargar proforma desde ".fncDesignCombo($queryEmpresa,'idempresa_proyectar','','','',0)." 
+				del ".fncDesignCombo($queryPeriodoContable,'idperiodo_contable_proyectar','','','',0)."
+				aumentando en 
+				<SELECT id='aumento' class='form-control' style = 'width:90px;'>
+					<option value='1' > 1%</option>
+					<option value='5' >5%</option>
+					<option value='10' selected >10%</option>
+					<option value='15' >15%</option>
+					<option value='20' >20%</option>
+					<option value='25' >25%</option>
+					<option value='35' >35%</option>
+					<option value='40' >40%</option>
+					<option value='45' >45%</option>
+					<option value='50' >50%</option>
+					<option value='55' >55%</option>
+					<option value='60' >60%</option>
+					<option value='65' >65%</option>
+					<option value='70' >70%</option>
+					<option value='75' >75%</option>
+					<option value='80' >80%</option>
+					<option value='85' >85%</option>
+					<option value='90' >90%</option>
+					<option value='95' >95%</option>
+					<option value='100' >100%</option>
+					<option value='-1' >- 1%</option>
+					<option value='-5' >-5%</option>
+					<option value='-10'>-10%</option>
+					<option value='-15' >-15%</option>
+					<option value='-20' >-20%</option>
+					<option value='-25' >-25%</option>
+					<option value='-35' >-35%</option>
+					<option value='-40' >-40%</option>
+					<option value='-45' >-45%</option>
+					<option value='-50' >-50%</option>
+				</SELECT>
+				<button type='button' class='btn btn-danger btn-sm' onclick='fncProyectar(".$arrayData['idestado_resultado'].");'>
+					Proyectar
+				</button>
+			</div>
+		  </div>";
+}
 function fncGrafica(&$arrayData){
+	
 	$utilidad_antes = ($arrayData['clase_resultado'][1]['monto']-($arrayData['clase_resultado'][3]["monto"]+$arrayData['clase_resultado'][2]["monto"]));
 	$utilidad_gravable=$utilidad_antes-$arrayData['clase_resultado'][4]["monto"];
 	$utilidad_neta=$utilidad_gravable-$arrayData['clase_resultado'][5]["monto"];
@@ -83,6 +133,10 @@ function fncGrafica(&$arrayData){
 	
 }
 function fncHTML($arrayData){
+	if ($arrayData['estatus'] == 'Futuro')
+	{
+		fncFuturo($arrayData);
+	}
 	$utilidad_antes = ($arrayData['clase_resultado'][1]['monto']-($arrayData['clase_resultado'][3]["monto"]+$arrayData['clase_resultado'][2]["monto"]));
 	$utilidad_gravable=$utilidad_antes-$arrayData['clase_resultado'][4]["monto"];
 	$utilidad_neta=$utilidad_gravable-$arrayData['clase_resultado'][5]["monto"];
@@ -198,13 +252,14 @@ if(true)
 	if (isset($_POST["empresa"])&&isset($_POST["periodoContable"])&&isset($_POST["mostrarResultado"]))
 	{
 		$query="select er.idestado_resultado,  cr.idclase_resultado, cr.nombre clase_resultado, 
-					gr.idgrupo_resultado, gr.nombre grupo_resultado, (select count(*)
-				from grupo_resultado gr2
-				inner join clase_resultado cr2 on cr2.idclase_resultado = gr2.idclase_resultado
-				where  gr2.estado =1 and gr2.idgrupo_resultado not in(select idgrupo_resultado from estado_resultado_detalle where idestado_resultado = er.idestado_resultado and estado = 1 )) cuenta
-				from estado_resultado er, clase_resultado cr, grupo_resultado gr
+					gr.idgrupo_resultado, gr.nombre grupo_resultado, pc.estatus , (select count(*)
+					from grupo_resultado gr2
+					inner join clase_resultado cr2 on cr2.idclase_resultado = gr2.idclase_resultado
+					where  gr2.estado =1 and gr2.idgrupo_resultado not in(select idgrupo_resultado from estado_resultado_detalle where idestado_resultado = er.idestado_resultado and estado = 1 )) cuenta
+				from estado_resultado er, clase_resultado cr, grupo_resultado gr,periodo_contable pc 
 				where er.idempresa = ".$_POST['empresa']." and er.idperiodo_contable = ".$_POST['periodoContable']."  and er.estado ='Activo' 
 				and cr.idclase_resultado = gr.idclase_resultado and gr.estado ='Activo' and cr.estado ='Activo' 
+				and pc.idperiodo_contable = er.idperiodo_contable
 				order by cr.idclase_resultado, gr.idgrupo_resultado ;";
 		fncExecuteQuery($MyOps, $query, $arrayData, 0);
 		if(!count($arrayData)>0){

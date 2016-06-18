@@ -614,8 +614,6 @@
 </menu>
 <menu id="16"><phrase id="menutext" value="balance general detalle"/>
 </menu>
-<menu id="175"><phrase id="menutext" value="Razones Financieras"/>
-</menu>
 <menu id="105"><phrase id="menutext" value="Estado de Resultado"/>
 </menu>
 <menu id="154"><phrase id="menutext" value="Análisis Estado de Resultado"/>
@@ -625,6 +623,8 @@
 <menu id="19"><phrase id="menutext" value="estado resultado detalle"/>
 </menu>
 <menu id="74"><phrase id="menutext" value="Flujo de Efectivo"/>
+</menu>
+<menu id="175"><phrase id="menutext" value="Razones Financieras"/>
 </menu>
 <menu id="7"><phrase id="menutext" value="Partida"/>
 </menu>

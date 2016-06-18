@@ -3,7 +3,7 @@ include('nexthor_app.php');
 include('header.php');
 $MyOps = new DBOps($usr_name,$usr_pwd,$target_db,$target_host);
 $queryEmpresa="select idempresa id, ticker name from empresa where estado='Activo';";
-$queryPeriodoContable="select idperiodo_contable id, nombre name from periodo_contable where estado='Activo';";
+$queryPeriodoContable="select idperiodo_contable id, concat(nombre,' (',estatus,')') name from periodo_contable where estado='Activo';";
 ?>
 <script src="nexthor/js/nexthor_js.js" type="text/javascript"></script>
 <script>
@@ -47,7 +47,7 @@ function fncMostrar()
 					<option value='25' >25%</option>
 					<option value='50' >50%</option>
 					<option value='75' >75%</option>
-					<option value='75' >100%</option>
+					<option value='100' >100%</option>
 				</SELECT>
 				<button type="button" class="btn btn-info btn-sm" onclick="fncMostrar();">
 					<span class="glyphicon glyphicon-search"> </span> Buscar

@@ -8,6 +8,18 @@ function fncMostrar()
 	ajax_dynamic_div("POST",'gen_balance_general_get.php',strParam,div,'false');
 }
 
+function fncProyectar(id)
+{
+	div=document.getElementById("divActualizar");
+	$(div).html("<img src='nexthor/image/loading.gif' align='center'>");
+	idempresa_proyectar=document.getElementById('idempresa_proyectar').value;
+	idperiodo_contable_proyectar=document.getElementById('idperiodo_contable_proyectar').value;
+	aumento=document.getElementById('aumento').value;
+	strParam="id="+id+"&idempresa_proyectar="+idempresa_proyectar+"&idperiodo_contable_proyectar="+idperiodo_contable_proyectar+"&aumento="+aumento+"&proyectar=1";
+	ajax_dynamic_div("POST",'gen_balance_general_update.php',strParam,div,'false');
+	fncMostrar();
+}
+
 function fncCambiarMonto(id, monto)
 {
 	

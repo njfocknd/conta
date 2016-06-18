@@ -27,7 +27,7 @@ $queryPeriodoContable="select nombre id, nombre name from periodo_contable where
 				<center>
 					<?php 
 						if (isset($_POST['GenerarReporte'])) {
-							$cn = new DBOps('dbadmin','23Nexthor23','contable','nexthordb.cquvmppcukva.us-west-2.rds.amazonaws.com');
+							$cn = new DBOps($usr_name,$usr_pwd,$target_db,$target_host);
 							GenerarDatosParaReporte($cn);
 							GenerarReporte($cn);
 						}

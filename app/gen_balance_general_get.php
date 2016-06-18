@@ -12,6 +12,7 @@ function fncSetDataToArray($row, &$arrayData, $option)
 			$arrayData["pasivo_corriente"]=$row["pasivo_corriente"];
 			$arrayData["pasivo_fijo"]=$row["pasivo_fijo"];
 			$arrayData["capital_contable"]=$row["capital_contable"];
+			$arrayData["estatus"]=$row["estatus"];
 			$arrayData['clase_cuenta'][1]["nombre"]='Activo';
 			$arrayData['clase_cuenta'][3]["nombre"]='Pasivo';
 			$arrayData['clase_cuenta'][1]["grupo_cuenta"][1]["nombre"] = 'Corriente';
@@ -31,7 +32,57 @@ function fncSetDataToArray($row, &$arrayData, $option)
 	}
 }
 
+function fncFuturo($arrayData){
+	$queryEmpresa="select idempresa id, ticker name from empresa where estado='Activo';";
+	$queryPeriodoContable="select idperiodo_contable id, nombre name from periodo_contable where estado='Activo' and estatus = 'Pasado';";
+	echo "<div class='panel panel-danger'>
+			<div class='panel-heading'>
+				Cargar proforma desde ".fncDesignCombo($queryEmpresa,'idempresa_proyectar','','','',0)." 
+				del ".fncDesignCombo($queryPeriodoContable,'idperiodo_contable_proyectar','','','',0)."
+				aumentando en 
+				<SELECT id='aumento' class='form-control' style = 'width:90px;'>
+					<option value='1' > 1%</option>
+					<option value='5' >5%</option>
+					<option value='10' selected >10%</option>
+					<option value='15' >15%</option>
+					<option value='20' >20%</option>
+					<option value='25' >25%</option>
+					<option value='35' >35%</option>
+					<option value='40' >40%</option>
+					<option value='45' >45%</option>
+					<option value='50' >50%</option>
+					<option value='55' >55%</option>
+					<option value='60' >60%</option>
+					<option value='65' >65%</option>
+					<option value='70' >70%</option>
+					<option value='75' >75%</option>
+					<option value='80' >80%</option>
+					<option value='85' >85%</option>
+					<option value='90' >90%</option>
+					<option value='95' >95%</option>
+					<option value='100' >100%</option>
+					<option value='-1' >- 1%</option>
+					<option value='-5' >-5%</option>
+					<option value='-10'>-10%</option>
+					<option value='-15' >-15%</option>
+					<option value='-20' >-20%</option>
+					<option value='-25' >-25%</option>
+					<option value='-35' >-35%</option>
+					<option value='-40' >-40%</option>
+					<option value='-45' >-45%</option>
+					<option value='-50' >-50%</option>
+				</SELECT>
+				<button type='button' class='btn btn-danger btn-sm' onclick='fncProyectar(".$arrayData['idbalance_general'].");'>
+					Proyectar
+				</button>
+			</div>
+		  </div>";
+}
 function fncHTML($arrayData){
+	if ($arrayData['estatus'] == 'Futuro')
+	{
+		fncFuturo($arrayData);
+	}
 	echo "<table style='width:100%;'>
 			<tr valign='top' align = 'center'>
 				<td style='width:49%;'>
@@ -172,15 +223,16 @@ if(true)
 	$MyOps = new DBOps($usr_name,$usr_pwd,$target_db,$target_host);
 	if (isset($_POST["empresa"])&&isset($_POST["periodoContable"])&&isset($_POST["mostrarActivoCorriente"]))
 	{
-		$query="select idbalance_general, (select count(*) from subgrupo_cuenta where idgrupo_cuenta = 1 and estado = 1) activo_corriente,
+		$query="select bg.idbalance_general, (select count(*) from subgrupo_cuenta where idgrupo_cuenta = 1 and estado = 1) activo_corriente,
 				(select count(*) from subgrupo_cuenta where idgrupo_cuenta = 2 and estado = 1) activo_fijo,
 				(select count(*) from subgrupo_cuenta where idgrupo_cuenta = 4 and estado = 1) pasivo_corriente,
 				(select count(*) from subgrupo_cuenta where idgrupo_cuenta = 5 and estado = 1) pasivo_fijo,
-				capital_contable
-			from  balance_general 
-			where idempresa = ".$_POST['empresa']." and idperiodo_contable = ".$_POST['periodoContable']." 
-				and estado ='Activo' 
-			order by idbalance_general desc limit 1;";
+				bg.capital_contable, pc.estatus 
+			from  balance_general bg
+			inner join periodo_contable pc on pc.idperiodo_contable = bg.idperiodo_contable
+			where bg.idempresa = ".$_POST['empresa']." and bg.idperiodo_contable = ".$_POST['periodoContable']." 
+				and bg.estado ='Activo' 
+			order by bg.idbalance_general desc limit 1;";
 		fncExecuteQuery($MyOps, $query, $arrayData, 0);
 		if(!count($arrayData)>0){
 			$query = " INSERT INTO balance_general (idempresa,idperiodo_contable) 
