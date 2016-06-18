@@ -51,7 +51,7 @@ include('header.php');
 		{
 			$idempresa=$_POST['idempresa'];
 			$anio=$_POST['anio'];
-			$query= sprintf('select * from view_estado_flujo_efectivo where idempresa=%s and anio=%s order by idgrupo_flujo_efectivo,monto desc;',$idempresa,$anio);
+			$query= sprintf('select * from view_estado_flujo_efectivo where idempresa=%s and anio=%s  order by idgrupo_flujo_efectivo,monto desc;',$idempresa,$anio);
 			$result= $cn->list_orders($query);
 
 			$numero = mysql_num_rows($result);
@@ -71,14 +71,14 @@ include('header.php');
 				$EfectivoInicio = $fila['monto'];
 				$TotalPorActividades = 0;
 				echo "<tr>";
-				printf("<td > %s</td><td class='text-right'>%s</td>",$fila['actividad'],$EfectivoInicio);			
+				printf("<td > %s</td><td class='text-right'>%s</td>",$fila['actividad'],number_format($EfectivoInicio,0) );			
 				echo "</tr>";
 
 				while ($fila = mysql_fetch_assoc($result)) {
 					if($idgrupo != $fila['idgrupo_flujo_efectivo']){
 						if ($TotalPorActividades != 0){
 							echo "<tr>";
-							printf("<td style='padding-left:5em'>Efectivo neto %s</td><td class='text-right'><b><u>%s</u></b></td>",$fila['actividad'],$TotalPorActividades);			
+							printf("<td style='padding-left:5em'>Efectivo neto %s</td><td class='text-right'><b><u>%s</u></b></td>",$fila['actividad'],number_format($TotalPorActividades,0) );			
 							echo "</tr>";	
 							$TotalPorActividades=0;
 						}
@@ -88,22 +88,22 @@ include('header.php');
 						$idgrupo=$fila['idgrupo_flujo_efectivo'];
 					}
 					echo "<tr>";
-					printf("<td style='padding-left:3em'> %s</td><td class='text-right'>%s</td>",$fila['subactividad'],$fila['monto']);			
+					printf("<td style='padding-left:3em'> %s</td><td class='text-right'>%s</td>",$fila['subactividad'],number_format($fila['monto'],0) );			
 					echo "</tr>";
 					$TotalPorActividades+=$fila['monto'];				
 					$EfectivoFinal += $fila['monto'];
 				}
 				if ($TotalPorActividades != 0){
 					echo "<tr>";
-					printf("<td style='padding-left:5em'>Efectivo neto %s</td><td class='text-right'><b><u>%s</u></b></td>",$fila['actividad'],$TotalPorActividades);			
+					printf("<td style='padding-left:5em'>Efectivo neto %s</td><td class='text-right'><b><u>%s</u></b></td>",$fila['actividad'],number_format($TotalPorActividades,0) );			
 					echo "</tr>";	
 					$TotalPorActividades=0;
 				}
 				echo "<tr>";
-				printf("<td >Incremento Neto Efectivo </td><td class='text-right'>%s</td>",$EfectivoFinal);			
+				printf("<td >Incremento Neto Efectivo </td><td class='text-right'>%s</td>",number_format($EfectivoFinal,0) );			
 				echo "</tr>";
 				echo "<tr class='alto'>";
-				printf("<td >Efectivo al final de periodo </td><td class='text-right'>%s</td>",$EfectivoFinal+$EfectivoInicio);			
+				printf("<td >Efectivo al final de periodo </td><td class='text-right'>%s</td>",number_format($EfectivoFinal+$EfectivoInicio,0) );			
 				echo "</tr>";
 
 				echo "<tbody>";
